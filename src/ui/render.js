@@ -5,6 +5,8 @@ import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
+import { mapHome, withHud } from './game.js'
+
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -90,7 +92,7 @@ function hudMode() {
   }
 }
 
-function nav(active, world) {
+export function nav(active, world) {
   const items = [['play', 'Map'], ['profile', 'You'], ['board', 'Board'], ['chat', 'Chat']]
   return `<nav class="nav">${items.map(([id, label]) => {
     if (world && id === 'play') {
@@ -230,7 +232,7 @@ const CARD_LABEL = {
   over: 'That is the end',
 }
 
-function cardHtml(card, state) {
+export function cardHtml(card, state) {
   if (!card) return ''
   const district = state?.district
   const choices = (card.choices || []).map((label, index) => {
@@ -279,7 +281,7 @@ function play(state, screenName, placeId) {
   </main>`
 }
 
-function summaryRows(morning, stats) {
+export function summaryRows(morning, stats) {
   const rows = [
     ['Money', morning?.money, stats.money],
     ['Energy', morning?.energy, stats.energy],
@@ -631,22 +633,20 @@ export function view(state) {
     ])
   }
   if (screen === 'create') return create(state)
-  if (screen === 'map' || screen === 'play') return play(state, screen === 'map' ? 'map' : 'play', '')
-  if (screen === 'place' || screen === 'closed') return play(state, screen, state.placeId)
-  if (screen === 'summary') {
-    if (state.run?.mode === 'play') return play(state, 'play', '')
-    return summary(state)
-  }
+  if (screen === 'world') return play(state, 'play', '')
+  if (screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
+  if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)
   if (screen === 'gameover' || screen === 'over') return gameover(state)
-  if (screen === 'profile') return profile(state)
-  if (screen === 'share') return share(state)
+  if (screen === 'profile') return withHud(state, profile(state))
+  if (screen === 'share') return withHud(state, share(state))
   if (screen === 'shop') return shop(state)
-  if (screen === 'save') return saveScreen(state)
-  if (screen === 'chat') return chat(state)
-  if (screen === 'leaderboard' || screen === 'board') return board(state)
+  if (screen === 'save') return withHud(state, saveScreen(state))
+  if (screen === 'chat') return withHud(state, chat(state))
+  if (screen === 'leaderboard' || screen === 'board') return withHud(state, board(state))
   if (screen === 'admin') return admin(state)
   if (screen === 'event' || screen === 'twist' || screen === 'bestie' || screen === 'graduated') {
+    if (!state.run?.queue?.[0]) return mapHome(state, '')
     return `<main class="screen world-hud" data-screen="${screen}">
       ${chrome(state.district, state.run)}
       ${cardHtml(state.run.queue[0], state)}
