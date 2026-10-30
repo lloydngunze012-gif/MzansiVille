@@ -104,6 +104,8 @@ function state() {
     admin,
     morning,
     cardMini,
+    ui,
+    sound: soundOn(),
   }
 }
 
@@ -637,7 +639,30 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'start') {
+    draft = emptyDraft()
     go(save.rulesAccepted ? 'new' : 'rules')
+    return
+  }
+  if (act === 'edit-char' && save.run) {
+    const c = save.run.character
+    draft = { ...emptyDraft(), name: c.name, residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, edit: true }
+    ui.gear = false
+    go('new')
+    return
+  }
+  if (act === 'delete-ask') { ui.confirmDelete = true; paint(); return }
+  if (act === 'delete-no') { ui.confirmDelete = false; paint(); return }
+  if (act === 'delete-yes') {
+    ui.confirmDelete = false
+    save.run = null
+    draft = emptyDraft()
+    persist()
+    go('title')
+    return
+  }
+  if (act === 'sound' && route().name === 'settings') {
+    try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
+    paint()
     return
   }
   if (act === 'continue' && save.run) {
@@ -723,6 +748,13 @@ app.addEventListener('click', async (event) => {
       return
     }
     draft.error = ''
+    if (draft.edit && save.run) {
+      save.run.character = { ...save.run.character, ...read.character }
+      draft = emptyDraft()
+      persist()
+      go('title')
+      return
+    }
     save.run = createRun(district, read.character)
     persist()
     go('play')

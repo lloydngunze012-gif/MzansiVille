@@ -801,3 +801,16 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
   background: repeating-linear-gradient(to bottom, #8a7a9c 0 6px, #6c5c80 6px 22px, #4e4062 22px 26px); }
 .cc-stage::after { z-index: 1; height: 30%; }
 html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; box-shadow: none !important; }
+
+.tc-row { display: flex; gap: 8px; opacity: 0; animation: tc-pop .5s .65s ease-out forwards; }
+.tc-small { flex: 1; min-height: 44px; border-radius: 14px; border: 2px solid #f0c400; background: rgba(28,14,52,.85); color: #fff; font: 800 14px var(--display, system-ui); cursor: pointer; }
+.tc-small:active { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) { .tc-row { animation: none; opacity: 1; } }
+.set { background: #1c0e34; color: #fff; min-height: 100dvh; }
+.set-list .btn { text-align: center; }
+.set-warn { color: #ffd23f; font-weight: 700; }
+.set-danger { background: #c43b3b; color: #fff; border-color: #fff; }
+.set-danger-ghost { color: #ff9f9f; }
+.set .btn { color: #fff; background: #2a1846; border: 1px solid #f0c40066; text-decoration: none; display: flex; align-items: center; justify-content: center; min-height: 48px; }
+.set .btn.set-danger { background: #c43b3b; border-color: #fff; }
+.set .btn.set-danger-ghost { color: #ff9f9f; }

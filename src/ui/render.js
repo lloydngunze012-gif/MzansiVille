@@ -419,7 +419,7 @@ function create(state) {
       <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
     </div>
     ${draft.error ? `<p class="error cc-err">${esc(draft.error)}</p>` : ''}
-    <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">Walk onto campus</button></div>
+    <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">${draft.edit ? 'Save changes' : 'Walk onto campus'}</button></div>
   </main>`
 }
 
@@ -611,15 +611,41 @@ function title(state) {
     </picture></div>
     <div class="tc-foot">
       <p class="tc-tag">Res, lectures, bunny chows and besties. Survive first year.</p>
-      <button class="btn tc-start" type="button" data-act="start">Start first year</button>
-      ${day ? `<button class="tc-continue" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : ''}
+      ${day ? `<button class="btn tc-start" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : ''}
+      <button class="${day ? 'tc-continue' : 'btn tc-start'}" type="button" data-act="start">New student</button>
+      <div class="tc-row">
+        ${day ? '<button class="tc-small" type="button" data-act="edit-char">Edit character</button>' : ''}
+        <button class="tc-small" type="button" data-act="nav" data-go="save">${state.save.run?.userId ? 'Account' : 'Sign in'}</button>
+        <button class="tc-small" type="button" data-act="nav" data-go="settings">Settings</button>
+      </div>
       <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
+    </div>
+  </main>`
+}
+
+function settings(state) {
+  const run = state.run
+  const del = state.ui?.confirmDelete
+  return `<main class="screen pad set" data-screen="settings">
+    <h1 style="margin-top:44px">Settings</h1>
+    <div class="stack set-list">
+      <button class="btn block" type="button" data-act="sound">Sound: <b>${state.sound ? 'On' : 'Off'}</b></button>
+      ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
+      <a class="btn ghost block" href="#/rules">Community rules</a>
+      <a class="btn ghost block" href="#/privacy">Privacy</a>
+      <a class="btn ghost block" href="#/terms">Terms</a>
+      ${run ? (del
+        ? `<p class="set-warn">Delete ${esc(run.character.name)} and all of day ${run.day}? This cannot be undone.</p>
+           <button class="btn block set-danger" type="button" data-act="delete-yes">Yes, delete for good</button>
+           <button class="btn ghost block" type="button" data-act="delete-no">Keep my student</button>`
+        : '<button class="btn ghost block set-danger-ghost" type="button" data-act="delete-ask">Delete character…</button>') : ''}
     </div>
   </main>`
 }
 
 export function view(state) {
   const screen = state.screen
+  if (screen === 'settings') return settings(state)
   if (screen === 'title') return title(state)
   if (screen === 'rules') return rules()
   if (screen === 'privacy') {
