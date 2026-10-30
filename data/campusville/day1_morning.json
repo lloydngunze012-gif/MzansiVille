@@ -1,0 +1,134 @@
+{
+  "note": "Copy for the day 1 morning slice only. Written by Content Writer. Not read by the game yet: Game Dev to wire it in. Effect numbers stay in activities.csv and twists.json; nothing here changes balance. 'move' is the on-screen motion cue for that tap, 'caption' is the one-line text shown, 'sound' is optional.",
+  "goal": {
+    "text": "Get to your 9:00 lecture on time.",
+    "hint": "Eat something, find the bus, make it to campus."
+  },
+  "steps": [
+    {
+      "id": "wake",
+      "clock": "07:00",
+      "place": "res_o",
+      "title": "Rise and shine, sort of",
+      "caption": "O Block, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
+      "move": "Blanket slides off, character sits up, sunlight stripe crosses the floor.",
+      "sound": "Phone buzz, distant taxi hooter."
+    },
+    {
+      "id": "walk_to_kettle",
+      "place": "res_o",
+      "tap": "Go to the kettle",
+      "caption": "Four steps to the kitchenette. It is a small room and a long walk.",
+      "move": "Character walks across the room to the kettle, slippers squeak, roommate's bed shape rises and falls.",
+      "sound": "Slipper squeak."
+    },
+    {
+      "id": "kettle_on",
+      "place": "res_o",
+      "tap": "Switch the kettle on",
+      "caption": "The kettle clicks on and starts to mutter.",
+      "move": "Kettle light glows orange, steam starts to curl up, small bubbles shake the lid.",
+      "sound": "Kettle rumble, then a click."
+    },
+    {
+      "id": "check_cupboard",
+      "place": "res_o",
+      "tap": "Open the noodle shelf",
+      "caption": "The shelf has a half bag of rice, one sad tea bag and a packet of noodles. One.",
+      "move": "Cupboard door swings open, camera nudges in on a single noodle packet."
+    },
+    {
+      "id": "noodles_ok",
+      "place": "res_o",
+      "outcome": "default",
+      "caption": "Noodles. Masala flavour. Two minutes and you are a person again.",
+      "move": "Packet tears, noodles drop into the pot, steam fills the frame, the hunger bar fills as the pot empties.",
+      "sound": "Tear, pour, slurp."
+    },
+    {
+      "id": "noodles_stolen",
+      "place": "res_o",
+      "outcome": "roommate_steals",
+      "caption": "Your roommate is standing there with the empty wrapper. \"Sorry, I was going to replace it.\"",
+      "move": "Cupboard is empty, roommate steps into frame holding the wrapper and a sheepish grin, packet crumples in hand.",
+      "after": "You eat dry bread. It is a decision.",
+      "sound": "Crinkle."
+    },
+    {
+      "id": "grab_bag",
+      "place": "res_o",
+      "tap": "Grab your bag",
+      "caption": "Bag, student card, charger. In that order, because panic has an order.",
+      "move": "Character slings bag on, pats pockets, picks up the student card from the desk."
+    },
+    {
+      "id": "walk_out",
+      "place": "res_o",
+      "tap": "Head out",
+      "caption": "Door, stairwell, sunshine. The whole block smells of toast and ambition.",
+      "move": "Character walks out the door, stairwell passes, camera pulls out onto the path with other students heading the same way.",
+      "sound": "Door slam, flip-flops, distant music."
+    },
+    {
+      "id": "walk_to_bus",
+      "place": "bus_station",
+      "tap": "Walk to the bus stop",
+      "caption": "Past the res gate and the vendors setting up. Someone says \"Morning, sisi\" and means it.",
+      "move": "Character walks the path to the bus stop, vendor umbrellas open, a dog trots across the road.",
+      "sound": "Vendors, a kettle somewhere, birds."
+    },
+    {
+      "id": "wait_bus",
+      "place": "bus_station",
+      "tap": "Wait for the bus",
+      "caption": "08:05. A small queue. Everyone checks their phone and pretends not to look at the road.",
+      "move": "Queue shuffles, people lean to look down the road, shadow of the shelter slides slowly across the ground."
+    },
+    {
+      "id": "bus_arrives",
+      "place": "bus_station",
+      "tap": "Climb on",
+      "caption": "Here it comes, wheezing like it has done this a thousand times. It has.",
+      "move": "Bus rolls in from the left, brakes hiss, doors fold open, queue surges forward.",
+      "sound": "Brake hiss, door chime."
+    },
+    {
+      "id": "bus_ride",
+      "place": "bus_station",
+      "tap": "Find a seat",
+      "caption": "Window seat, bag on your knees, 08:20. The campus slides past the glass.",
+      "move": "Bus pulls away, scenery scrolls past the window, a student dozes with their head on the glass.",
+      "sound": "Engine hum, a speaker playing amapiano from three seats back."
+    },
+    {
+      "id": "bus_late",
+      "place": "bus_station",
+      "outcome": "late",
+      "caption": "The bus coughs and stops at a red robot. You watch 08:45 go by.",
+      "move": "Bus stalls in traffic, clock ticks forward on screen, character taps their foot.",
+      "sound": "Hooters."
+    },
+    {
+      "id": "arrive_campus",
+      "place": "quad",
+      "outcome": "on_time",
+      "caption": "08:42. Campus. You have eighteen minutes and you are, miraculously, early.",
+      "move": "Bus doors open, character steps off, camera tilts up to the buildings, students stream toward the lecture venues.",
+      "sound": "Crowd, bell."
+    },
+    {
+      "id": "arrive_late",
+      "place": "quad",
+      "outcome": "late",
+      "caption": "09:04. You slide into the back row as the lecturer looks up. Nobody says a word. Everybody noticed.",
+      "move": "Character runs the last stretch, door swings, heads turn together."
+    }
+  ],
+  "tap_feedback": [
+    "Footsteps trail behind you for a second.",
+    "A little puff of steam.",
+    "Somebody laughs two rooms away.",
+    "Your bag bounces against your back.",
+    "A taxi hoots like it has an opinion."
+  ]
+}
