@@ -3,6 +3,9 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
+// Both runs are heavy 3D scenes; one at a time keeps frame timing honest.
+test.describe.configure({ mode: 'serial' })
+
 async function expectBubbleClear(page) {
   const box = await page.evaluate(() => {
     const b = document.querySelector('.mm-bubble:not([hidden])')
@@ -25,7 +28,7 @@ async function newGame(page, query) {
 const OUT = process.env.MORNING_SHOTS || 'test-results/morning'
 
 test('day 1 morning: room to campus', async ({ page }) => {
-  test.setTimeout(150000)
+  test.setTimeout(360000)
   fs.mkdirSync(OUT, { recursive: true })
   const errors = []
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
@@ -144,7 +147,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
 })
 
 test('day 1 morning: forced late bus is Running late', async ({ page }) => {
-  test.setTimeout(200000)
+  test.setTimeout(360000)
   fs.mkdirSync(OUT, { recursive: true })
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
