@@ -130,6 +130,8 @@ export function hud(district, run, opts = {}) {
     <div class="g-row">
       <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
       <span class="g-clock">${formatClock(run.minutes)}</span>
+      <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>
+      <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
       <button class="g-gear" type="button" data-act="gear" aria-label="Menu">\u2699\uFE0F</button>
     </div>
     <div class="g-stats">${STATS.map(([k, w, c]) => bar(k, w, c, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100))).join('')}</div>
@@ -182,7 +184,11 @@ function sheetHtml(district, run, placeId) {
   const rows = items.map(({ action, state }) => {
     const mins = action.slots > 0 ? (district.meta.slotMinutes[run.phase] || 30) * action.slots : 10
     const cost = [action.slots ? `${action.slots} slot${action.slots > 1 ? 's' : ''}` : 'free', `${mins} min`].join(' \u00b7 ')
-    const warn = ''
+    // Play-through fix: show what a slot action leaves for the rest of the day.
+    const after = run.slotsLeft - (action.slots || 0)
+    const warn = action.slots > 0 && !state.disabled && run.phase !== 'night'
+      ? `<span class="g-left${after <= 1 ? ' low' : ''}">${after <= 0 ? 'Uses your last slot \u2014 the day ends' : after === 1 ? 'Leaves 1 slot (for Sleep)' : `Leaves ${after} of ${run.slotsTotal} slots today`}</span>`
+      : ''
     return `<button class="g-act" type="button" data-act="do" data-id="${action.id}" data-place="${placeId}"${state.disabled ? ' disabled' : ''}>
       <span class="g-act-top"><strong>${esc(action.name)}</strong><small>${cost}</small></span>
       <span class="g-act-fx">${effectChips(action.deltas)}</span>
@@ -214,12 +220,13 @@ function ctaBar(district, run) {
   const next = nextPhase(district, run)
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
-  if (run.phase === 'night') line = 'Night. Go home and sleep to end the day.'
+  const atHome = hereOf(district, run) === sleepPlace
+  if (run.phase === 'night') line = atHome ? 'Night. You are home \u2014 tap Sleep to end the day.' : 'Night. Go home and sleep to end the day.'
   else if (run.slotsLeft === 1) line = `1 slot left \u2014 keep it for Sleep at 21:00.`
   else if (glowing.length) line = `Golden glow = open now. Try ${glowing.slice(0, 2).map(placeName).join(' or ')}.`
   else line = 'Nothing open now.'
   if (run.phase === 'night') {
-    return `<div class="g-cta"><p>${esc(line)}</p><button type="button" class="g-go" data-act="place-open" data-id="${sleepPlace}">Go home</button></div>`
+    return `<div class="g-cta"><p>${esc(line)}</p><button type="button" class="g-go" data-act="place-open" data-id="${sleepPlace}">${atHome ? 'Sleep' : 'Go home'}</button></div>`
   }
   const skipLabel = next ? `Skip to ${PHASE_SHORT[next.id]} ${next.start}` : 'End day'
   const jump = run.slotsLeft === 1 ? '<button type="button" class="g-go" data-act="to-night">Skip to Night</button>' : ''
@@ -261,7 +268,7 @@ function summaryCard(state) {
     <h2>${s.slept ? 'Lights out' : "That's the day"}</h2>
     <p>${esc(line)}</p>
     <ul class="g-delta">${summaryRows(state.morning, run.stats)}</ul>
-    <div class="g-two"><button type="button" class="g-go ghost" data-act="nav" data-go="share">Share my day</button><button type="button" class="g-go" data-act="next">Start day ${(s.day || run.day) + 1}</button></div>
+    <div class="g-two"><button type="button" class="g-go ghost" data-act="share-day">\u{1F4E4} Share my day</button><button type="button" class="g-go" data-act="next">Start day ${(s.day || run.day) + 1}</button></div>
   </aside>`
 }
 
@@ -352,7 +359,8 @@ function milestoneCard(state, card) {
     <p class="g-kind">\u2B50 Milestone</p>
     <h2>${esc(card.title)}</h2>
     <p>${esc(card.text)}</p>
-    <div class="g-two"><button type="button" class="g-go ghost" data-act="nav" data-go="milestones">All milestones</button><button type="button" class="g-go" data-act="dismiss">Nice</button></div>
+    <div class="g-two"><button type="button" class="g-go ghost" data-act="share-milestone" data-id="${esc(card.id)}">\u{1F4E4} Share</button><button type="button" class="g-go" data-act="dismiss">Nice</button></div>
+    <button type="button" class="g-link" data-act="nav" data-go="milestones">All milestones</button>
   </aside>`
 }
 
