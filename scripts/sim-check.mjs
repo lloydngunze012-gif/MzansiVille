@@ -428,4 +428,44 @@ check('a campus day changes the same stats as the action list', () => {
   assert.equal(run.phase, 'wake')
 })
 
+function sleepThrough(run) {
+  run.phase = 'night'
+  run.place = 'res_o'
+  run.slotsLeft = 1
+  assert.equal(applyAction(district, run, 'sleep', rng).ok, true)
+}
+const rng = () => 0.5
+
+check('slept hungry gives a card next morning', () => {
+  const run = createRun(district, character)
+  run.queue = []
+  run.stats.hunger = 5
+  sleepThrough(run)
+  beginNextDay(district, run, new Date())
+  assert.ok(run.queue.some((card) => card.tone === 'hungry'))
+})
+
+check('jobs unlock card on day 3', () => {
+  const run = createRun(district, character)
+  run.queue = []
+  run.day = 2
+  sleepThrough(run)
+  beginNextDay(district, run, new Date())
+  assert.equal(run.day, 3)
+  assert.ok(run.queue.some((card) => card.id === 'unlock-jobs'))
+})
+
+check('no spot test in the first days', () => {
+  const run = createRun(district, character)
+  assert.ok(!run.spotTest)
+})
+
+check('low grades end the run', () => {
+  const run = createRun(district, character)
+  run.stats.grades = 1
+  run.lowGradeDays = district.meta.day.lowGradesDays - 1
+  sleepThrough(run)
+  assert.equal(run.mode, 'over')
+})
+
 console.log(`${passed} checks passed`)
