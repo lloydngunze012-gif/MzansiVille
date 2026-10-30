@@ -4,6 +4,8 @@ import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
 import { createAvatar, gesture, lookOf, poseAvatar } from './avatar3d.js'
 import { createActivities, SCRIPTS } from './activities.js'
+import { genderOf, roommateOf } from '../avatar.js'
+import { nameOf } from './cast.js'
 import { createCameraRig } from './camera.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
@@ -231,11 +233,13 @@ function ensureRenderer() {
     cameraRig: rig,
     raycaster,
     worldOn: () => visible && host.dataset.on === '1',
-    blocked: () => mapUi.isOpen() || actionLeft > 0 || acting || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
+    blocked: () => mapUi.isOpen() || actionLeft > 0 || acting || Boolean(talk) || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
     pickables: () => ({
       buildings: campus ? [campus.buildings] : [],
       ground: campus ? [campus.ground] : [],
+      people: everyone(),
     }),
+    onPerson: (avatar) => startTalk(avatar),
     onGround: (x, z) => walkTo(x, z),
     onBuilding: (id) => approach(id),
     onStick: (x, z) => {
@@ -384,6 +388,183 @@ function follow(dt) {
   route = step.route
   if (dx || dz) player.rotation.y = Math.atan2(dx, dz)
   return true
+}
+
+// ---------- Talking to people ----------
+// Everyone tappable: the crowd, the places' own people (vendor, campaigners...).
+function everyone() {
+  if (!campus) return []
+  return (crowd?.people.map((p) => p.avatar) || []).concat(campus.dressing?.statics || [])
+}
+
+// A close camera shot (talking, activities) overrides the follow camera.
+let closeShot = null
+let shotBlend = 0
+const closeLook = new THREE.Vector3()
+// A two-shot from the side: both people in profile, in the top half of a portrait
+// screen (the conversation card covers the bottom). The distance comes from the
+// screen's shape (portrait phones see a narrow slice), and the camera takes the
+// side with a clear view (no table or stall in front).
+const shotRay = new THREE.Raycaster()
+// Is this mesh part of one of the two people talking? (Their own bodies don't block.)
+function isPart(object, ...people) {
+  let node = object
+  while (node) {
+    if (node === player || (talk && node === talk.avatar)) return true
+    node = node.parent
+  }
+  void people
+  return false
+}
+function overShoulder(from, to) {
+  // High three-quarter view from behind the player (about 50 degrees down): it looks
+  // over tables and counters, and both people fit across a narrow portrait screen.
+  const mx = (from.x + to.x) / 2
+  const mz = (from.z + to.z) / 2
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const d = Math.hypot(dx, dz) || 1
+  const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+  const halfW = halfH * camera.aspect
+  const dist = Math.max(5, Math.min(12, (d / 2 + 1.4) / halfW))
+  let best = null
+  // Try a few heights and sides; take the first with a clear view of them
+  // (an awning or a table can hide someone from high up).
+  const tries = []
+  for (const deg of [34, 22, 50]) for (const side of [0.5, -0.5, 1.1, -1.1]) tries.push([THREE.MathUtils.degToRad(deg), side])
+  for (const [tilt, side] of tries) {
+    const ax = -dx / d
+    const az = -dz / d
+    const rx = Math.cos(side) * ax - Math.sin(side) * az
+    const rz = Math.sin(side) * ax + Math.cos(side) * az
+    const pos = new THREE.Vector3(mx + rx * dist * Math.cos(tilt), 1 + dist * Math.sin(tilt), mz + rz * dist * Math.cos(tilt))
+    const mid = new THREE.Vector3(mx, 1.1, mz)
+    const dir = pos.clone().sub(mid)
+    shotRay.set(mid, dir.clone().normalize())
+    shotRay.far = dir.length()
+    const hits = shotRay.intersectObjects(crowd ? [campus.group, crowd.group] : [campus.group], true)
+    const blocked = hits.some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && (hit.object.visible || hit.object.name === 'hit') && !isPart(hit.object))
+    if (!blocked) { best = pos; break }
+    if (!best) best = pos
+  }
+  // Aim at them, then tilt the view down so they sit about 30% from the top of the
+  // screen (NDC y = +0.4): the conversation card covers the bottom half.
+  const mid = new THREE.Vector3(mx, 0.9, mz)
+  const dir = mid.clone().sub(best).normalize()
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize()
+  const tiltDown = Math.atan(0.4 * halfH)
+  dir.applyAxisAngle(right, -tiltDown)
+  return { pos: best, look: best.clone().addScaledVector(dir, 10) }
+}
+
+let talk = null
+function startTalk(avatar) {
+  if (!player || talk || acting || actionLeft > 0) return
+  const id = avatar.userData.personId
+  const walker = crowd?.people.find((p) => p.avatar === avatar)
+  if (walker) walker.talking = true
+  talk = { avatar, id, walker }
+  host.dataset.talking = id
+  // Where to stand: in front of someone who stays put (seated, behind a counter),
+  // otherwise a step away on your side.
+  const fixed = !walker || walker.sitting
+  const fwd = { x: Math.sin(avatar.rotation.y), z: Math.cos(avatar.rotation.y) }
+  let tx
+  let tz
+  if (fixed) {
+    // The place's own people may be behind a counter or table: stand a bit further out.
+    const reach = walker ? 1.35 : 2.2
+    tx = avatar.position.x + fwd.x * reach
+    tz = avatar.position.z + fwd.z * reach
+  } else {
+    const dx = player.position.x - avatar.position.x
+    const dz = player.position.z - avatar.position.z
+    const d = Math.hypot(dx, dz) || 1
+    tx = avatar.position.x + (dx / d) * 1.3
+    tz = avatar.position.z + (dz / d) * 1.3
+  }
+  const cell = nearestOpen(campus.grid, { x: tx, z: tz })
+  if (cell) { const c = cellCenter(cell.c, cell.r); tx = c.x; tz = c.z }
+  let opened = false
+  const open = () => {
+    if (!talk || opened) return
+    opened = true
+    player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
+    if (!fixed) avatar.rotation.y = Math.atan2(player.position.x - avatar.position.x, player.position.z - avatar.position.z)
+    closeShot = overShoulder(player.position, avatar.position)
+    gesture(avatar, 'interact-right')
+    window.dispatchEvent(new CustomEvent('mzansi-talk', { detail: { id } }))
+  }
+  if (Math.hypot(tx - player.position.x, tz - player.position.z) < 0.5) open()
+  else {
+    walkTo(tx, tz, () => { snapTo = { x: tx, z: tz }; setTimeout(open, 250) })
+    if (!route.length) open()
+    setTimeout(() => { if (talk && !opened) { route = []; arrive = null; open() } }, 5000)
+  }
+}
+// Tests: where someone is on screen, so a test can tap them like a player would.
+window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
+window.mzansiPersonOnScreen = (id) => {
+  const avatar = everyone().find((a) => a.userData.personId === id)
+  if (!avatar || !camera) return null
+  const p = new THREE.Vector3(avatar.position.x, avatar.position.y + 1.55, avatar.position.z).project(camera)
+  const rect = renderer.domElement.getBoundingClientRect()
+  return { x: rect.left + (p.x * 0.5 + 0.5) * rect.width, y: rect.top + (-p.y * 0.5 + 0.5) * rect.height, behind: p.z > 1 }
+}
+window.addEventListener('mzansi-talk-react', (event) => {
+  if (!talk) return
+  const tone = event.detail?.tone
+  gesture(talk.avatar, tone === 'bad' ? 'emote-no' : 'emote-yes')
+  if (tone === 'good') setTimeout(() => player && gesture(player, 'emote-yes'), 500)
+})
+window.addEventListener('mzansi-talk-end', () => {
+  if (!talk) return
+  if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
+  // Back to the follow camera, swung round behind you so they stay in view.
+  if (player) rig.turnBehind(player.rotation.y)
+  talk = null
+  closeShot = null
+  delete host.dataset.talking
+})
+
+// Name tags over the people near you (so you can see who to tap).
+const TAG_NEAR = 10
+function nameTag(avatar) {
+  if (avatar.userData.tag !== undefined) return avatar.userData.tag
+  const name = nameOf(avatar.userData.personId)
+  if (!name) { avatar.userData.tag = null; return null }
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 64
+  const ctx = canvas.getContext('2d')
+  ctx.font = 'bold 34px sans-serif'
+  const w = Math.min(248, ctx.measureText(name).width + 36)
+  ctx.fillStyle = 'rgba(34,20,59,0.85)'
+  ctx.beginPath()
+  ctx.roundRect((256 - w) / 2, 8, w, 48, 22)
+  ctx.fill()
+  ctx.fillStyle = '#fff6e6'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(name, 128, 33)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
+  sprite.scale.set(1.6, 0.4, 1)
+  sprite.position.y = 2.05
+  sprite.name = 'name-tag'
+  sprite.raycast = () => {}
+  avatar.add(sprite)
+  avatar.userData.tag = sprite
+  return sprite
+}
+function updateTags() {
+  for (const avatar of everyone()) {
+    const d = Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
+    const want = d < TAG_NEAR && !acting && !talk
+    const tag = want ? nameTag(avatar) : avatar.userData.tag
+    if (tag) tag.visible = want
+  }
 }
 
 // Activities you can see (activities.js): at a dressed place the student plays
@@ -559,13 +740,13 @@ function rebuild(district, homeId) {
   crowd?.dispose()
   campus = createCampus(district, homeId)
   scene.add(campus.group)
-  crowd = createCrowd(scene, campus)
-  builtId = `${district.meta.id}|${homeId}`
+  crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase() })
+  builtId = `${district.meta.id}|${homeId}|${genderOf(currentRun?.character?.avatar)}`
 }
 
 function respawn(district, run) {
   const homeId = homePlaceId(district, run.character?.residence)
-  if (builtId !== `${district.meta.id}|${homeId}`) rebuild(district, homeId)
+  if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}`) rebuild(district, homeId)
   if (player) scene.remove(player)
   player = createAvatar(run.character?.avatar)
   host.dataset.look = JSON.stringify(player.userData.look)
@@ -745,7 +926,19 @@ function countSpots() {
 window.addEventListener('mzansi-walk-to', (event) => {
   const { place, spot } = event.detail || {}
   const target = campus?.dressing?.spots?.[place]?.find((s) => s.id === spot)
-  if (target) { walkTo(target.x, target.z); host.dataset.walkingTo = `${place}:${spot}` }
+  if (!target) return
+  host.dataset.walkingTo = `${place}:${spot}`
+  // On arrival, face whoever (or whatever) the spot is about, camera behind you.
+  walkTo(target.x, target.z, () => {
+    // The place's own people (vendor, campaigners, performer) first, not someone passing by.
+    const near = (campus.dressing?.statics || [])
+      .map((a) => ({ a, d: Math.hypot(a.position.x - target.x, a.position.z - target.z) }))
+      .filter((o) => o.d < 4.5 && o.d > 0.6)
+      .sort((m, n) => m.d - n.d)[0]
+    const focus = near ? near.a.position : { x: target.fx ?? 0, z: target.fz ?? 0 }
+    player.rotation.y = Math.atan2(focus.x - player.position.x, focus.z - player.position.z)
+    rig.turnBehind(player.rotation.y)
+  })
 })
 
 // The Quad's open-mic speakers: the groove, louder the closer you are to the stage.
@@ -810,13 +1003,23 @@ function tick(now) {
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
-    if (!acting) crowd?.pushOut(player.position)
+    if (!acting && !talk) crowd?.pushOut(player.position)
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
+    if (closeShot) {
+      // Ease from wherever the camera was into the close shot.
+      shotBlend = Math.min(1, shotBlend + dt * 2.2)
+      camera.position.lerp(closeShot.pos, shotBlend)
+      closeLook.lerp(closeShot.look, shotBlend)
+      camera.lookAt(closeLook)
+    } else {
+      shotBlend = 0
+      closeLook.copy(player.position)
+    }
     // Eye view looks out of the player's eyes: hide their own head and hair.
     const head = player.getObjectByName('head-mesh')
     if (head) head.visible = rig.mode !== 'eye'
@@ -830,6 +1033,7 @@ function tick(now) {
       if (glow?.visible) glow.scale.setScalar(1 + Math.sin(clock * 5) * 0.18)
     }
     updateGuide()
+    updateTags()
     promptDoor()
     const floater = host.querySelector('.floater')
     if (floater && !floater.hidden) pin(floater, player.position.x, 2.4, player.position.z)
@@ -881,7 +1085,7 @@ export function showCampus(district, run) {
   currentRun = run
   const homeId = homePlaceId(district, run.character?.residence)
   const key = spawnKey(district, run)
-  if (builtId !== `${district.meta.id}|${homeId}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))) respawn(district, run)
+  if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))) respawn(district, run)
   refreshMarkers()
   const shot = new URLSearchParams(location.search).get('shot') || ''
   if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))

@@ -1,0 +1,446 @@
+{
+  "note": "Everyone you can talk to. chats[0] is the first meeting, chats[1] the second (warm or cold depending on how the last chat went), chats[2] is every chat after that (lines rotate). Each reply: social (your Social stat), close (closeness with this person, 0-100), answer (what they say back). {you} is the player's name. Archetypes give the extra students a voice; their names come from extra_names.",
+  "levels": [
+    { "min": 0, "label": "Stranger" },
+    { "min": 15, "label": "Know them" },
+    { "min": 40, "label": "Friend" },
+    { "min": 70, "label": "Close friend" }
+  ],
+  "people": {
+    "zanele": {
+      "name": "Zanele", "role": "Your roommate", "bio": "O Block's loudest laugh. Borrows everything, returns it with interest.",
+      "chats": [
+        { "line": "Roomie! Campus is huge, hey? I already got lost twice. Proudly.", "replies": [
+          { "text": "Let's get lost together.", "social": 2, "close": 10, "answer": "Deal. You lead, I complain." },
+          { "text": "I have a map, relax.", "social": 1, "close": 4, "answer": "A map? Okay, Google Maps." },
+          { "text": "Can't talk, I'm busy.", "social": -1, "close": -4, "answer": "Ja ja, important person. Later then." }
+        ] },
+        { "warm": "There you are! I told three people about you already. All good things. Mostly.", "cold": "Oh, it's you. Still busy?", "replies": [
+          { "text": "Tell me the bad things too.", "social": 2, "close": 8, "answer": "You snore. Softly. Like a kettle." },
+          { "text": "Sorry about earlier.", "social": 1, "close": 6, "answer": "Forgiven. You owe me one (1) vetkoek." },
+          { "text": "Just passing.", "social": 0, "close": 1, "answer": "Pass faster, the queue is growing." }
+        ] },
+        { "lines": ["Did you eat? You look like you didn't eat.", "Res party Friday. You're coming. That wasn't a question.", "I'm failing stats but thriving socially. Balance."], "replies": [
+          { "text": "Walk with me?", "social": 2, "close": 5, "answer": "Always. Slowly though, these shoes are a lie." },
+          { "text": "Ha, same.", "social": 1, "close": 3, "answer": "This is why we're roommates." },
+          { "text": "See you at res.", "social": 0, "close": 1, "answer": "Don't eat my bread." }
+        ] }
+      ]
+    },
+    "sipho": {
+      "name": "Sipho", "role": "Your roommate", "bio": "Has a plan for everything except mornings. Phone always on 12%.",
+      "chats": [
+        { "line": "Ayy, roomie. You found the Quad. Respect. I'm still looking for the library.", "replies": [
+          { "text": "It's that way. I'll show you.", "social": 2, "close": 10, "answer": "Legend. I'll buy you a cooldrink. Eventually." },
+          { "text": "Ask security.", "social": 1, "close": 3, "answer": "Security laughed at me. Twice." },
+          { "text": "Not now, bra.", "social": -1, "close": -4, "answer": "Cool cool. I'll just wander then." }
+        ] },
+        { "warm": "My guy! I'm telling everyone my roommate is sharp.", "cold": "Ah, you. Still too busy for your roomie?", "replies": [
+          { "text": "Who's everyone?", "social": 2, "close": 8, "answer": "The guy at the tuck shop. He's everyone." },
+          { "text": "My bad about before.", "social": 1, "close": 6, "answer": "No stress. Charge my phone and we're square." },
+          { "text": "Later, Sipho.", "social": 0, "close": 1, "answer": "Later later." }
+        ] },
+        { "lines": ["You got a charger? Asking for me.", "Soccer at the courtyard tonight. You in?", "The caf ran out of chips. I need a moment."], "replies": [
+          { "text": "I'm in.", "social": 2, "close": 5, "answer": "Lekker. Bring your A-game. Or any game." },
+          { "text": "Eish, tough.", "social": 1, "close": 3, "answer": "Life is hard, hey." },
+          { "text": "Catch you later.", "social": 0, "close": 1, "answer": "Sharp sharp." }
+        ] }
+      ]
+    },
+    "lethabo": {
+      "name": "Lethabo", "role": "Open-mic poet", "bio": "Third year. Writes poems about taxis and heartbreak, usually both.",
+      "chats": [
+        { "line": "You were listening? Most people just eat their vetkoek and leave.", "replies": [
+          { "text": "That line about the taxi got me.", "social": 3, "close": 12, "answer": "Ha! Based on a true story. A very long ride." },
+          { "text": "It was okay.", "social": 0, "close": 2, "answer": "Okay is honest. I'll take honest." },
+          { "text": "I was mostly eating.", "social": -1, "close": -2, "answer": "Fair. Vetkoek is also poetry." }
+        ] },
+        { "warm": "My favourite listener! Come Friday, I'm doing a new one.", "cold": "The vetkoek critic returns.", "replies": [
+          { "text": "I'll be front row.", "social": 3, "close": 8, "answer": "Then I can't mess up. No pressure on me." },
+          { "text": "Could I try the mic?", "social": 2, "close": 6, "answer": "Yes! Sign up at the stage. Bring courage." },
+          { "text": "Maybe.", "social": 0, "close": 1, "answer": "Maybe is a start." }
+        ] },
+        { "lines": ["Writing a poem about load shedding. It's dark. Literally.", "Open mic is Friday. You signed up yet?", "Someone booed me once. I wrote a poem about him. He cried."], "replies": [
+          { "text": "Read me a line.", "social": 2, "close": 5, "answer": "“The lights went out, but the gossip stayed on.”" },
+          { "text": "I'll come Friday.", "social": 1, "close": 3, "answer": "Bring a friend. Or three." },
+          { "text": "Keep writing.", "social": 0, "close": 1, "answer": "Always." }
+        ] }
+      ]
+    },
+    "kea": {
+      "name": "Kea", "role": "Accounting student", "bio": "Tracks every rand in a spreadsheet. Knows where the cheapest food on campus is.",
+      "chats": [
+        { "line": "Pro tip: Mam' Gugu's vetkoek is R10. The caf charges R12 for the same thing.", "replies": [
+          { "text": "You're saving me money already.", "social": 2, "close": 10, "answer": "That's my love language. Budgets." },
+          { "text": "R2 isn't much.", "social": 0, "close": 1, "answer": "R2 a day is R60 a month. Think about it." },
+          { "text": "I don't care about money.", "social": -1, "close": -3, "answer": "Wait till NSFAS is late. You will." }
+        ] },
+        { "warm": "My budget buddy! I made you a spreadsheet. Don't laugh.", "cold": "Still don't care about money?", "replies": [
+          { "text": "Show me the spreadsheet!", "social": 2, "close": 8, "answer": "Column F is your food. It's... a lot of vetkoek." },
+          { "text": "Okay, teach me.", "social": 2, "close": 6, "answer": "Lesson one: the tuck shop is a trap." },
+          { "text": "No thanks.", "social": 0, "close": 0, "answer": "Your wallet, your funeral." }
+        ] },
+        { "lines": ["Data bundles are cheaper on Tuesdays. Write it down.", "I found a printer that's R1 a page. Tell nobody.", "If you need to borrow money, don't. But if you must, ask me."], "replies": [
+          { "text": "You're a genius.", "social": 2, "close": 5, "answer": "Finally, someone sees it." },
+          { "text": "Noted.", "social": 1, "close": 3, "answer": "Good. I'll check." },
+          { "text": "See you.", "social": 0, "close": 1, "answer": "Spend wisely." }
+        ] }
+      ]
+    },
+    "amir": {
+      "name": "Amir", "role": "Engineering student", "bio": "Builds things out of everything. Currently building a phone charger out of a lemon.",
+      "chats": [
+        { "line": "Do you know if lemons count as a power source? Asking for an experiment.", "replies": [
+          { "text": "Show me the experiment.", "social": 2, "close": 10, "answer": "It made one LED glow for two seconds. Science!" },
+          { "text": "Buy a charger.", "social": 0, "close": 1, "answer": "Where's the fun in that?" },
+          { "text": "That's weird.", "social": -1, "close": -2, "answer": "Weird is how inventions start." }
+        ] },
+        { "warm": "My lab assistant! The lemon is now three lemons.", "cold": "Ah, the one who thinks I'm weird.", "replies": [
+          { "text": "Three lemons! Progress.", "social": 2, "close": 8, "answer": "Next week: a whole bag of oranges." },
+          { "text": "Sorry, it is cool.", "social": 1, "close": 6, "answer": "Apology accepted. Hold this wire." },
+          { "text": "Okay.", "social": 0, "close": 0, "answer": "Okay." }
+        ] },
+        { "lines": ["I fixed the res kettle. It only sparks a little now.", "Engineering is just Lego with tears.", "Need anything fixed? I work for vetkoek."], "replies": [
+          { "text": "Fix my headphones?", "social": 2, "close": 5, "answer": "Give them. One vetkoek. Fair price." },
+          { "text": "Ha, true.", "social": 1, "close": 3, "answer": "Mostly tears, honestly." },
+          { "text": "Later!", "social": 0, "close": 1, "answer": "Stay charged." }
+        ] }
+      ]
+    },
+    "naledi": {
+      "name": "Naledi", "role": "Law student", "bio": "Argues for fun. Wins. Takes the best seat at the caf terrace every day.",
+      "chats": [
+        { "line": "This is my seat. Legally I've been here long enough to own it.", "replies": [
+          { "text": "Can I sit next to the owner?", "social": 2, "close": 10, "answer": "Granted. Pending good behaviour." },
+          { "text": "That's not how law works.", "social": 1, "close": 6, "answer": "Ooh, you argue. I like you already." },
+          { "text": "Whatever.", "social": -1, "close": -3, "answer": "Objection noted. Overruled." }
+        ] },
+        { "warm": "My favourite witness! Sit, I'm reading a case about a stolen goat.", "cold": "Back to argue again?", "replies": [
+          { "text": "Tell me about the goat.", "social": 2, "close": 8, "answer": "The goat won. Long story." },
+          { "text": "Truce?", "social": 1, "close": 6, "answer": "Truce. Terms: you buy the rooibos." },
+          { "text": "Just walking.", "social": 0, "close": 0, "answer": "Walk on, counsel." }
+        ] },
+        { "lines": ["Moot court is Thursday. I'll destroy them politely.", "Rule one of res: never argue with the cleaner. She's always right.", "You'd be a good lawyer. You hesitate before you lie."], "replies": [
+          { "text": "Good luck Thursday.", "social": 2, "close": 5, "answer": "Luck is for people without notes." },
+          { "text": "Ha, thanks?", "social": 1, "close": 3, "answer": "It's a compliment. Mostly." },
+          { "text": "Bye, counsel.", "social": 0, "close": 1, "answer": "Court adjourned." }
+        ] }
+      ]
+    },
+    "luke": {
+      "name": "Luke", "role": "Sports science student", "bio": "From Pietermaritzburg. Eats four meals before lunch. Captain of nothing yet.",
+      "chats": [
+        { "line": "Bro, have you tried the pap and wors here? Life-changing. Second plate.", "replies": [
+          { "text": "Join you for a third?", "social": 2, "close": 10, "answer": "Now we're talking. You're my gym buddy now." },
+          { "text": "That's a lot of food.", "social": 0, "close": 2, "answer": "I burn it off. Running. Mostly to the caf." },
+          { "text": "I'm not hungry.", "social": -1, "close": -2, "answer": "Not hungry? Are you okay?" }
+        ] },
+        { "warm": "Gym buddy! Touch rugby at the Quad later, you in?", "cold": "Still not hungry?", "replies": [
+          { "text": "I'm in!", "social": 3, "close": 8, "answer": "Lekker. I'll go easy. Lie." },
+          { "text": "Okay, I'm hungry now.", "social": 1, "close": 6, "answer": "There it is. Pap waits for nobody." },
+          { "text": "Maybe later.", "social": 0, "close": 0, "answer": "Later then." }
+        ] },
+        { "lines": ["Leg day. I can't feel my legs. Worth it.", "Trials for the varsity team next week. Pray for me.", "Protein is a lifestyle."], "replies": [
+          { "text": "You'll make the team.", "social": 2, "close": 5, "answer": "From your mouth to the coach's ears." },
+          { "text": "Rest, bro.", "social": 1, "close": 3, "answer": "Rest is for Sundays." },
+          { "text": "Later!", "social": 0, "close": 1, "answer": "Stay hydrated!" }
+        ] }
+      ]
+    },
+    "thandi": {
+      "name": "Thandi", "role": "Psychology student", "bio": "Notices everything. Asks how you are and actually waits for the answer.",
+      "chats": [
+        { "line": "You look like you're settling in. Or pretending well. Which one?", "replies": [
+          { "text": "Honestly? Pretending.", "social": 3, "close": 12, "answer": "Same. Pretending together is easier." },
+          { "text": "Settling in, thanks.", "social": 1, "close": 4, "answer": "Good. The first week is the strangest." },
+          { "text": "Are you analysing me?", "social": 0, "close": 1, "answer": "Always. Occupational hazard." }
+        ] },
+        { "warm": "Hey you. How are you really doing today?", "cold": "Still pretending?", "replies": [
+          { "text": "Better, because of you.", "social": 3, "close": 8, "answer": "That's the nicest thing I heard all week." },
+          { "text": "Tired, but okay.", "social": 2, "close": 6, "answer": "Okay is enough. Sleep tonight, hey?" },
+          { "text": "Fine.", "social": 0, "close": 0, "answer": "Fine is a full sentence. I'll allow it." }
+        ] },
+        { "lines": ["Did you sleep? Your eyes say no.", "Exams are scary, but you're not alone in it.", "I'm starting a study group. You're in, obviously."], "replies": [
+          { "text": "Count me in.", "social": 2, "close": 5, "answer": "Yay. Bring snacks, I bring notes." },
+          { "text": "Thanks for asking.", "social": 1, "close": 4, "answer": "Always." },
+          { "text": "See you.", "social": 0, "close": 1, "answer": "Look after you." }
+        ] }
+      ]
+    },
+    "jordan": {
+      "name": "Jordan", "role": "Drama student", "bio": "Everything is a performance. Even ordering chips.",
+      "chats": [
+        { "line": "*dramatically* Is this the queue for chips, or the queue for destiny?", "replies": [
+          { "text": "*equally dramatic* Destiny. With tomato sauce.", "social": 3, "close": 12, "answer": "Finally! A worthy scene partner!" },
+          { "text": "It's for chips.", "social": 0, "close": 2, "answer": "Ugh. Realism. Fine." },
+          { "text": "Please stop.", "social": -1, "close": -3, "answer": "*exits, wounded*" }
+        ] },
+        { "warm": "My scene partner returns! Audition with me tomorrow?", "cold": "The critic is back.", "replies": [
+          { "text": "Yes! What's the play?", "social": 3, "close": 8, "answer": "Romeo and Juliet. In a taxi. Experimental." },
+          { "text": "Okay, I'll play along.", "social": 2, "close": 6, "answer": "That's all I ask. Brava!" },
+          { "text": "No thanks.", "social": 0, "close": 0, "answer": "*sighs in Shakespeare*" }
+        ] },
+        { "lines": ["I was born for the stage. Also for the caf.", "Rehearsal ran late. I'm emotionally exhausted. Physically fine.", "Come to the show Friday. Bring tissues."], "replies": [
+          { "text": "I'll be there!", "social": 2, "close": 5, "answer": "Front row. Clap loudly." },
+          { "text": "Break a leg.", "social": 1, "close": 3, "answer": "Not literally, please." },
+          { "text": "Bye, star.", "social": 0, "close": 1, "answer": "*bows*" }
+        ] }
+      ]
+    },
+    "priya": {
+      "name": "Priya", "role": "Medicine student", "bio": "Sleeps four hours, knows every bone. Runs on rooibos and panic.",
+      "chats": [
+        { "line": "Sorry, I'm memorising the bones of the hand. There are twenty-seven. Twenty-seven!", "replies": [
+          { "text": "Quiz me while we wait.", "social": 3, "close": 12, "answer": "Scaphoid! You're a lifesaver." },
+          { "text": "That's a lot of bones.", "social": 1, "close": 3, "answer": "And that's just one hand." },
+          { "text": "I'll leave you to it.", "social": 0, "close": 0, "answer": "Thank you. Twenty-eight. No, twenty-seven." }
+        ] },
+        { "warm": "My study angel! I passed the bones quiz because of you.", "cold": "Oh hi. Sorry, studying again.", "replies": [
+          { "text": "Celebrate with rooibos?", "social": 3, "close": 8, "answer": "Yes! Ten minutes. Then I study again." },
+          { "text": "Need help with the next one?", "social": 2, "close": 6, "answer": "Muscles next. There are hundreds." },
+          { "text": "Good luck.", "social": 0, "close": 1, "answer": "Thanks." }
+        ] },
+        { "lines": ["I dream in Latin now. It's not fun.", "Did you know laughing burns calories? Make me laugh.", "Hospital rounds start next year. I'm terrified."], "replies": [
+          { "text": "You'll be a great doctor.", "social": 2, "close": 5, "answer": "Tell my anxiety that." },
+          { "text": "Take a break, Priya.", "social": 1, "close": 4, "answer": "A break? What's that?" },
+          { "text": "See you.", "social": 0, "close": 1, "answer": "Wash your hands." }
+        ] }
+      ]
+    },
+    "noah": {
+      "name": "Noah", "role": "Computer science student", "bio": "Quiet, funny once you know him. Fixes everyone's laptop, never his own.",
+      "chats": [
+        { "line": "...Hi. Sorry. I don't really talk before coffee.", "replies": [
+          { "text": "Same. Coffee first, words later.", "social": 2, "close": 10, "answer": "Finally, someone gets it." },
+          { "text": "What are you working on?", "social": 1, "close": 6, "answer": "A game. About a student. Like this, but worse." },
+          { "text": "Okay, bye.", "social": -1, "close": -2, "answer": "...bye." }
+        ] },
+        { "warm": "Oh hey. Coffee's in. I can speak now.", "cold": "Hi. Still no coffee.", "replies": [
+          { "text": "How's the game?", "social": 2, "close": 8, "answer": "The character walks through walls. Classic." },
+          { "text": "Want a coffee?", "social": 2, "close": 6, "answer": "You're a hero. Black, no sugar." },
+          { "text": "Hey.", "social": 0, "close": 0, "answer": "Hey." }
+        ] },
+        { "lines": ["My laptop has three working keys. I make it work.", "I fixed the library Wi-Fi. Don't tell IT.", "Hackathon this weekend. You should come, even if you can't code."], "replies": [
+          { "text": "I'll come to the hackathon.", "social": 2, "close": 5, "answer": "There's free pizza. That's the real reason." },
+          { "text": "Ha, nice.", "social": 1, "close": 3, "answer": "Thanks." },
+          { "text": "Later.", "social": 0, "close": 1, "answer": "Ctrl-S your life." }
+        ] }
+      ]
+    },
+    "aya": {
+      "name": "Aya", "role": "Fashion design student", "bio": "Makes her own clothes. Will comment on your outfit, kindly but honestly.",
+      "chats": [
+        { "line": "Okay, wait. Your outfit. I have notes. Good notes. Mostly.", "replies": [
+          { "text": "Tell me everything.", "social": 3, "close": 12, "answer": "The colour works. The shoes... we'll talk." },
+          { "text": "I just threw it on.", "social": 1, "close": 4, "answer": "That's the best kind of style." },
+          { "text": "Mind your business.", "social": -1, "close": -4, "answer": "Fashion IS my business. But okay." }
+        ] },
+        { "warm": "My muse! I'm making a shweshwe jacket. You'd look great in it.", "cold": "Hi. I'll keep my notes this time.", "replies": [
+          { "text": "Make me one!", "social": 3, "close": 8, "answer": "Fitting is Thursday. Don't be late." },
+          { "text": "Sorry I snapped before.", "social": 1, "close": 6, "answer": "Water under the bridge. Cute bridge, too." },
+          { "text": "Nice.", "social": 0, "close": 0, "answer": "Thanks." }
+        ] },
+        { "lines": ["Fashion show in October. I need models. Hint hint.", "I found fabric at the market for R30. A steal.", "Your look today? A seven. Fixable."], "replies": [
+          { "text": "I'll model!", "social": 3, "close": 5, "answer": "Practise your walk. Like a taxi rank queen." },
+          { "text": "Only a seven?", "social": 1, "close": 3, "answer": "Seven is good! Ten is for my clothes." },
+          { "text": "See you.", "social": 0, "close": 1, "answer": "Stay stylish." }
+        ] }
+      ]
+    },
+    "mam_gugu": {
+      "name": "Mam' Gugu", "role": "Runs the vetkoek stall", "bio": "Has fed three generations of students. Knows who is broke by how they say hello.",
+      "chats": [
+        { "line": "Yebo, my child. You're new, I can see. You look hungry.", "replies": [
+          { "text": "Yebo, Mam'. I'm very hungry.", "social": 2, "close": 12, "answer": "Then come to me first. Always first." },
+          { "text": "How long have you been here?", "social": 2, "close": 8, "answer": "Since before your parents were students. Twenty-six years." },
+          { "text": "Just looking.", "social": 0, "close": 0, "answer": "Looking is free. Vetkoek is ten rand." }
+        ] },
+        { "warm": "There's my favourite! Extra polony for you today.", "cold": "Hmm. Still just looking?", "replies": [
+          { "text": "Ngiyabonga, Mam'!", "social": 3, "close": 8, "answer": "Eat, eat. You're too thin." },
+          { "text": "Sorry, Mam'. Hello properly.", "social": 2, "close": 8, "answer": "That's better. Manners cost nothing." },
+          { "text": "Hi.", "social": 0, "close": 0, "answer": "Hi." }
+        ] },
+        { "lines": ["You study hard? Good. Eat first, then study.", "If you're short this week, pay me Friday. I trust you.", "My son graduated from here. Engineering. You'll make it too."], "replies": [
+          { "text": "Thank you, Mam'.", "social": 2, "close": 5, "answer": "Go well, my child." },
+          { "text": "Tell me about your son.", "social": 2, "close": 6, "answer": "He builds bridges now. Real ones!" },
+          { "text": "See you tomorrow.", "social": 0, "close": 1, "answer": "I'll be here. I'm always here." }
+        ] }
+      ]
+    },
+    "auntie_pinky": {
+      "name": "Auntie Pinky", "role": "Cafeteria counter", "bio": "Runs the caf counter like an army. The ladle is her sword.",
+      "chats": [
+        { "line": "Next! Don't stand there looking, the queue is behind you.", "replies": [
+          { "text": "Sorry Auntie! What's good today?", "social": 2, "close": 10, "answer": "The bunny chow. Always the bunny chow." },
+          { "text": "Hi Auntie, how's your day?", "social": 2, "close": 10, "answer": "Busy. But nobody asks. Thank you, baby." },
+          { "text": "I'm thinking.", "social": 0, "close": 0, "answer": "Think faster!" }
+        ] },
+        { "warm": "Ah, my polite one! Extra gravy, don't tell anyone.", "cold": "You again. Decide quickly.", "replies": [
+          { "text": "You're the best, Auntie.", "social": 3, "close": 8, "answer": "I know. Now eat." },
+          { "text": "Bunny chow please!", "social": 1, "close": 5, "answer": "Good choice. Quarter or half?" },
+          { "text": "Nothing today.", "social": 0, "close": 0, "answer": "Then why are you in my queue?" }
+        ] },
+        { "lines": ["Pap is fresh. The chips are fresher.", "You're eating properly? Your mother would want to know.", "Stage 4 today, so the fryer is on the generator. Chips are precious."], "replies": [
+          { "text": "Yes Auntie.", "social": 2, "close": 5, "answer": "Good child." },
+          { "text": "What's the special?", "social": 1, "close": 3, "answer": "Wors. Always wors on Thursday." },
+          { "text": "Bye Auntie!", "social": 0, "close": 1, "answer": "Next!" }
+        ] }
+      ]
+    },
+    "dr_moodley": {
+      "name": "Dr Moodley", "role": "Lecturer, SMIG", "bio": "Strict in the lecture hall, surprisingly funny outside it.",
+      "chats": [
+        { "line": "Ah, one of my first-years. Enjoying varsity, or surviving it?", "replies": [
+          { "text": "Surviving, Doctor. Barely.", "social": 2, "close": 10, "answer": "Honest answer. Come to consultation hours on Wednesday." },
+          { "text": "Enjoying it a lot!", "social": 1, "close": 6, "answer": "Good. Enjoy the reading too. All of chapter one." },
+          { "text": "Do we have homework?", "social": 0, "close": 2, "answer": "Always. Welcome to university." }
+        ] },
+        { "warm": "My consultation regular! You're asking good questions.", "cold": "Hello again. Did you read chapter one?", "replies": [
+          { "text": "I did. Can I ask about it?", "social": 2, "close": 8, "answer": "Of course. Walk with me." },
+          { "text": "Most of it.", "social": 1, "close": 4, "answer": "Most is a start. Finish it." },
+          { "text": "Not yet, sorry.", "social": 0, "close": 0, "answer": "Tonight, then." }
+        ] },
+        { "lines": ["The test on Friday is fair. If you've read.", "I was a student here too. The caf was worse then.", "Ask questions. Nobody else does, and it shows."], "replies": [
+          { "text": "Any tips for Friday?", "social": 2, "close": 5, "answer": "Chapter two. Especially the diagrams." },
+          { "text": "Thank you, Doctor.", "social": 1, "close": 3, "answer": "Good. Off you go." },
+          { "text": "Goodbye.", "social": 0, "close": 1, "answer": "See you at nine. Not five past." }
+        ] }
+      ]
+    },
+    "bongani": {
+      "name": "Bongani", "role": "SRC campaigner, Ubuntu Forward", "bio": "Third-year politics student. Believes in committees. Has formed three.",
+      "chats": [
+        { "line": "Ubuntu Forward! We fixed the bus shelter. Give us a year and we fix the bus.", "replies": [
+          { "text": "What would you fix first?", "social": 2, "close": 8, "answer": "Res Wi-Fi. Then the bus. Then the Wi-Fi again." },
+          { "text": "Experience is good.", "social": 1, "close": 6, "answer": "Exactly. We know where the forms are." },
+          { "text": "Not interested.", "social": 0, "close": -1, "answer": "That's fine. Vote anyway. For anyone." }
+        ] },
+        { "warm": "My comrade! You came back. Want a T-shirt?", "cold": "Still not interested? I respect it.", "replies": [
+          { "text": "Sure, I'll take one.", "social": 2, "close": 8, "answer": "One size. Fits most. Mostly." },
+          { "text": "Tell me more now.", "social": 2, "close": 6, "answer": "We want a 24-hour study room. Real one." },
+          { "text": "Just walking past.", "social": 0, "close": 0, "answer": "Walk past and vote!" }
+        ] },
+        { "lines": ["Debate at the Quad on Thursday. Come judge us.", "We counted the potholes. There are 147.", "Whoever wins, please vote. That's the real win."], "replies": [
+          { "text": "I'll come to the debate.", "social": 2, "close": 5, "answer": "Bring questions. Hard ones." },
+          { "text": "147? Wow.", "social": 1, "close": 3, "answer": "148 since this morning." },
+          { "text": "Bye.", "social": 0, "close": 1, "answer": "Forward!" }
+        ] }
+      ]
+    },
+    "lindiwe": {
+      "name": "Lindiwe", "role": "SRC campaigner, Free Food Fridays", "bio": "Loudest voice at the Quad. Has a plan for free food and the costing to prove it.",
+      "chats": [
+        { "line": "Free Food Fridays! Free education, free Wi-Fi, free Fridays. Ask me how!", "replies": [
+          { "text": "Okay, how?", "social": 2, "close": 8, "answer": "Budget lines, my friend. I have a spreadsheet. Ask Kea." },
+          { "text": "Sounds expensive.", "social": 1, "close": 5, "answer": "Hunger is more expensive. Think about it." },
+          { "text": "Too loud.", "social": 0, "close": -1, "answer": "We're loud because the fees are louder!" }
+        ] },
+        { "warm": "You're back! Sign the petition for a microwave in every res?", "cold": "Back to tell me I'm loud?", "replies": [
+          { "text": "Signed! Microwaves for all.", "social": 2, "close": 8, "answer": "History will remember you. And your leftovers." },
+          { "text": "What's the plan exactly?", "social": 2, "close": 6, "answer": "One microwave per floor. Funded by the vending margins." },
+          { "text": "Still loud.", "social": 0, "close": 0, "answer": "Still right!" }
+        ] },
+        { "lines": ["We're marching to the admin block Thursday. Peacefully. With snacks.", "Did you eat today? If not, that's why I'm running.", "I lose my voice every election. Worth it."], "replies": [
+          { "text": "I'll bring snacks.", "social": 2, "close": 5, "answer": "Now you're campaigning!" },
+          { "text": "Rest your voice.", "social": 1, "close": 3, "answer": "After Thursday!" },
+          { "text": "Bye.", "social": 0, "close": 1, "answer": "Free Fridays!" }
+        ] }
+      ]
+    },
+    "ruan": {
+      "name": "Ruan", "role": "SRC campaigner, Fix-It Society", "bio": "Civil engineering. Fixed the library printer with a paperclip. Campaigns on clean audits.",
+      "chats": [
+        { "line": "Fix-It Society. We got the library printer working. Imagine what we do with your vote.", "replies": [
+          { "text": "How did you fix it?", "social": 2, "close": 8, "answer": "Paperclip and patience. Mostly patience." },
+          { "text": "Boring, but useful.", "social": 1, "close": 6, "answer": "Boring is our slogan. Working is our promise." },
+          { "text": "Not today.", "social": 0, "close": -1, "answer": "No stress. The printer still works for you." }
+        ] },
+        { "warm": "Our number one supporter! The Quad taps work now, by the way.", "cold": "Hello again. Still not today?", "replies": [
+          { "text": "Thanks for the taps!", "social": 2, "close": 8, "answer": "Next: the stage lights. Then the stairs." },
+          { "text": "Show me your plan.", "social": 2, "close": 6, "answer": "A fault map of the whole campus. Very exciting. For me." },
+          { "text": "Maybe later.", "social": 0, "close": 0, "answer": "We'll be here. Fixing things." }
+        ] },
+        { "lines": ["Every rand accounted for. That's the plan.", "We fixed the res showers. Hot water now. You're welcome.", "Vote for whoever you trust. Then hold them to it."], "replies": [
+          { "text": "Hot water! Thank you!", "social": 2, "close": 5, "answer": "Bring a towel and a vote." },
+          { "text": "Good advice.", "social": 1, "close": 3, "answer": "Hold us to it too." },
+          { "text": "Bye.", "social": 0, "close": 1, "answer": "Stay fixed." }
+        ] }
+      ]
+    }
+  },
+  "archetypes": {
+    "fresher": { "bio": "First year, still finding the buildings.", "chats": [
+      { "line": "Hi! Sorry, do you know where SMIG is? I've walked past it four times.", "replies": [
+        { "text": "Come, I'll walk you.", "social": 2, "close": 10, "answer": "You're a lifesaver! I'm {name}, by the way." },
+        { "text": "The tall one. That way.", "social": 1, "close": 4, "answer": "Oh, THAT one. Thanks!" },
+        { "text": "No idea, sorry.", "social": 0, "close": 0, "answer": "Okay, I'll keep looking!" }
+      ] },
+      { "warm": "Hey, it's my campus guide! I found SMIG, thanks to you.", "cold": "Oh, hi again.", "replies": [
+        { "text": "Want to grab food?", "social": 2, "close": 8, "answer": "Yes! I don't know where the caf is either." },
+        { "text": "How's it going?", "social": 1, "close": 5, "answer": "Overwhelming. Good overwhelming." },
+        { "text": "Hey.", "social": 0, "close": 0, "answer": "Hey!" }
+      ] },
+      { "lines": ["I joined three clubs by accident.", "My mom calls every day. Every. Day.", "Is it normal to be this tired?"], "replies": [
+        { "text": "Same here.", "social": 2, "close": 5, "answer": "Glad it's not just me." },
+        { "text": "You'll be fine.", "social": 1, "close": 3, "answer": "Thanks, I needed that." },
+        { "text": "See you.", "social": 0, "close": 1, "answer": "Bye!" }
+      ] }
+    ] },
+    "hustler": { "bio": "Always selling something. Airtime, sweets, ideas.", "chats": [
+      { "line": "Howzit! Airtime, sweets, phone covers. Student prices. You need anything?", "replies": [
+        { "text": "What's your best deal?", "social": 2, "close": 8, "answer": "For you? Two lollipops, R5. Friendship price. I'm {name}." },
+        { "text": "Respect the hustle.", "social": 2, "close": 6, "answer": "Ayy, someone gets it!" },
+        { "text": "No thanks.", "social": 0, "close": 0, "answer": "No stress. You know where I am." }
+      ] },
+      { "warm": "My best customer! New stock today.", "cold": "Hey. Still no thanks?", "replies": [
+        { "text": "Show me.", "social": 2, "close": 8, "answer": "Phone covers with your res name. Custom!" },
+        { "text": "How's business?", "social": 1, "close": 5, "answer": "Booming. Well, growing. Well, alive." },
+        { "text": "Still no.", "social": 0, "close": 0, "answer": "One day you'll say yes." }
+      ] },
+      { "lines": ["I'm saving for a laptop. Every sweet counts.", "Business tip: sell near the caf queue.", "One day I'll own the tuck shop."], "replies": [
+        { "text": "You'll get that laptop.", "social": 2, "close": 5, "answer": "From your mouth!" },
+        { "text": "Smart.", "social": 1, "close": 3, "answer": "Free advice. This time." },
+        { "text": "Later.", "social": 0, "close": 1, "answer": "Stay winning." }
+      ] }
+    ] },
+    "sporty": { "bio": "Lives in gym clothes. Knows every team's training times.", "chats": [
+      { "line": "Ey! You look like you could play. Touch rugby, Quad, every afternoon.", "replies": [
+        { "text": "I'm in!", "social": 3, "close": 10, "answer": "Lekker! I'm {name}. Bring water." },
+        { "text": "I'm not sporty.", "social": 1, "close": 3, "answer": "Nobody is, at first. Come anyway." },
+        { "text": "Not my thing.", "social": 0, "close": 0, "answer": "Fair. Come watch then!" }
+      ] },
+      { "warm": "My teammate! You were sharp yesterday.", "cold": "Hey. Changed your mind about rugby?", "replies": [
+        { "text": "Same time today?", "social": 2, "close": 8, "answer": "Always. Don't be late." },
+        { "text": "My legs hurt.", "social": 1, "close": 5, "answer": "That means it worked!" },
+        { "text": "Not yet.", "social": 0, "close": 0, "answer": "Door's open." }
+      ] },
+      { "lines": ["Trials are next week. Nervous.", "Stretch, or you'll regret it.", "The sports centre floodlights are back. Night games!"], "replies": [
+        { "text": "You'll smash the trials.", "social": 2, "close": 5, "answer": "Thanks, champ." },
+        { "text": "Noted, coach.", "social": 1, "close": 3, "answer": "Ha, I like that." },
+        { "text": "Later.", "social": 0, "close": 1, "answer": "Stay active!" }
+      ] }
+    ] },
+    "bookworm": { "bio": "Always reading. Knows a quiet corner in every building.", "chats": [
+      { "line": "Oh! Sorry, I was reading. Did you say something?", "replies": [
+        { "text": "What are you reading?", "social": 2, "close": 10, "answer": "A novel set in Durban. I'm {name}. You'd like it." },
+        { "text": "Didn't mean to interrupt.", "social": 1, "close": 4, "answer": "It's okay. It's nice to talk to people sometimes." },
+        { "text": "Never mind.", "social": 0, "close": 0, "answer": "Okay." }
+      ] },
+      { "warm": "Hi! I finished the book. The ending... no spoilers.", "cold": "Oh. Hi.", "replies": [
+        { "text": "Lend it to me?", "social": 2, "close": 8, "answer": "Only if you promise to bring it back." },
+        { "text": "Was it good?", "social": 1, "close": 5, "answer": "I cried on a bench. So yes." },
+        { "text": "Hi.", "social": 0, "close": 0, "answer": "Hi." }
+      ] },
+      { "lines": ["The library's top floor is the quietest place on campus.", "I read during load shedding with a head torch.", "Book club Thursday. Small. Friendly."], "replies": [
+        { "text": "I'll come to book club.", "social": 2, "close": 5, "answer": "Really? Yay!" },
+        { "text": "Good tip.", "social": 1, "close": 3, "answer": "Tell nobody." },
+        { "text": "See you.", "social": 0, "close": 1, "answer": "Bye." }
+      ] }
+    ] }
+  },
+  "extra_names": [
+    ["Sizwe", "male", "fresher"], ["Palesa", "female", "bookworm"], ["Karabo", "male", "sporty"], ["Megan", "female", "fresher"],
+    ["Tumi", "female", "hustler"], ["Ayanda", "male", "bookworm"], ["Nomsa", "female", "sporty"], ["Kyle", "male", "hustler"],
+    ["Lerato", "female", "fresher"], ["Dineo", "female", "sporty"], ["Musa", "male", "hustler"], ["Farah", "female", "bookworm"]
+  ]
+}

@@ -89,6 +89,20 @@ export function createCameraRig() {
 
   return {
     get mode() { return rig.mode },
+    get yaw() { return rig.yaw },
+    set yaw(v) { rig.yaw = v },
+    get facing() { return rig.facing },
+    set facing(v) { rig.facing = v },
+    // Swing the camera round behind the player, smoothly.
+    turnBehind(facing) {
+      if (seeded) {
+        fromPos.copy(displayPos)
+        fromLook.copy(displayLook)
+        blend = 0
+      }
+      rig.facing = facing
+      rig.yaw = facing + Math.PI
+    },
     setMode(next) {
       if (!MODES.includes(next) || (seeded && next === rig.mode)) return
       if (seeded) {

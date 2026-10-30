@@ -1,0 +1,79 @@
+// Talking to people: who they are, what they say this time, and what a reply does.
+// Memory lives on the run: run.people[id] = { chats, close, mood, last }.
+// Ids are named people ("zanele") or extra students ("x3", from extra_names).
+import DATA from '../../data/campusville/people.json'
+
+export function personInfo(id) {
+  if (DATA.people[id]) return { id, ...DATA.people[id] }
+  const m = /^x(\d+)$/.exec(id || '')
+  const extra = m && DATA.extra_names[Number(m[1]) % DATA.extra_names.length]
+  if (!extra) return null
+  const [name, gender, type] = extra
+  const arch = DATA.archetypes[type]
+  return { id, name, gender, role: 'Student', bio: arch.bio, chats: arch.chats, archetype: type }
+}
+
+export function extraCount() {
+  return DATA.extra_names.length
+}
+
+export function memoryOf(run, id) {
+  return run.people?.[id] || { chats: 0, close: 0, mood: 0 }
+}
+
+export function levelOf(close) {
+  let label = DATA.levels[0].label
+  for (const level of DATA.levels) if (close >= level.min) label = level.label
+  return label
+}
+
+function fill(text, info, run) {
+  return String(text || '').replace(/\{name\}/g, info.name).replace(/\{you\}/g, run.character?.name || 'you')
+}
+
+// What this person says now, and the replies on offer.
+export function chatFor(run, id) {
+  const info = personInfo(id)
+  if (!info) return null
+  const mem = memoryOf(run, id)
+  const chat = info.chats[Math.min(mem.chats, info.chats.length - 1)]
+  let line = chat.line
+  if (mem.chats === 1) line = mem.mood < 0 ? chat.cold : chat.warm
+  if (chat.lines) line = chat.lines[(mem.chats - 2) % chat.lines.length]
+  return {
+    id,
+    name: info.name,
+    role: info.role,
+    bio: info.bio,
+    met: mem.chats > 0,
+    close: mem.close,
+    level: levelOf(mem.close),
+    line: fill(line || chat.line || chat.warm, info, run),
+    replies: chat.replies.map((r) => ({ text: fill(r.text, info, run), social: r.social, close: r.close })),
+  }
+}
+
+// Apply a reply: Social and closeness change, the person remembers.
+export function replyTo(run, id, index) {
+  const info = personInfo(id)
+  const now = chatFor(run, id)
+  if (!info || !now) return null
+  const mem = memoryOf(run, id)
+  const chat = info.chats[Math.min(mem.chats, info.chats.length - 1)]
+  const reply = chat.replies[index]
+  if (!reply) return null
+  run.people = run.people || {}
+  const close = Math.max(0, Math.min(100, mem.close + (reply.close || 0)))
+  run.people[id] = { chats: mem.chats + 1, close, mood: Math.sign(reply.close || 0), last: index, day: run.day }
+  const social = reply.social || 0
+  if (social) run.stats.social = Math.max(0, Math.min(100, (run.stats.social || 0) + social))
+  return {
+    answer: fill(reply.answer, info, run),
+    social,
+    closeDelta: close - mem.close,
+    close,
+    level: levelOf(close),
+    levelUp: levelOf(close) !== levelOf(mem.close) && close > mem.close,
+    tone: (reply.close || 0) > 0 ? 'good' : (reply.close || 0) < 0 ? 'bad' : 'neutral',
+  }
+}

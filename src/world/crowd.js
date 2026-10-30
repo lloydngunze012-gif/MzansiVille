@@ -1,40 +1,23 @@
 import * as THREE from 'three'
-import { hairs, outfits, SKIRTED, skins } from '../avatar.js'
-import { createAvatar, CROWD_MODELS, poseAvatar } from './avatar3d.js'
+import { createAvatar, poseAvatar } from './avatar3d.js'
+import { lookForPerson } from './cast.js'
 import { doorPoint } from './layout.js'
 import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
 
 // Other students: some walk between building doors, some sit on the Quad lawn.
-// They use the same rigged model as the player with random looks.
+// Each is a person you can talk to (people.json); their look comes from cast.js.
 
 const WALKERS = 9
 const SITTERS = 4
 // Seat height of a Kenney bench at the scale dress.js uses.
 const BENCH_Y = 0.5
-const TOPS = ['#2e8b57', '#ff8a3d', '#1d7fb8', '#e8497a', '#7b3fe4', '#f7f4ee', '#d9534f', '#2456a6', '#f0c400', '#1c1915']
-const BOTTOMS = ['#2b3a55', '#244e78', '#3a2f4f', '#1c1915', '#5b4a3a', '#7b3fe4']
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)]
 // Personal space: nobody stands closer than this to anyone else (metres).
 const SPACE = 1.0
 
-function randomLook(model) {
-  const female = model.startsWith('female')
-  const outfit = pick(outfits.filter((item) => female || !SKIRTED.has(item.id))).id
-  const look = {
-    model,
-    gender: female ? 'female' : 'male',
-    skin: pick(skins).id,
-    hair: pick(hairs).id,
-    outfit,
-    bottomColor: pick(BOTTOMS),
-  }
-  // Organt stays the player's brand tee; everyone else gets a plain colour.
-  if (outfit !== 'organt') look.topColor = pick(TOPS)
-  return look
-}
-
-export function createCrowd(scene, campus) {
+// opts.roommate: 'zanele' or 'sipho', who sits on the first Quad bench.
+export function createCrowd(scene, campus, opts = {}) {
   const group = new THREE.Group()
   group.name = 'crowd'
   scene.add(group)
@@ -52,7 +35,9 @@ export function createCrowd(scene, campus) {
   const people = []
 
   for (let i = 0; i < WALKERS && doors.length > 1; i++) {
-    const avatar = createAvatar(randomLook(CROWD_MODELS[i % CROWD_MODELS.length]))
+    const id = `x${i}`
+    const avatar = createAvatar(lookForPerson(id, i))
+    avatar.userData.personId = id
     // A few start at the gate so the bus arrival lands in a busy campus.
     const from = i < 3 && gate ? gate : pick(doors)
     avatar.position.set(from.point.x + (Math.random() - 0.5) * 3, 0, from.point.z + (Math.random() - 0.5) * 3)
@@ -68,13 +53,26 @@ export function createCrowd(scene, campus) {
     seats.push([quad.cx + 1.6, quad.cz - 4.6, 0, 0.3])
     for (let i = 0; i < Math.min(SITTERS, seats.length); i++) {
       const [x, z, facing, y] = seats[i]
-      const avatar = createAvatar(randomLook(CROWD_MODELS[(i + 3) % CROWD_MODELS.length]))
+      const id = [opts.roommate || 'zanele', 'aya', 'x9', 'x10'][i]
+      const avatar = createAvatar(lookForPerson(id, i + 9))
+      avatar.userData.personId = id
       avatar.position.set(x, y, z)
       avatar.rotation.y = facing
       avatar.userData.pose = 'sit'
       group.add(avatar)
       people.push({ avatar, sitting: true, clock: Math.random() * 10 })
     }
+  }
+
+  // Dr Moodley outside SMIG, between lectures.
+  const smig = campus.layout.buildings.find((b) => b.id === 'smig')
+  if (smig) {
+    const avatar = createAvatar(lookForPerson('dr_moodley'))
+    avatar.userData.personId = 'dr_moodley'
+    avatar.position.set(smig.x + 3.2, 0, smig.maxZ + 2.2)
+    avatar.rotation.y = 0.4
+    group.add(avatar)
+    people.push({ avatar, sitting: true, standing: true, clock: 0 })
   }
 
   function nextTrip(person) {
@@ -129,6 +127,8 @@ export function createCrowd(scene, campus) {
       person.clock += dt
       const { avatar } = person
       let walking = false
+      // Someone you are talking to stands still and faces you.
+      if (person.talking) { poseAvatar(avatar, false, person.clock); continue }
       if (!person.sitting) {
         if (person.route.length && person.wait <= 0 && yields(person, playerPos)) {
           person.wait = 0.5
@@ -138,8 +138,6 @@ export function createCrowd(scene, campus) {
           person.wait -= dt
           if (person.wait <= 0 && person.resume) person.resume = false
           else if (person.wait <= 0) nextTrip(person)
-          person.wait -= dt
-          if (person.wait <= 0) nextTrip(person)
         } else if (person.route.length) {
           const step = followStep(campus.grid, { x: avatar.position.x, z: avatar.position.z }, person.route, person.speed * dt)
           const dx = step.position.x - avatar.position.x

@@ -429,3 +429,23 @@ body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 .g-act.g-card .g-fx.down{background:#ffe3dd}
 .g-act.g-card .g-why,.g-act.g-card .g-left{font-size:10.5px;color:#7a6a90}
 .g-sheet2 .g-empty{color:#5a3f80}
+
+/* Talking to someone: a compact card at the bottom; the two of you stay visible above. */
+.g-talk{position:absolute;left:0;right:0;bottom:0;z-index:9;background:#fff8ea;color:#22143b;border-top:3px solid #f0c400;border-radius:22px 22px 0 0;box-shadow:0 -12px 32px #0007;padding:12px 14px calc(14px + env(safe-area-inset-bottom));animation:gup .18s ease-out}
+.g-talk-head{display:flex;align-items:center;gap:10px}
+.g-talk-ic{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#5b23c9;color:#fff;font:900 20px system-ui;flex:none}
+.g-talk-head h2{margin:0;font-size:18px;color:#22143b}
+.g-talk-head small{font:600 12px system-ui;color:#7a6a90}
+.g-talk-level{margin-left:auto;position:relative;padding:4px 10px 9px;border-radius:999px;background:#f1e9ff;font:800 11px system-ui;color:#5b23c9;white-space:nowrap;overflow:hidden}
+.g-talk-level i{position:absolute;left:0;bottom:0;height:4px;background:#f0c400}
+.g-talk-line{margin:10px 2px 8px;font:700 16px/1.35 system-ui}
+.g-talk-you{margin:10px 2px 0;font:italic 600 13px system-ui;color:#7a6a90}
+.g-talk-replies{display:flex;flex-direction:column;gap:7px}
+.g-talk-reply{all:unset;cursor:pointer;box-sizing:border-box;padding:11px 14px;border-radius:14px;background:#fff;border:2px solid #22143b22;font:700 14.5px system-ui;color:#22143b}
+.g-talk-reply:active{background:#f1e9ff;border-color:#5b23c9}
+.g-talk-leave{all:unset;cursor:pointer;display:block;margin:8px auto 0;font:700 12.5px system-ui;color:#7a6a90}
+.g-talk-fx{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.g-talk .g-fx{background:#f1e9ff;color:#22143b;border:0}
+.g-talk .g-fx.down{background:#ffe3dd}
+.g-talk-up{margin:0 0 8px;padding:8px 10px;border-radius:12px;background:#fff1c2;font:800 13px system-ui}
+.g-talk .g-go.ghost{background:#fff;color:#22143b;border:2px solid #22143b33;box-shadow:none}

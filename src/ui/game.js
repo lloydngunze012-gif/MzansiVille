@@ -1,13 +1,14 @@
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
+import { chatFor } from '../engine/people.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
 import './game.css'
 
 // UI-only state that should not be saved.
-export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '' }
+export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '', talk: null }
 
 const ICON = {
   hub: '\u{1F333}', food: '\u{1F37D}', transit: '\u{1F68C}', venue: '\u26BD', study: '\u{1F4DA}',
@@ -344,7 +345,8 @@ export function mapHome(state, openPlace = '') {
   }).join('')
   const [ax, ay] = layoutOf(here)
   let layer = ''
-  if (run.queue?.[0]) layer = resultCard(state)
+  if (ui.talk) layer = talkCard(run)
+  else if (run.queue?.[0]) layer = resultCard(state)
   else if (run.mode === 'summary') layer = summaryCard(state)
   else if (run.lectureCard) {
     layer = `<div class="g-scrim"></div><aside class="g-result g-lecture" role="dialog" aria-label="Lecture starts"><p class="g-kind">SMIG \u00b7 09:00</p><h2>Lecture starts</h2><p>You made it to your first lecture. Find a seat \u2014 the full lecture is coming soon.</p><button type="button" class="g-go block" data-act="lecture-go">Continue</button></aside>`
@@ -372,6 +374,39 @@ export function morningScreen(state) {
     ${hud(district, run)}
     <p class="g-goal${left <= 15 ? ' late' : ''}" role="status"><span>\u{1F3AF} Get to your 9:00 lecture on time.</span><b>${left > 0 ? `${left} min left` : `${-left} min late`}</b></p>
   </main>`
+}
+
+// A conversation: compact at the bottom, so you still see the two of you talking above it.
+function talkCard(run) {
+  const t = ui.talk
+  const chat = chatFor(run, t.id)
+  if (!chat) return ''
+  const close = t.res ? t.res.close : chat.close
+  const level = t.res ? t.res.level : chat.level
+  const head = `<div class="g-talk-head"><span class="g-talk-ic">${esc(chat.name.replace(/^Mam' /, '').slice(0, 1))}</span>
+    <div><h2>${esc(chat.name)}</h2><small>${esc(chat.role)}${chat.met || t.res ? '' : ' \u00b7 first meeting'}</small></div>
+    <span class="g-talk-level">${esc(level)}<i style="width:${Math.max(4, close)}%"></i></span></div>`
+  if (t.res) {
+    const r = t.res
+    const chips = [
+      r.social ? `<span class="g-fx ${r.social > 0 ? 'up' : 'down'}">\u{1F465} ${r.social > 0 ? '+' : ''}${r.social} Social</span>` : '',
+      r.closeDelta ? `<span class="g-fx ${r.closeDelta > 0 ? 'up' : 'down'}">${r.closeDelta > 0 ? '\u{1F91D} Closer' : '\u{1F9CA} Cooler'}</span>` : '',
+    ].join('')
+    return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="answer">
+      ${head}
+      <p class="g-talk-you">\u201c${esc(t.said)}\u201d</p>
+      <p class="g-talk-line">${esc(r.answer)}</p>
+      ${chips ? `<p class="g-talk-fx">${chips}</p>` : ''}
+      ${r.levelUp ? `<p class="g-talk-up">\u2B50 You and ${esc(chat.name)} are now: ${esc(r.level)}</p>` : ''}
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye">Bye</button><button type="button" class="g-go" data-act="talk-more">Keep talking</button></div>
+    </section>`
+  }
+  return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="line">
+    ${head}
+    <p class="g-talk-line">${esc(chat.line)}</p>
+    <div class="g-talk-replies">${chat.replies.map((r, i) => `<button type="button" class="g-talk-reply" data-act="talk-reply" data-i="${i}">${esc(r.text)}</button>`).join('')}</div>
+    <button type="button" class="g-talk-leave" data-act="talk-bye">Walk away</button>
+  </section>`
 }
 
 export function lectureScreen(state) {
