@@ -1,0 +1,2028 @@
+{
+ "errs": [
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "WARNING THREE.WebGLShadowMap: PCFSoftShadowMap has been removed. Using PCFShadowMap instead.",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+  "ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+ ],
+ "net": [
+  "ABORT https://qa-offline-test.supabase.co/rest/v1/rpc/leaderboard",
+  "FAILED https://qa-offline-test.supabase.co/rest/v1/rpc/leaderboard",
+  "ABORT https://qa-offline-test.supabase.co/rest/v1/chat_messages?select=id%2Cuser_id%2Cbody%2Ccre",
+  "FAILED https://qa-offline-test.supabase.co/rest/v1/chat_messages?select=id%2Cuser_id%2Cbody%2Ccre"
+ ],
+ "log": [
+  {
+   "n": 1,
+   "label": "cover",
+   "f": "shots/390-offhostnav/001-title-cover.png",
+   "scr": "title",
+   "btns": [
+    {
+     "act": "start",
+     "cls": "btn tc-start",
+     "t": "Start first year",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED H1.sr-only \"CampusVille\"",
+    "OFFRIGHT DIV.tc-art \"\" right=398",
+    "OFFRIGHT PICTURE. \"\" right=398",
+    "OFFRIGHT IMG. \"\" right=398"
+   ],
+   "text": "CampusVille Res, lectures, bunny chows and besties. Survive first year. Start first year Rules Privacy Terms",
+   "blank": false,
+   "errs": 2
+  },
+  {
+   "n": 2,
+   "label": "rules",
+   "f": "shots/390-offhostnav/002-rules-rules.png",
+   "scr": "rules",
+   "btns": [
+    {
+     "act": "agree",
+     "cls": "lg-go",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "← Back BEFORE YOU MOVE IN Community rules 1 The lobby is one public room. Talk like a person other people have to sit next to. 2 No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information. 3 Every message has mute, block, and report. Reports go to admins. A suspended account cannot post. 4 Chat is rate limited: a short pause between messages,",
+   "blank": false,
+   "errs": 2
+  },
+  {
+   "n": 3,
+   "label": "agree-unchecked",
+   "f": "shots/390-offhostnav/003-rules-agree-unchecked.png",
+   "scr": "rules",
+   "btns": [
+    {
+     "act": "agree",
+     "cls": "lg-go",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "← Back BEFORE YOU MOVE IN Community rules 1 The lobby is one public room. Talk like a person other people have to sit next to. 2 No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information. 3 Every message has mute, block, and report. Reports go to admins. A suspended account cannot post. 4 Chat is rate limited: a short pause between messages,",
+   "blank": false,
+   "errs": 3
+  },
+  {
+   "n": 4,
+   "label": "create",
+   "f": "shots/390-offhostnav/004-create-create.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt 3 TO GO STUDENT CARD Your name Res: choose Course: choose @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km Crystal Valley · ",
+   "blank": false,
+   "errs": 3
+  },
+  {
+   "n": 5,
+   "label": "begin-empty",
+   "f": "shots/390-offhostnav/005-create-begin-empty.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt 3 TO GO STUDENT CARD Your name Res: choose Course: choose @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km Crystal Valley · ",
+   "blank": false,
+   "errs": 3
+  },
+  {
+   "n": 6,
+   "label": "create-filled",
+   "f": "shots/390-offhostnav/006-create-create-filled.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED STRONG. \"Thandeka Mkhize-Ndlovu L\"",
+    "CLIPPED INPUT. \"\""
+   ],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt READY ✓ STUDENT CARD Thandeka Mkhize-Ndlovu L R Block Law @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km Crystal Valley · ",
+   "blank": false,
+   "errs": 3
+  },
+  {
+   "n": 7,
+   "label": "after-begin",
+   "f": "shots/390-offhostnav/007-play-after-begin.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r open mine",
+     "t": "R R Block · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim",
+     "t": "BUS Off-campus res",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=529",
+    "OFFRIGHT SPAN.g-sun \"\" right=450"
+   ],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law opens 09:00 ⚙️ Engineering O O Block opens 15:00 R R Block · home S S Block opens 15:00 + Other blocks opens 15:0",
+   "blank": false,
+   "errs": 4
+  },
+  {
+   "n": 8,
+   "label": "loop-end",
+   "f": "shots/390-offhostnav/008-play-loop-end.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r open mine",
+     "t": "R R Block · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim",
+     "t": "BUS Off-campus res",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=534",
+    "OFFRIGHT SPAN.g-sun \"\" right=451"
+   ],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law opens 09:00 ⚙️ Engineering O O Block opens 15:00 R R Block · home S S Block opens 15:00 + Other blocks opens 15:0",
+   "blank": false,
+   "errs": 4
+  },
+  {
+   "n": 9,
+   "label": "nav-milestones",
+   "f": "shots/390-offhostnav/009-milestones-nav-milestones.png",
+   "scr": "milestones",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "reset",
+     "cls": "",
+     "t": "Reset character",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Reset character Save progress / sign in Close ← Back to campus FIRST YEAR Milestones 1 of 7 unlocked · Day 1 of 30 🌅 First day on campus You moved in. Welcome to CampusVille. Unlocked 🔒 Lecture streak Attend 5 lectures ",
+   "blank": false,
+   "errs": 5
+  },
+  {
+   "n": 10,
+   "label": "nav-profile",
+   "f": "shots/390-offhostnav/010-profile-nav-profile.png",
+   "scr": "profile",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "reset",
+     "cls": "",
+     "t": "Reset character",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "share",
+     "cls": "btn primary block",
+     "t": "Share card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "btn block",
+     "t": "Save your progress",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "admin",
+     "cls": "btn ghost block",
+     "t": "Admin",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "play",
+     "cls": "",
+     "t": "Map",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "You",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Board",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Chat",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Reset character Save progress / sign in Close Thandeka Mkhize-Ndlovu L R Block · Law No handle yet · Day 1 Grades 50 · R1 500 in your pocket Bestie: Luke from R Block Share card Save your progress Admin Map You Board Chat",
+   "blank": false,
+   "errs": 5
+  },
+  {
+   "n": 11,
+   "label": "nav-board",
+   "f": "shots/390-offhostnav/011-leaderboard-nav-board.png",
+   "scr": "leaderboard",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "reset",
+     "cls": "",
+     "t": "Reset character",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "board-tab",
+     "id": "money",
+     "cls": "",
+     "t": "Richest",
+     "dis": false
+    },
+    {
+     "act": "board-tab",
+     "id": "grades",
+     "cls": "",
+     "t": "Dean's List",
+     "dis": false
+    },
+    {
+     "act": "board-tab",
+     "id": "balanced",
+     "cls": "",
+     "t": "Most Balanced",
+     "dis": false
+    },
+    {
+     "act": "board-scope",
+     "id": "all",
+     "cls": "",
+     "t": "Overall",
+     "dis": false
+    },
+    {
+     "act": "board-scope",
+     "id": "res",
+     "cls": "",
+     "t": "Your residence",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "play",
+     "cls": "",
+     "t": "Map",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "You",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Board",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Chat",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Reset character Save progress / sign in Close Boards 7-day rolling average. Refreshes every 30s. Money is scaled 0–100 at R3 000 for Most Balanced. Richest Dean's List Most Balanced Overall Your residence TypeError: Faile",
+   "blank": false,
+   "errs": 6
+  },
+  {
+   "n": 12,
+   "label": "nav-chat",
+   "f": "shots/390-offhostnav/012-chat-nav-chat.png",
+   "scr": "chat",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "reset",
+     "cls": "",
+     "t": "Reset character",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "send",
+     "cls": "btn primary block",
+     "t": "Send",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "play",
+     "cls": "",
+     "t": "Map",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "You",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Board",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Chat",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Reset character Save progress / sign in Close Campus lobby One room. No DMs. A short pause between messages, 30 in 10 minutes. Nobody has spoken yet. Message Send Map You Board Chat",
+   "blank": false,
+   "errs": 8
+  },
+  {
+   "clickfail": "[data-act=send]",
+   "e": "locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('[data-act=send]').first() |     - locator resolved to <button type=\"button\" data-act=\"send\" class=\"btn primary block\">Send</button> |   - attempting click action |     2 × waiting for element to be visible, enabled and stable |       - element is visible, enabled and stable |       - scrolling into view if needed"
+  },
+  {
+   "n": 13,
+   "label": "chat-sent",
+   "f": "shots/390-offhostnav/013-rules-chat-sent.png",
+   "scr": "rules",
+   "btns": [
+    {
+     "act": "agree",
+     "cls": "lg-go",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "← Back BEFORE YOU MOVE IN Community rules 1 The lobby is one public room. Talk like a person other people have to sit next to. 2 No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information. 3 Every message has mute, block, and report. Reports go to admins. A suspended account cannot post. 4 Chat is rate limited: a short pause between messages,",
+   "blank": false,
+   "errs": 10
+  },
+  {
+   "navfail": "share",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "n": 14,
+   "label": "nav-save",
+   "f": "shots/390-offhostnav/014-save-nav-save.png",
+   "scr": "save",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "reset",
+     "cls": "",
+     "t": "Reset character",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "google",
+     "cls": "btn block",
+     "t": "Continue with Google",
+     "dis": false
+    },
+    {
+     "act": "magic",
+     "cls": "btn primary block",
+     "t": "Send a magic link",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Reset character Save progress / sign in Close Back Save your progress Google or a magic link. This phone's progress is copied onto the account. If the account is already further along, that day is kept. Continue with Goog",
+   "blank": false,
+   "errs": 18
+  },
+  {
+   "clickfail": "[data-act=magic]",
+   "e": "locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('[data-act=magic]').first() |     - locator resolved to <button type=\"button\" data-act=\"magic\" class=\"btn primary block\">Send a magic link</button> |   - attempting click action |     2 × waiting for element to be visible, enabled and stable |       - element is visible, enabled and stable |       - scrolling into view i"
+  },
+  {
+   "n": 15,
+   "label": "magic-sent",
+   "f": "shots/390-offhostnav/015-save-magic-sent.png",
+   "scr": "save",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "new",
+     "cls": "danger",
+     "t": "Tap again: delete this student",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "google",
+     "cls": "btn block",
+     "t": "Continue with Google",
+     "dis": false
+    },
+    {
+     "act": "magic",
+     "cls": "btn primary block",
+     "t": "Send a magic link",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Tap again: delete this student Save progress / sign in Close Back Save your progress Google or a magic link. This phone's progress is copied onto the account. If the account is already further along, that day is kept. Con",
+   "blank": false,
+   "errs": 19
+  },
+  {
+   "n": 16,
+   "label": "nav-privacy",
+   "f": "shots/390-offhostnav/016-privacy-nav-privacy.png",
+   "scr": "privacy",
+   "btns": [],
+   "over": [],
+   "text": "← Back WESTVILLE CAMPUS Privacy 1 Guest progress stays in localStorage on this phone. Clearing the browser clears the guest. 2 If you save, your name, residence, course, avatar, handle, stats, and the game state are stored in Supabase. Lobby messages are public to the campus room. 3 There are no photos. The avatar is drawn in the game. 4 Full privacy text to follow.",
+   "blank": false,
+   "errs": 21
+  },
+  {
+   "n": 17,
+   "label": "nav-world",
+   "f": "shots/390-offhostnav/017-play-nav-world.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "hud",
+     "cls": "btn ghost tiny",
+     "t": "Icons only",
+     "dis": false
+    },
+    {
+     "act": "phase",
+     "cls": "btn ghost tiny",
+     "t": "On to Transit",
+     "dis": false
+    },
+    {
+     "act": "cam",
+     "cls": "",
+     "t": "▣ Top",
+     "dis": false
+    },
+    {
+     "act": "cam",
+     "cls": "",
+     "t": "◢ Sims",
+     "dis": false
+    },
+    {
+     "act": "cam",
+     "cls": "",
+     "t": "◉ Eye",
+     "dis": false
+    },
+    {
+     "act": "help",
+     "cls": "",
+     "t": "?",
+     "dis": false
+    },
+    {
+     "act": "open-map",
+     "cls": "",
+     "t": "Map",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "You",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Board",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Chat",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Monday - Day 1 - Morning - 07:00 Icons only Money R1 500 Energy 100/100 Fullness 70/100 Grades 50/100 Social 30/100 Time left today: 5 of 5 actions On to Transit ▣ Top ◢ Sims ◉ Eye ? Map You Board Chat",
+   "blank": false,
+   "errs": 26
+  },
+  {
+   "n": 18,
+   "label": "final",
+   "f": "shots/390-offhostnav/018-chat-final.png",
+   "scr": "chat",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "g-scrim",
+     "t": ""
+    },
+    {
+     "act": "sound",
+     "cls": "",
+     "t": "Sound: On",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "milestones",
+     "cls": "",
+     "t": "Milestones",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "Student card",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Leaderboard",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Campus chat",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "rules",
+     "cls": "",
+     "t": "Community rules",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "privacy",
+     "cls": "",
+     "t": "Privacy",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "world",
+     "cls": "",
+     "t": "3D campus (beta)",
+     "dis": false
+    },
+    {
+     "act": "new",
+     "cls": "danger",
+     "t": "Tap again: delete this student",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "save",
+     "cls": "",
+     "t": "Save progress / sign in",
+     "dis": false
+    },
+    {
+     "act": "gear",
+     "cls": "ghost",
+     "t": "Close",
+     "dis": false
+    },
+    {
+     "act": "send",
+     "cls": "btn primary block",
+     "t": "Send",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "play",
+     "cls": "",
+     "t": "Map",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "profile",
+     "cls": "",
+     "t": "You",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "board",
+     "cls": "",
+     "t": "Board",
+     "dis": false
+    },
+    {
+     "act": "nav",
+     "go": "chat",
+     "cls": "",
+     "t": "Chat",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "Day 1 Mon 07:00 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 MENU Sound: On Milestones Student card Leaderboard Campus chat Community rules Privacy 3D campus (beta) Tap again: delete this student Save progress / sign in Close Campus lobby One room. No DMs. A short pause between messages, 30 in 10 minutes. TypeError: Failed to fetch Nobody has spoken yet. Message Send Map You Board Ch",
+   "blank": false,
+   "errs": 28
+  }
+ ]
+}
