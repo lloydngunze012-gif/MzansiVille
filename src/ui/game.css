@@ -377,3 +377,4 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 .g-scrim:has(+ .g-menu){position:fixed;z-index:199}
 body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 .g-scrim:has(+ .g-menu){inset:0;background:#12081fb3}
+.g-route p{font-weight:700;color:#ffd23f}

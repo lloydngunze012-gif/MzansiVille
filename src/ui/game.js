@@ -229,6 +229,9 @@ function ctaBar(district, run) {
   const next = nextPhase(district, run)
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
+  if (run.lectureRoute) {
+    return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at the Business Hall</p></div>`
+  }
   const atHome = hereOf(district, run) === sleepPlace
   if (run.phase === 'night') line = atHome ? 'Night. You are home \u2014 tap Sleep to end the day.' : 'Night. Go home and sleep to end the day.'
   else if (run.slotsLeft === 1) line = `1 slot left \u2014 keep it for Sleep at 21:00.`
@@ -323,7 +326,9 @@ export function mapHome(state, openPlace = '') {
   let layer = ''
   if (run.queue?.[0]) layer = resultCard(state)
   else if (run.mode === 'summary') layer = summaryCard(state)
-  else if (run.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
+  else if (run.lectureCard) {
+    layer = `<div class="g-scrim"></div><aside class="g-result g-lecture" role="dialog" aria-label="Lecture starts"><p class="g-kind">Business Hall \u00b7 09:00</p><h2>Lecture starts</h2><p>You made it to your first lecture. Find a seat \u2014 the full lecture is coming soon.</p><button type="button" class="g-go block" data-act="lecture-go">Continue</button></aside>`
+  } else if (run.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
     layer = `<div class="g-scrim"></div><aside class="g-result"><p class="g-kind">Day ${run.day}</p><h2>Keep ${esc(run.character.name)}?</h2><p>Guests live on this phone only. Make a free account so this student survives a cleared browser.</p><div class="g-two"><button type="button" class="g-go ghost" data-act="snooze">Not now</button><button type="button" class="g-go" data-act="nav" data-go="save">Save progress</button></div></aside>`
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
   return `<main class="screen g-screen${world ? ' g-3d' : ''}" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">

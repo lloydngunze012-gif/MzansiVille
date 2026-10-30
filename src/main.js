@@ -195,6 +195,7 @@ function endMorning(skip, result) {
     for (let i = 0; i < 3 && run.phase !== 'lecture'; i++) advancePhase(district, run)
     run.minutes = Math.max(run.minutes, result?.arrived || 0)
     run.at = 'gate'
+    run.lectureRoute = true
   }
   ui.gear = false
   persist()
@@ -355,6 +356,7 @@ function prewarmAudio() {
     } catch { /* no audio */ }
   }, { timeout: 1500 }))
 }
+window.addEventListener('mzansi-lecture-arrive', () => { persist(); paint() })
 window.addEventListener('pointerup', prewarmAudio, { once: true, passive: true })
 
 function blipNow(freq) {
@@ -461,6 +463,7 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
+  if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go('place/smig'); return true }
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
   if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
   if (act === 'close-sheet') { go('play'); return true }
