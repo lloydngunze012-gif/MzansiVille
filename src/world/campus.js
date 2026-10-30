@@ -12,6 +12,28 @@ function shortName(name) {
   return cleaned.length > 16 ? `${cleaned.slice(0, 15)}…` : cleaned
 }
 
+function badgeSprite() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = 64
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#f0c400'
+  ctx.beginPath()
+  ctx.arc(32, 32, 28, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#1c1915'
+  ctx.font = '700 42px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('!', 32, 36)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }))
+  sprite.scale.set(1.35, 1.35, 1)
+  sprite.raycast = () => {}
+  return sprite
+}
+
 function labelSprite(text, home) {
   const canvas = document.createElement('canvas')
   canvas.width = 320
@@ -66,7 +88,21 @@ function buildingMesh(building, home) {
     new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
   )
   door.position.set(0, 1.08, building.d / 2 + 0.02)
+  door.name = 'door'
   group.add(door)
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.22, 12, 10),
+    new THREE.MeshStandardMaterial({ color: 0xf0c400, emissive: 0xf0c400, emissiveIntensity: 0.9, roughness: 0.4 }),
+  )
+  beacon.position.set(0, 1.35, building.d / 2 + 0.55)
+  beacon.name = 'beacon'
+  beacon.visible = false
+  group.add(beacon)
+  const badge = badgeSprite()
+  badge.position.set(building.w * 0.28, building.h + 1.15, -building.d * 0.28)
+  badge.name = 'badge'
+  badge.visible = false
+  group.add(badge)
   const label = labelSprite(shortName(building.name), home)
   label.position.y = Math.min(building.h + 1.3, 5.6)
   group.add(label)
@@ -159,6 +195,16 @@ export function createCampus(district, homeId) {
   const grid = buildGrid(layout.obstacles)
   upgrade(buildings, layout.buildings)
   return { group, ground: lawn, buildings, grid, layout }
+}
+
+export function markDoors(buildings, ids) {
+  for (const group of buildings.children) {
+    const on = ids.has(group.userData.placeId)
+    const beacon = group.getObjectByName('beacon')
+    const badge = group.getObjectByName('badge')
+    if (beacon) beacon.visible = on
+    if (badge) badge.visible = on
+  }
 }
 
 async function upgrade(buildings, specs) {
