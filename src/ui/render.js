@@ -350,28 +350,28 @@ function gameover(state) {
   </main>`
 }
 
+function legalShell(screen, kicker, title, body) {
+  return `<main class="screen lg" data-screen="${screen}">
+    <div class="lg-top"><a class="lg-back" href="#/">\u2190 Back</a></div>
+    <article class="lg-card"><p class="lg-kicker">${kicker}</p><h1>${title}</h1>${body}</article>
+  </main>`
+}
+function legalList(items) {
+  return `<ol>${items.map((text, i) => `<li><b>${i + 1}</b><span>${text}</span></li>`).join('')}</ol>`
+}
 function legalText(screen, title, paragraphs) {
-  return `<main class="screen pad legal" data-screen="${screen}">
-    <a class="link" href="#/">Back</a>
-    <h1 style="margin-top:16px">${title}</h1>
-    ${paragraphs.map((text) => `<p>${text}</p>`).join('')}
-  </main>`
+  return legalShell(screen, 'Westville Campus', title, legalList(paragraphs))
 }
-
 function rules() {
-  return `<main class="screen pad legal" data-screen="rules">
-    <a class="link" href="#/">Back</a>
-    <h1 style="margin-top:16px">Community rules</h1>
-    <p>The lobby is one public room. Talk like a person other people have to sit next to.</p>
-    <p>No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information.</p>
-    <p>Every message has mute, block, and report. Reports go to admins. A suspended account cannot post.</p>
-    <p>Chat is rate limited: a short pause between messages, and 30 messages in 10 minutes.</p>
-    <label class="field" style="font-weight:500"><span><input id="agree" type="checkbox" style="width:auto;min-height:0"/> I agree</span></label>
-    <button class="btn primary block" type="button" data-act="agree">Continue</button>
-    <p class="fine">Full community text can be extended later. These are the rules that already bind the lobby.</p>
-  </main>`
+  return legalShell('rules', 'Before you move in', 'Community rules', legalList([
+    'The lobby is one public room. Talk like a person other people have to sit next to.',
+    'No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone\'s private information.',
+    'Every message has mute, block, and report. Reports go to admins. A suspended account cannot post.',
+    'Chat is rate limited: a short pause between messages, and 30 messages in 10 minutes.',
+  ]) + `<label class="lg-agree"><input id="agree" type="checkbox"/> I agree to keep campus kind</label>
+    <button class="lg-go" type="button" data-act="agree">Continue</button>
+    <p class="lg-fine">These are the rules that already bind the lobby. Full community text can be extended later.</p>`)
 }
-
 function create(state) {
   const { district, draft } = state
   const code = district.meta.dialCode
