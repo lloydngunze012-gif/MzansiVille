@@ -1,0 +1,180 @@
+import * as THREE from 'three'
+import { buildingLayout } from './layout.js'
+import { buildGrid } from './nav.js'
+import { loadGlb, modelManifest, modelUrl } from './models.js'
+
+const pathMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d2b0, roughness: 1 })
+const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x74b254, roughness: 1 })
+const skirtMaterial = new THREE.MeshStandardMaterial({ color: 0x5d8f42, roughness: 1 })
+
+function shortName(name) {
+  const cleaned = name.replace(' Lecture Venue', '').replace(/^The /, '').replace(/^Main /, '').replace(' (bus home)', '')
+  return cleaned.length > 16 ? `${cleaned.slice(0, 15)}…` : cleaned
+}
+
+function labelSprite(text, home) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 320
+  canvas.height = 72
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = home ? 'rgba(240,196,0,0.94)' : 'rgba(28,25,21,0.82)'
+  ctx.beginPath()
+  ctx.roundRect(4, 6, 312, 60, 18)
+  ctx.fill()
+  ctx.fillStyle = home ? '#1c1915' : '#fffaf2'
+  ctx.font = '600 30px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, 160, 38)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }))
+  sprite.scale.set(7.2, 1.62, 1)
+  sprite.raycast = () => {}
+  return sprite
+}
+
+function ribbon(a, b) {
+  const dx = b.x - a.x
+  const dz = b.z - a.z
+  const len = Math.hypot(dx, dz)
+  if (len < 0.2) return null
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, 0.06, 3.8), pathMaterial)
+  mesh.position.set((a.x + b.x) / 2, 0.04, (a.z + b.z) / 2)
+  mesh.rotation.y = Math.atan2(-dz, dx)
+  mesh.receiveShadow = true
+  return mesh
+}
+
+function buildingMesh(building, home) {
+  const group = new THREE.Group()
+  group.position.set(building.x, 0, building.z)
+  group.userData.placeId = building.id
+  const wall = new THREE.MeshStandardMaterial({ color: building.color, roughness: 0.86 })
+  const roofMat = new THREE.MeshStandardMaterial({ color: building.roof, roughness: 0.8 })
+  const body = new THREE.Mesh(new THREE.BoxGeometry(building.w, building.h, building.d), wall)
+  body.position.y = building.h / 2
+  body.castShadow = true
+  body.receiveShadow = true
+  group.add(body)
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(building.w + 0.5, 0.5, building.d + 0.5), roofMat)
+  roof.position.y = building.h + 0.22
+  roof.castShadow = true
+  group.add(roof)
+  const door = new THREE.Mesh(
+    new THREE.BoxGeometry(1.25, 2.15, 0.16),
+    new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
+  )
+  door.position.set(0, 1.08, building.d / 2 + 0.02)
+  group.add(door)
+  const label = labelSprite(shortName(building.name), home)
+  label.position.y = Math.min(building.h + 1.3, 5.6)
+  group.add(label)
+  return group
+}
+
+function distToSegment(x, z, a, b) {
+  const dx = b.x - a.x
+  const dz = b.z - a.z
+  const len2 = dx * dx + dz * dz || 1
+  const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / len2))
+  return Math.hypot(x - (a.x + dx * t), z - (a.z + dz * t))
+}
+
+function addTrees(parent, layout) {
+  const rand = mulberry32(0xc0ffee)
+  const trunkGeo = new THREE.CylinderGeometry(0.12, 0.2, 0.7, 5)
+  const crownGeo = new THREE.ConeGeometry(1.05, 2.1, 6)
+  const spots = []
+  for (let i = 0; i < 80 && spots.length < 32; i += 1) {
+    const x = (rand() - 0.5) * 180
+    const z = (rand() - 0.5) * 180
+    const blocked = layout.buildings.some((building) => (
+      x > building.minX - 2.2 && x < building.maxX + 2.2 && z > building.minZ - 2.2 && z < building.maxZ + 2.2
+    ))
+    const onPath = layout.paths.some((path) => path.some((point, index) => (
+      index && distToSegment(x, z, path[index - 1], point) < 3.4
+    )))
+    if (blocked || onPath) continue
+    spots.push({ x, z })
+  }
+  const trunks = new THREE.InstancedMesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x6b4a32, roughness: 0.9 }), spots.length)
+  const crowns = new THREE.InstancedMesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x2f7a3a, roughness: 0.85 }), spots.length)
+  trunks.castShadow = true
+  crowns.castShadow = true
+  const dummy = new THREE.Object3D()
+  spots.forEach((spot, index) => {
+    dummy.position.set(spot.x, 0.35, spot.z)
+    dummy.scale.setScalar(0.85 + rand() * 0.5)
+    dummy.updateMatrix()
+    trunks.setMatrixAt(index, dummy.matrix)
+    dummy.position.y = 1.7
+    dummy.updateMatrix()
+    crowns.setMatrixAt(index, dummy.matrix)
+  })
+  parent.add(trunks, crowns)
+}
+
+function mulberry32(seed) {
+  let a = seed
+  return () => {
+    a |= 0
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export function createCampus(district, homeId) {
+  const layout = buildingLayout(district)
+  const group = new THREE.Group()
+  group.name = 'campus'
+
+  const skirt = new THREE.Mesh(new THREE.CircleGeometry(108, 40), skirtMaterial)
+  skirt.rotation.x = -Math.PI / 2
+  skirt.position.y = -0.04
+  skirt.receiveShadow = true
+  const lawn = new THREE.Mesh(new THREE.CircleGeometry(102, 48), grassMaterial)
+  lawn.rotation.x = -Math.PI / 2
+  lawn.receiveShadow = true
+  lawn.name = 'ground'
+  group.add(skirt, lawn)
+
+  for (const path of layout.paths) {
+    for (let i = 1; i < path.length; i += 1) {
+      const piece = ribbon(path[i - 1], path[i])
+      if (piece) group.add(piece)
+    }
+  }
+
+  const buildings = new THREE.Group()
+  buildings.name = 'buildings'
+  for (const building of layout.buildings) {
+    buildings.add(buildingMesh(building, building.id === homeId))
+  }
+  group.add(buildings)
+  addTrees(group, layout)
+
+  const grid = buildGrid(layout.obstacles)
+  upgrade(buildings, layout.buildings)
+  return { group, ground: lawn, buildings, grid, layout }
+}
+
+async function upgrade(buildings, specs) {
+  const manifest = await modelManifest()
+  for (const spec of specs) {
+    const url = modelUrl(manifest, spec)
+    if (!url) continue
+    const model = await loadGlb(url)
+    if (!model) continue
+    const host = buildings.children.find((child) => child.userData.placeId === spec.id)
+    if (!host) continue
+    host.clear()
+    model.position.y = 0
+    host.add(model)
+    const label = labelSprite(shortName(spec.name), false)
+    label.position.y = spec.h + 1.7
+    host.add(label)
+  }
+}

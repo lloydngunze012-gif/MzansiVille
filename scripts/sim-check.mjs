@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.js'
 import { balancedScore } from '../src/engine/board.js'
+import { buildingLayout, doorPoint } from '../src/world/layout.js'
+import { buildGrid, findPath, nearestOpen } from '../src/world/nav.js'
 import {
   actionState,
   actionsAt,
@@ -342,6 +344,19 @@ check('walk or bus, and skipping lecture', () => {
   applyAction(district, skip, 'lecture_skip', () => 0.99)
   assert.equal(skip.prep, 2)
   assert.equal(skip.lectureStreak, 0)
+})
+
+check('campus paths go around buildings', () => {
+  const layout = buildingLayout(district)
+  const grid = buildGrid(layout.obstacles)
+  const home = layout.buildings.find((building) => building.id === 'res_o')
+  const start = nearestOpen(grid, doorPoint(home))
+  for (const id of ['quad', 'library']) {
+    const goal = nearestOpen(grid, doorPoint(layout.buildings.find((building) => building.id === id)))
+    const path = findPath(grid, start, goal)
+    assert.ok(path.length > 1, id)
+    for (const step of path) assert.equal(grid.blocked[step.r * grid.cols + step.c], 0)
+  }
 })
 
 console.log(`${passed} checks passed`)

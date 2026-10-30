@@ -31,6 +31,55 @@ button { cursor: pointer; }
   margin: 0 auto;
   background: var(--paper);
   position: relative;
+  z-index: 1;
+}
+
+#world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  touch-action: none;
+}
+#world canvas { display: block; width: 100%; height: 100%; }
+#world[data-on="0"] { visibility: hidden; pointer-events: none; }
+
+body[data-world="1"] {
+  background: #7eae62;
+  overflow: hidden;
+  height: 100dvh;
+}
+body[data-world="1"] #app {
+  background: transparent;
+  pointer-events: none;
+  height: 100dvh;
+  overflow: hidden;
+}
+body[data-world="1"] #app .top,
+body[data-world="1"] #app .nav,
+body[data-world="1"] #app .sheet,
+body[data-world="1"] #app .banner,
+body[data-world="1"] #app .modal-back,
+body[data-world="1"] #app button,
+body[data-world="1"] #app a {
+  pointer-events: auto;
+}
+.world-hud { background: transparent; }
+.world-space { flex: 1; min-height: 0; }
+.world-hint {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--nav-h) + var(--safe-b) + 10px);
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(28, 25, 21, 0.72);
+  color: #fffaf2;
+  font-size: 13px;
+  z-index: 4;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100% - 24px);
 }
 
 .screen { min-height: 100dvh; display: flex; flex-direction: column; }

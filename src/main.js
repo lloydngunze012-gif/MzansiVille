@@ -96,6 +96,29 @@ function state() {
   }
 }
 
+const WORLD_SCREENS = new Set(['play', 'map', 'place', 'closed'])
+let worldPromise = null
+let worldTicket = 0
+
+function syncWorld(viewState) {
+  const on = Boolean(viewState?.run) && WORLD_SCREENS.has(viewState.screen)
+  const ticket = ++worldTicket
+  document.body.dataset.world = on ? '1' : '0'
+  if (!on) {
+    worldPromise?.then((mod) => {
+      if (ticket === worldTicket) mod.setVisible(false)
+    })
+    return
+  }
+  if (!worldPromise) worldPromise = import('./world/scene.js')
+  worldPromise.then((mod) => {
+    if (ticket !== worldTicket) return
+    mod.showCampus(viewState.district, viewState.run)
+  }).catch((error) => {
+    console.error(error)
+  })
+}
+
 function paint() {
   const shot = new URLSearchParams(location.search).get('shot')
   if (!shot && save.run?.mode === 'play' && route().name === 'summary') {
@@ -119,9 +142,11 @@ function paint() {
     }
   }
   const canvas = document.getElementById('share-card')
-  const run = shot ? shotState(shot).run : save.run
-  const district = shot ? shotState(shot).district : districtNow()
+  const shown = shot ? shotState(shot) : state()
+  const run = shown.run
+  const district = shown.district
   if (canvas && run) drawShareCard(canvas, { district, run, url: location.origin }).catch(() => {})
+  syncWorld(shown)
 }
 
 function go(path) {
