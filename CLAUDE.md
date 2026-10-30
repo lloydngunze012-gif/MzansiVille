@@ -70,6 +70,8 @@ The progress bar can stay as a small timer, but the character must be doing the 
 
 ORDER: 3 (collisions, labels, surroundings) first, because they make everything look broken. Then 2 at the Quad and cafeteria, then 1, then the rest of 4. Push after each, and stop for my review after item 2 at the Quad.
 
+STATUS: item 3 done (a83cd63). Item 2 done at the Quad (all 12 Quad actions play as scenes, src/world/activities.js). Waiting for the owner's review; next is item 2 at the cafeteria, then item 1.
+
 ---
 
 # Plan 2 (current): owner feedback and next plan

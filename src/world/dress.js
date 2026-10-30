@@ -83,6 +83,13 @@ export function dressPlaces(layout) {
   const obstacles = []
   const spots = {}
   const benches = []
+  const queue = {}
+  const srcTables = []
+  let performer = null
+  const movers = [] // short straight walks for the place's own people
+  function moveAvatar(avatar, x, z, speed = 1.8) {
+    return new Promise((resolve) => movers.push({ avatar, x, z, speed, resolve }))
+  }
 
   function prop(name, x, z, { rot = 0, s = 2.2, y = 0 } = {}) {
     const holder = new THREE.Group()
@@ -194,7 +201,7 @@ export function dressPlaces(layout) {
     prop('tree_palmTall', cx + 3.8, sz - 2.4, { s: 6, rot: 1.3 })
     for (const x of [-2.7, 2.7]) prop('plant_bushLarge', cx + x, sz + 1.8, { s: 2.6 })
     // Someone is always on the mic.
-    person({ model: 'male-f', skin: 'deep', outfit: 'shirt', topColor: '#ff8a3d' }, cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
+    performer = person({ model: 'male-f', skin: 'deep', outfit: 'shirt', topColor: '#ff8a3d' }, cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
 
     // Benches under the trees (north-west, between two paths) and south-west.
     for (const [angle, r] of [[208, 8.3], [222, 8.3], [146, 9.6]]) {
@@ -230,7 +237,47 @@ export function dressPlaces(layout) {
     loadProp('kitchenCoffeeMachine').then((src) => { const m = src.clone(true); m.scale.setScalar(1.8); m.position.set(0.7, 1, -0.1); stall.add(m) }).catch(() => {})
     loadProp('radio').then((src) => { const m = src.clone(true); m.scale.setScalar(2); m.position.set(-0.8, 1, -0.1); stall.add(m) }).catch(() => {})
     const vendorAt = new THREE.Vector3(0, 0, -0.9).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y).add(stall.position)
-    person({ model: 'female-d', skin: 'brown', outfit: 'dress', topColor: '#e8497a', hairColor: '#7b3fe4' }, vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
+    const vendor = person({ model: 'female-d', skin: 'brown', outfit: 'dress', topColor: '#e8497a', hairColor: '#7b3fe4' }, vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
+    // The stall queue: two students waiting at the counter. They get served,
+    // step aside to eat, then rejoin the back of the line.
+    const up = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y)
+    const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y)
+    const front = { x: stx + up.x * 2.1, z: stz + up.z * 2.1 }
+    const slot = (i) => ({ x: front.x + up.x * i * 1.0, z: front.z + up.z * i * 1.0 })
+    const waiting = [
+      person({ model: 'male-a', skin: 'deep', outfit: 'hoodie', topColor: '#1d7fb8' }, slot(0).x, slot(0).z, stall.rotation.y + Math.PI),
+      person({ model: 'female-b', skin: 'sand', outfit: 'skirt' }, slot(1).x, slot(1).z, stall.rotation.y + Math.PI),
+    ]
+    const aside = []
+    const pause = (ms) => new Promise((r) => setTimeout(r, ms))
+    queue.stall = {
+      front,
+      slot,
+      get people() { return waiting },
+      vendorServes() { gesture(vendor, 'interact-right') },
+      async serveFront() {
+        const served = waiting.shift()
+        if (!served) return
+        gesture(vendor, 'interact-right')
+        gesture(served, 'pick-up')
+        await pause(700)
+        const spot = { x: front.x + side.x * (3 + aside.length * 1.2) + up.x * 1.5, z: front.z + side.z * (3 + aside.length * 1.2) + up.z * 1.5 }
+        aside.push(served)
+        moveAvatar(served, spot.x, spot.z).then(() => gesture(served, 'emote-yes'))
+        await Promise.all(waiting.map((p, i) => moveAvatar(p, slot(i).x, slot(i).z, 1.6)))
+        waiting.forEach((p) => { p.rotation.y = stall.rotation.y + Math.PI })
+      },
+      rejoin() {
+        setTimeout(() => {
+          while (aside.length) {
+            const p = aside.shift()
+            waiting.push(p)
+            const s = slot(waiting.length - 1)
+            moveAvatar(p, s.x, s.z).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
+          }
+        }, 6000)
+      },
+    }
     const sl = new THREE.PointLight(0xffcf8a, 0, 7, 1.6)
     sl.position.set(stx, 2.2, stz)
     group.add(sl)
@@ -253,7 +300,9 @@ export function dressPlaces(layout) {
       box(t, 2.4, 0.3, 0.05, c2, 0, 2.15, 0.8)
       sign(t, [slate.name], { x: 0, y: 1.55, z: -0.83, w: 2.1, h: 0.55, bg: c1, fg: c2 === '#ffffff' ? '#ffffff' : c2, font: 52 })
       const back = new THREE.Vector3(0, 0, -1.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
-      person({ model: ['male-a', 'female-f', 'male-d'][i], skin: ['deep', 'brown', 'sand'][i], outfit: 'hoodie', topColor: c1, bottomColor: c3 }, back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
+      const campaigner = person({ model: ['male-a', 'female-f', 'male-d'][i], skin: ['deep', 'brown', 'sand'][i], outfit: 'hoodie', topColor: c1, bottomColor: c3 }, back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
+      const frontAt = new THREE.Vector3(0, 0, 1.7).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
+      srcTables.push({ x, z, front: { x: frontAt.x, z: frontAt.z }, campaigner, slate })
       block(x, z, 2.4, 2)
     })
 
@@ -339,15 +388,29 @@ export function dressPlaces(layout) {
   }
 
   function update(dt) {
+    const moving = new Set()
+    for (let i = movers.length - 1; i >= 0; i--) {
+      const m = movers[i]
+      const a = m.avatar.position
+      const dx = m.x - a.x
+      const dz = m.z - a.z
+      const d = Math.hypot(dx, dz)
+      const step = m.speed * dt
+      if (d <= step) { a.x = m.x; a.z = m.z; movers.splice(i, 1); m.resolve(); continue }
+      a.x += (dx / d) * step
+      a.z += (dz / d) * step
+      m.avatar.rotation.y = Math.atan2(dx, dz)
+      moving.add(m.avatar)
+    }
     for (const p of people) {
       p.clock += dt
       if (p.every) {
         p.next -= dt
         if (p.next <= 0) { gesture(p.avatar, p.move); p.next = p.every + Math.random() * 3 }
       }
-      poseAvatar(p.avatar, false, p.clock)
+      poseAvatar(p.avatar, moving.has(p.avatar), p.clock)
     }
   }
 
-  return { group, obstacles, spots, benches, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, spots, benches, queue, srcTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }

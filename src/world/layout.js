@@ -21,6 +21,7 @@ const KIND = {
 const PLACE = {
   quad: { w: 5, d: 3, h: 0.6, dz: -6.5, open: true },
   cafeteria: { w: 10, d: 6, h: 4.5 },
+  off_campus: { w: 8, d: 7, h: 6 },
 }
 
 export function csvToWorld(x, y) {
