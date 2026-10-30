@@ -22,7 +22,7 @@ async function atLecture(page, minutes) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   }, minutes)
   // A new query string forces a full reload, so the edited save is read fresh.
-  await page.goto('/?morning=0&lecture=1#/lecture')
+  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
 }
 
 test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {

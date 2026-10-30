@@ -362,6 +362,9 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 @keyframes mmfloat{0%{opacity:0;transform:translate(-50%,-60%)}15%{opacity:1}100%{opacity:0;transform:translate(-50%,-260%)}}
 .mm-bubble{position:absolute;transform:translate(-50%,-100%);width:max-content;max-width:230px;margin:0;padding:10px 14px;border-radius:16px;background:#fff8ea;color:#22143b;font:700 15px system-ui;border:3px solid #2a1846;pointer-events:none}
 .mm-bubble[data-who=roommate]{background:#e8fff2}
+/* A line waiting for the player's tap. */
+.mm-bubble.tap::after,.lc-say.tap::after,.lc-caption.tap::after{content:'Tap to continue \25B8';display:block;margin-top:6px;font:800 11px system-ui;letter-spacing:.04em;opacity:.65;animation:mmhint 1.2s ease-in-out infinite}
+@keyframes mmhint{50%{opacity:.25}}
 .mm-sign{position:absolute;left:50%;top:225px;transform:translateX(-50%);margin:0;padding:10px 16px;border-radius:14px;background:#2a1846;color:#fff6e6;font:700 16px system-ui;border:2px solid #f0c400;white-space:nowrap}
 .mm-sign em{color:#ff9f8a;font-style:normal}
 .mm-card{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-40%);background:linear-gradient(180deg,#fff8ea,#ffeccc);color:#2a1846;border:3px solid #2a1846;border-radius:20px;padding:18px;box-shadow:0 6px 0 #2a1846,0 24px 60px #000b;z-index:4}

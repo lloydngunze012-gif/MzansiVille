@@ -39,7 +39,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
     Object.assign(save.run, { phase: 'lecture', minutes: 525, queue: [], lectureResolved: false })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&lecture=1#/lecture')
+  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
   await expect(page.locator('#lecture3d')).toHaveAttribute('data-look', /female-d/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#lecture3d').getAttribute('data-look'))).toEqual(look)
 })

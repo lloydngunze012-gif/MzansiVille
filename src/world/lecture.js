@@ -144,6 +144,23 @@ function floatDelta(delta) {
   setTimeout(() => { node.hidden = true }, 1800)
 }
 
+// Lines stay until the player taps anywhere that is not a button (?talk=auto: tests).
+const AUTO_TALK = new URLSearchParams(location.search).get('talk') === 'auto'
+function tapNext(node) {
+  node?.classList.add('tap')
+  return new Promise((resolve) => {
+    const done = () => { node?.classList.remove('tap'); window.removeEventListener('pointerup', onTap, true); resolve() }
+    const onTap = (event) => {
+      if (event.target.closest?.('button')) return
+      if (performance.now() - since < 250) return
+      done()
+    }
+    const since = performance.now()
+    if (AUTO_TALK) { setTimeout(done, 700); return }
+    window.addEventListener('pointerup', onTap, true)
+  })
+}
+
 // ---------- room ----------
 const rowY = (r) => r * 0.38
 const rowZ = (r) => -2 + r * ROW_GAP
@@ -338,9 +355,9 @@ async function play() {
   caption(v.caption)
   say(v.lecturer_line)
   gesture(lecturer, late ? 'emote-no' : 'interact-right')
-  await wait(1.6)
+  await tapNext(uiq('.lc-say'))
   say(v.student_line)
-  await wait(1.2)
+  await tapNext(uiq('.lc-say'))
 
   // 2. find a seat
   setStep('seat')
@@ -366,7 +383,7 @@ async function play() {
   floatDelta(seat.deltas)
   if (seat.id === 'zanele') say(seat.zanele)
   else say({ who: 'zanele', text: seat.zanele.text })
-  await wait(1.8)
+  await tapNext(uiq('.lc-say'))
 
   // 3. something happens
   const moment = LINES.moments[Math.floor(Math.random() * LINES.moments.length)]
@@ -376,7 +393,7 @@ async function play() {
   say(null)
   await playMoment(moment, mySeat)
   say(moment.line)
-  await wait(1.2)
+  await tapNext(uiq('.lc-say'))
 
   // 4. a choice and its result
   setStep('choice')
@@ -392,11 +409,11 @@ async function play() {
   const reaction = LINES.zanele_lines.find((l) => l.when === outcome.tone)
   if (seat.id === 'zanele' && reaction) say(reaction)
   else say(null)
+  await tapNext(uiq(seat.id === 'zanele' && reaction ? '.lc-say' : '.lc-caption'))
   if (moment.id === 'load_shedding') {
-    await wait(1.4)
     boardText(['Welcome to SMIG', 'Lecture 1'])
     await tween(0.6, (k) => { hemi.intensity = 0.3 + k * 1.1; sun.intensity = 0.1 + k * 1.5 })
-  } else await wait(2.2)
+  }
   clipboard.position.y = -5
 
   // 5. the bell
@@ -411,10 +428,10 @@ async function play() {
     const sz = student.position.z
     walk(student, [[sx, student.position.y, sz + 0.6], [AISLE_X, student.position.y, sz + 0.6], [AISLE_X, 0, 9.5 + i * 0.1]], 2 + i * 0.2)
   }
-  await wait(1.6)
+  await tapNext(uiq('.lc-say'))
   const end = seat.id === 'zanele' ? LINES.zanele_lines.find((l) => l.when === 'end') : LINES.zanele_lines.find((l) => l.when === 'end_alone')
   say(end)
-  await wait(1.2)
+  await tapNext(uiq('.lc-say'))
 
   // Done card: what this lecture gave you (the normal lecture gain is added by the game).
   setStep('done')

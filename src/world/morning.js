@@ -240,6 +240,28 @@ function bubble(text, who) {
   node.dataset.who = who === roommate ? 'roommate' : 'player'
   node.hidden = false
 }
+// Lines stay until the player taps anywhere that is not a button (?talk=auto: tests).
+const AUTO_TALK = new URLSearchParams(location.search).get('talk') === 'auto'
+function tapNext(node) {
+  node?.classList.add('tap')
+  return new Promise((resolve) => {
+    const done = () => { node?.classList.remove('tap'); window.removeEventListener('pointerup', onTap, true); resolve() }
+    const onTap = (event) => {
+      if (event.target.closest?.('button')) return
+      if (performance.now() - since < 250) return
+      done()
+    }
+    const since = performance.now()
+    if (AUTO_TALK) { setTimeout(done, 700); return }
+    window.addEventListener('pointerup', onTap, true)
+  })
+}
+// Say a line and wait for the tap.
+async function talk(text, who) {
+  bubble(text, who)
+  await tapNext(uiq('.mm-bubble'))
+  bubble('')
+}
 // Big alarm clock: the minutes roll over when you snooze.
 function clockShow(on) {
   const node = uiq('.mm-clock')
@@ -651,8 +673,7 @@ async function play() {
   opts.onUpdate()
   // Zanele says hi first.
   setStep('greet')
-  bubble(line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}'), roommate)
-  await wave(roommate)
+  await Promise.all([wave(roommate), talk(line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}'), roommate)])
   bubble(line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
   setStep('wake')
   clockShow(true)
@@ -676,12 +697,10 @@ async function play() {
     await clockRoll(SNOOZE)
   }
   host.dataset.snoozes = String(snoozes)
-  if (snoozes >= SNOOZE_MAX) bubble(line('late_variants.snoozed_too_long.zanele', 'I let you sleep. I regret it. Run.'), roommate)
-  else if (snoozes > 0) bubble(line('steps.wake.zanele', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
-  if (snoozes > 0) await wait(1.4)
+  if (snoozes >= SNOOZE_MAX) await talk(line('late_variants.snoozed_too_long.zanele', 'I let you sleep. I regret it. Run.'), roommate)
+  else if (snoozes > 0) await talk(line('steps.wake.zanele', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
   clockShow(false)
-  bubble(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
-  await wait(0.6)
+  await talk(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
   // sit up, then swing out of bed
   await tween(0.8, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k); player.position.y = 0.62 + k * 0.1 })
   await tween(0.7, (k) => { player.position.x = -2.1 + k * 0.85; player.position.y = 0.72 * (1 - k); player.rotation.y = k * Math.PI / 2 })
@@ -706,11 +725,8 @@ async function play() {
     await tween(0.5, (k) => { packet.position.set(1.55, 0.99 + k * 0.4, -2.55 + k * 0.4) })
     packet.visible = false
     face(roommate, player.position.x, player.position.z)
-    bubble(line('steps.roommate.bubble', 'Sorry! Last packet \u{1F605} I\u2019ll buy more later.'), roommate)
-    await wait(2.2)
-    bubble(line('steps.roommate.bare', 'The shelf is bare. Your roommate got the last packet.'), player)
-    await wait(2.0)
-    bubble('')
+    await talk(line('steps.roommate.bubble', 'Sorry! Last packet \u{1F605} I\u2019ll buy more later.'), roommate)
+    await talk(line('steps.roommate.bare', 'The shelf is bare. Your roommate got the last packet.'), player)
     walkTo(roommate, 2.1, -0.35, 1.8)
     lookAtKettle(false)
     const pick = await choices(line('steps.choice_no_noodles.title', 'No noodles left. What now?'), [
@@ -741,9 +757,7 @@ async function play() {
     } else {
       setStep('skip')
       lookAtKettle(false)
-      bubble('Fine. I\u2019ll survive till lunch\u2026', player)
-      await wait(1.6)
-      bubble('')
+      await talk('Fine. I\u2019ll survive till lunch\u2026', player)
       changeStats({ hunger: -10, energy: -5 })
     }
   } else {
@@ -783,7 +797,7 @@ async function play() {
   await walkTo(player, -0.9, 0.9)
   face(player, -2.2, 1.5)
   bubble('Quick shower, get dressed\u2026', player)
-  await Promise.all([tween(1.2, (k) => { player.rotation.y = Math.PI * 4 * k }), addMinutes(15, 1.2)])
+  await Promise.all([tween(1.2, (k) => { player.rotation.y = Math.PI * 4 * k }), addMinutes(15, 1.2), tapNext(uiq('.mm-bubble'))])
   bubble('')
   await walkTo(player, 2.3, 1.2)
   sfx('door')
@@ -815,7 +829,7 @@ async function play() {
   showSign()
   signNode.classList.toggle('late', lateBus)
   host.dataset.nextbus = fmt(next)
-  if (lateBus) bubble(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
+  if (lateBus) await talk(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
   camOffset.set(-6, 4.5, 8)
   await wait(0.8)
   const waitMin = next - run.minutes
@@ -914,7 +928,7 @@ async function eat() {
     return !bowl.visible
   })
   bubble('Mmm\u2026 2-minute noodles.', player)
-  await tween(2.0, (k) => { player.userData.bob.position.y = 0.78 + Math.sin(k * Math.PI * 6) * 0.03 })
+  await Promise.all([tween(2.0, (k) => { player.userData.bob.position.y = 0.78 + Math.sin(k * Math.PI * 6) * 0.03 }), tapNext(uiq('.mm-bubble'))])
   bubble('')
   bowl.visible = false
   steamGroup.visible = false
