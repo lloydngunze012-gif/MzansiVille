@@ -287,7 +287,24 @@ function summaryCard(state) {
   </aside>`
 }
 
+export const viewFlags = { world: false, gl: true }
+
+export function viewPref() {
+  try { return localStorage.getItem('mzansiville.view') === 'map' ? 'map' : '3d' } catch { return '3d' }
+}
+
+function viewBar(world) {
+  let cam = 'sims'
+  try { cam = localStorage.getItem('mzansiville.camera') || 'sims' } catch { /* ignore */ }
+  const shot = new URLSearchParams(location.search).get('shot') || ''
+  if (shot.startsWith('cam-')) cam = shot.slice(4)
+  const views = [['top', '\u25A3', 'Top'], ['sims', '\u25E2', 'Sims'], ['eye', '\u25C9', 'Eye']]
+  const gl = viewFlags.gl
+  return `<nav class="g-views" aria-label="View">${views.map(([id, ic, label]) => `<button type="button" class="g-view" data-act="view" data-mode="${id}" aria-pressed="${world && cam === id}"${gl ? '' : ' disabled title="3D needs WebGL"'}>${ic} ${label}</button>`).join('')}<button type="button" class="g-view" data-act="view" data-mode="map" aria-pressed="${!world}">\u{1F5FA}\uFE0F Map</button></nav>${gl ? '' : '<p class="g-nogl" role="status">3D is off on this device (no WebGL). Showing the map.</p>'}`
+}
+
 export function mapHome(state, openPlace = '') {
+  const world = viewFlags.world
   const { district, run } = state
   const here = hereOf(district, run)
   const home = homePlaceId(district, run.character.residence)
@@ -309,13 +326,14 @@ export function mapHome(state, openPlace = '') {
   else if (run.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
     layer = `<div class="g-scrim"></div><aside class="g-result"><p class="g-kind">Day ${run.day}</p><h2>Keep ${esc(run.character.name)}?</h2><p>Guests live on this phone only. Make a free account so this student survives a cleared browser.</p><div class="g-two"><button type="button" class="g-go ghost" data-act="snooze">Not now</button><button type="button" class="g-go" data-act="nav" data-go="save">Save progress</button></div></aside>`
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
-  return `<main class="screen g-screen" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">
+  return `<main class="screen g-screen${world ? ' g-3d' : ''}" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">
     ${hud(district, run)}
-    <section class="g-map" aria-label="Campus map">
+    ${viewBar(world)}
+    ${world ? '<section class="g-map g-world-gap" aria-label="3D campus"></section>' : `<section class="g-map" aria-label="Campus map">
       ${groundHtml()}
       ${pins}
       <span class="g-me" id="g-me" style="left:${ax}%;top:${ay}%" aria-label="You"><span class="g-me-head">${esc((run.character.name || '?').slice(0, 1).toUpperCase())}</span><span class="g-me-tag">You</span></span>
-    </section>
+    </section>`}
     ${run.mode === 'play' && !layer ? ctaBar(district, run) : ''}
     ${ui.notice ? `<p class="g-notice" role="status">${esc(ui.notice)}</p>` : ''}
     ${layer}
