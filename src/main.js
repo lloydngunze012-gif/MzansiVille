@@ -32,6 +32,8 @@ import {
 } from './net.js'
 import { drawShareCard, exportCard } from './share.js'
 import { emptyDraft, localBoardRow, shotState, view } from './ui/render.js'
+import { anyEnabled, hereOf, layoutOf, soundOn, ui } from './ui/game.js'
+import { homePlaceId } from './engine/model.js'
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -141,7 +143,7 @@ function armToasts() {
   })
 }
 
-const WORLD_SCREENS = new Set(['play', 'map', 'place', 'closed', 'summary', 'event', 'twist', 'bestie', 'graduated'])
+const WORLD_SCREENS = new Set(['world'])
 let worldPromise = null
 let worldTicket = 0
 
@@ -194,6 +196,7 @@ function paint() {
   if (canvas && run) drawShareCard(canvas, { district, run, url: location.origin }).catch(() => {})
   syncWorld(shown)
   armToasts()
+  armAuto()
 }
 
 function go(path) {
@@ -220,7 +223,7 @@ function captureForm() {
 }
 
 function needsRun(name) {
-  return ['play', 'place', 'summary', 'locked', 'over', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
+  return ['play', 'world', 'place', 'summary', 'locked', 'over', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
 }
 
 function arm() {
@@ -236,6 +239,114 @@ async function sync() {
     const result = await pushProfile(save.run)
     if (result.error) draft.error = result.error
   }
+}
+
+function blip(freq = 660) {
+  if (!soundOn()) return
+  try {
+    const ctx = blip.ctx || (blip.ctx = new (window.AudioContext || window.webkitAudioContext)())
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.frequency.value = freq
+    g.gain.setValueAtTime(0.05, ctx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12)
+    o.connect(g).connect(ctx.destination)
+    o.start()
+    o.stop(ctx.currentTime + 0.13)
+  } catch { /* no audio */ }
+}
+
+// Fix 2 from play-through: plain result cards close themselves.
+let autoTimer = 0
+function armAuto() {
+  clearTimeout(autoTimer)
+  const card = app.querySelector('.g-result[data-auto]')
+  if (!card) return
+  card.insertAdjacentHTML('beforeend', '<i class="g-timer"></i>')
+  autoTimer = setTimeout(() => {
+    const q = save.run?.queue?.[0]
+    if (!q || q.choices || !app.contains(card)) return
+    dismissCard(save.run, q.id)
+    autoAdvance()
+    persist()
+    paint()
+  }, 1800)
+}
+
+let noticeTimer = 0
+function flash(text) {
+  ui.notice = text || ''
+  clearTimeout(noticeTimer)
+  if (text) noticeTimer = setTimeout(() => { ui.notice = ''; const n = app.querySelector('.g-notice'); if (n) n.remove() }, 2200)
+}
+
+function phaseNotice() {
+  const run = save.run
+  if (!run || run.mode !== 'play') return ''
+  const p = districtNow().meta.phases.find((item) => item.id === run.phase)
+  return p ? `${p.label} \u00b7 ${p.start}` : ''
+}
+
+// Skip phases where nothing on the map can be done, so the day never stalls.
+function autoAdvance() {
+  const district = districtNow()
+  const run = save.run
+  let guard = 0
+  while (run && run.mode === 'play' && !run.queue.some((card) => card.choices) && !anyEnabled(district, run) && guard < 6) {
+    advancePhase(district, run)
+    guard += 1
+  }
+  if (guard) flash(phaseNotice())
+}
+
+// Avatar walks to the tapped place before the action lands.
+function walkThen(button, done) {
+  button.classList.add('busy')
+  blip()
+  const me = document.getElementById('g-me')
+  const target = button.dataset.place
+  const from = save.run && hereOf(districtNow(), save.run)
+  if (!me || !target || target === from) { setTimeout(done, 120); return }
+  const [x, y] = layoutOf(target)
+  const sheet = app.querySelector('.g-sheet')
+  if (sheet) sheet.style.transform = 'translateY(110%)', sheet.style.transition = 'transform .2s'
+  app.querySelectorAll('.g-scrim').forEach((el) => el.remove())
+  me.classList.add('walk')
+  me.style.left = `${x}%`
+  me.style.top = `${y}%`
+  setTimeout(done, 450)
+}
+
+function gameAct(act, button) {
+  const district = districtNow()
+  if (act === 'stat') {
+    ui.tip = ui.tip === button.dataset.k ? '' : button.dataset.k
+    blip(520)
+    paint()
+    clearTimeout(gameAct.t)
+    gameAct.t = setTimeout(() => { if (ui.tip) { ui.tip = ''; paint() } }, 5000)
+    return true
+  }
+  if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
+  if (act === 'sound') {
+    try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
+    blip(880)
+    paint()
+    return true
+  }
+  if (act === 'reset') { ui.confirmReset = true; paint(); return true }
+  if (act === 'place-open') { blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
+  if (act === 'close-sheet') { go('play'); return true }
+  if (act === 'to-night') {
+    while (save.run.mode === 'play' && save.run.phase !== 'night') advancePhase(district, save.run)
+    flash(phaseNotice())
+    finishTurn()
+    return true
+  }
+  if (act === 'nav' || act === 'new') ui.gear = false
+  if (act === 'dismiss' && button.dataset.pair && save.run?.queue?.[1]) dismissCard(save.run, save.run.queue[1].id)
+  if (act === 'dismiss' || act === 'choice' || act === 'snooze') setTimeout(() => { if (save.run?.mode === 'play' && !save.run.queue.length) { autoAdvance(); persist(); paint() } }, 0)
+  return false
 }
 
 function finishTurn() {
@@ -486,6 +597,7 @@ app.addEventListener('click', async (event) => {
     go('title')
     return
   }
+  if (gameAct(act, button)) return
   if (act === 'do') {
     if (choiceWaiting()) {
       cardMini = false
@@ -505,9 +617,15 @@ app.addEventListener('click', async (event) => {
       }))
       return
     }
-    const result = applyAction(district, save.run, id)
-    if (!result.ok) return
-    finishTurn()
+    walkThen(button, () => {
+      const before = { ...save.run.stats }
+      const result = applyAction(district, save.run, id)
+      if (!result.ok) { ui.notice = result.error; paint(); return }
+      save.run.at = button.dataset.place || save.run.at
+      ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(save.run.stats[k] - before[k])]))
+      autoAdvance()
+      finishTurn()
+    })
     return
   }
   if (act === 'phase') {
@@ -517,6 +635,8 @@ app.addEventListener('click', async (event) => {
       return
     }
     advancePhase(district, save.run)
+    autoAdvance()
+    flash(phaseNotice())
     finishTurn()
     return
   }
@@ -546,6 +666,8 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'next') {
     beginNextDay(district, save.run, new Date())
+    save.run.at = homePlaceId(district, save.run.character.residence)
+    ui.delta = null
     finishTurn()
     return
   }
@@ -760,4 +882,4 @@ window.addEventListener('keydown', (event) => {
   persist()
   paint()
 })
-bootAuth()
+bootAuth().catch(() => {})
