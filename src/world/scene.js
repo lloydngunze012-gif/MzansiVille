@@ -3,7 +3,7 @@ import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
-import { createCampus, markDoors } from './campus.js'
+import { createCampus, fitLabels, markDoors } from './campus.js'
 import { bindCampusInput } from './interact.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
@@ -568,6 +568,8 @@ function tick(now) {
     clock += dt
     poseAvatar(player, walking, clock)
     rig.apply(camera, player.position, dt, campus.buildings)
+    camera.updateMatrixWorld()
+    fitLabels(campus.buildings, camera, dt)
     sun.position.set(player.position.x + 22, 34, player.position.z + 12)
     sunTarget.position.set(player.position.x, 0, player.position.z)
     for (const beacon of campus.buildings.children) {
