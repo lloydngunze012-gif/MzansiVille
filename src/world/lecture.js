@@ -29,6 +29,14 @@ let lecturer = null
 let students = []
 let walkers = []
 let clipboard = null
+let hallDoor = null
+// Up (or down) the stepped aisle one row at a time, never through the tiers.
+function aisleTo(r) {
+  const pts = [[AISLE_X, 0, 7]]
+  for (let i = ROWS - 1; i >= r; i--) pts.push([AISLE_X, rowY(i), rowZ(i) + 0.95])
+  return pts
+}
+const doorTo = (open) => tween(0.5, (k) => { hallDoor.rotation.y = open ? -1.6 * k : -1.6 * (1 - k) })
 const camTarget = new THREE.Vector3()
 const camWant = new THREE.Vector3()
 // A set shot (position + look) overrides the follow camera: board, lecturer, you.
@@ -255,8 +263,13 @@ function build() {
     box(8, 0.08, 0.5, 0xb88a5a, -0.6, rowY(r) + 0.95, rowZ(r) - 0.75)
     box(8, 0.12, 0.55, 0x4a3426, -0.6, rowY(r) + 0.5, rowZ(r) + 0.05)
   }
-  // Door at the back right.
-  box(1.4, 2.6, 0.12, 0x6b3f22, AISLE_X, 1.3, 9)
+  // Door at the back right, on a hinge: it opens before anyone walks through.
+  hallDoor = new THREE.Group()
+  hallDoor.position.set(AISLE_X - 0.7, 0, 9)
+  scene.add(hallDoor)
+  const leaf = box(1.4, 2.6, 0.12, 0x6b3f22, 0.7, 1.3, 0)
+  scene.remove(leaf)
+  hallDoor.add(leaf)
   // Chalkboard with the day's title.
   const canvas = document.createElement('canvas')
   canvas.width = 512
@@ -399,7 +412,10 @@ async function play() {
   say(LINES.arrive_venue.lecturer_line)
   sfx('door')
   const v = late ? LINES.walk_in.late : LINES.walk_in.on_time
+  hallDoor.rotation.y = 0
+  await doorTo(true)
   await walk(player, [[AISLE_X, 0, 6.5]])
+  doorTo(false)
   setStep('walk-in')
   setShot('board')
   caption(v.caption)
@@ -425,7 +441,8 @@ async function play() {
   caption(seat.line)
   say(null)
   setShot(null)
-  await walk(player, [[AISLE_X, rowY(r), z + 0.6], [x, rowY(r), z + 0.6], [x, y, z]])
+  // Up the stepped aisle, along the gap behind your row, then into the seat.
+  await walk(player, [...aisleTo(r), [AISLE_X, rowY(r), z + 0.6], [x, rowY(r), z + 0.6], [x, y, z]])
   player.rotation.y = Math.PI
   player.userData.pose = 'sit'
   // Seated: over your shoulder, up toward the board and the lecturer.
@@ -477,12 +494,16 @@ async function play() {
   say(LINES.end_of_lecture.lecturer_line)
   for (const student of students) student.userData.pose = 'stand'
   player.userData.pose = 'stand'
-  walkers = students.slice(0, 6)
-  for (const [i, student] of walkers.entries()) {
+  // A few leave one after another: along their row, down the aisle, out the door.
+  walkers = students.filter((s) => s !== roommate).slice(0, 5)
+  doorTo(true)
+  walkers.forEach((student, i) => {
+    const [r2] = (student.userData.seat || '0:0').split(':').map(Number)
     const sx = student.position.x
     const sz = student.position.z
-    walk(student, [[sx, student.position.y, sz + 0.6], [AISLE_X, student.position.y, sz + 0.6], [AISLE_X, 0, 9.5 + i * 0.1]], 2 + i * 0.2)
-  }
+    const y = rowY(r2)
+    wait(i * 0.9).then(() => walk(student, [[sx, y, sz + 0.6], [AISLE_X, y, sz + 0.6], ...aisleTo(r2).reverse(), [AISLE_X, 0, 9.6], [AISLE_X, 0, 11]], 2.2))
+  })
   await tapNext(uiq('.lc-say'))
   const end = roomieLine(seat.id === 'zanele' ? 'end' : 'end_alone')
   say(end)

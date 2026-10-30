@@ -19,7 +19,7 @@ insert into public.district_places (district_id, id, name, kind, x, y, blurb) va
 ('campusville', 'res_r', 'R Block', 'residence', 250, 780, 'The quiet block: sleep, a kettle, and corridor lights that actually go out'),
 ('campusville', 'res_s', 'S Block', 'residence', 350, 820, 'The middle block: sleep, a shared fridge, and courtyard noise that ends before a test'),
 ('campusville', 'res_other', 'Other on-campus blocks', 'residence', 200, 600, 'The other on-campus blocks: sleep, a corridor, and whoever landed on your floor'),
-('campusville', 'off_campus', 'Off-campus res (bus home)', 'residence', 500, 980, 'Off-campus students start and end the day here. Home is a bus ride, not a walk across the quad'),
+('campusville', 'off_campus', 'Off-campus res (bus home)', 'residence', 580, 980, 'Off-campus students start and end the day here. Home is a bus ride, not a walk across the quad'),
 ('campusville', 'gate', 'Main Gate', 'transit', 500, 940, 'Entry; late-night security events');
 
 insert into public.district_activities

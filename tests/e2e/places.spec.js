@@ -61,3 +61,25 @@ for (const [place, hour] of [['quad', 21], ['quad', 12], ['cafeteria', 21]]) {
     await page.screenshot({ path: `${OUT}/top-${place}-${hour}.png` })
   })
 }
+
+// Look-check shots (owner rule): buildings, labels and surroundings from the player's camera.
+for (const [place, hour, cam] of [['gate', 12, 'sims'], ['library', 12, 'sims'], ['smig', 12, 'sims'], ['res_o', 12, 'sims'], ['sports_centre', 12, 'sims'], ['bus_station', 12, 'sims'], ['gate', 21, 'sims'], ['smig', 21, 'sims'], ['gate', 12, 'top']]) {
+  test(`look: ${place} ${cam} at ${hour}:00`, async ({ page }) => {
+    fs.mkdirSync(OUT, { recursive: true })
+    await page.goto(`/?shot=cam-${cam}&spawn=${place}&hour=${hour}`)
+    await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+    await page.waitForTimeout(5000)
+    await page.screenshot({ path: `${OUT}/look-${place}-${cam}-${hour}.png` })
+  })
+}
+
+// Looking out of campus: roads, fence, taxi rank and town, never an empty blue edge.
+for (const [cam, hour] of [['sims', 12], ['eye', 12], ['sims', 21]]) {
+  test(`look: outside the gate ${cam} at ${hour}:00`, async ({ page }) => {
+    fs.mkdirSync(OUT, { recursive: true })
+    await page.goto(`/?shot=cam-${cam}&spawn=gate&facing=0&hour=${hour}`)
+    await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+    await page.waitForTimeout(6000)
+    await page.screenshot({ path: `${OUT}/look-outside-${cam}-${hour}.png` })
+  })
+}

@@ -468,6 +468,13 @@ function respawn(district, run) {
     const p = cellCenter(cell.c, cell.r)
     player.position.set(p.x, 0, p.z)
   }
+  // ?facing=<radians> turns the player and camera (0 looks south, out of the gate).
+  const facingParam = new URLSearchParams(location.search).get('facing')
+  if (facingParam !== null && Number.isFinite(Number(facingParam))) {
+    player.rotation.y = Number(facingParam)
+    rig.facing = player.rotation.y
+    rig.yaw = player.rotation.y + Math.PI
+  }
   if (gate) {
     // Arriving by bus: stand inside the gate, facing the quad, camera behind.
     const quad = campus.layout.buildings.find((building) => building.id === 'quad') || { x: 0, z: 0 }
@@ -540,6 +547,26 @@ function tryStep(dx, dz) {
   }
   if (!pointBlocked(campus.grid, x, player.position.z)) player.position.x = x
   else if (!pointBlocked(campus.grid, player.position.x, z)) player.position.z = z
+}
+
+// The place you are heading for keeps its name tag at any distance.
+function destination() {
+  if (currentRun?.lectureRoute) return 'smig'
+  if (!routeGoal || !campus) return ''
+  const hit = campus.layout.buildings.find((b) => Math.hypot(routeGoal.x - b.x, routeGoal.z - (b.maxZ + 5)) < 4)
+  return hit?.id || ''
+}
+
+// Building doors swing open as you come up to them, and close behind you.
+function swingDoors(dt) {
+  for (const group of campus.buildings.children) {
+    const hinge = group.getObjectByName('door-pivot')
+    if (!hinge) continue
+    const b = campus.layout.buildings.find((item) => item.id === group.userData.placeId)
+    const near = b && Math.hypot(player.position.x - b.x, player.position.z - (b.maxZ + 1.5)) < 3.6
+    const want = near ? -1.75 : 0
+    hinge.rotation.y += (want - hinge.rotation.y) * Math.min(1, dt * 5)
+  }
 }
 
 // Day and night follow the game clock (?hour=21 forces a time for screenshots).
@@ -665,7 +692,8 @@ function tick(now) {
     const head = player.getObjectByName('head-mesh')
     if (head) head.visible = rig.mode !== 'eye'
     camera.updateMatrixWorld()
-    fitLabels(campus.buildings, camera, dt)
+    fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
+    swingDoors(dt)
     sun.position.set(player.position.x + 22, 34, player.position.z + 12)
     sunTarget.position.set(player.position.x, 0, player.position.z)
     for (const beacon of campus.buildings.children) {
