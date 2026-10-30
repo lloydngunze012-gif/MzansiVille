@@ -1,0 +1,18 @@
+ERRS 1 
+WARNING THREE.WebGLShadowMap: PCFSoftShadowMap has been removed. Using PCFShadowMap instead.
+NET 
+cover@title > rules@rules > agree-unchecked@rules > create@create > begin-empty@create > create-filled@create > after-begin@play > loop-end@play > nav-milestones@milestones > nav-profile@profile > nav-board@leaderboard > nav-chat@chat > nav-save@save > nav-privacy@privacy > nav-world@play > final@play
+OVER CLIPPED H1.sr-only "CampusVille"
+OFFRIGHT DIV.tc-art "" right=367
+OFFRIGHT PICTURE. "" right=367
+OFFRIGHT IMG. "" right=367
+CLIPPED STRONG. "Your name"
+CLIPPED STRONG. "Thandeka Mkhize-Ndlovu L"
+CLIPPED INPUT. ""
+OFFRIGHT SPAN.g-cloud c2 "" right=519
+OFFRIGHT SPAN.g-sun "" right=422
+OFFRIGHT SPAN.g-cloud c2 "" right=534
+OFFRIGHT SPAN.g-sun "" right=425
+OFFRIGHT SPAN.g-cloud c2 "" right=480
+OFFRIGHT SPAN.g-sun "" right=415
+{"navfail":"share","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
