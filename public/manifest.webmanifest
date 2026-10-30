@@ -1,0 +1,9 @@
+{
+  "name": "MzansiVille",
+  "short_name": "MzansiVille",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1c1915",
+  "theme_color": "#1c1915",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

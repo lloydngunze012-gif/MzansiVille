@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+.vercel
+screenshots
+playwright-report
+test-results
+blob-report
+*.log
