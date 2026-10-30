@@ -148,18 +148,18 @@ export const ART = {
 // the centre, cafeteria beside it, sports east, lecture venues around, res
 // south-west, bus station and gate south.
 export const LAYOUT = {
-  science: [31, 11], law: [70, 10],
+  science: [27, 10], law: [70, 10],
   engineering: [13, 26], library: [42, 25], sports_centre: [80, 27],
-  smig: [15, 43], quad: [47, 45], cafeteria: [79, 43],
-  health_sciences: [80, 59], res_other: [11, 59],
-  res_r: [38, 66], res_o: [14, 76], res_s: [36, 84],
-  bus_station: [65, 75], gate: [50, 92], off_campus: [86, 89],
+  smig: [17, 41], quad: [47, 45], cafeteria: [79, 43],
+  health_sciences: [80, 59], res_other: [13.5, 57],
+  res_r: [43, 66], res_o: [15, 75], res_s: [31, 90],
+  bus_station: [65, 75], gate: [57, 93], off_campus: [83, 88],
 }
 
 // Curved paved paths (viewBox 0-100, stretched). Hand-placed to avoid the
 // spoke look: a ring round the Quad, a spine to the gate, branches that bend.
 const PATHS = [
-  'M50 96 C50 84 46 70 47 55',
+  'M57 97 C56 84 48 70 47 55',
   'M47 55 C60 62 64 68 65 78',
   'M33 45 C33 36 40 31 47 31 C56 31 62 37 62 45 C62 54 55 58 47 58 C39 58 33 53 33 45',
   'M33 45 C26 44 20 45 15 47',
@@ -169,9 +169,9 @@ const PATHS = [
   'M62 42 C68 41 73 42 79 46',
   'M60 38 C66 34 72 32 80 31',
   'M60 52 C68 56 74 60 80 62',
-  'M40 57 C39 61 38 64 38 68',
-  'M38 68 C30 71 22 75 14 79 M38 68 C38 74 37 79 36 86',
-  'M14 79 C12 73 11 67 11 62',
+  'M44 57 C44 61 43 64 43 68',
+  'M43 68 C34 71 24 75 15 78 M43 68 C39 77 34 84 31 92',
+  'M15 78 C14 72 13 68 13 63',
   'M65 78 C72 84 79 88 86 92',
 ]
 

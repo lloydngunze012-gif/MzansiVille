@@ -502,3 +502,132 @@ begin
     raise notice 'replica identity skipped: %', sqlerrm;
   end;
 end $$;
+
+
+-- ---------------------------------------------------------------------------
+-- Pass 3: shared word list, slur rejection, report snapshots.
+-- Review before running. Never run this file against a live project without
+-- a backup; it is written to be re-runnable (if not exists / or replace).
+-- ---------------------------------------------------------------------------
+
+-- Same lists as src/engine/filter.js. kind = mask (swearing) or block (slurs).
+-- A trailing * matches as a prefix.
+create table if not exists public.chat_words (
+  word text primary key,
+  kind text not null check (kind in ('mask', 'block'))
+);
+alter table public.chat_words enable row level security;
+drop policy if exists "read words" on public.chat_words;
+create policy "read words" on public.chat_words for select using (true);
+
+insert into public.chat_words (word, kind)
+select w, 'mask' from (values
+  ('fuck*'),
+  ('fck'),
+  ('fuk*'),
+  ('phuck*'),
+  ('fcuk*'),
+  ('motherfuck*'),
+  ('shit*'),
+  ('bullshit'),
+  ('bitch*'),
+  ('asshole*'),
+  ('arsehole*'),
+  ('bastard*'),
+  ('dick'),
+  ('dickhead'),
+  ('cunt*'),
+  ('slut*'),
+  ('whore*'),
+  ('wanker*'),
+  ('twat*'),
+  ('prick'),
+  ('pussy'),
+  ('cock'),
+  ('bollocks'),
+  ('poes*'),
+  ('poephol*'),
+  ('doos'),
+  ('fok'),
+  ('fokken'),
+  ('fokkof'),
+  ('fokol'),
+  ('naai'),
+  ('naaier'),
+  ('kak'),
+  ('kakhuis'),
+  ('moer'),
+  ('jou ma se'),
+  ('voetsek'),
+  ('drol'),
+  ('teef'),
+  ('msunu*'),
+  ('umsunu*'),
+  ('nyoko*'),
+  ('unyoko'),
+  ('sfebe'),
+  ('isifebe'),
+  ('umthondo'),
+  ('mnqundu'),
+  ('ngquza'),
+  ('masende'),
+  ('isidomu'),
+  ('sdomu')
+) as t(w)
+on conflict (word) do nothing;
+
+insert into public.chat_words (word, kind)
+select w, 'block' from (values
+  ('kaffir*'),
+  ('kaffer*'),
+  ('k4ffir'),
+  ('nigger*'),
+  ('nigga*'),
+  ('coolie*'),
+  ('koelie*'),
+  ('boesman*'),
+  ('hotnot*'),
+  ('kwerekwere'),
+  ('makwerekwere'),
+  ('grigamba'),
+  ('faggot*'),
+  ('moffie*'),
+  ('retard*')
+) as t(w)
+on conflict (word) do update set kind = 'block';
+
+create or replace function public.clean_chat_body(raw text)
+returns text
+language plpgsql
+stable
+as $$
+declare
+  cleaned text := raw;
+  entry record;
+  pattern text;
+begin
+  for entry in select word, kind from public.chat_words loop
+    if right(entry.word, 1) = '*' then
+      pattern := '\m' || left(entry.word, -1) || '[a-z]*';
+    else
+      pattern := '\m' || replace(entry.word, ' ', '\s+') || 's?\M';
+    end if;
+    if entry.kind = 'block' and cleaned ~* pattern then
+      raise exception 'Message not allowed';
+    end if;
+    cleaned := regexp_replace(cleaned, pattern, '***', 'gi');
+  end loop;
+  return trim(cleaned);
+end;
+$$;
+
+-- Keep a copy of the reported text so moderators can read it even after a
+-- message is deleted, and allow a reviewing state.
+alter table public.reports add column if not exists message_body text;
+alter table public.reports drop constraint if exists reports_status_check;
+alter table public.reports add constraint reports_status_check
+  check (status in ('open', 'reviewing', 'closed'));
+
+-- One report per reporter per message.
+create unique index if not exists reports_once_idx
+  on public.reports (reporter_id, message_id) where message_id is not null;

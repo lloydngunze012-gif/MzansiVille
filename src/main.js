@@ -1,5 +1,6 @@
 import { districtById, defaultDistrictId } from './districts/registry.js'
-import { cleanText, canSend } from './engine/filter.js'
+import { filterText, canSend } from './engine/filter.js'
+import { loadBoardRows, loadLobby } from './social.js'
 import { withEventEdits } from './engine/model.js'
 import {
   advancePhase,
@@ -15,8 +16,6 @@ import {
   currentSession,
   fetchEventEdits,
   getClient,
-  fetchLeaderboard,
-  fetchLobby,
   fetchReports,
   fileReport,
   pullProfile,
@@ -31,7 +30,11 @@ import {
   suspendUser,
 } from './net.js'
 import { drawShareCard, exportCard } from './share.js'
-import { emptyDraft, localBoardRow, shotState, view } from './ui/render.js'
+import { shareUrl } from './config.js'
+
+let shareMilestone = null
+let shareBlob = null
+import { emptyDraft, shotState, view } from './ui/render.js'
 import { anyEnabled, hereOf, layoutOf, soundOn, ui } from './ui/game.js'
 import { homePlaceId } from './engine/model.js'
 
@@ -54,8 +57,8 @@ function loadSave() {
 let save = loadSave()
 let edits = []
 let draft = emptyDraft()
-let chat = { messages: [], names: {}, offline: !authEnabled, error: '', reportId: '', draft: '' }
-let board = { tab: 'money', scope: 'all', rows: [], error: '' }
+let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
+let board = { tab: 'money', scope: 'all', rows: [], source: 'loading', error: '' }
 let admin = { reports: [], eventId: 'nsfas_delayed', notice: '', allowed: false }
 let timer = 0
 let merging = false
@@ -97,6 +100,7 @@ function state() {
     placeId: route().name === 'place' ? route().id : '',
     chat,
     board,
+    shareMilestone,
     admin,
     morning,
     cardMini,
@@ -177,7 +181,11 @@ function paint() {
   const focusId = active && app.contains(active) ? active.id : ''
   const caret = active && typeof active.selectionStart === 'number' ? active.selectionStart : null
   const html = shot ? view(shotState(shot)) : view(state())
+  const oldLog = document.getElementById('log')
+  const logTop = oldLog ? oldLog.scrollTop : null
   app.innerHTML = html
+  const newLog = document.getElementById('log')
+  if (newLog) newLog.scrollTop = chat.menuId && logTop != null ? logTop : newLog.scrollHeight
   const screen = app.querySelector('[data-screen]')
   app.dataset.screen = screen?.dataset.screen || 'title'
   if (focusId) {
@@ -193,7 +201,12 @@ function paint() {
   const shown = shot ? shotState(shot) : state()
   const run = shown.run
   const district = shown.district
-  if (canvas && run) drawShareCard(canvas, { district, run, url: location.origin }).catch(() => {})
+  if (canvas && run) {
+    // Draw, then encode the PNG ahead of time so the Share tap is instant and
+    // navigator.share still has the tap's user activation.
+    shareBlob = drawShareCard(canvas, { district, run, url: shareUrl(), milestone: shot ? shown.shareMilestone : shareMilestone })
+      .then(() => exportCard(canvas)).catch(() => null)
+  }
   syncWorld(shown)
   armToasts()
   armAuto()
@@ -243,9 +256,23 @@ async function sync() {
 
 function blip(freq = 660) {
   if (!soundOn()) return
-  // Defer so the first tap paints before the audio context spins up.
-  setTimeout(() => blipNow(freq), 30)
+  // Pass 3: never start audio in the same frame as the visual feedback.
+  // Wait for the next painted frame, then run the sound off the input path.
+  requestAnimationFrame(() => setTimeout(() => blipNow(freq), 0))
 }
+
+// Pass 3: warm the audio context in idle time after the first gesture, so a
+// later tap never pays the (Edge: ~500 ms) cold AudioContext start.
+function prewarmAudio() {
+  if (blip.ctx || !soundOn()) return
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 250))
+  requestAnimationFrame(() => idle(() => {
+    try {
+      blip.ctx = blip.ctx || new (window.AudioContext || window.webkitAudioContext)()
+    } catch { /* no audio */ }
+  }, { timeout: 1500 }))
+}
+window.addEventListener('pointerup', prewarmAudio, { once: true, passive: true })
 
 function blipNow(freq) {
   try {
@@ -297,11 +324,17 @@ function autoAdvance() {
   const district = districtNow()
   const run = save.run
   let guard = 0
+  const skipped = []
   while (run && run.mode === 'play' && !run.queue.some((card) => card.choices) && !anyEnabled(district, run) && guard < 6) {
+    if (guard) skipped.push(run.phase)
     advancePhase(district, run)
     guard += 1
   }
-  if (guard) flash(phaseNotice())
+  // Play-through fix: say which phases were jumped instead of silently losing them.
+  if (guard) {
+    const names = skipped.map((id) => district.meta.phases.find((p) => p.id === id)?.label).filter(Boolean)
+    flash(names.length ? `Nothing open at ${names.join(' & ')} \u2014 now ${phaseNotice()}` : phaseNotice())
+  }
 }
 
 // Avatar walks to the tapped place before the action lands.
@@ -387,35 +420,34 @@ function readCharacter() {
 }
 
 async function loadChat() {
-  if (!authEnabled) {
+  try {
+    const result = await loadLobby()
+    chat.source = result.source
+    chat.offline = result.source === 'offline'
+    if (result.source === 'mock') {
+      const mine = (save.mockChat || []).filter((m) => Date.now() - new Date(m.created_at).getTime() < 864e5)
+      chat.messages = mine.slice().reverse().concat(result.messages)
+    } else chat.messages = result.messages
+    chat.names = result.names
+    chat.error = result.error
+  } catch {
+    chat.source = 'offline'
     chat.offline = true
-    return
   }
-  const result = await fetchLobby()
-  chat.offline = false
-  chat.messages = result.messages
-  chat.names = result.names
-  chat.error = result.error
   if (save.suspended) chat.error = 'Your account is suspended.'
   paint()
 }
 
 async function loadBoard() {
-  const local = localBoardRow(save.run)
-  if (!authEnabled) {
-    board.rows = local ? [local] : []
-    board.error = ''
-    paint()
-    return
+  try {
+    const result = await loadBoardRows()
+    board.source = result.source
+    board.rows = result.rows
+    board.error = result.error
+  } catch {
+    board.source = 'offline'
+    board.rows = []
   }
-  const result = await fetchLeaderboard()
-  const rows = result.rows || []
-  if (local && !rows.some((row) => row.user_id === save.run.userId)) rows.push(local)
-  const tab = board.tab
-  const key = tab === 'grades' ? 'dean_avg' : tab === 'balanced' ? 'balanced_avg' : 'rich_avg'
-  rows.sort((a, b) => Number(b[key] || 0) - Number(a[key] || 0))
-  board.rows = rows
-  board.error = result.error
   paint()
 }
 
@@ -467,6 +499,14 @@ async function bootAuth() {
     })
   }
 }
+
+app.addEventListener('focusin', (event) => {
+  if (event.target.id === 'composer' && !save.run?.userId && chat.source !== 'mock' && chat.source !== 'offline') {
+    event.target.blur()
+    chat.prompt = true
+    paint()
+  }
+})
 
 app.addEventListener('input', (event) => {
   if (event.target.id === 'name') draft.name = event.target.value
@@ -702,26 +742,38 @@ app.addEventListener('click', async (event) => {
     window.open(district.shop.url, '_blank', 'noopener')
     return
   }
+  if (act === 'share-day' || act === 'share-milestone') {
+    shareMilestone = act === 'share-milestone' ? (save.run?.queue || []).find((c) => c.id === button.dataset.id) || null : null
+    go('share')
+    return
+  }
   if (act === 'share') {
-    const canvas = document.getElementById('share-card')
-    const blob = await exportCard(canvas)
+    const note = document.getElementById('copy-note')
+    if (note) note.textContent = 'Making your image\u2026'
+    const blob = await (shareBlob || exportCard(document.getElementById('share-card')))
     if (!blob) return
-    const file = new File([blob], 'mzansiville.png', { type: 'image/png' })
-    const url = location.origin
+    const name = `mzansiville-day${save.run?.day || 1}.png`
+    const file = new File([blob], name, { type: 'image/png' })
+    const url = `https://${shareUrl()}`
+    const text = shareMilestone ? `${save.run.character.name} unlocked ${shareMilestone.title} in MzansiVille` : `${save.run.character.name}'s day ${save.run.day} in MzansiVille`
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'MzansiVille', text: save.run.character.name, url })
+        await navigator.share({ files: [file], title: 'MzansiVille', text, url })
       } catch { /* cancelled */ }
     } else {
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
-      link.download = 'mzansiville.png'
+      link.download = name
+      document.body.appendChild(link)
       link.click()
+      link.remove()
+      setTimeout(() => URL.revokeObjectURL(link.href), 4000)
+      if (note) note.textContent = `Saved ${name}`
     }
     return
   }
   if (act === 'copy') {
-    await navigator.clipboard.writeText(location.origin)
+    try { await navigator.clipboard.writeText(`https://${shareUrl()}`) } catch { /* no clipboard */ }
     const note = document.getElementById('copy-note')
     if (note) note.textContent = 'Link copied.'
     return
@@ -754,9 +806,26 @@ app.addEventListener('click', async (event) => {
     paint()
     return
   }
+  if (act === 'msg-menu') {
+    chat.menuId = chat.menuId === button.dataset.id ? '' : button.dataset.id
+    chat.reportId = ''
+    chat.notice = ''
+    paint()
+    return
+  }
+  if (act === 'prompt-close') {
+    chat.prompt = false
+    paint()
+    return
+  }
+  if (act === 'chat-retry' || act === 'board-retry') {
+    if (act === 'chat-retry') { chat.source = 'loading'; await loadChat() } else { board.source = 'loading'; paint(); await loadBoard() }
+    return
+  }
   if (act === 'send') {
-    if (!save.run?.userId) {
-      chat.error = 'Save your progress to talk in the lobby.'
+    const mock = chat.source === 'mock'
+    if (!save.run?.userId && !mock) {
+      chat.prompt = true
       paint()
       return
     }
@@ -765,16 +834,33 @@ app.addEventListener('click', async (event) => {
       paint()
       return
     }
-    const text = cleanText(chat.draft || '')
-    if (!text) return
+    const checked = filterText(chat.draft || '')
+    if (!checked.text) return
+    if (checked.blocked) {
+      chat.error = 'That message has a slur in it, so it wasn\u2019t sent.'
+      chat.notice = ''
+      paint()
+      return
+    }
     const gate = canSend(save.chatStamps || [])
     if (!gate.ok) {
       chat.error = gate.reason
       paint()
       return
     }
-    const result = await sendLobby(save.run.userId, text)
+    if (mock) {
+      save.mockChat = (save.mockChat || []).concat({ id: 'mine-' + Date.now(), user_id: save.run?.userId || 'you', name: save.run?.character.name || 'You', residence: save.run?.character.residence || '', body: checked.text, masked: checked.masked, sample: true, created_at: new Date().toISOString() })
+      save.chatStamps = gate.stamps.concat(Date.now())
+      chat.draft = ''
+      chat.error = ''
+      chat.notice = checked.masked ? 'Sent, with a word filtered. (Sample mode: only on this phone.)' : 'Sent. (Sample mode: only on this phone.)'
+      persist()
+      await loadChat()
+      return
+    }
+    const result = await sendLobby(save.run.userId, checked.text)
     chat.error = result.error
+    chat.notice = !result.error && checked.masked ? 'Sent, with a word filtered.' : ''
     if (!result.error) {
       save.chatStamps = gate.stamps.concat(Date.now())
       chat.draft = ''
@@ -786,6 +872,8 @@ app.addEventListener('click', async (event) => {
   if (act === 'mute') {
     const id = button.dataset.id
     save.mutes = save.mutes.includes(id) ? save.mutes : save.mutes.concat(id)
+    chat.menuId = ''
+    chat.notice = 'Muted. You won\u2019t see their messages on this phone.'
     persist()
     paint()
     return
@@ -793,29 +881,47 @@ app.addEventListener('click', async (event) => {
   if (act === 'block') {
     const id = button.dataset.id
     save.blocks = save.blocks.includes(id) ? save.blocks : save.blocks.concat(id)
-    if (save.run?.userId) await storeBlock(save.run.userId, id)
+    chat.menuId = ''
+    chat.notice = 'Blocked.'
+    if (save.run?.userId && chat.source === 'live') {
+      try { await storeBlock(save.run.userId, id) } catch { /* local block still applies */ }
+    }
     persist()
     paint()
     return
   }
   if (act === 'report') {
+    if (!save.run?.userId && chat.source !== 'mock') {
+      chat.prompt = true
+      chat.menuId = ''
+      paint()
+      return
+    }
     chat.reportId = button.dataset.id
     paint()
     return
   }
   if (act === 'reason') {
     const message = chat.messages.find((item) => item.id === button.dataset.id)
-    if (message && save.run?.userId) {
-      const result = await fileReport(save.run.userId, message, button.dataset.reason)
-      chat.error = result.error
-      chat.reportId = ''
+    chat.menuId = ''
+    chat.reportId = ''
+    if (message && chat.source === 'mock') {
+      chat.notice = 'Report saved. (Sample mode: nothing was sent.)'
+    } else if (message && save.run?.userId) {
+      try {
+        const result = await fileReport(save.run.userId, message, button.dataset.reason)
+        chat.error = result.error
+        chat.notice = result.error ? '' : 'Thanks. A moderator will look at it.'
+      } catch {
+        chat.error = 'Could not send the report. Try again when you\u2019re online.'
+      }
     }
     paint()
     return
   }
   if (act === 'board-tab') {
     board.tab = button.dataset.id
-    await loadBoard()
+    paint()
     return
   }
   if (act === 'board-scope') {
@@ -865,6 +971,8 @@ window.addEventListener('hashchange', () => {
 
 paint()
 arm()
+if (save.run && route().name === 'chat') loadChat()
+if (save.run && route().name === 'board') loadBoard()
 
 window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
