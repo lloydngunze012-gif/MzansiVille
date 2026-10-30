@@ -142,8 +142,11 @@ export function coursePlaceId(district, course) {
 }
 
 export function pickBestie(district, residence, salt) {
-  const names = district.besties.names || ['Friend']
-  return names[hashString(`${residence}|${salt}`) % names.length]
+  const all = district.besties.names?.length ? district.besties.names : ['Friend']
+  const mine = String(salt || '').trim().toLowerCase()
+  const names = all.filter((name) => name.toLowerCase() !== mine)
+  const pool = names.length ? names : all
+  return pool[hashString(`${residence}|${salt}`) % pool.length]
 }
 
 export function withEventEdits(district, edits) {

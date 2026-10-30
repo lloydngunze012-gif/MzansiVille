@@ -71,6 +71,7 @@ check('new run stats and bestie', () => {
   assert.deepEqual(run.stats, { money: 1500, energy: 100, grades: 50, social: 30, hunger: 70 })
   assert.equal(run.slotsLeft, 5)
   assert.equal(run.queue.some((card) => card.kind === 'bestie'), true)
+  assert.notEqual(run.bestieName, 'Aya')
   assert.equal(run.character.districtId, 'campusville')
 })
 

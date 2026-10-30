@@ -19,81 +19,55 @@ export const outfits = [
   { id: 'organt', label: 'Organt' },
 ]
 
-const outfitFill = {
+const cloth = {
   hoodie: '#1f6b45',
   shirt: '#f7f4ee',
   jacket: '#244e78',
   organt: '#f0c400',
 }
 
-function hairMarkup(id) {
+function hairSvg(id) {
   if (id === 'curls') {
-    return `
-      <circle cx="28" cy="34" r="8" fill="#1c1915"/>
-      <circle cx="92" cy="34" r="8" fill="#1c1915"/>
-      <circle cx="36" cy="20" r="9" fill="#1c1915"/>
-      <circle cx="60" cy="14" r="10" fill="#1c1915"/>
-      <circle cx="84" cy="20" r="9" fill="#1c1915"/>
-      <circle cx="46" cy="28" r="7" fill="#1c1915"/>
-      <circle cx="74" cy="28" r="7" fill="#1c1915"/>`
+    return `<g fill="#1c1915"><circle cx="24" cy="36" r="6"/><circle cx="56" cy="36" r="6"/><circle cx="30" cy="24" r="7"/><circle cx="40" cy="18" r="7"/><circle cx="50" cy="24" r="7"/></g>`
   }
-  if (id === 'fade') {
-    return `
-      <path d="M40 28 C44 8 76 8 80 28 C74 16 46 16 40 28Z" fill="#1c1915"/>
-      <path d="M36 40 C38 30 44 26 48 34" fill="none" stroke="#1c1915" stroke-width="3"/>`
-  }
+  if (id === 'fade') return `<path d="M27 36c2-16 24-18 26 0-8-8-18-8-26 0z" fill="#1c1915"/>`
   if (id === 'braids') {
-    return `
-      <path d="M38 30 C36 8 82 8 80 32 C70 16 48 16 38 30Z" fill="#1c1915"/>
-      <path d="M42 36 C38 58 34 78 40 96" fill="none" stroke="#1c1915" stroke-width="7" stroke-linecap="round"/>
-      <path d="M78 36 C82 58 86 78 80 96" fill="none" stroke="#1c1915" stroke-width="7" stroke-linecap="round"/>
-      <circle cx="40" cy="98" r="3.5" fill="#f0c400"/>
-      <circle cx="80" cy="98" r="3.5" fill="#f0c400"/>`
+    return `<path d="M26 36c2-16 26-18 28 0-8-8-20-8-28 0z" fill="#1c1915"/>
+      <path d="M30 42c-2 14-2 26 0 36" stroke="#1c1915" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M50 42c2 14 2 26 0 36" stroke="#1c1915" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="30" cy="80" r="2.2" fill="#f0c400"/><circle cx="50" cy="80" r="2.2" fill="#f0c400"/>`
   }
-  return `<path d="M34 40 C36 14 84 14 86 40 C74 24 46 24 34 40Z" fill="#1c1915"/>`
+  return `<path d="M24 38c1-18 31-20 32 0-8-10-24-10-32 0z" fill="#1c1915"/>`
 }
 
-function outfitMarkup(id, dialCode) {
-  const fill = outfitFill[id] || outfitFill.hoodie
-  const body = `<path d="M34 78 L28 148 L92 148 L86 78 C78 70 42 70 34 78Z" fill="${fill}"/>`
-  if (id === 'hoodie') {
-    return `
-      <path d="M30 70 C24 48 40 44 48 62 C56 50 64 50 72 62 C80 44 96 48 90 70Z" fill="#1f6b45"/>
-      ${body}
-      <path d="M48 108 H72 V122 H48Z" fill="#174d32"/>`
-  }
-  if (id === 'shirt') {
-    return `
-      ${body}
-      <path d="M48 78 L60 92 L72 78" fill="none" stroke="#244e78" stroke-width="3"/>
-      <path d="M52 96 H68" stroke="#244e78" stroke-width="3"/>`
-  }
-  if (id === 'jacket') {
-    return `
-      ${body}
-      <path d="M60 80 L60 146" stroke="#f4efe4" stroke-width="3"/>
-      <path d="M46 78 L60 92 L74 78" fill="none" stroke="#f4efe4" stroke-width="3"/>`
-  }
-  const code = String(dialCode || '').replace(/[^\d]/g, '').slice(0, 3) || '000'
-  return `
-    ${body}
-    <text x="60" y="112" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="700" fill="#1c1915">${code}</text>
-    <text x="60" y="128" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="700" letter-spacing="1.4" fill="#1c1915">ORGANT</text>`
+function outfitDetail(id, dialCode) {
+  if (id === 'hoodie') return `<path d="M30 76h20v8H30z" fill="#174d32"/>`
+  if (id === 'shirt') return `<path d="M32 62l8 8 8-8" fill="none" stroke="#244e78" stroke-width="2"/>`
+  if (id === 'jacket') return `<path d="M40 64v28" stroke="#f4efe4" stroke-width="2"/>`
+  const code = String(dialCode || '').replace(/\D/g, '').slice(0, 3) || '000'
+  return `<text x="40" y="80" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#1c1915">${code}</text>
+    <text x="40" y="90" text-anchor="middle" font-family="sans-serif" font-size="5" font-weight="700" letter-spacing="1.1" fill="#1c1915">ORGANT</text>`
 }
 
 export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
-  const skin = skins.find((s) => s.id === avatar.skin) || skins[1]
+  const skin = (skins.find((item) => item.id === avatar.skin) || skins[1]).fill
   const hair = avatar.hair || 'crop'
   const outfit = avatar.outfit || 'hoodie'
-  const height = Math.round(size * 1.25)
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 150" width="${size}" height="${height}" role="img" aria-label="Avatar">
-    <ellipse cx="60" cy="142" rx="28" ry="5" fill="#000" opacity="0.12"/>
-    ${hairMarkup(hair)}
-    <circle cx="60" cy="52" r="24" fill="${skin.fill}"/>
-    <circle cx="51" cy="52" r="2" fill="#1c1915"/>
-    <circle cx="69" cy="52" r="2" fill="#1c1915"/>
-    <path d="M54 62 Q60 66 66 62" fill="none" stroke="#1c1915" stroke-width="1.6" stroke-linecap="round"/>
-    <path d="M50 86 H70 V96 H50Z" fill="${skin.fill}"/>
-    ${outfitMarkup(outfit, dialCode)}
+  const fill = cloth[outfit] || cloth.hoodie
+  const height = Math.round(size * 1.28)
+  const hood = outfit === 'hoodie'
+    ? `<path d="M16 62c2-18 12-24 20-14 4-10 14-12 20-2 10-10 20-4 20 14l2 8H16z" fill="#174d32"/>`
+    : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 102" width="${size}" height="${height}" role="img" aria-label="Avatar">
+    <ellipse cx="40" cy="98" rx="22" ry="3.5" fill="#000" opacity="0.15"/>
+    ${hood}
+    <path d="M18 62c8-14 36-14 44 0l6 34H12z" fill="${fill}"/>
+    <path d="M33 56h14v10H33z" fill="${skin}"/>
+    <circle cx="40" cy="40" r="16" fill="${skin}"/>
+    ${hairSvg(hair)}
+    <circle cx="34" cy="40" r="1.7" fill="#1c1915"/>
+    <circle cx="46" cy="40" r="1.7" fill="#1c1915"/>
+    <path d="M35 47c2 3 8 3 10 0" fill="none" stroke="#1c1915" stroke-width="1.4" stroke-linecap="round"/>
+    ${outfitDetail(outfit, dialCode)}
   </svg>`
 }
