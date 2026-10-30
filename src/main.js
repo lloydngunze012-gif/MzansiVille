@@ -33,6 +33,7 @@ import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
 import { roommateOf } from './avatar.js'
+import { replyTo } from './engine/people.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -443,6 +444,19 @@ function prewarmAudio() {
     } catch { /* no audio */ }
   }, { timeout: 1500 }))
 }
+// Talking: the scene walks you up to someone, then the card takes over.
+window.addEventListener('mzansi-talk', (event) => {
+  if (!save.run || !event.detail?.id) return
+  ui.talk = { id: event.detail.id }
+  blip(700)
+  paint()
+})
+function endTalk() {
+  if (!ui.talk) return
+  ui.talk = null
+  window.dispatchEvent(new CustomEvent('mzansi-talk-end'))
+}
+
 window.addEventListener('mzansi-lecture-arrive', () => {
   if (save.run) delete save.run.lectureCard
   persist()
@@ -548,6 +562,21 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'skip-morning') { endMorning(true); return true }
+  if (act === 'talk-reply' && ui.talk) {
+    const index = Number(button.dataset.i)
+    const said = button.textContent.trim()
+    const res = replyTo(save.run, ui.talk.id, index)
+    if (res) {
+      ui.talk = { ...ui.talk, res, said }
+      window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: res.tone } }))
+      blip(res.tone === 'bad' ? 330 : 880)
+      persist()
+    }
+    paint()
+    return true
+  }
+  if (act === 'talk-more' && ui.talk) { ui.talk = { id: ui.talk.id }; paint(); return true }
+  if (act === 'talk-bye') { endTalk(); paint(); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
@@ -1216,6 +1245,7 @@ window.addEventListener('hashchange', () => {
   // of the new screen and steals its taps (chat Send, Save's magic link).
   ui.gear = false
   ui.confirmReset = false
+  endTalk()
   if (needsRun(name) && !save.run) {
     location.hash = '#/'
     return

@@ -272,6 +272,11 @@ export function createAvatar(avatar = {}) {
   head.userData.standIn = true
   group.add(head)
 
+  const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 2, 8), new THREE.MeshBasicMaterial())
+  hit.position.y = 1
+  hit.visible = false
+  hit.name = 'hit'
+  group.add(hit)
   group.userData.bob = body
   group.userData.look = look
   attachModel(group, look).catch((error) => console.warn('character model', error))

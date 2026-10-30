@@ -6,6 +6,7 @@
 import * as THREE from 'three'
 import STORY from '../../data/campusville/place_story.json'
 import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
+import { lookForPerson } from './cast.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
@@ -84,6 +85,7 @@ export function dressPlaces(layout) {
   const spots = {}
   const benches = []
   const queue = {}
+  const cafQueue = {}
   const srcTables = []
   let performer = null
   const movers = [] // short straight walks for the place's own people
@@ -109,8 +111,10 @@ export function dressPlaces(layout) {
     obstacles.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 })
   }
 
-  function person(look, x, z, rot, { pose = 'stand', y = 0, every = 0, move = 'interact-right' } = {}) {
-    const avatar = createAvatar(look)
+  // id: who this is (data/campusville/people.json); their look comes from cast.js.
+  function person(id, x, z, rot, { pose = 'stand', y = 0, every = 0, move = 'interact-right' } = {}) {
+    const avatar = createAvatar(lookForPerson(id))
+    avatar.userData.personId = id
     avatar.position.set(x, y, z)
     avatar.rotation.y = rot
     avatar.userData.pose = pose
@@ -201,7 +205,7 @@ export function dressPlaces(layout) {
     prop('tree_palmTall', cx + 3.8, sz - 2.4, { s: 6, rot: 1.3 })
     for (const x of [-2.7, 2.7]) prop('plant_bushLarge', cx + x, sz + 1.8, { s: 2.6 })
     // Someone is always on the mic.
-    performer = person({ model: 'male-f', skin: 'deep', outfit: 'shirt', topColor: '#ff8a3d' }, cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
+    performer = person('lethabo', cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
 
     // Benches under the trees (north-west, between two paths) and south-west.
     for (const [angle, r] of [[208, 8.3], [222, 8.3], [146, 9.6]]) {
@@ -237,7 +241,7 @@ export function dressPlaces(layout) {
     loadProp('kitchenCoffeeMachine').then((src) => { const m = src.clone(true); m.scale.setScalar(1.8); m.position.set(0.7, 1, -0.1); stall.add(m) }).catch(() => {})
     loadProp('radio').then((src) => { const m = src.clone(true); m.scale.setScalar(2); m.position.set(-0.8, 1, -0.1); stall.add(m) }).catch(() => {})
     const vendorAt = new THREE.Vector3(0, 0, -0.9).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y).add(stall.position)
-    const vendor = person({ model: 'female-d', skin: 'brown', outfit: 'dress', topColor: '#e8497a', hairColor: '#7b3fe4' }, vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
+    const vendor = person('mam_gugu', vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
     // The stall queue: two students waiting at the counter. They get served,
     // step aside to eat, then rejoin the back of the line.
     const up = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y)
@@ -245,8 +249,8 @@ export function dressPlaces(layout) {
     const front = { x: stx + up.x * 2.1, z: stz + up.z * 2.1 }
     const slot = (i) => ({ x: front.x + up.x * i * 1.0, z: front.z + up.z * i * 1.0 })
     const waiting = [
-      person({ model: 'male-a', skin: 'deep', outfit: 'hoodie', topColor: '#1d7fb8' }, slot(0).x, slot(0).z, stall.rotation.y + Math.PI),
-      person({ model: 'female-b', skin: 'sand', outfit: 'skirt' }, slot(1).x, slot(1).z, stall.rotation.y + Math.PI),
+      person('kea', slot(0).x, slot(0).z, stall.rotation.y + Math.PI),
+      person('amir', slot(1).x, slot(1).z, stall.rotation.y + Math.PI),
     ]
     const aside = []
     const pause = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -300,7 +304,8 @@ export function dressPlaces(layout) {
       box(t, 2.4, 0.3, 0.05, c2, 0, 2.15, 0.8)
       sign(t, [slate.name], { x: 0, y: 1.55, z: -0.83, w: 2.1, h: 0.55, bg: c1, fg: c2 === '#ffffff' ? '#ffffff' : c2, font: 52 })
       const back = new THREE.Vector3(0, 0, -1.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
-      const campaigner = person({ model: ['male-a', 'female-f', 'male-d'][i], skin: ['deep', 'brown', 'sand'][i], outfit: 'hoodie', topColor: c1, bottomColor: c3 }, back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
+      void c3
+      const campaigner = person(['bongani', 'lindiwe', 'ruan'][i], back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
       const frontAt = new THREE.Vector3(0, 0, 1.7).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
       srcTables.push({ x, z, front: { x: frontAt.x, z: frontAt.z }, campaigner, slate })
       block(x, z, 2.4, 2)
@@ -349,18 +354,22 @@ export function dressPlaces(layout) {
     group.add(winLight)
     lights.push({ light: winLight, base: 14 })
     // The queue at the window.
-    const looks = [
-      { model: 'female-b', skin: 'amber', outfit: 'skirt' },
-      { model: 'male-a', skin: 'ebony', outfit: 'jacket' },
-      { model: 'female-f', skin: 'sand', outfit: 'hoodie', topColor: '#7b3fe4' },
-      { model: 'male-f', skin: 'brown', outfit: 'shirt' },
-    ]
-    looks.forEach((look, i) => person(look, cx + 2.8 + (i % 2 ? 0.25 : -0.15), front + 1.1 + i * 0.95, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' }))
-    block(cx + 2.8, front + 2.5, 0.9, 3.6)
+    // Serving counter under the awning; Auntie Pinky behind it, the queue in front.
+    box(group, 3.2, 1.05, 0.6, 0xc9c9c9, cx + 2.8, 0.52, front + 1.15)
+    box(group, 3.3, 0.06, 0.7, 0x8a8a8a, cx + 2.8, 1.07, front + 1.15)
+    const auntie = person('auntie_pinky', cx + 2.8, front + 0.5, 0, { every: 5 })
+    cafQueue.auntie = auntie
+    cafQueue.front = { x: cx + 2.8, z: front + 2.05 }
+    cafQueue.slot = (i) => ({ x: cx + 2.8 + (i % 2 ? 0.2 : -0.1), z: front + 2.05 + i * 0.95 })
+    cafQueue.people = ['thandi', 'jordan', 'priya', 'noah'].map((id, i) => {
+      const s = cafQueue.slot(i)
+      return person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' })
+    })
+    block(cx + 2.8, front + 1.15, 3.2, 0.6)
     // Terrace on the west side: deck, tables, chairs, two people eating, lights.
     const tx = b.minX - 3
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
-    for (const [dz, who] of [[-1.6, { model: 'female-d', skin: 'deep', outfit: 'shweshwe' }], [1.7, { model: 'male-d', skin: 'amber', outfit: 'organt' }]]) {
+    for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
       prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
       prop('chair', tx - 0.95, cz + dz, { s: 2.2, rot: Math.PI / 2, y: 0.08 })
       prop('chair', tx + 0.95, cz + dz, { s: 2.2, rot: -Math.PI / 2, y: 0.08 })
@@ -412,5 +421,6 @@ export function dressPlaces(layout) {
     }
   }
 
+  queue.caf = cafQueue
   return { group, obstacles, spots, benches, queue, srcTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }

@@ -1,4 +1,4 @@
-export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onStick, worldOn, blocked }) {
+export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onPerson, onStick, worldOn, blocked }) {
   let pointerId = null
   let startX = 0
   let startY = 0
@@ -21,9 +21,17 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
   }
 
   function walkAt(event) {
+    if (blocked()) return
     const point = ndc(event)
     raycaster.setFromCamera(point, camera)
     const lists = pickables()
+    // People first: tapping anyone starts a conversation.
+    const person = onPerson && raycaster.intersectObjects(lists.people || [], true).find((hit) => hit.object.name === 'hit')
+    if (person) {
+      let node = person.object
+      while (node && !node.userData?.personId) node = node.parent
+      if (node) { onPerson(node); return }
+    }
     const buildings = raycaster.intersectObjects(lists.buildings || [], true)[0]
     const ground = raycaster.intersectObjects(lists.ground || [], true)[0]
     if (buildings && (!ground || buildings.distance <= ground.distance + 0.05)) {
