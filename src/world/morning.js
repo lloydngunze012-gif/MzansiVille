@@ -36,6 +36,8 @@ export function line(path, fallback, vars) {
   let text = path.split('.').reduce((node, key) => (node == null ? undefined : node[key]), LINES)
   if (text && typeof text === 'object' && typeof text.text === 'string') text = text.text
   if (typeof text !== 'string' || !text) text = fallback
+  // Sipho has his own lines; anything he has no line for falls back to the swap.
+  if (maleRoom && typeof LINES.sipho?.lines?.[path] === 'string') text = LINES.sipho.lines[path]
   text = forGender(text)
   return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text
 }
@@ -715,6 +717,7 @@ async function play() {
   lookAtKettle(true)
   await tapOn([kettle], line('steps.kettle.prompt', '\u2615 Make noodles at the kettle'), ANCHORS.kettle)
   setStep('kettle-walk')
+  let rushOut = false
   if (roomieTakes) {
     // roommate gets there first
     walkTo(roommate, 1.55, -1.95, 2.6)
@@ -732,8 +735,9 @@ async function play() {
     const pick = await choices(line('steps.choice_no_noodles.title', 'No noodles left. What now?'), [
       { label: line('steps.choice_no_noodles.options.0.label', '\u{1F6D2} Tuck shop noodles'), note: line('steps.choice_no_noodles.options.0.note', 'R12 \u00b7 +25 Fullness \u00b7 costs 10 min') },
       { label: line('steps.choice_no_noodles.options.1.label', '\u{1F6AB} Skip breakfast'), note: line('steps.choice_no_noodles.options.1.note', '\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time') },
+      { label: line('steps.choice_no_noodles.options.2.label', '\u{1F6B6} Walk to the bus hungry'), note: line('steps.choice_no_noodles.options.2.note', '\u221215 Fullness \u00b7 out the door now') },
     ])
-    host.dataset.choice = pick ? 'skip' : 'tuck'
+    host.dataset.choice = ['tuck', 'skip', 'hungry'][pick]
     if (pick === 0) {
       setStep('tuckshop')
       await walkTo(player, 2.3, 1.2)
@@ -754,11 +758,18 @@ async function play() {
       void held
       await eat()
       changeStats({ money: -12, hunger: 25 })
-    } else {
+    } else if (pick === 1) {
       setStep('skip')
       lookAtKettle(false)
       await talk('Fine. I\u2019ll survive till lunch\u2026', player)
       changeStats({ hunger: -10, energy: -5 })
+    } else {
+      // Straight out: no breakfast, no door prompt, the walk starts now.
+      setStep('hungry')
+      lookAtKettle(false)
+      await talk(line('steps.hungry.bubble', 'No breakfast, no problem. Probably. Bus, here I come.'), player)
+      changeStats({ hunger: -15 })
+      rushOut = true
     }
   } else {
     await walkTo(player, 0.8, -1.85)
@@ -792,7 +803,7 @@ async function play() {
   }
   // 3. out the door
   setStep('door')
-  await tapOn([door], line('steps.door.prompt', '\u{1F6AA} Head out to the bus stop'), ANCHORS.door)
+  if (!rushOut) await tapOn([door], line('steps.door.prompt', '\u{1F6AA} Head out to the bus stop'), ANCHORS.door)
   setStep('exit')
   await walkTo(player, -0.9, 0.9)
   face(player, -2.2, 1.5)

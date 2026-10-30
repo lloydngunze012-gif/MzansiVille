@@ -86,7 +86,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await page.waitForTimeout(300)
   await expectBubbleClear(page)
   await shot('4_roommate_event')
-  await expect(page.locator('.mm-choice')).toHaveCount(2, { timeout: 10000 })
+  await expect(page.locator('.mm-choice')).toHaveCount(3, { timeout: 10000 }) // tuck shop, skip, walk hungry
   await page.locator('.mm-choice').first().tap()
   await expect(page.locator('.mm-choice')).toHaveCount(0) // buttons vanish on tap
   await expect(host).toHaveAttribute('data-choice', 'tuck')
@@ -205,4 +205,24 @@ test('day 1 morning: forced late bus is Running late', async ({ page }) => {
   expect(run.character.avatar.gender).toBe('male')
   expect(run.bestieName).toBe('Sipho')
   expect(errors).toEqual([])
+})
+
+test('day 1 morning: Sipho has his own lines, and you can walk to the bus hungry', async ({ page }) => {
+  test.setTimeout(240000)
+  const host = page.locator('#morning3d')
+  const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
+  await newGame(page, '?roommate=1&latebus=0&snooze=0&talk=auto', 'male')
+  await expect(page.locator('.mm-bubble')).toContainText('Sipho', { timeout: 30000 })
+  await expect(page.locator('.mm-bubble')).not.toContainText('Zanele')
+  await page.screenshot({ path: `${OUT}/s1_bed.png` })
+  await atStep('kettle')
+  await page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
+  await expect(page.locator('.mm-bubble')).toContainText('Sipho', { timeout: 30000 }) // his own "last packet" line
+  await expect(page.locator('.mm-choice')).toHaveCount(3, { timeout: 30000 })
+  await expect(page.locator('.mm-choice').nth(2)).toContainText('Walk to the bus hungry')
+  await page.locator('.mm-choice').nth(2).tap()
+  await expect(host).toHaveAttribute('data-choice', 'hungry')
+  // No door prompt: straight out of the room.
+  await atStep('exit')
+  await atStep('to-stop')
 })

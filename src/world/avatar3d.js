@@ -233,6 +233,9 @@ async function attachModel(group, look) {
   if (group.userData.disposed) return
   const { clone } = await import('three/addons/utils/SkeletonUtils.js')
   const model = clone(gltf.scene)
+  // SkeletonUtils.clone shares geometry between clones; each student needs its own,
+  // or the last recolour on a model paints everyone who uses that model.
+  model.traverse((node) => { if (node.isSkinnedMesh) node.geometry = node.geometry.clone() })
   recolour(model, look)
   const box = new THREE.Box3().setFromObject(model)
   model.scale.setScalar(HEIGHT / Math.max(0.1, box.max.y - box.min.y))
@@ -319,8 +322,16 @@ export function poseAvatar(group, walking, time) {
   const busy = data.actions[data.current]?.loop === THREE.LoopOnce && data.actions[data.current].isRunning()
   if (!busy) {
     if (data.pose === 'sit') play(group, 'sit')
-    else if (data.pose === 'lie') play(group, 'static')
+    else if (data.pose === 'lie') play(group, 'idle')
     else play(group, walking ? 'walk' : 'idle')
   }
-  data.mixer.update(dt)
+  // In bed the idle runs slowly, so the arms stay down and it reads as breathing.
+  data.mixer.update(data.pose === 'lie' ? dt * 0.25 : dt)
+  if (data.pose === 'lie') {
+    // The idle only lowers the arms part way from the T-pose; in bed they lie at the sides.
+    const left = group.getObjectByName('arm-left')
+    const right = group.getObjectByName('arm-right')
+    if (left) left.rotation.z = -1.3
+    if (right) right.rotation.z = 1.3
+  }
 }
