@@ -115,8 +115,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await tapGo()
   await atStep('riding')
   const busStart = Number(await data('busx'))
-  await page.waitForTimeout(1500)
-  expect(Number(await data('busx'))).toBeGreaterThan(busStart + 5)
+  await expect.poll(async () => Number(await data('busx')), { timeout: 15000 }).toBeGreaterThan(busStart + 5)
   await shot('8_riding')
 
   await atStep('done')
