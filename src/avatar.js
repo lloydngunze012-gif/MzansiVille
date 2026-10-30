@@ -2,7 +2,13 @@ export const skins = [
   { id: 'sand', label: 'Sand', fill: '#f0c7a0' },
   { id: 'amber', label: 'Amber', fill: '#d2956b' },
   { id: 'brown', label: 'Brown', fill: '#8a5a3a' },
-  { id: 'deep', label: 'Deep', fill: '#3f291c' },
+  { id: 'deep', label: 'Deep', fill: '#4a2e1f' },
+  { id: 'ebony', label: 'Ebony', fill: '#2c1b12' },
+]
+
+export const bodies = [
+  { id: 'regular', label: 'Regular' },
+  { id: 'curvy', label: 'Curvy' },
 ]
 
 export const hairs = [
@@ -99,21 +105,25 @@ export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
   const code = String(dialCode || '').replace(/\D/g, '').slice(0, 3) || '000'
   const height = Math.round(size * 1.28)
   const cheek = shade(skin, -18)
+  const dark = parseInt(skin.slice(1, 3), 16) < 0x60
+  const wide = avatar.body === 'curvy' ? ' transform="translate(40 0) scale(1.24 1) translate(-40 0)"' : ''
+  const ink = dark ? '#0b0705' : HAIR
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 102" width="${size}" height="${height}" role="img" aria-label="Avatar">
     <ellipse cx="40" cy="99" rx="20" ry="3" fill="#000" opacity=".18"/>
     ${hairBack(hair)}
-    <path d="M28 80h10l-1 15h-8zM42 80h10l-1 15h-8z" fill="${c[2]}"/>
+    <g${wide}><path d="M28 80h10l-1 15h-8zM42 80h10l-1 15h-8z" fill="${c[2]}"/>
     <path d="M26 94h12v4H25zM42 94h12l1 4H42z" fill="${c[3]}"/>
     <rect x="35" y="42" width="10" height="9" rx="3" fill="${skin}"/>
     <path d="M35 47h10" stroke="${cheek}" stroke-width="2" opacity=".5"/>
-    ${top(outfit, c, skin, code)}
+    ${top(outfit, c, skin, code)}</g>
     <circle cx="23.5" cy="33" r="3.4" fill="${skin}"/><circle cx="56.5" cy="33" r="3.4" fill="${skin}"/>
     <ellipse cx="40" cy="30" rx="16" ry="17" fill="${skin}"/>
     ${hairFront(hair)}
-    <path d="M31.5 29.5q2.5-2 5 0M43.5 29.5q2.5-2 5 0" stroke="${HAIR}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    <ellipse cx="34" cy="34" rx="1.9" ry="2.3" fill="${HAIR}"/><ellipse cx="46" cy="34" rx="1.9" ry="2.3" fill="${HAIR}"/>
+    <path d="M31.5 29.5q2.5-2 5 0M43.5 29.5q2.5-2 5 0" stroke="${dark ? '#120b07' : HAIR}" stroke-width="${dark ? 1.9 : 1.5}" fill="none" stroke-linecap="round"/>
+    ${dark ? '<ellipse cx="34" cy="34" rx="2.9" ry="3" fill="#f7f1ea"/><ellipse cx="46" cy="34" rx="2.9" ry="3" fill="#f7f1ea"/><ellipse cx="40" cy="22" rx="7" ry="3" fill="#fff" opacity=".1"/>' : ''}
+    <ellipse cx="34" cy="34" rx="1.9" ry="2.3" fill="${ink}"/><ellipse cx="46" cy="34" rx="1.9" ry="2.3" fill="${ink}"/>
     <circle cx="34.6" cy="33.2" r=".6" fill="#fff"/><circle cx="46.6" cy="33.2" r=".6" fill="#fff"/>
-    <ellipse cx="30" cy="39" rx="2.6" ry="1.6" fill="#ff7a59" opacity=".35"/><ellipse cx="50" cy="39" rx="2.6" ry="1.6" fill="#ff7a59" opacity=".35"/>
-    <path d="M35 40.5q5 4.5 10 0" fill="${shade(skin, -60)}" stroke="${shade(skin, -60)}" stroke-width="1.2" stroke-linejoin="round"/>
+    <ellipse cx="30" cy="39" rx="2.6" ry="1.6" fill="#ff7a59" opacity="${dark ? .5 : .35}"/><ellipse cx="50" cy="39" rx="2.6" ry="1.6" fill="#ff7a59" opacity="${dark ? .5 : .35}"/>
+    ${dark ? '<path d="M35 40.5q5 4.5 10 0z" fill="#3a0f0c" stroke="#c97a62" stroke-width="1.1" stroke-linejoin="round"/><path d="M36.5 41h7" stroke="#fff" stroke-width="1"/>' : `<path d="M35 40.5q5 4.5 10 0" fill="${shade(skin, -60)}" stroke="${shade(skin, -60)}" stroke-width="1.2" stroke-linejoin="round"/>`}
   </svg>`
 }
