@@ -227,8 +227,43 @@ function syncMorning(viewState) {
   return true
 }
 
+let lecturePromise = null
+
+function lectureWanted(run) {
+  return Boolean(run && run.mode === 'play' && run.phase === 'lecture' && !run.lectureResolved && hasGL())
+}
+
+// The lecture adds its own seat and moment extras on top of the normal lecture gain.
+function endLecture(result) {
+  const run = save.run
+  lecturePromise?.then((mod) => mod.stopLecture())
+  if (!run) return
+  const district = districtNow()
+  const done = applyAction(district, run, 'lecture_attend')
+  if (!done.ok) run.lectureResolved = true
+  const caps = { energy: run.energyCap || 100, hunger: 100, grades: 100, social: 100, money: 1e9 }
+  for (const [k, d] of Object.entries(result?.deltas || {})) {
+    run.stats[k] = Math.max(0, Math.min(caps[k] ?? 100, (run.stats[k] || 0) + d))
+  }
+  run.lastEventLine = `Lecture 1: ${result?.moment || 'done'}`
+  run.at = 'smig'
+  persist()
+  go('play')
+}
+
+function syncLecture(viewState) {
+  const on = viewState?.screen === 'lecture' && lectureWanted(viewState.run)
+  if (!on) { lecturePromise?.then((mod) => mod.stopLecture()); return false }
+  if (!lecturePromise) lecturePromise = import('./world/lecture.js')
+  lecturePromise.then((mod) => {
+    if (route().name !== 'lecture') return
+    mod.startLecture({ run: save.run, district: districtNow(), onDone: endLecture })
+  }).catch((error) => console.error(error))
+  return true
+}
+
 function syncWorld(viewState) {
-  const morningOn = syncMorning(viewState)
+  const morningOn = syncMorning(viewState) || syncLecture(viewState)
   const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket
   document.body.dataset.world = on || morningOn ? '1' : '0'
@@ -266,6 +301,10 @@ function paint() {
     return
   }
   if (!shot && route().name === 'morning' && save.run && !save.run.morningStart) morningSnapshot(save.run)
+  if (!shot && route().name === 'lecture' && !lectureWanted(save.run)) {
+    location.hash = '#/play'
+    return
+  }
   if (!shot && save.run?.mode === 'play' && route().name === 'summary') {
     location.hash = '#/play'
     return
@@ -335,7 +374,7 @@ function captureForm() {
 }
 
 function needsRun(name) {
-  return ['play', 'morning', 'world', 'place', 'summary', 'locked', 'over', 'milestones', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
+  return ['play', 'morning', 'lecture', 'world', 'place', 'summary', 'locked', 'over', 'milestones', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
 }
 
 function arm() {
@@ -371,7 +410,11 @@ function prewarmAudio() {
     } catch { /* no audio */ }
   }, { timeout: 1500 }))
 }
-window.addEventListener('mzansi-lecture-arrive', () => { persist(); paint() })
+window.addEventListener('mzansi-lecture-arrive', () => {
+  if (save.run) delete save.run.lectureCard
+  persist()
+  go(lectureWanted(save.run) ? 'lecture' : 'play')
+})
 window.addEventListener('pointerup', prewarmAudio, { once: true, passive: true })
 // Every tap re-unlocks: iOS suspends the audio context when the tab is hidden.
 window.addEventListener('pointerdown', unlockSound, { passive: true })
@@ -481,7 +524,7 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
-  if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go('place/smig'); return true }
+  if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go(lectureWanted(save.run) ? 'lecture' : 'place/smig'); return true }
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
   if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
   if (act === 'close-sheet') { go('play'); return true }
