@@ -124,6 +124,23 @@ create table if not exists public.reports (
 );
 
 create index if not exists reports_status_idx on public.reports (status, created_at desc);
+create index if not exists reports_reporter_idx on public.reports (reporter_id, created_at desc);
+
+-- Size limits. NOT VALID so existing oversized rows do not block this script;
+-- new inserts and updates are still checked.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_state_size'
+                 and conrelid = 'public.profiles'::regclass) then
+    alter table public.profiles add constraint profiles_state_size
+      check (state is null or pg_column_size(state) <= 200000) not valid;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'profiles_history_size'
+                 and conrelid = 'public.profiles'::regclass) then
+    alter table public.profiles add constraint profiles_history_size
+      check (jsonb_typeof(history) = 'array' and jsonb_array_length(history) <= 30) not valid;
+  end if;
+end $$;
 
 -- ---------------------------------------------------------------------------
 -- Helpers
@@ -183,7 +200,44 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Mask a short list before the row is stored. The client masks the same way.
+-- Mask a short list before the row is stored. The client masks too (src/engine/filter.js).
+-- Each letter also matches common leetspeak swaps, a '*' (except the first letter),
+-- and at most one separator (space . _ - *) between letters, so f*ck, sh1t, f u c k match.
+-- Word edges use alnum lookarounds so "dickens" or "shitake" style substrings are not hit.
+create or replace function public.chat_word_pattern(word text)
+returns text
+language plpgsql
+immutable
+as $$
+declare
+  pattern text := '';
+  ch text;
+  cls text;
+  i int;
+begin
+  for i in 1 .. char_length(word) loop
+    ch := substr(word, i, 1);
+    cls := case ch
+      when 'a' then 'a@4'
+      when 'e' then 'e3'
+      when 'i' then 'i1!|l'
+      when 'o' then 'o0'
+      when 's' then 's$5'
+      when 't' then 't7+'
+      when 'u' then 'uv'
+      when 'c' then 'c('
+      else ch
+    end;
+    if i > 1 then
+      cls := cls || '*';
+      pattern := pattern || '[\s._*-]?';
+    end if;
+    pattern := pattern || '[' || cls || ']';
+  end loop;
+  return '(?<![[:alnum:]])' || pattern || '(?![[:alnum:]])';
+end;
+$$;
+
 create or replace function public.clean_chat_body(raw text)
 returns text
 language plpgsql
@@ -193,11 +247,14 @@ declare
   cleaned text := raw;
   word text;
   words text[] := array[
-    'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'dick', 'cunt', 'slut', 'whore'
+    'fucking', 'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'dick', 'cunt', 'slut', 'whore'
   ];
 begin
+  if cleaned is null then
+    return null;
+  end if;
   foreach word in array words loop
-    cleaned := regexp_replace(cleaned, '\m' || word || '\M', repeat('*', char_length(word)), 'gi');
+    cleaned := regexp_replace(cleaned, public.chat_word_pattern(word), repeat('*', char_length(word)), 'gi');
   end loop;
   return trim(cleaned);
 end;
@@ -255,6 +312,41 @@ begin
 end;
 $$;
 
+-- Reports: max 10 per reporter per hour, and one report per message per reporter.
+create unique index if not exists reports_one_per_message
+  on public.reports (reporter_id, message_id)
+  where message_id is not null;
+
+create or replace function public.limit_reports()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  recent int;
+begin
+  select count(*) into recent from public.reports
+    where reporter_id = new.reporter_id
+      and created_at > now() - interval '1 hour';
+  if recent >= 10 then
+    raise exception 'Too many reports. Try again later.';
+  end if;
+  if new.message_id is not null and exists (
+    select 1 from public.reports
+    where reporter_id = new.reporter_id and message_id = new.message_id
+  ) then
+    raise exception 'You already reported this message.';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists reports_limit on public.reports;
+create trigger reports_limit
+  before insert on public.reports
+  for each row execute function public.limit_reports();
+
 -- 7-day rolling averages. money / grades / balanced already stored per snapshot.
 create or replace function public.leaderboard()
 returns table (
@@ -273,32 +365,47 @@ stable
 security definer
 set search_path = public
 as $$
-  select
-    p.id,
-    p.display_name,
-    p.residence,
-    p.money,
-    p.grades,
-    p.balanced,
-    coalesce((
-      select avg((item->>'money')::numeric)
-      from jsonb_array_elements(p.history) item
-      where (item->>'at')::timestamptz > now() - interval '7 days'
-    ), p.money::numeric),
-    coalesce((
-      select avg((item->>'grades')::numeric)
-      from jsonb_array_elements(p.history) item
-      where (item->>'at')::timestamptz > now() - interval '7 days'
-    ), p.grades::numeric),
-    coalesce((
-      select avg((item->>'balanced')::numeric)
-      from jsonb_array_elements(p.history) item
-      where (item->>'at')::timestamptz > now() - interval '7 days'
-    ), p.balanced::numeric)
-  from public.profiles p
-  where not p.suspended
-    and p.display_name is not null
-    and p.state is not null;
+  with scored as (
+    select
+      p.id,
+      p.display_name,
+      p.residence,
+      p.money,
+      p.grades,
+      p.balanced,
+      coalesce((
+        select avg((item->>'money')::numeric)
+        from jsonb_array_elements(p.history) item
+        where (item->>'at')::timestamptz > now() - interval '7 days'
+      ), p.money::numeric) as rich_avg,
+      coalesce((
+        select avg((item->>'grades')::numeric)
+        from jsonb_array_elements(p.history) item
+        where (item->>'at')::timestamptz > now() - interval '7 days'
+      ), p.grades::numeric) as dean_avg,
+      coalesce((
+        select avg((item->>'balanced')::numeric)
+        from jsonb_array_elements(p.history) item
+        where (item->>'at')::timestamptz > now() - interval '7 days'
+      ), p.balanced::numeric) as balanced_avg
+    from public.profiles p
+    where not p.suspended
+      and p.display_name is not null
+      and p.state is not null
+  ),
+  ranked as (
+    select s.*,
+      rank() over (order by s.rich_avg desc) as rich_rank,
+      rank() over (order by s.dean_avg desc) as dean_rank,
+      rank() over (order by s.balanced_avg desc) as balanced_rank
+    from scored s
+  )
+  -- Keep anyone in the top 500 of any board so no board loses a row.
+  select r.id, r.display_name, r.residence, r.money, r.grades, r.balanced,
+         r.rich_avg, r.dean_avg, r.balanced_avg
+  from ranked r
+  where r.rich_rank <= 500 or r.dean_rank <= 500 or r.balanced_rank <= 500
+  order by r.balanced_rank;
 $$;
 
 drop function if exists public.admin_reports();
@@ -354,6 +461,20 @@ begin
     raise exception 'Admins only';
   end if;
   update public.reports set status = 'closed' where id = report;
+end;
+$$;
+
+create or replace function public.admin_delete_message(message uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Admins only';
+  end if;
+  delete from public.chat_messages where id = message;
 end;
 $$;
 
@@ -413,6 +534,8 @@ grant execute on function public.leaderboard() to anon, authenticated;
 grant execute on function public.admin_reports() to authenticated;
 grant execute on function public.admin_suspend(uuid, boolean) to authenticated;
 grant execute on function public.admin_close_report(uuid) to authenticated;
+revoke execute on function public.admin_delete_message(uuid) from public, anon;
+grant execute on function public.admin_delete_message(uuid) to authenticated;
 grant execute on function public.admin_edit_event(text, text, text, text, jsonb) to authenticated;
 
 drop policy if exists "read own profile" on public.profiles;
@@ -423,7 +546,7 @@ create policy "read own profile" on public.profiles
 drop policy if exists "insert own profile" on public.profiles;
 create policy "insert own profile" on public.profiles
   for insert to authenticated
-  with check (id = auth.uid());
+  with check (id = auth.uid() and role = 'player' and not suspended);
 
 drop policy if exists "update own profile" on public.profiles;
 create policy "update own profile" on public.profiles
@@ -596,6 +719,8 @@ select w, 'block' from (values
 ) as t(w)
 on conflict (word) do update set kind = 'block';
 
+-- Same matcher as chat_word_pattern above (leetspeak, '*', spaced letters).
+-- A trailing * is a prefix. Phrases stay space-separated. Block words reject.
 create or replace function public.clean_chat_body(raw text)
 returns text
 language plpgsql
@@ -605,12 +730,23 @@ declare
   cleaned text := raw;
   entry record;
   pattern text;
+  stem text;
 begin
+  if cleaned is null then
+    return null;
+  end if;
   for entry in select word, kind from public.chat_words loop
     if right(entry.word, 1) = '*' then
-      pattern := '\m' || left(entry.word, -1) || '[a-z]*';
+      stem := left(entry.word, -1);
+      pattern := regexp_replace(
+        public.chat_word_pattern(stem),
+        '\(\?!\[\[:alnum:\]\]\)$',
+        '[[:alnum:]]*'
+      );
+    elsif position(' ' in entry.word) > 0 then
+      pattern := '(?<![[:alnum:]])' || replace(entry.word, ' ', '\s+') || 's?(?![[:alnum:]])';
     else
-      pattern := '\m' || replace(entry.word, ' ', '\s+') || 's?\M';
+      pattern := public.chat_word_pattern(entry.word);
     end if;
     if entry.kind = 'block' and cleaned ~* pattern then
       raise exception 'Message not allowed';
