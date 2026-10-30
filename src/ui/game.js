@@ -157,7 +157,7 @@ function gearMenu(run) {
     <button type="button" data-act="nav" data-go="chat">Campus chat</button>
     <button type="button" data-act="nav" data-go="rules">Community rules</button>
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
-    <button type="button" data-act="nav" data-go="world">3D campus (beta)</button>
+    ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
     ${ui.confirmReset
       ? '<button type="button" class="danger" data-act="new">Tap again: delete this student</button>'
       : '<button type="button" data-act="reset">Reset character</button>'}
@@ -337,6 +337,15 @@ export function mapHome(state, openPlace = '') {
     ${run.mode === 'play' && !layer ? ctaBar(district, run) : ''}
     ${ui.notice ? `<p class="g-notice" role="status">${esc(ui.notice)}</p>` : ''}
     ${layer}
+  </main>`
+}
+
+export function morningScreen(state) {
+  const { district, run } = state
+  const left = 9 * 60 - run.minutes
+  return `<main class="screen g-screen g-3d g-morning" data-screen="morning">
+    ${hud(district, run)}
+    <p class="g-goal${left <= 15 ? ' late' : ''}" role="status"><span>\u{1F3AF} Get to your 9:00 lecture on time.</span><b>${left > 0 ? `${left} min left` : `${-left} min late`}</b></p>
   </main>`
 }
 
