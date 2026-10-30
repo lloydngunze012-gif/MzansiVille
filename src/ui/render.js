@@ -601,93 +601,19 @@ function admin(state) {
   </main>`
 }
 
-function isoBlock(x, y, w, h, d, front, side, roof) {
-  return `<path d="M${x + 6} ${y + h}h${w}l${d} ${-d / 2}h${-w}z" fill="#1c1915" opacity=".14" transform="translate(${d * .6} ${d * .5})"/>
-    <path d="M${x} ${y}h${w}v${h}h${-w}z" fill="${front}"/>
-    <path d="M${x + w} ${y}l${d} ${-d / 2}v${h}l${-d} ${d / 2}z" fill="${side}"/>
-    <path d="M${x} ${y}l${d} ${-d / 2}h${w}l${-d} ${d / 2}z" fill="${roof}"/>`
-}
-
-function palm(x, y, k) {
-  const fronds = [[-54, 26], [-48, 8], [-30, -10], [-10, -18], [10, -18], [30, -10], [48, 8], [54, 26]]
-  return `<g transform="translate(${x} ${y}) scale(${k})">
-    <ellipse cx="8" cy="2" rx="20" ry="4.5" fill="#1c1915" opacity=".14"/>
-    <path d="M-5 0L-2.5-80h5L5 0z" fill="#8a5a3a"/><path d="M1 0L2.5-80H0L0 0z" fill="#6b4429"/>
-    <path d="M-4.6-12h9.2M-4.3-24h8.6M-4-36h8M-3.7-48h7.4M-3.3-60h6.6M-3-72h6" stroke="#5a3820" stroke-width="1.6"/>
-    <g class="ts-palm" transform="translate(0 -80)">
-      ${fronds.map(([fx, fy], i) => `<path d="M0 0Q${fx * .45} ${fy - 18} ${fx} ${fy}Q${fx * .5} ${fy - 4} 0 0z" fill="${i % 2 ? '#2e8b57' : '#1f6b45'}"/><path d="M0 0Q${fx * .45} ${fy - 18} ${fx} ${fy}" stroke="#6fcf6f" stroke-width="1" fill="none" opacity=".6"/>`).join('')}
-      <circle cx="-3" cy="3" r="3.4" fill="#8a5a3a"/><circle cx="3" cy="4" r="3.4" fill="#6b4429"/><circle cy="7" r="3" fill="#7a4c2e"/></g></g>`
-}
-
-function campusScene(district, avatar) {
-  const places = Object.fromEntries((district.places || []).map((p) => [p.id, p]))
-  const nm = (id, fb) => esc(places[id]?.name || fb)
-  const res = ['res_o', 'res_r', 'res_s'].map((id, i) => nm(id, ['O Block', 'R Block', 'S Block'][i]))
-  const towers = [[0, 52], [14, 70], [30, 44], [44, 84], [60, 58], [250, 64], [266, 90], [284, 50], [300, 76], [318, 60], [334, 96], [352, 54], [368, 72]]
-  return `<svg class="ts-scene" viewBox="0 -170 390 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <rect y="-170" width="390" height="844" fill="#ffd9a8"/>
-    <rect y="-170" width="390" height="190" fill="#ffc37a"/>
-    <rect y="20" width="390" height="70" fill="#ffcf92"/>
-    <g class="ts-cloud c1" fill="#fff4e4"><ellipse cx="40" cy="40" rx="38" ry="11"/><ellipse cx="62" cy="31" rx="20" ry="12"/></g>
-    <g class="ts-cloud c2" fill="#fff4e4" opacity=".85"><ellipse cx="180" cy="66" rx="30" ry="8"/><ellipse cx="196" cy="59" rx="15" ry="9"/></g>
-    <g class="ts-cloud c3" fill="#fff4e4" opacity=".8"><ellipse cx="300" cy="-14" rx="30" ry="8"/><ellipse cx="316" cy="-21" rx="14" ry="8"/></g><g class="ts-cloud c4" fill="#fff4e4" opacity=".6"><ellipse cx="120" cy="2" rx="22" ry="6"/></g>
-    <g class="ts-balloon"><g transform="translate(232 52) scale(.7)"><path d="M0-30c-18 0-26 12-26 24 0 14 16 24 22 32h8c6-8 22-18 22-32 0-12-8-24-26-24z" fill="#7b3fe4"/><path d="M0-30c-7 0-10 12-10 24 0 14 6 24 7 32h6c1-8 7-18 7-32 0-12-3-24-10-24z" fill="#f0c400"/><path d="M-4 26l-2 8M4 26l2 8" stroke="#5a3a5e" stroke-width="1.2"/><rect x="-7" y="34" width="14" height="9" rx="2" fill="#c4512a"/></g></g>
-    <g class="ts-plane"><g transform="translate(0 12)"><path d="M150 8h-60" stroke="#5a3a5e" stroke-width="1"/><rect x="0" y="0" width="92" height="16" rx="3" fill="#fff4e4"/><text x="46" y="11.5" class="ts-banner" text-anchor="middle">WELCOME FIRST YEARS</text><path d="M150 4h22q6 0 8 4q-2 4-8 4h-22z" fill="#1d7fb8"/><path d="M160 4l-6-7h5l8 7zM160 12l-6 7h5l8-7z" fill="#165f8a"/><path d="M150 3v10" stroke="#165f8a" stroke-width="3"/></g></g>
-    <g class="ts-birds" fill="none" stroke="#5a3a5e" stroke-width="2" stroke-linecap="round">
-      <path d="M90 60q5-5 10 0q5-5 10 0"/><path d="M118 48q4-4 8 0q4-4 8 0"/><path d="M104 76q3-3 6 0q3-3 6 0"/></g>
-    <circle cx="318" cy="132" r="96" fill="#ffd08a" opacity=".55"/><circle cx="318" cy="132" r="70" fill="#ffbd73" opacity=".55"/><circle cx="318" cy="132" r="44" fill="#ff8a3d"/><circle cx="318" cy="132" r="30" fill="#ffa95e"/>
-    <g fill="#b0527a">${towers.map(([tx, th]) => `<rect x="${tx}" y="${140 - th}" width="14" height="${th}"/>`).join('')}</g>
-    <g fill="#ffd27a" opacity=".8">${towers.filter((_, i) => i % 2).map(([tx, th]) => `<rect x="${tx + 4}" y="${148 - th}" width="3" height="3"/><rect x="${tx + 4}" y="${158 - th}" width="3" height="3"/>`).join('')}</g>
-    <path d="M96 140q0-22 54-26q54 4 54 26z" fill="#8f3f68"/>
-    <path d="M108 140Q150 22 196 140" fill="none" stroke="#fff4e4" stroke-width="5" stroke-linecap="round"/>
-    <rect y="140" width="390" height="44" fill="#1d7fb8"/>
-    <g fill="#ffa95e" opacity=".85"><rect x="290" y="146" width="56" height="3" rx="1.5"/><rect x="298" y="155" width="40" height="3" rx="1.5"/><rect x="306" y="164" width="24" height="3" rx="1.5"/></g>
-    <path d="M0 176h390" stroke="#7cc6e8" stroke-width="2" stroke-dasharray="14 20" class="ts-wave"/>
-    <path d="M0 184c80-12 200-12 390 0v10H0z" fill="#f3e2c2"/>
-    <path d="M0 192c90-14 220-14 390-2V674H0z" fill="#5cb85c"/>
-    <path d="M0 260c110-18 240-18 390 0V674H0z" fill="#4aa34f"/>
-    <path d="M195 674V330M20 340c80-8 270-8 360 0" stroke="#f3e2c2" stroke-width="18" fill="none" stroke-linecap="round"/>
-    <g transform="translate(0 -6)">${isoBlock(14, 220, 92, 50, 18, '#c4512a', '#9c3f20', '#e0662a')}
-      <rect x="26" y="234" width="10" height="36" fill="#fff4e4"/><rect x="52" y="234" width="10" height="36" fill="#fff4e4"/><rect x="78" y="234" width="10" height="36" fill="#fff4e4"/>
-      <text x="60" y="196" class="ts-lbl" text-anchor="middle">${nm('library', 'Library')}</text></g>
-    <g>${isoBlock(250, 226, 104, 52, 22, '#1d7fb8', '#165f8a', '#7cc6e8')}
-      <rect x="290" y="250" width="24" height="28" fill="#fff4e4"/><rect x="258" y="236" width="24" height="9" fill="#bfe6f7"/><rect x="322" y="236" width="24" height="9" fill="#bfe6f7"/>
-      <text x="306" y="196" class="ts-lbl" text-anchor="middle">${nm('sports_centre', 'Sports Centre')}</text></g>
-    <g transform="translate(195 340)"><ellipse cx="6" cy="8" rx="100" ry="30" fill="#1c1915" opacity=".1"/><ellipse rx="100" ry="30" fill="#7fd07f" stroke="#f3e2c2" stroke-width="7"/>
-      <ellipse rx="14" ry="6" fill="#7b3fe4"/><ellipse cy="-3" rx="7" ry="3" fill="#f0c400"/>
-      <text x="-48" y="-38" class="ts-lbl big" text-anchor="middle">${nm('quad', 'The Quad')}</text></g>
-    <g class="ts-kombi"><g transform="translate(0 300) scale(1.45)"><ellipse cx="22" cy="18" rx="24" ry="3" fill="#1c1915" opacity=".18"/>
-      <path d="M0 4q0-6 6-6h28q8 0 12 10v8H0z" fill="#fffaf2"/><rect y="8" width="46" height="4" fill="#1d7fb8"/>
-      <rect x="6" y="0" width="9" height="6" fill="#7cc6e8"/><rect x="18" y="0" width="9" height="6" fill="#7cc6e8"/><path d="M30 0h5q4 0 6 6h-11z" fill="#7cc6e8"/>
-      <circle cx="10" cy="16" r="4" fill="#1c1915"/><circle cx="36" cy="16" r="4" fill="#1c1915"/><circle cx="10" cy="16" r="1.5" fill="#ccc"/><circle cx="36" cy="16" r="1.5" fill="#ccc"/><rect x="8" y="-5" width="26" height="4" rx="1" fill="#ff8a3d"/><rect x="12" y="-8" width="8" height="3" fill="#7b3fe4"/></g></g>
-    ${[[0, '#ff8a3d', '#1c1915'], [1, '#7b3fe4', '#3f291c']].map(([i, c, h]) => `<g class="ts-walker w${i}"><g transform="translate(0 ${i ? 372 : 352}) scale(1.8)"><g class="ts-step">
-      <ellipse cx="0" cy="18" rx="6" ry="1.6" fill="#1c1915" opacity=".2"/><path d="M-2 10v8M2 10v8" stroke="#2b3a55" stroke-width="2.4"/>
-      <rect x="-5" y="0" width="10" height="11" rx="4" fill="${c}"/><circle cy="-4" r="4.2" fill="${i ? '#8a5a3a' : '#d2956b'}"/><path d="M-4.2-5a4.2 4.2 0 0 1 8.4 0z" fill="${h}"/><rect x="${i ? -7 : 3}" y="1" width="5" height="7" rx="1.5" fill="${i ? '#f0c400' : '#1d7fb8'}"/></g></g></g>`).join('')}
-    ${res.map((r, i) => { const x = 12 + i * 62, y = 384 + (i % 2) * 8; return `<g>${isoBlock(x, y, 52, 64 - i * 4, 14, ['#fff4e4', '#ffe1b8', '#fff4e4'][i], '#e8c79c', '#c9a57a')}
-      ${[0, 1, 2].map((row) => `<rect x="${x + 6}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/><rect x="${x + 21}" y="${y + 8 + row * 17}" width="10" height="8" fill="#ff8a3d"/><rect x="${x + 36}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/>`).join('')}
-      <rect x="${x}" y="${y - 10}" width="52" height="11" rx="2" fill="#7b3fe4"/><text x="${x + 26}" y="${y - 1.5}" class="ts-tag">${r}</text></g>` }).join('')}
-    ${palm(368, 330, 1.05)}${palm(150, 262, .8)}${palm(214, 470, .95)}${palm(20, 312, .7)}
-    <g class="ts-avatar">${avatar}</g>
-  </svg>`
-}
-
 function title(state) {
-  const district = state.district
   const day = state.save.run?.day
-  const look = state.save.run?.character?.avatar || { skin: 'amber', hair: 'braids', outfit: 'organt' }
-  const avatar = avatarSvg(look, district.meta.dialCode, 104).replace('<svg ', '<svg x="206" y="236" class="wave" ')
-  return `<main class="screen ts" data-screen="title">
-    ${campusScene(district, avatar)}
-    <header class="ts-sign" aria-label="CampusVille">
-      <div class="ts-board"><small>Welcome to</small><h1>Campus<span>Ville</span></h1><i class="bolt a"></i><i class="bolt b"></i><i class="bolt c"></i><i class="bolt d"></i></div>
-      <div class="ts-plaque">${esc(district.meta.city || 'Durban')} · Est. first year</div>
-      <i class="ts-post l"></i><i class="ts-post r"></i>
-    </header>
-    <div class="ts-foot">
-      <p class="ts-tag-line">Res, lectures, bunny chows and besties. Survive first year.</p>
-      <button class="btn ts-start" type="button" data-act="start">Start first year</button>
-      ${day ? `<button class="ts-continue" type="button" data-act="continue">Continue · day ${day}</button>` : ''}
-      <nav class="ts-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
+  return `<main class="screen tc" data-screen="title">
+    <h1 class="sr-only">CampusVille</h1>
+    <div class="tc-art" aria-hidden="true"><picture>
+      <source srcset="/cover.webp" type="image/webp">
+      <img src="/cover.jpg" alt="" width="1024" height="1536" decoding="async" fetchpriority="high">
+    </picture></div>
+    <div class="tc-foot">
+      <p class="tc-tag">Res, lectures, bunny chows and besties. Survive first year.</p>
+      <button class="btn tc-start" type="button" data-act="start">Start first year</button>
+      ${day ? `<button class="tc-continue" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : ''}
+      <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
     </div>
   </main>`
 }
