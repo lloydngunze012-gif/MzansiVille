@@ -35,6 +35,32 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# CURRENT LIST (owner, 31 Oct): do NOT stop for review. Push after each item.
+Every item must pass a look-test on a phone-sized screen (412x915): screenshot it from the player's camera and check it's clearly visible.
+
+1. TALK TO ANYONE (now, first)
+Tap any person (students, vendors, lecturers, SRC campaigners, roommate) and a conversation opens: their name, a short line, 2-3 replies. Replies change Social and closeness. People remember you; the second chat differs. Write at least 10 student characters with names and personalities, plus Mam' Gugu, the cafeteria auntie and the lecturer.
+
+2. EVERY ACTIVITY IS VISIBLE, EVERYWHERE
+- Build reusable scenes (queue and buy, sit and eat, sit and read, study at a desk, watch, chat, exercise, work a shift, sleep) and map ALL 108 actions in activities.csv to one. No action may play as a blank progress bar.
+- During an activity, move the camera close (over-the-shoulder) so the player clearly sees it: the queue, the vendor, the vendor handing over the food, the character eating.
+- The result text must match what happened (vetkoek, not kota).
+
+3. MORNING CHOICES
+Every morning offers real breakfast choices: noodles in res, the tuck shop on the way, the cafeteria on campus, or skip and walk hungry. Each has a different cost, time and effect.
+
+4. PHONE LAYOUT AND QUALITY
+- Character creator on phone: the 3D preview shows the full character, head to feet, never cropped. Rework the layout for portrait phones.
+- Cover image: no heads cut off at the top on phones (adjust object-position, or show the full image).
+- The Organt outfit must show the '031 ORGANT' print on the 3D tee, like the cover.
+
+5. CHARACTERS THAT MATCH THE COVER
+Replace the chibi Kenney minis with normal-proportion low-poly characters, like Lagos Life's (docs/benchmark/lagoslife/02 and 07). Use Quaternius's free CC0 character packs (rigged, with walk, idle, sit and talk animations). Keep all creator options: gender, skin, body, hair, outfits including Dress, Shweshwe and the Organt 031 tee.
+
+Report at the end with phone screenshots for each item.
+
+---
+
 # TOP PRIORITY (owner review after the Quad and cafeteria): above Part 3
 
 NEW RULE: TEST WHAT IT LOOKS LIKE, NOT JUST WHETHER IT WORKS
