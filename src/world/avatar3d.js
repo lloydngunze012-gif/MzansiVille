@@ -323,7 +323,16 @@ export function poseAvatar(group, walking, time) {
   if (!busy) {
     if (data.pose === 'sit') play(group, 'sit')
     else if (data.pose === 'lie') play(group, 'idle')
+    else if (data.pose === 'run') play(group, walking ? 'sprint' : 'idle')
+    else if (data.pose === 'dance') play(group, 'walk')
     else play(group, walking ? 'walk' : 'idle')
+  }
+  // Dancing: step in place, bounce on the beat and sway (112 BPM, like the groove).
+  const model = group.getObjectByName('rig')
+  if (model) {
+    const beat = (time * 112) / 60
+    model.position.y = data.pose === 'dance' ? Math.abs(Math.sin(beat * Math.PI)) * 0.12 : 0
+    model.rotation.y = data.pose === 'dance' ? Math.sin(beat * Math.PI / 2) * 0.5 : 0
   }
   // In bed the idle runs slowly, so the arms stay down and it reads as breathing.
   data.mixer.update(data.pose === 'lie' ? dt * 0.25 : dt)

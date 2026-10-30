@@ -2,7 +2,8 @@ import * as THREE from 'three'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, lookOf, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, lookOf, poseAvatar } from './avatar3d.js'
+import { createActivities, SCRIPTS } from './activities.js'
 import { createCameraRig } from './camera.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
@@ -148,6 +149,7 @@ function ensureHud() {
     <p class="door-prompt" hidden></p>
     <div class="act-bar" hidden><span></span><em>Doing it</em></div>
     <p class="floater" hidden></p>
+    <p class="act-say" hidden></p>
     <section class="onboard" hidden>
       <p class="step"></p>
       <div class="stack">
@@ -229,7 +231,7 @@ function ensureRenderer() {
     cameraRig: rig,
     raycaster,
     worldOn: () => visible && host.dataset.on === '1',
-    blocked: () => mapUi.isOpen() || actionLeft > 0 || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
+    blocked: () => mapUi.isOpen() || actionLeft > 0 || acting || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
     pickables: () => ({
       buildings: campus ? [campus.buildings] : [],
       ground: campus ? [campus.ground] : [],
@@ -384,9 +386,119 @@ function follow(dt) {
   return true
 }
 
+// Activities you can see (activities.js): at a dressed place the student plays
+// the activity out before the result lands. The bar is only a small timer.
+let acting = false
+let activities = null
+const BENCH_Y = 0.5
+function activityApi() {
+  const bar = () => host.querySelector('.act-bar')
+  const sayNode = () => host.querySelector('.act-say')
+  let held = null
+  const standUp = () => {
+    player.userData.pose = 'stand'
+    player.rotation.x = 0
+    player.position.y = 0
+  }
+  return {
+    get player() { return player },
+    get dressing() { return campus.dressing },
+    spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
+    walkTo: (x, z, pace = WALK) => new Promise((resolve) => {
+      walkTo(x, z, () => { snapTo = { x, z }; setTimeout(resolve, 250) })
+      speed = pace
+      if (!route.length) { snapTo = { x, z }; setTimeout(resolve, 400) }
+    }),
+    wait: (s) => new Promise((resolve) => setTimeout(resolve, s * 1000)),
+    face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
+    gesture: (name) => gesture(player, name),
+    gestureOf: (avatar, name) => avatar && gesture(avatar, name),
+    pose: (p, y = 0) => {
+      standUp()
+      player.userData.pose = p
+      if (p === 'sit') player.position.y = y
+      if (p === 'lie') { player.rotation.x = -Math.PI / 2; player.position.y = 0.28 }
+    },
+    sitAt: (seat) => {
+      player.position.set(seat.x, seat.y, seat.z)
+      player.rotation.y = seat.rot
+      player.userData.pose = 'sit'
+    },
+    stand: () => {
+      standUp()
+      player.position.x += Math.sin(player.rotation.y) * 0.9
+      player.position.z += Math.cos(player.rotation.y) * 0.9
+    },
+    freeSeat: () => {
+      const benches = campus.dressing.benches || []
+      for (const b of benches) {
+        const seat = { x: b.x + Math.cos(b.rot) * 0.32, z: b.z - Math.sin(b.rot) * 0.32, rot: b.rot, y: BENCH_Y }
+        const neighbour = crowd?.people.find((p) => p.sitting && Math.hypot(p.avatar.position.x - b.x, p.avatar.position.z - b.z) < 1)?.avatar
+        return { ...seat, neighbour }
+      }
+      return null
+    },
+    say: (text, who = 'you') => {
+      const node = sayNode()
+      node.innerHTML = who && who !== 'you' ? `<b>${who === 'friend' ? 'Friend' : who}</b>${text}` : text
+      node.hidden = false
+    },
+    progress: (k) => { const span = bar().querySelector('span'); span.style.width = `${Math.round(Math.min(1, k) * 100)}%` },
+    hold: (mesh) => {
+      if (held) held.removeFromParent()
+      held = mesh
+      const hand = player.getObjectByName('arm-right')
+      const rig = player.getObjectByName('rig')
+      if (!mesh || !hand || !rig) return
+      mesh.scale.setScalar(1 / rig.scale.x)
+      mesh.position.set(-0.02, -0.16, 0.06)
+      hand.add(mesh)
+    },
+    groove: (level) => {
+      if (level == null) stopGroove('activity')
+      else { startGroove('activity'); setGrooveLevel(level * 0.8) }
+    },
+    end: () => {
+      if (held) { held.removeFromParent(); held = null }
+      standUp()
+      sayNode().hidden = true
+      stopGroove('activity')
+    },
+  }
+}
+
+async function runActivity(detail) {
+  acting = true
+  host.dataset.activity = SCRIPTS[detail.actionId] || 'stand'
+  host.dataset.activityStep = 'running'
+  const bar = host.querySelector('.act-bar')
+  bar.hidden = false
+  bar.classList.add('small')
+  bar.querySelector('span').style.width = '0%'
+  if (!activities) activities = { api: activityApi() }
+  activities.runner = activities.runner || createActivities(activities.api)
+  try {
+    await activities.runner.run(detail.actionId)
+  } catch (error) {
+    console.error(error)
+  }
+  activities.api.end()
+  bar.hidden = true
+  bar.classList.remove('small')
+  acting = false
+  host.dataset.activityStep = 'done'
+  const before = currentRun ? { ...currentRun.stats } : null
+  detail.commit()
+  if (before && currentRun) showFloater(before, currentRun.stats)
+}
+
 function beginAction(detail) {
   if (!visible || !detail?.commit) return
-  if (actionLeft > 0 || pendingAction) return
+  if (actionLeft > 0 || pendingAction || acting) return
+  if (detail.placeId === 'quad' && detail.actionId && campus?.dressing?.spots?.quad) {
+    runActivity(detail)
+    return
+  }
   const building = detail.placeId && campus?.layout.buildings.find((item) => item.id === detail.placeId)
   if (building && player) {
     const door = doorPoint(building)
@@ -442,6 +554,7 @@ function showFloater(before, after) {
 
 function rebuild(district, homeId) {
   nightNow = -1
+  activities = null
   if (campus) scene.remove(campus.group)
   crowd?.dispose()
   campus = createCampus(district, homeId)
@@ -509,6 +622,19 @@ function refreshMarkers() {
     run: currentRun,
     active,
   })
+}
+
+// A bubble over someone's head: its bottom edge sits at the head, kept on screen
+// and below the HUD (pin() keeps prompts low on phones, which covers the player).
+function pinAbove(node, x, y, z) {
+  screenPoint.set(x, y, z).project(camera)
+  const sx = (screenPoint.x * 0.5 + 0.5) * host.clientWidth
+  const sy = (-screenPoint.y * 0.5 + 0.5) * host.clientHeight
+  const half = node.offsetWidth / 2 + 8
+  const hud = document.querySelector('.g-hud')
+  const top = (hud ? hud.getBoundingClientRect().bottom : 120) + node.offsetHeight + 8
+  node.style.left = `${Math.min(host.clientWidth - half, Math.max(half, sx))}px`
+  node.style.top = `${Math.max(top, sy)}px`
 }
 
 function pin(node, x, y, z, lift = 0) {
@@ -683,7 +809,10 @@ function tick(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
-    crowd?.pushOut(player.position)
+    // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
+    if (!acting) crowd?.pushOut(player.position)
+    const say = host.querySelector('.act-say')
+    if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)

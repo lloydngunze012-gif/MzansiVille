@@ -902,6 +902,7 @@ app.addEventListener('click', async (event) => {
       window.dispatchEvent(new CustomEvent('mzansi-act', {
         detail: {
           placeId: button.dataset.place || '',
+          actionId: id,
           commit() {
             const before = { ...save.run.stats }
             const result = applyAction(district, save.run, id)

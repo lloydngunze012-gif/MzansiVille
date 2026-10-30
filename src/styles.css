@@ -828,3 +828,9 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .set .btn { color: #fff; background: #2a1846; border: 1px solid #f0c40066; text-decoration: none; display: flex; align-items: center; justify-content: center; min-height: 48px; }
 .set .btn.set-danger { background: #c43b3b; border-color: #fff; }
 .set .btn.set-danger-ghost { color: #ff9f9f; }
+
+/* Activities: a speech bubble over the student, and the bar shrinks to a small timer. */
+#world .act-say { position: absolute; z-index: 6; transform: translate(-50%, -100%); max-width: 220px; margin: 0; padding: 8px 12px; border-radius: 14px; background: #fff8ea; color: #22143b; font: 700 13.5px system-ui; border: 3px solid #2a1846; pointer-events: none; }
+#world .act-say b { display: block; font: 900 10.5px system-ui; letter-spacing: .08em; text-transform: uppercase; color: #1f7a4a; }
+#world .act-bar.small { width: 120px; height: 8px; padding: 0; }
+#world .act-bar.small em { display: none; }
