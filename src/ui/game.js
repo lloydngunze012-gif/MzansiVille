@@ -128,6 +128,7 @@ export function hud(district, run, opts = {}) {
   const chips = statusChips(run)
   return `<header class="g-hud">
     <div class="g-row">
+      <button class="g-gear g-home" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>
       <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
       <span class="g-clock">${formatClock(run.minutes)}</span>
       <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>

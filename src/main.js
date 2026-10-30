@@ -287,6 +287,9 @@ function paint() {
     shareBlob = drawShareCard(canvas, { district, run, url: shareUrl(), milestone: shot ? shown.shareMilestone : shareMilestone })
       .then(() => exportCard(canvas)).catch(() => null)
   }
+  if (app.dataset.screen !== 'title' && !app.querySelector('.g-home')) {
+    app.insertAdjacentHTML('beforeend', '<button class="g-home g-home-float" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>')
+  }
   syncWorld(shown)
   armToasts()
   armAuto()
@@ -641,6 +644,14 @@ app.addEventListener('click', async (event) => {
   if (act === 'start') {
     draft = emptyDraft()
     go(save.rulesAccepted ? 'new' : 'rules')
+    return
+  }
+  if (act === 'home') {
+    if (route().name === 'morning' && save.run?.morningStart && !window.confirm('Leave the morning? This morning starts over next time.')) return
+    ui.gear = false
+    morningPromise?.then((mod) => mod.stopMorning())
+    persist()
+    go('title')
     return
   }
   if (act === 'edit-char' && save.run) {
