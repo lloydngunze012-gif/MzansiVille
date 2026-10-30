@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
 import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.js'
+import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
@@ -62,6 +63,21 @@ check('csv quotes and district size', () => {
   assert.ok(district.activities.some((action) => action.id === 'organt_rep'))
   assert.equal(district.residences.some((row) => row.name.startsWith('ADD ')), false)
   assert.equal(district.meta.dialCode, '031')
+})
+
+check('every CSV row has as many columns as its header (QA B01)', () => {
+  for (const name of ['activities.csv', 'places.csv', 'residences.csv']) {
+    const rows = parseCsvRows(read(name))
+    const width = rows[0].length
+    rows.slice(1).forEach((row, i) => assert.equal(row.length, width, `${name} row ${i + 2} has ${row.length} columns, header has ${width}`))
+  }
+})
+
+check('a shift pays money and costs a little grades time, not +120 grades (QA B01)', () => {
+  const job = district.activities.find((action) => action.id === 'job_shift')
+  assert.equal(job.name, 'Work a shift (tutoring, library desk, promo)')
+  assert.ok(job.deltas.money > 0, `job pays R${job.deltas.money}`)
+  assert.ok(job.deltas.grades <= 0, `job gives ${job.deltas.grades} grades`)
 })
 
 check('home and course places', () => {
