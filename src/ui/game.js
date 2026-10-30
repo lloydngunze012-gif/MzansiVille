@@ -13,7 +13,7 @@ const ICON = {
   lecture: '\u{1F393}', residence: '\u{1F3E0}',
 }
 const SHORT = {
-  'SMIG Lecture Venue': 'SMIG', 'Health Sciences Lecture Venue': 'Health Sci', 'Science Lecture Venue': 'Science',
+  'Business Hall': 'Business', 'Health Sciences Lecture Venue': 'Health Sci', 'Science Lecture Venue': 'Science',
   'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Other on-campus blocks': 'Other blocks',
   'Off-campus res (bus home)': 'Off-campus res', 'Main Bus Station': 'Bus station',
 }

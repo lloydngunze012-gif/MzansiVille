@@ -1,0 +1,134 @@
+{
+  "note": "Day 1 morning lines. Written by Content Writer. Keys under 'steps' match the setStep ids in src/world/morning.js so Game Dev can look lines up by id. 'bubble' is a speech bubble (who says it), 'caption' is a narration line, 'move' is the on-screen motion cue. No balance numbers live here: effects stay in the game code and activities.csv. Roommate is Zanele, the bestie the player meets in person.",
+  "goal": {
+    "text": "Get to your 9:00 lecture on time.",
+    "hint": "Eat something, catch the bus, make it to campus.",
+    "met": "You made it. 9:00 and you are already winning.",
+    "failed": "Late. The lecturer notices. So does everyone else."
+  },
+  "zanele": {
+    "name": "Zanele",
+    "role": "Roommate in O Block. Your bestie from day one.",
+    "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
+    "intro": "That is Zanele. She will borrow things all year and return them with interest."
+  },
+  "steps": {
+    "wake": {
+      "caption": "O Block, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
+      "bubbles": [
+        { "who": "player", "text": "07:00. Alarm. Day one\u2026 snooze." },
+        { "who": "player", "text": "Zzz\u2026 snooze \u00d74" },
+        { "who": "player", "text": "07:40?! Up, up, up!" }
+      ],
+      "zanele": { "who": "zanele", "text": "Mm. You snoozed four times. I counted. We are going to be friends." },
+      "move": "Blanket slides off, stripe of sun crosses the floor, Zanele rolls over in the other bed."
+    },
+    "kettle": {
+      "prompt": "\u2615 Make noodles at the kettle",
+      "caption": "Four steps to the kettle. It is a small room and a long walk."
+    },
+    "kettle-walk": {
+      "caption": "Slippers squeak across the tiles. Somebody else is already heading to the kettle.",
+      "zanele_walks_over": { "who": "zanele", "text": "Wait, I was first. I can smell it." }
+    },
+    "noodles": {
+      "caption": "Masala flavour. The kettle clicks, steam curls up, and the day is going well.",
+      "bubble": { "who": "player", "text": "Mmm\u2026 2-minute noodles." },
+      "zanele": { "who": "zanele", "text": "Save me the flavour sachet. I will pay you in gossip." }
+    },
+    "roommate": {
+      "caption": "The cupboard is empty. Zanele is standing there with the wrapper and a very guilty smile.",
+      "bubble": { "who": "zanele", "text": "Sorry! Last packet \ud83d\ude05 I\u2019ll buy more later." },
+      "introduction": "Hi, I am Zanele. We are doing this properly now. I owe you noodles and one (1) apology.",
+      "move": "Zanele steps in with the wrapper, crinkles it, gives you the biggest sorry eyes."
+    },
+    "choice_no_noodles": {
+      "title": "No noodles left. What now?",
+      "options": [
+        { "label": "\ud83d\uded2 Tuck shop noodles", "note": "R12 \u00b7 +25 Fullness \u00b7 costs 10 min" },
+        { "label": "\ud83d\udeab Skip breakfast", "note": "\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time" }
+      ]
+    },
+    "tuckshop": {
+      "caption": "Down the corridor, past three people in towels. The tuck shop auntie is smiling.",
+      "bubble": { "who": "auntie", "text": "Noodles? Last one, my girl. Hurry, the bell is coming." },
+      "zanele_after": { "who": "zanele", "text": "I will pay you back on NSFAS day. Pinky promise." },
+      "fade": "\ud83d\uded2 Tuck shop\u2026 R12 noodles"
+    },
+    "skip": {
+      "caption": "Your stomach files a complaint and copies in your wallet.",
+      "bubble": { "who": "player", "text": "Fine. I\u2019ll survive till lunch\u2026" },
+      "zanele": { "who": "zanele", "text": "Take this biscuit. Do not tell anyone I am a nice person." }
+    },
+    "door": {
+      "prompt": "\ud83d\udeaa Head out to the bus stop",
+      "caption": "Bag, student card, charger. In that order, because panic has an order."
+    },
+    "exit": {
+      "bubble": { "who": "player", "text": "Quick shower, get dressed\u2026" },
+      "caption": "Door, stairwell, sunshine. The whole block smells of toast and ambition.",
+      "zanele_at_door": { "who": "zanele", "text": "Go go go! Save me a seat at the back if we have the same class." }
+    },
+    "to-stop": {
+      "prompt": "\ud83d\ude8f Walk to the bus stop",
+      "caption": "Past the res gate and the vendors setting up. Someone says \"Morning, sisi\" and means it."
+    },
+    "walk-stop": {
+      "caption": "Flip-flops, vendors, a dog trotting across the road like it has a lecture too."
+    },
+    "stop": {
+      "caption": "A small queue. Everyone checks their phone and pretends not to look at the road.",
+      "sign_missed": "Missed the {time}.",
+      "sign_next": "Next bus {time} \u00b7 in {min} min"
+    },
+    "bus-arriving": {
+      "caption": "Here it comes, wheezing like it has done this a thousand times. It has."
+    },
+    "board": {
+      "prompt": "\ud83d\ude8c Get on the bus",
+      "caption": "Doors fold open. The queue surges. You surge with it."
+    },
+    "boarding": {
+      "caption": "Window seat, bag on your knees. A speaker three rows back is playing amapiano."
+    },
+    "riding": {
+      "caption": "Campus slides past the glass. A student dozes with their head on the window."
+    },
+    "arrive": {
+      "caption": "The gate, the Quad, the crowd streaming toward the lecture venues."
+    },
+    "done": {
+      "on_time": {
+        "kind": "On time",
+        "title": "You made it to campus",
+        "line": "{min} minutes to find your venue and a seat."
+      },
+      "late": {
+        "kind": "Running late",
+        "title": "You made it\u2026 just",
+        "line": "You slip in after it started. \u22122 Grades."
+      }
+    }
+  },
+  "late_variants": {
+    "bus_late": {
+      "caption": "The bus coughs, stops at a red robot, and sits there. You watch 08:45 go by.",
+      "bubble": { "who": "player", "text": "Come on, come on, come ON." },
+      "zanele_text": { "who": "zanele", "text": "Where are you? Lecturer already looks angry." }
+    },
+    "snoozed_too_long": {
+      "caption": "You snoozed one too many. The kettle never even gets a chance.",
+      "zanele": { "who": "zanele", "text": "I let you sleep. I regret it. Run." }
+    },
+    "missed_bus": {
+      "caption": "The bus pulls away as you round the corner. You wave. It does not wave back."
+    }
+  },
+  "tap_feedback": [
+    "Footsteps trail behind you for a second.",
+    "A little puff of steam.",
+    "Somebody laughs two rooms away.",
+    "Your bag bounces against your back.",
+    "A taxi hoots like it has an opinion."
+  ]
+}

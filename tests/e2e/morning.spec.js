@@ -3,6 +3,25 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
+async function expectBubbleClear(page) {
+  const box = await page.evaluate(() => {
+    const b = document.querySelector('.mm-bubble:not([hidden])')
+    const g = document.querySelector('.g-goal')
+    return b && g ? [b.getBoundingClientRect().top, g.getBoundingClientRect().bottom] : null
+  })
+  if (box) expect(box[0]).toBeGreaterThanOrEqual(box[1])
+}
+
+async function newGame(page, query) {
+  await page.goto(`/${query}#/new`)
+  await page.evaluate(() => localStorage.clear())
+  await page.goto(`/${query}#/new`)
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+}
+
 const OUT = process.env.MORNING_SHOTS || 'test-results/morning'
 
 test('day 1 morning: room to campus', async ({ page }) => {
@@ -14,7 +33,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const host = page.locator('#morning3d')
   const data = (k) => host.getAttribute(`data-${k}`)
   const pos = async () => [Number(await data('px')), Number(await data('pz'))]
-  const shot = (n) => page.screenshot({ path: `${OUT}/morning_${n}.png` })
+  const shot = (n) => page.screenshot({ path: `${OUT}/${process.env.MORNING_PREFIX || 'morning'}_${n}.png` })
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 30000 })
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
 
@@ -40,9 +59,11 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await page.waitForTimeout(500)
   await shot('2_kettle_walk')
   await atStep('roommate')
+  expect(Number(await data('path'))).toBeGreaterThan(1) // walked around furniture, not straight
   const atKettle = await pos()
   expect(Math.hypot(atKettle[0] - bed[0], atKettle[1] - bed[1])).toBeGreaterThan(1)
   await page.waitForTimeout(800)
+  await expectBubbleClear(page)
   await shot('4_roommate_event')
   await expect(page.locator('.mm-choice')).toHaveCount(2, { timeout: 10000 })
   await page.locator('.mm-choice').first().tap()
@@ -54,8 +75,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await atStep('door')
   await tapGo()
   await atStep('exit')
-  await page.waitForTimeout(900)
-  expect(Number(await data('door'))).toBeLessThan(-0.5)
+  await expect.poll(async () => Number(await data('door')), { timeout: 30000 }).toBeLessThan(-0.5)
   await shot('5_door_exit')
 
   await atStep('to-stop')
@@ -81,11 +101,44 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await atStep('done')
   await expect(page.locator('.mm-card')).toBeVisible()
   await expect(page.locator('.mm-card')).toContainText('Lecture 09:00')
+  await expect(host).toHaveAttribute('data-ontime', '1')
+  await expect(page.locator('.mm-card')).toContainText('On time')
+  const arrived = (await page.locator('.mm-times b').first().textContent()).trim()
+  expect(arrived >= '08:40' && arrived <= '09:00').toBe(true)
   await shot('9_arrival_card')
   await page.locator('[data-mm="continue"]').tap()
   await expect(page).toHaveURL(/#\/play/)
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.phase).toBe('lecture')
   expect(run.morningDone).toBe(true)
+  expect(errors).toEqual([])
+})
+
+test('day 1 morning: noodles path, slow player is late', async ({ page }) => {
+  test.setTimeout(200000)
+  fs.mkdirSync(OUT, { recursive: true })
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  const host = page.locator('#morning3d')
+  const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 40000 })
+  const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
+  await newGame(page, '?roommate=0')
+  await atStep('kettle')
+  await tapGo()
+  await atStep('noodles')
+  await expect(host).toHaveAttribute('data-cup', '1', { timeout: 10000 })
+  await page.screenshot({ path: `${OUT}/${process.env.MORNING_PREFIX || 'morning'}_3b_cup.png` })
+  await expect(host).toHaveAttribute('data-packet', 'used', { timeout: 10000 })
+  await atStep('door')
+  // dawdle at the door prompt: each idle second costs game minutes
+  await page.waitForFunction(() => document.querySelector('#morning3d').dataset.clock >= '08:30', null, { timeout: 120000 })
+  await tapGo()
+  await atStep('to-stop')
+  await tapGo()
+  await atStep('board')
+  await tapGo()
+  await atStep('done')
+  await expect(host).toHaveAttribute('data-ontime', '0')
+  await expect(page.locator('.mm-card')).toContainText('Running late')
   expect(errors).toEqual([])
 })

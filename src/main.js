@@ -207,7 +207,7 @@ function syncMorning(viewState) {
     if (route().name !== 'morning') return
     mod.startMorning({
       run: save.run,
-      forceRoommate: new URLSearchParams(location.search).get('roommate') === '1',
+      forceRoommate: { 1: true, 0: false }[new URLSearchParams(location.search).get('roommate')],
       onUpdate() { persist(); paint() },
       onDone(result) { endMorning(false, result) },
     })

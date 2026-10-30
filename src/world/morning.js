@@ -4,13 +4,14 @@ import * as THREE from 'three'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 
 const WAKE = 7 * 60
-const BUS_FIRST = 7 * 60 + 45
+const BUS_FIRST = 8 * 60 + 10
 const BUS_EVERY = 15
 const RIDE = 15
-const ON_TIME_BY = 8 * 60 + 45
+const ON_TIME_BY = 9 * 60
 const LECTURE = 9 * 60
 const SPEED = 2.4
 
+let cup, halo, kettleLight, fade
 let host, renderer, scene, camera, player, roommate, kettle, steamGroup, bowl, packet, door, bus, busDoor, marker, sign
 let opts = null
 let running = false
@@ -67,6 +68,57 @@ function walk(who, pts, speed = SPEED) {
     return false
   })
 }
+// Grid A* inside the room so people walk around beds, desk and counter.
+const CELL = 0.2
+const BLOCKS = [
+  [-2.65, -1.55, -2.9, -0.65], [1.55, 2.65, -2.9, -0.65], // beds
+  [-2.95, -1.45, 1.1, 1.9], [-1.6, -1.0, 1.2, 1.8], // desk, chair
+  [0.45, 1.95, -3, -2.3], // counter
+]
+const PAD = 0.25
+function inRoom(x, z) { return x > -3 && x < 3.8 && z > -3 && z < 3 }
+function free(x, z) {
+  if (x < -2.75 || z < -2.75 || z > 2.85) return false
+  if (x > 2.7 && (z < 0.75 || z > 1.65)) return false // wall, except the doorway
+  if (x > 3.8) return false
+  return !BLOCKS.some(([a, b, c, d]) => x > a - PAD && x < b + PAD && z > c - PAD && z < d + PAD)
+}
+function roomPath(fx, fz, tx, tz) {
+  const key = (i, j) => `${i},${j}`
+  const ci = (x) => Math.round(x / CELL)
+  const [si, sj, gi, gj] = [ci(fx), ci(fz), ci(tx), ci(tz)]
+  const open = [[si, sj]]
+  const g = new Map([[key(si, sj), 0]])
+  const came = new Map()
+  const h = (i, j) => Math.hypot(i - gi, j - gj)
+  let guard = 0
+  while (open.length && guard++ < 4000) {
+    open.sort((a, b) => (g.get(key(...a)) + h(...a)) - (g.get(key(...b)) + h(...b)))
+    const [i, j] = open.shift()
+    if (i === gi && j === gj) {
+      const out = []
+      let k = key(i, j)
+      while (k) { const [a, b] = k.split(',').map(Number); out.unshift([a * CELL, b * CELL]); k = came.get(k) }
+      out[out.length - 1] = [tx, tz]
+      // drop collinear points
+      return out.filter((p, n) => n === 0 || n === out.length - 1 || (out[n + 1][0] - p[0]) * (p[1] - out[n - 1][1]) !== (out[n + 1][1] - p[1]) * (p[0] - out[n - 1][0])).slice(1)
+    }
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const [ni, nj] = [i + di, j + dj]
+      const goal = ni === gi && nj === gj
+      if (!goal && (!free(ni * CELL, nj * CELL) || (di && dj && (!free(ni * CELL, j * CELL) || !free(i * CELL, nj * CELL))))) continue
+      const cost = g.get(key(i, j)) + Math.hypot(di, dj)
+      if (cost < (g.get(key(ni, nj)) ?? Infinity)) { g.set(key(ni, nj), cost); came.set(key(ni, nj), key(i, j)); open.push([ni, nj]) }
+    }
+  }
+  return [[tx, tz]]
+}
+function walkTo(who, x, z, speed) {
+  const p = who.position
+  const pts = inRoom(p.x, p.z) && inRoom(x, z) ? roomPath(p.x, p.z, x, z) : [[x, z]]
+  if (who === player) host.dataset.path = String(pts.length)
+  return walk(who, pts, speed)
+}
 function face(who, x, z) { who.rotation.y = Math.atan2(x - who.position.x, z - who.position.z) }
 
 // ---------- clock + stats ----------
@@ -104,6 +156,7 @@ function ui() {
     <p class="mm-sign" hidden></p>
     <div class="mm-bar" hidden></div>
     <div class="mm-card" hidden></div>
+    <div class="mm-fade" hidden><p></p></div>
   </div>`)
   uiRoot = document.getElementById('morning-ui')
 }
@@ -132,8 +185,12 @@ function bubble(text, who) {
 function pinTo(node, obj, y) {
   if (!node || node.hidden || !obj) return
   v.set(obj.position.x, y, obj.position.z).project(camera)
-  node.style.left = `${Math.max(80, Math.min(window.innerWidth - 80, (v.x * 0.5 + 0.5) * window.innerWidth))}px`
-  node.style.top = `${Math.max(250, (-v.y * 0.5 + 0.5) * window.innerHeight)}px`
+  const bar = document.querySelector('.g-goal') || document.querySelector('.g-hud')
+  const floor = (bar ? bar.getBoundingClientRect().bottom : 200) + 10
+  const half = node.offsetWidth / 2 + 8
+  node.style.left = `${Math.max(half, Math.min(window.innerWidth - half, (v.x * 0.5 + 0.5) * window.innerWidth))}px`
+  // the node is drawn above its anchor (translateY -100%), so its top edge is top - height
+  node.style.top = `${Math.max(floor + node.offsetHeight, (-v.y * 0.5 + 0.5) * window.innerHeight)}px`
 }
 
 // Wait for the player to tap the 3D target (or the big button).
@@ -217,7 +274,24 @@ function buildRoom() {
   const light = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0x552222 }))
   light.position.set(0, 0.06, 0.18); light.name = 'led'
   kettle.add(light)
-  kettle.position.set(0.9, 0.96, -2.55)
+  kettle.position.set(0.85, 0.96, -2.55)
+  kettle.scale.setScalar(1.8)
+  kettleLight = new THREE.PointLight(0xffd24a, 0, 2.5, 2)
+  kettleLight.position.set(0.85, 1.6, -2.2)
+  scene.add(kettleLight)
+  cup = new THREE.Group()
+  const cupBody = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.09, 0.16, 16), mat(0xe2412f))
+  cupBody.position.y = 0.08
+  cup.add(cupBody)
+  const cupBand = new THREE.Mesh(new THREE.CylinderGeometry(0.132, 0.12, 0.04, 16), mat(0xf6f0e0))
+  cupBand.position.y = 0.12
+  cup.add(cupBand)
+  const cupFill = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.02, 16), mat(0xf2c35b))
+  cupFill.position.y = 0.155; cupFill.name = 'fill'; cupFill.visible = false
+  cup.add(cupFill)
+  cup.position.set(1.25, 0.96, -2.45)
+  cup.visible = false
+  scene.add(cup)
   kettle.userData.tap = true
   scene.add(kettle)
   packet = box(0.22, 0.05, 0.16, 0xe2412f, 1.55, 0.99, -2.55)
@@ -274,7 +348,7 @@ function buildOutside() {
   scene.add(road)
   for (let x = -38; x < 100; x += 4) box(1.8, 0.01, 0.14, 0xf6f0e0, x, 0.02, 8)
   // trees
-  for (const [x, z] of [[7, -2], [11, -1.5], [20, 2], [26, 3], [36, 3.5], [48, 3], [58, 3.2], [24, 13], [40, 12.5], [55, 13], [8, 12]]) {
+  for (const [x, z] of [[7, -2], [11, -1.5], [20, 2], [26, 3], [36, 3.5], [48, 3], [58, 3.2], [24, 24], [40, 23], [55, 24], [8, 22]]) {
     box(0.25, 1.2, 0.25, 0x6a4024, x, 0.6, z)
     const top = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 0), mat(0x3f7a3a))
     top.position.set(x, 1.8, z); top.castShadow = true
@@ -315,9 +389,16 @@ function buildOutside() {
   bus.userData.tap = true
   scene.add(bus)
   // tap marker
-  marker = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 8, 32), new THREE.MeshBasicMaterial({ color: 0xf0c400 }))
+  marker = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.11, 10, 40), new THREE.MeshBasicMaterial({ color: 0xf0c400 }))
   marker.rotation.x = -Math.PI / 2
   marker.visible = false
+  halo = new THREE.Mesh(new THREE.CircleGeometry(0.75, 32), new THREE.MeshBasicMaterial({ color: 0xffd84a, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }))
+  halo.position.z = 0.01
+  marker.add(halo)
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 2.2, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd84a, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }))
+  beam.rotation.x = Math.PI / 2
+  beam.position.z = -1.1
+  marker.add(beam)
   scene.add(marker)
 }
 
@@ -372,18 +453,20 @@ function setStep(name) {
 
 function tick(now) {
   frame = requestAnimationFrame(tick)
-  const dt = Math.min(0.05, (now - (last || now)) / 1000)
+  const real = (now - (last || now)) / 1000
+  const dt = Math.min(0.05, real)
   last = now
   clock += dt
   tasks = tasks.filter((t) => { if (t.update(dt)) { t.resolve(); return false } return true })
   if (idleOn && opts) {
-    idle += dt
-    if (idle > 2.5) { idle = 0; opts.run.minutes += 1; opts.onUpdate() } // dawdling costs time
+    idle += Math.min(real, 1)
+    if (idle > 1.5) { idle = 0; opts.run.minutes += 1; opts.onUpdate() } // dawdling costs time
   }
   for (const [who, key] of [[player, 'player'], [roommate, 'roommate']]) {
     if (who && who.userData.pose === 'stand') poseAvatar(who, walking[key], clock)
   }
-  if (marker.visible) marker.scale.setScalar(1 + Math.sin(clock * 5) * 0.12)
+  if (marker.visible) { marker.scale.setScalar(1 + Math.sin(clock * 5) * 0.12); halo.material.opacity = 0.25 + Math.sin(clock * 5) * 0.15 }
+  if (kettleLight.userData.pulse) kettleLight.intensity = 3 + Math.sin(clock * 5) * 2
   if (steamGroup.visible) {
     for (const p of steamGroup.children) {
       p.userData.t = (p.userData.t + dt * 0.6) % 1
@@ -422,7 +505,7 @@ function stopFollow(obj) { obj.userData.followEnd = true }
 // ---------- the scripted morning ----------
 async function play() {
   const run = opts.run
-  const roomieTakes = opts.forceRoommate || Math.random() < 0.35
+  const roomieTakes = opts.forceRoommate ?? Math.random() < 0.35
   host.dataset.roommate = roomieTakes ? '1' : '0'
   // 1. wake in bed
   setStep('wake')
@@ -435,8 +518,12 @@ async function play() {
   camLook.copy(camTarget)
   roommate.position.set(2.1, 0, -0.4)
   face(roommate, 0, 0)
-  bubble('07:00. Alarm. Day one.', player)
-  await wait(1.0)
+  bubble('07:00. Alarm. Day one… snooze.', player)
+  await wait(0.8)
+  bubble('Zzz… snooze ×4', player)
+  await addMinutes(40, 1.6)
+  bubble('07:40?! Up, up, up!', player)
+  await wait(0.6)
   // sit up, then swing out of bed
   await tween(0.8, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k); player.position.y = 0.62 + k * 0.1 })
   await tween(0.7, (k) => { player.position.x = -2.1 + k * 0.85; player.position.y = 0.72 * (1 - k); player.rotation.y = k * Math.PI / 2 })
@@ -448,12 +535,13 @@ async function play() {
   follow(player)
   // 2. kettle
   setStep('kettle')
-  await tapOn([kettle], '\u2615 Make noodles at the kettle', [0.9, -2.0])
+  lookAtKettle(true)
+  await tapOn([kettle], '\u2615 Make noodles at the kettle', [0.9, -1.85])
   setStep('kettle-walk')
   if (roomieTakes) {
     // roommate gets there first
-    walk(roommate, [[1.9, -1.2], [1.55, -2.1]], 2.6)
-    await walk(player, [[-0.6, -0.9], [0.6, -1.7]])
+    walkTo(roommate, 1.55, -1.95, 2.6)
+    await walkTo(player, 0.5, -1.8)
     face(player, 0.9, -2.55)
     setStep('roommate')
     face(roommate, 1.55, -2.55)
@@ -463,7 +551,8 @@ async function play() {
     bubble('Sorry! Last packet \u{1F605} I\u2019ll buy more later.', roommate)
     await wait(2.2)
     bubble('')
-    walk(roommate, [[2.1, -0.4]], 1.8)
+    walkTo(roommate, 2.1, -0.35, 1.8)
+    lookAtKettle(false)
     const pick = await choices('No noodles left. What now?', [
       { label: '\u{1F6D2} Tuck shop noodles', note: 'R12 \u00b7 +25 Fullness \u00b7 costs 10 min' },
       { label: '\u{1F6AB} Skip breakfast', note: '\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time' },
@@ -471,37 +560,56 @@ async function play() {
     host.dataset.choice = pick ? 'skip' : 'tuck'
     if (pick === 0) {
       setStep('tuckshop')
-      await walk(player, [[2.4, 1.2]])
+      await walkTo(player, 2.3, 1.2)
       await tween(0.6, (k) => { door.rotation.y = -k * 1.4 })
+      await walkTo(player, 3.6, 1.2)
+      await walk(player, [[6.5, 1.2]])
+      await fadeOut('\u{1F6D2} Tuck shop\u2026 R12 noodles')
+      await addMinutes(10, 1.2)
+      player.position.set(6.5, 0, 1.2)
+      face(player, 2, 1.2)
+      steamGroup.visible = true
+      const held = holdBowl()
+      await fadeIn()
       await walk(player, [[3.6, 1.2]])
-      player.visible = false
-      await addMinutes(10, 1.4)
-      player.visible = true
-      bowl.visible = true
-      await walk(player, [[2.4, 1.2]])
+      await walkTo(player, 2.2, 1.2)
       await tween(0.5, (k) => { door.rotation.y = -1.4 * (1 - k) })
+      void held
       await eat()
       changeStats({ money: -12, hunger: 25 })
     } else {
       setStep('skip')
+      lookAtKettle(false)
       bubble('Fine. I\u2019ll survive till lunch\u2026', player)
       await wait(1.6)
       bubble('')
       changeStats({ hunger: -10, energy: -5 })
     }
   } else {
-    await walk(player, [[-0.6, -0.9], [0.6, -1.9]])
+    await walkTo(player, 0.8, -1.85)
     face(player, 0.9, -2.55)
     setStep('noodles')
     kettle.getObjectByName('led').material.color.set(0xff5533)
     steamGroup.visible = true
-    steamGroup.position.set(1.08, 1.28, -2.55)
-    await tween(0.4, (k) => { kettle.position.y = 0.96 + Math.sin(k * Math.PI * 6) * 0.01 })
-    await addMinutes(4, 1.2)
-    await tween(0.3, (k) => { packet.position.set(1.55 - k * 0.6, 0.99 + k * 0.2, -2.55 + k * 0.5) })
+    steamGroup.position.set(1.15, 1.45, -2.55)
+    // the cup appears on the counter
+    cup.visible = true
+    await tween(0.4, (k) => { cup.scale.setScalar(Math.max(0.01, k)) })
+    host.dataset.cup = '1'
+    // packet opens over the cup and is used up
+    await tween(0.6, (k) => { packet.position.set(1.55 - k * 0.3, 0.99 + Math.sin(k * Math.PI) * 0.35 + k * 0.1, -2.55 + k * 0.1); packet.rotation.z = k * 1.2; packet.scale.setScalar(1 - k * 0.95) })
     packet.visible = false
+    host.dataset.packet = 'used'
+    await Promise.all([tween(0.5, (k) => { kettle.position.y = 0.96 + Math.sin(k * Math.PI * 6) * 0.015 }), addMinutes(4, 1.0)])
+    // pour
+    await tween(0.4, (k) => { kettle.rotation.z = -k * 0.7; kettle.position.x = 0.85 + k * 0.15; kettle.position.y = 0.96 + k * 0.15 })
+    cup.getObjectByName('fill').visible = true
+    steamGroup.position.set(1.25, 1.15, -2.45)
+    await tween(0.4, (k) => { kettle.rotation.z = -0.7 * (1 - k); kettle.position.x = 1.0 - k * 0.15; kettle.position.y = 1.11 - k * 0.15 })
     await addMinutes(6, 1.0)
     kettle.getObjectByName('led').material.color.set(0x552222)
+    cup.visible = false
+    lookAtKettle(false)
     await eat()
     changeStats({ hunger: 35, energy: 5 })
   }
@@ -509,15 +617,21 @@ async function play() {
   setStep('door')
   await tapOn([door], '\u{1F6AA} Head out to the bus stop', [2.4, 1.2])
   setStep('exit')
-  await walk(player, [[2.4, 1.2]])
+  await walkTo(player, -0.9, 0.9)
+  face(player, -2.2, 1.5)
+  bubble('Quick shower, get dressed\u2026', player)
+  await Promise.all([tween(1.2, (k) => { player.rotation.y = Math.PI * 4 * k }), addMinutes(15, 1.2)])
+  bubble('')
+  await walkTo(player, 2.3, 1.2)
   await tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })
   camOffset.set(0, 6, 7)
-  await walk(player, [[3.8, 1.2], [5.5, 1.2]])
+  await walkTo(player, 3.7, 1.2)
+  await walk(player, [[5.5, 1.2]])
   setStep('to-stop')
   await tapOn([sign], '\u{1F68F} Walk to the bus stop', [16, 4.6])
   setStep('walk-stop')
   const walkStart = run.minutes
-  await Promise.all([walk(player, [[9, 1.2], [15.4, 1.6], [15.6, 4.6]], 3.6), addMinutes(5, 3.2)])
+  await Promise.all([walk(player, [[9, 1.2], [15.4, 1.6], [15.6, 4.6]], 3.6), addMinutes(8, 3.2)])
   face(player, 16, 8)
   void walkStart
   // 4. bus
@@ -558,7 +672,7 @@ async function play() {
   // 5. ride
   setStep('riding')
   stopFollow(player)
-  follow(bus, [-5, 4, 9])
+  follow(bus, [-6, 6, 8])
   const from = run.minutes
   await tween(3.2, (k) => {
     bus.position.x = 14 + 56 * k
@@ -589,6 +703,31 @@ async function play() {
   await new Promise((resolve) => { card.querySelector('button').onclick = resolve })
   card.hidden = true
   opts.onDone({ arrived, onTime })
+}
+
+async function fadeOut(text) {
+  const f = uiq('.mm-fade')
+  f.querySelector('p').textContent = text
+  f.hidden = false
+  f.style.opacity = 0
+  await tween(0.4, (k) => { f.style.opacity = k })
+}
+async function fadeIn() {
+  const f = uiq('.mm-fade')
+  await tween(0.4, (k) => { f.style.opacity = 1 - k })
+  f.hidden = true
+}
+function holdBowl() {
+  bowl.visible = true
+  return task(() => {
+    bowl.position.set(player.position.x + Math.sin(player.rotation.y) * 0.35, 1.0, player.position.z + Math.cos(player.rotation.y) * 0.35)
+    if (steamGroup.visible) steamGroup.position.copy(bowl.position)
+    return !bowl.visible
+  })
+}
+function lookAtKettle(on) {
+  if (on) { stopFollow(player); camTarget.set(0.9, 1.0, -2.35); camOffset.set(0.4, 1.5, 2.4); kettleLight.userData.pulse = true }
+  else { kettleLight.userData.pulse = false; kettleLight.intensity = 0; camOffset.set(0, 5.2, 6.2); follow(player) }
 }
 
 async function eat() {
@@ -626,11 +765,17 @@ export function startMorning(options) {
   roommate.userData.pose = 'stand'
   scene.add(roommate)
   packet.visible = true
+  packet.scale.setScalar(1)
+  packet.rotation.set(0, 0, 0)
   packet.position.set(1.55, 0.99, -2.55)
+  cup.visible = false
+  cup.getObjectByName('fill').visible = false
+  kettle.rotation.set(0, 0, 0)
+  kettle.position.set(0.85, 0.96, -2.55)
   door.rotation.y = 0
   bus.position.x = -40
   busDoor.position.x = 2.4
-  for (const n of uiRoot.querySelectorAll('.mm-bar,.mm-card,.mm-sign,.mm-bubble,.mm-float')) n.hidden = true
+  for (const n of uiRoot.querySelectorAll('.mm-bar,.mm-card,.mm-sign,.mm-bubble,.mm-float,.mm-fade')) n.hidden = true
   last = 0
   if (!frame) frame = requestAnimationFrame(tick)
   play().catch((e) => { console.error(e) }).finally(() => { running = false })

@@ -363,3 +363,6 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 .g-goal{position:relative;z-index:5;margin:6px 10px 0;padding:8px 12px;border-radius:14px;background:#22143be6;color:#fff6e6;font:700 14px system-ui;border:1px solid #f0c40066;display:flex;justify-content:space-between;gap:8px;pointer-events:auto}
 .g-goal b{color:#f0c400;white-space:nowrap}
 .g-goal.late b{color:#ff8a7a}
+.mm-fade{position:absolute;inset:0;background:#160c28;display:grid;place-items:center;z-index:5;pointer-events:none}
+.mm-fade p{color:#f0c400;font:800 20px system-ui}
+.mm-fade[hidden]{display:none}
