@@ -1,0 +1,33 @@
+name,type,distance_km,notes
+O Block,on_campus,0,confirm block letter and any nickname
+R Block,on_campus,0,confirm block letter and any nickname
+S Block,on_campus,0,confirm block letter and any nickname
+ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,Lloyd to complete: all on-campus blocks by letter plus common nicknames
+Dunstaple Heights,off_campus_ukzn_owned,2.4,Varsity Drive Reservoir Hills; single and two-bed flats
+Santa Cruz,off_campus_ukzn_owned,,Kies Avenue Reservoir Hills; two-bed sharing flats
+Homii Residence,off_campus_leased,12,
+AKA Greenacres Residence,off_campus_leased,12,
+Millarosa,off_campus_leased,12,
+Crystal Valley,off_campus_leased,8,
+Farah Gardens,off_campus_leased,8,
+Delrene Residence,off_campus_leased,7.1,
+Montrose Residence,off_campus_leased,12,
+Seaside Residence,off_campus_leased,12,
+Saints Residence,off_campus_leased,3.5,
+Soni Residence,off_campus_leased,12,
+Gapwood Residence,off_campus_leased,2,
+Urban Up Residence,off_campus_leased,10,
+Azania,off_campus_leased,12,
+Saphire Heights,off_campus_leased,12,
+Students in Dube/Wanstead,off_campus_leased,12,
+Campbel Residence,off_campus_leased,10,
+The Ridge,off_campus_leased,5,
+Westview Residence,private_accredited,4,126 Fulham Road Reservoir Hills; 224 beds (2025 AP list)
+Westwood Lodge,private_accredited,,2026 AP list
+Varsity@225,private_accredited,,2026 AP list
+Khumalo Residence,private_accredited,2.2,288 Varsity Drive (2025 AP list)
+Dunstaple Residence,private_accredited,2.4,20 Dunstaple; 18 beds (2025 AP list)
+MFT House,private_accredited,1.8,19 Westdene; 28 beds (2025 AP list)
+Brindhavan,private_accredited,,2026 AP list
+St Philomenas,private_accredited,,2026 AP list
+Off campus (other),other,,catch-all option in the dropdown
