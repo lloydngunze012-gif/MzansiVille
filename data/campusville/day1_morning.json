@@ -10,67 +10,118 @@
     "name": "Zanele",
     "role": "Roommate in O Block. Your bestie from day one.",
     "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
-    "intro": "That is Zanele. She will borrow things all year and return them with interest."
+    "intro": "That is Zanele. She will borrow things all year and return them with interest.",
+    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go."
   },
   "steps": {
     "wake": {
       "caption": "O Block, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
       "bubbles": [
-        { "who": "player", "text": "07:00. Alarm. Day one\u2026 snooze." },
-        { "who": "player", "text": "Zzz\u2026 snooze \u00d74" },
-        { "who": "player", "text": "07:40?! Up, up, up!" }
+        {
+          "who": "player",
+          "text": "07:00. Alarm. Day one… snooze."
+        },
+        {
+          "who": "player",
+          "text": "Zzz… snooze."
+        },
+        {
+          "who": "player",
+          "text": "Up, up, up!"
+        }
       ],
-      "zanele": { "who": "zanele", "text": "Mm. You snoozed four times. I counted. We are going to be friends." },
-      "move": "Blanket slides off, stripe of sun crosses the floor, Zanele rolls over in the other bed."
+      "zanele": {
+        "who": "zanele",
+        "text": "Mm. You snoozed {n} times. I counted. We are going to be friends."
+      },
+      "move": "Blanket slides off, stripe of sun crosses the floor, Zanele rolls over in the other bed.",
+      "question": "Alarm! Get up or snooze?"
     },
     "kettle": {
-      "prompt": "\u2615 Make noodles at the kettle",
+      "prompt": "☕ Make noodles at the kettle",
       "caption": "Four steps to the kettle. It is a small room and a long walk."
     },
     "kettle-walk": {
       "caption": "Slippers squeak across the tiles. Somebody else is already heading to the kettle.",
-      "zanele_walks_over": { "who": "zanele", "text": "Wait, I was first. I can smell it." }
+      "zanele_walks_over": {
+        "who": "zanele",
+        "text": "Wait, I was first. I can smell it."
+      }
     },
     "noodles": {
       "caption": "Masala flavour. The kettle clicks, steam curls up, and the day is going well.",
-      "bubble": { "who": "player", "text": "Mmm\u2026 2-minute noodles." },
-      "zanele": { "who": "zanele", "text": "Save me the flavour sachet. I will pay you in gossip." }
+      "bubble": {
+        "who": "player",
+        "text": "Mmm… 2-minute noodles."
+      },
+      "zanele": {
+        "who": "zanele",
+        "text": "Save me the flavour sachet. I will pay you in gossip."
+      }
     },
     "roommate": {
       "caption": "The cupboard is empty. Zanele is standing there with the wrapper and a very guilty smile.",
-      "bubble": { "who": "zanele", "text": "Sorry! Last packet \ud83d\ude05 I\u2019ll buy more later." },
+      "bubble": {
+        "who": "zanele",
+        "text": "Sorry! Last packet 😅 I’ll buy more later."
+      },
       "introduction": "Hi, I am Zanele. We are doing this properly now. I owe you noodles and one (1) apology.",
-      "move": "Zanele steps in with the wrapper, crinkles it, gives you the biggest sorry eyes."
+      "move": "Zanele steps in with the wrapper, crinkles it, gives you the biggest sorry eyes.",
+      "bare": "The shelf is bare. Your roommate got the last packet."
     },
     "choice_no_noodles": {
       "title": "No noodles left. What now?",
       "options": [
-        { "label": "\ud83d\uded2 Tuck shop noodles", "note": "R12 \u00b7 +25 Fullness \u00b7 costs 10 min" },
-        { "label": "\ud83d\udeab Skip breakfast", "note": "\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time" }
+        {
+          "label": "🛒 Tuck shop noodles",
+          "note": "R12 · +25 Fullness · costs 10 min"
+        },
+        {
+          "label": "🚫 Skip breakfast",
+          "note": "−10 Fullness · −5 Energy · no time"
+        }
       ]
     },
     "tuckshop": {
       "caption": "Down the corridor, past three people in towels. The tuck shop auntie is smiling.",
-      "bubble": { "who": "auntie", "text": "Noodles? Last one, my girl. Hurry, the bell is coming." },
-      "zanele_after": { "who": "zanele", "text": "I will pay you back on NSFAS day. Pinky promise." },
-      "fade": "\ud83d\uded2 Tuck shop\u2026 R12 noodles"
+      "bubble": {
+        "who": "auntie",
+        "text": "Noodles? Last one, my girl. Hurry, the bell is coming."
+      },
+      "zanele_after": {
+        "who": "zanele",
+        "text": "I will pay you back on NSFAS day. Pinky promise."
+      },
+      "fade": "🛒 Tuck shop… R12 noodles"
     },
     "skip": {
       "caption": "Your stomach files a complaint and copies in your wallet.",
-      "bubble": { "who": "player", "text": "Fine. I\u2019ll survive till lunch\u2026" },
-      "zanele": { "who": "zanele", "text": "Take this biscuit. Do not tell anyone I am a nice person." }
+      "bubble": {
+        "who": "player",
+        "text": "Fine. I’ll survive till lunch…"
+      },
+      "zanele": {
+        "who": "zanele",
+        "text": "Take this biscuit. Do not tell anyone I am a nice person."
+      }
     },
     "door": {
-      "prompt": "\ud83d\udeaa Head out to the bus stop",
+      "prompt": "🚪 Head out to the bus stop",
       "caption": "Bag, student card, charger. In that order, because panic has an order."
     },
     "exit": {
-      "bubble": { "who": "player", "text": "Quick shower, get dressed\u2026" },
+      "bubble": {
+        "who": "player",
+        "text": "Quick shower, get dressed…"
+      },
       "caption": "Door, stairwell, sunshine. The whole block smells of toast and ambition.",
-      "zanele_at_door": { "who": "zanele", "text": "Go go go! Save me a seat at the back if we have the same class." }
+      "zanele_at_door": {
+        "who": "zanele",
+        "text": "Go go go! Save me a seat at the back if we have the same class."
+      }
     },
     "to-stop": {
-      "prompt": "\ud83d\ude8f Walk to the bus stop",
+      "prompt": "🚏 Walk to the bus stop",
       "caption": "Past the res gate and the vendors setting up. Someone says \"Morning, sisi\" and means it."
     },
     "walk-stop": {
@@ -79,13 +130,13 @@
     "stop": {
       "caption": "A small queue. Everyone checks their phone and pretends not to look at the road.",
       "sign_missed": "Missed the {time}.",
-      "sign_next": "Next bus {time} \u00b7 in {min} min"
+      "sign_next": "Next bus {time} · in {min} min"
     },
     "bus-arriving": {
       "caption": "Here it comes, wheezing like it has done this a thousand times. It has."
     },
     "board": {
-      "prompt": "\ud83d\ude8c Get on the bus",
+      "prompt": "🚌 Get on the bus",
       "caption": "Doors fold open. The queue surges. You surge with it."
     },
     "boarding": {
@@ -105,20 +156,29 @@
       },
       "late": {
         "kind": "Running late",
-        "title": "You made it\u2026 just",
-        "line": "You slip in after it started. \u22122 Grades."
+        "title": "You made it… just",
+        "line": "You slip in after it started. −2 Grades."
       }
     }
   },
   "late_variants": {
     "bus_late": {
       "caption": "The bus coughs, stops at a red robot, and sits there. You watch 08:45 go by.",
-      "bubble": { "who": "player", "text": "Come on, come on, come ON." },
-      "zanele_text": { "who": "zanele", "text": "Where are you? Lecturer already looks angry." }
+      "bubble": {
+        "who": "player",
+        "text": "Come on, come on, come ON."
+      },
+      "zanele_text": {
+        "who": "zanele",
+        "text": "Where are you? Lecturer already looks angry."
+      }
     },
     "snoozed_too_long": {
       "caption": "You snoozed one too many. The kettle never even gets a chance.",
-      "zanele": { "who": "zanele", "text": "I let you sleep. I regret it. Run." }
+      "zanele": {
+        "who": "zanele",
+        "text": "I let you sleep. I regret it. Run."
+      }
     },
     "missed_bus": {
       "caption": "The bus pulls away as you round the corner. You wave. It does not wave back."

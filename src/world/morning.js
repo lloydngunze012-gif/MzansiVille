@@ -2,11 +2,40 @@
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { createAvatar, poseAvatar } from './avatar3d.js'
+import LINES from '../../data/campusville/day1_morning.json'
 
 const WAKE = 7 * 60
-const BUS_FIRST = 8 * 60 + 10
+const BUS_FIRST = 8 * 60 + 20
 const BUS_EVERY = 15
-const RIDE = 15
+const RIDE = 20
+const BUS_DELAY = 25
+const SNOOZE = 10
+const SNOOZE_MAX = 3
+const ROOMIE = 'Zanele'
+
+// Named spots in the morning scene (same names as world-designer's morning.json anchors), as 3D [x, z].
+export const ANCHORS = {
+  bed: [-2.1, -1.1],
+  kettle: [0.9, -1.85],
+  noodle_shelf: [1.55, -2.55],
+  roommate: [2.1, -0.4],
+  door: [2.4, 1.2],
+  arrive: [71.5, 5.0],
+  bench: [16, 4.9],
+  sign: [16, 4.6],
+  waiting: [15.6, 4.6],
+  bus_lane: [14, 7.4],
+  bus_stop: [15.4, 6.2],
+  campus: [70, 0],
+}
+
+// Lines come from data/campusville/day1_morning.json (keys checked by npm run check); the fallback keeps the game safe.
+export function line(path, fallback, vars) {
+  let text = path.split('.').reduce((node, key) => (node == null ? undefined : node[key]), LINES)
+  if (text && typeof text === 'object' && typeof text.text === 'string') text = text.text
+  if (typeof text !== 'string' || !text) text = fallback
+  return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text
+}
 const ON_TIME_BY = 9 * 60
 const LECTURE = 9 * 60
 const SPEED = 2.4
@@ -153,6 +182,8 @@ function ui() {
   document.body.insertAdjacentHTML('beforeend', `<div class="mm-ui" id="morning-ui">
     <p class="mm-float" hidden></p>
     <p class="mm-bubble" hidden></p>
+    <p class="mm-tag" hidden>${ROOMIE}</p>
+    <p class="mm-clock" hidden></p>
     <p class="mm-sign" hidden></p>
     <div class="mm-bar" hidden></div>
     <div class="mm-card" hidden></div>
@@ -160,27 +191,90 @@ function ui() {
   </div>`)
   uiRoot = document.getElementById('morning-ui')
 }
+// Buttons vanish the instant they are tapped so a second tap can never fire twice.
+function closeBar(bar) {
+  bar.querySelectorAll('button').forEach((b) => { b.disabled = true; b.onclick = null })
+  bar.hidden = true
+  bar.innerHTML = ''
+}
 function prompt(label, onTap) {
   const bar = uiq('.mm-bar')
-  if (!label) { bar.hidden = true; bar.innerHTML = ''; return }
+  if (!label) { closeBar(bar); return }
   bar.innerHTML = `<button type="button" class="mm-go" data-mm="go">${label}</button>`
   bar.hidden = false
-  bar.querySelector('button').onclick = () => onTap()
+  bar.querySelector('button').onclick = () => { closeBar(bar); onTap() }
 }
 function choices(title, list) {
   return new Promise((resolve) => {
     const bar = uiq('.mm-bar')
-    bar.innerHTML = `<p class="mm-q">${title}</p>` + list.map((c, i) => `<button type="button" class="mm-go mm-choice" data-mm="choice" data-i="${i}">${c.label}<small>${c.note}</small></button>`).join('')
+    bar.innerHTML = `<p class="mm-q">${title}</p>` + list.map((c, i) => `<button type="button" class="mm-go mm-choice" data-mm="choice" data-i="${i}">${c.label}${c.note ? `<small>${c.note}</small>` : ''}</button>`).join('')
     bar.hidden = false
-    bar.querySelectorAll('button').forEach((b) => { b.onclick = () => { bar.hidden = true; resolve(Number(b.dataset.i)) } })
+    bar.querySelectorAll('button').forEach((b) => { b.onclick = () => { const i = Number(b.dataset.i); closeBar(bar); resolve(i) } })
   })
 }
 function bubble(text, who) {
   const node = uiq('.mm-bubble')
   if (!text) { node.hidden = true; node.dataset.who = ''; return }
-  node.textContent = text
+  node.textContent = ''
+  if (who === roommate) {
+    const name = document.createElement('b')
+    name.className = 'mm-name'
+    name.textContent = ROOMIE
+    node.append(name)
+  }
+  node.append(document.createTextNode(text))
   node.dataset.who = who === roommate ? 'roommate' : 'player'
   node.hidden = false
+}
+// Big alarm clock: the minutes roll over when you snooze.
+function clockShow(on) {
+  const node = uiq('.mm-clock')
+  node.hidden = !on
+  if (on) node.innerHTML = `<span class="mm-roll"><b>${fmt(opts.run.minutes)}</b></span>`
+}
+async function clockRoll(add) {
+  const node = uiq('.mm-clock')
+  const from = fmt(opts.run.minutes)
+  const to = fmt(opts.run.minutes + add)
+  node.innerHTML = `<span class="mm-roll rolling"><b>${from}</b><b>${to}</b></span>`
+  host.dataset.rolled = to
+  await addMinutes(add, 0.9)
+  node.innerHTML = `<span class="mm-roll"><b>${to}</b></span>`
+}
+// Zanele has arms (the base avatar has none) so she can wave.
+function makeZanele() {
+  const z = createAvatar({ skin: 'deep', hair: 'fade', outfit: 'hoodie' })
+  z.name = 'zanele'
+  z.userData.bob.material = z.userData.bob.material.clone()
+  z.userData.bob.material.color.set(0xd9534f)
+  const wrap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0xf0c400, roughness: 0.7 }))
+  wrap.position.y = 1.5
+  wrap.scale.set(1, 1.25, 1)
+  z.add(wrap)
+  const bud = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffffff }))
+  bud.position.set(0.21, 1.42, 0.03)
+  z.add(bud)
+  const armMat = z.userData.bob.material
+  for (const side of [-1, 1]) {
+    const pivot = new THREE.Group()
+    pivot.position.set(0.3 * side, 1.12, 0)
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.4, 3, 6), armMat)
+    arm.position.y = -0.26
+    arm.castShadow = true
+    pivot.add(arm)
+    pivot.name = side > 0 ? 'arm-r' : 'arm-l'
+    z.add(pivot)
+  }
+  return z
+}
+function wave(who, seconds = 1.6) {
+  const arm = who.getObjectByName('arm-r')
+  if (!arm) return Promise.resolve()
+  host.dataset.wave = '1'
+  return tween(seconds, (k) => {
+    const up = Math.min(1, k * 5, (1 - k) * 5)
+    arm.rotation.z = up * (2.6 + Math.sin(k * Math.PI * 8) * 0.35)
+  }, (x) => x)
 }
 function pinTo(node, obj, y) {
   if (!node || node.hidden || !obj) return
@@ -486,6 +580,11 @@ function tick(now) {
   pinTo(uiq('.mm-float'), player.visible ? player : bus, 2.2)
   const b = uiq('.mm-bubble')
   pinTo(b, b.dataset.who === 'roommate' ? roommate : player, 2.1)
+  // Zanele's name tag shows whenever she is in shot and not already talking.
+  const tag = uiq('.mm-tag')
+  v.set(roommate.position.x, 1.9, roommate.position.z).project(camera)
+  tag.hidden = !roommate.visible || (!b.hidden && b.dataset.who === 'roommate') || Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z > 1
+  if (!tag.hidden) pinTo(tag, roommate, 1.95)
   host.dataset.px = player.position.x.toFixed(2)
   host.dataset.pz = player.position.z.toFixed(2)
   host.dataset.busx = bus.position.x.toFixed(2)
@@ -505,8 +604,14 @@ function stopFollow(obj) { obj.userData.followEnd = true }
 // ---------- the scripted morning ----------
 async function play() {
   const run = opts.run
+  const q = new URLSearchParams(location.search)
   const roomieTakes = opts.forceRoommate ?? Math.random() < 0.35
   host.dataset.roommate = roomieTakes ? '1' : '0'
+  const lateFlag = q.get('latebus')
+  const lateBus = lateFlag === '1' ? true : lateFlag === '0' ? false : Math.random() < 0.25
+  host.dataset.latebus = lateBus ? '1' : '0'
+  // ?snooze=N taps Snooze N times by itself (tests and screenshots); without it the player chooses.
+  const autoSnooze = q.has('snooze') ? Math.max(0, Math.min(SNOOZE_MAX, Number(q.get('snooze')) || 0)) : -1
   // 1. wake in bed
   setStep('wake')
   player.userData.pose = 'lie'
@@ -516,13 +621,42 @@ async function play() {
   camOffset.set(1.2, 2.6, 3.6)
   camera.position.set(-1.4, 2.1, 0.8)
   camLook.copy(camTarget)
-  roommate.position.set(2.1, 0, -0.4)
-  face(roommate, 0, 0)
-  bubble('07:00. Alarm. Day one… snooze.', player)
-  await wait(0.8)
-  bubble('Zzz… snooze ×4', player)
-  await addMinutes(40, 1.6)
-  bubble('07:40?! Up, up, up!', player)
+  roommate.position.set(ANCHORS.roommate[0], 0, ANCHORS.roommate[1])
+  face(roommate, ANCHORS.bed[0], ANCHORS.bed[1])
+  run.minutes = Math.max(run.minutes, WAKE)
+  opts.onUpdate()
+  // Zanele says hi first.
+  setStep('greet')
+  bubble(line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}'), roommate)
+  await wave(roommate)
+  bubble(line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
+  setStep('wake')
+  clockShow(true)
+  let snoozes = 0
+  for (;;) {
+    const left = SNOOZE_MAX - snoozes
+    let pick
+    if (autoSnooze >= 0) { await wait(0.5); pick = snoozes < autoSnooze ? 0 : 1 }
+    else {
+      pick = await choices(line('steps.wake.question', 'Alarm! Get up?'), [
+        ...(left > 0 ? [{ label: `\u{1F634} Snooze 10 min`, note: `${left} left` }] : []),
+        { label: '\u2600\uFE0F Get up', note: '' },
+      ])
+      if (left <= 0) pick = 1
+    }
+    if (pick !== 0) break
+    snoozes += 1
+    host.dataset.snoozes = String(snoozes)
+    setStep('snooze')
+    bubble(line('steps.wake.bubbles.1', 'Zzz\u2026 snooze'), player)
+    await clockRoll(SNOOZE)
+  }
+  host.dataset.snoozes = String(snoozes)
+  if (snoozes >= SNOOZE_MAX) bubble(line('late_variants.snoozed_too_long.zanele', 'I let you sleep. I regret it. Run.'), roommate)
+  else if (snoozes > 0) bubble(line('steps.wake.zanele', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
+  if (snoozes > 0) await wait(1.4)
+  clockShow(false)
+  bubble(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
   await wait(0.6)
   // sit up, then swing out of bed
   await tween(0.8, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k); player.position.y = 0.62 + k * 0.1 })
@@ -536,7 +670,7 @@ async function play() {
   // 2. kettle
   setStep('kettle')
   lookAtKettle(true)
-  await tapOn([kettle], '\u2615 Make noodles at the kettle', [0.9, -1.85])
+  await tapOn([kettle], line('steps.kettle.prompt', '\u2615 Make noodles at the kettle'), ANCHORS.kettle)
   setStep('kettle-walk')
   if (roomieTakes) {
     // roommate gets there first
@@ -548,14 +682,16 @@ async function play() {
     await tween(0.5, (k) => { packet.position.set(1.55, 0.99 + k * 0.4, -2.55 + k * 0.4) })
     packet.visible = false
     face(roommate, player.position.x, player.position.z)
-    bubble('Sorry! Last packet \u{1F605} I\u2019ll buy more later.', roommate)
+    bubble(line('steps.roommate.bubble', 'Sorry! Last packet \u{1F605} I\u2019ll buy more later.'), roommate)
     await wait(2.2)
+    bubble(line('steps.roommate.bare', 'The shelf is bare. Your roommate got the last packet.'), player)
+    await wait(2.0)
     bubble('')
     walkTo(roommate, 2.1, -0.35, 1.8)
     lookAtKettle(false)
-    const pick = await choices('No noodles left. What now?', [
-      { label: '\u{1F6D2} Tuck shop noodles', note: 'R12 \u00b7 +25 Fullness \u00b7 costs 10 min' },
-      { label: '\u{1F6AB} Skip breakfast', note: '\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time' },
+    const pick = await choices(line('steps.choice_no_noodles.title', 'No noodles left. What now?'), [
+      { label: line('steps.choice_no_noodles.options.0.label', '\u{1F6D2} Tuck shop noodles'), note: line('steps.choice_no_noodles.options.0.note', 'R12 \u00b7 +25 Fullness \u00b7 costs 10 min') },
+      { label: line('steps.choice_no_noodles.options.1.label', '\u{1F6AB} Skip breakfast'), note: line('steps.choice_no_noodles.options.1.note', '\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time') },
     ])
     host.dataset.choice = pick ? 'skip' : 'tuck'
     if (pick === 0) {
@@ -615,7 +751,7 @@ async function play() {
   }
   // 3. out the door
   setStep('door')
-  await tapOn([door], '\u{1F6AA} Head out to the bus stop', [2.4, 1.2])
+  await tapOn([door], line('steps.door.prompt', '\u{1F6AA} Head out to the bus stop'), ANCHORS.door)
   setStep('exit')
   await walkTo(player, -0.9, 0.9)
   face(player, -2.2, 1.5)
@@ -628,24 +764,30 @@ async function play() {
   await walkTo(player, 3.7, 1.2)
   await walk(player, [[5.5, 1.2]])
   setStep('to-stop')
-  await tapOn([sign], '\u{1F68F} Walk to the bus stop', [16, 4.6])
+  await tapOn([sign], line('steps.to-stop.prompt', '\u{1F68F} Walk to the bus stop'), ANCHORS.sign)
   setStep('walk-stop')
   const walkStart = run.minutes
-  await Promise.all([walk(player, [[9, 1.2], [15.4, 1.6], [15.6, 4.6]], 3.6), addMinutes(8, 3.2)])
-  face(player, 16, 8)
+  await Promise.all([walk(player, [[9, 1.2], [15.4, 1.6], ANCHORS.waiting], 3.6), addMinutes(8, 3.2)])
+  face(player, ANCHORS.bus_lane[0] + 2, ANCHORS.bus_lane[1])
   void walkStart
   // 4. bus
   setStep('stop')
-  const next = Math.max(BUS_FIRST, BUS_FIRST + Math.ceil((run.minutes - BUS_FIRST) / BUS_EVERY) * BUS_EVERY)
-  const missed = run.minutes > BUS_FIRST && next > BUS_FIRST
+  const due = Math.max(BUS_FIRST, BUS_FIRST + Math.ceil((run.minutes - BUS_FIRST) / BUS_EVERY) * BUS_EVERY)
+  const missed = run.minutes > BUS_FIRST && due > BUS_FIRST
+  const next = due + (lateBus ? BUS_DELAY : 0)
   const signNode = uiq('.mm-sign')
   signNode.hidden = false
   const showSign = () => {
     const left = Math.max(0, next - run.minutes)
-    signNode.innerHTML = `${missed ? `<em>Missed the ${fmt(next - BUS_EVERY)}.</em> ` : ''}Next bus <b>${fmt(next)}</b> \u00b7 in ${left} min`
+    const missLine = missed ? `<em>${line('steps.stop.sign_missed', 'Missed the {time}.', { time: fmt(due - BUS_EVERY) })}</em> ` : ''
+    signNode.innerHTML = lateBus
+      ? `${missLine}Bus <b>${fmt(due)}</b> \u00b7 <em class="mm-delayed">Delayed</em>${run.minutes >= due ? ` \u00b7 ~${left} min` : ''}`
+      : `${missLine}${line('steps.stop.sign_next', 'Next bus {time} \u00b7 in {min} min', { time: `<b>${fmt(next)}</b>`, min: left })}`
   }
   showSign()
+  signNode.classList.toggle('late', lateBus)
   host.dataset.nextbus = fmt(next)
+  if (lateBus) bubble(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
   camOffset.set(-6, 4.5, 8)
   await wait(0.8)
   const waitMin = next - run.minutes
@@ -657,14 +799,15 @@ async function play() {
   ])
   run.minutes = next
   opts.onUpdate()
+  bubble('')
   signNode.hidden = true
   await tween(0.5, (k) => { busDoor.position.x = 2.4 - k * 0.95 })
   setStep('board')
   stopFollow(bus)
   follow(player, [-3, 4.5, 7])
-  await tapOn([bus], '\u{1F68C} Get on the bus', [15.4, 6.2])
+  await tapOn([bus], line('steps.board.prompt', '\u{1F68C} Get on the bus'), ANCHORS.bus_stop)
   setStep('boarding')
-  await walk(player, [[15.4, 6.2]])
+  await walk(player, [ANCHORS.bus_stop])
   await tween(0.4, (k) => { player.scale.setScalar(1 - k * 0.9) })
   player.visible = false
   player.scale.setScalar(1)
@@ -686,18 +829,19 @@ async function play() {
   player.visible = true
   stopFollow(bus)
   follow(player, [0, 5, 8])
-  await walk(player, [[71.5, 5.0]])
-  face(player, 70, 0)
+  await walk(player, [ANCHORS.arrive])
+  face(player, ANCHORS.campus[0], ANCHORS.campus[1])
   const arrived = run.minutes
   const onTime = arrived <= ON_TIME_BY
   if (!onTime) changeStats({ grades: -2 })
   setStep('done')
   host.dataset.ontime = onTime ? '1' : '0'
   const card = uiq('.mm-card')
-  card.innerHTML = `<p class="mm-kind">${onTime ? 'On time' : 'Running late'}</p>
-    <h2>${onTime ? 'You made it to campus' : 'You made it\u2026 just'}</h2>
+  const res = onTime ? 'on_time' : 'late'
+  card.innerHTML = `<p class="mm-kind">${line(`steps.done.${res}.kind`, onTime ? 'On time' : 'Running late')}</p>
+    <h2>${line(`steps.done.${res}.title`, onTime ? 'You made it to campus' : 'You made it\u2026 just')}</h2>
     <p class="mm-times"><span>Arrived <b>${fmt(arrived)}</b></span><span>Lecture <b>${fmt(LECTURE)}</b></span></p>
-    <p>${onTime ? `${LECTURE - arrived} minutes to find your venue and a seat.` : 'You slip in after it started. \u22122 Grades.'}</p>
+    <p>${onTime ? line('steps.done.on_time.line', '{min} minutes to find your venue and a seat.', { min: LECTURE - arrived }) : line('steps.done.late.line', 'You slip in after it started. \u22122 Grades.')}${lateBus ? ' The bus was delayed.' : ''}</p>
     <button type="button" class="mm-go" data-mm="continue">Continue to the lecture \u203a</button>`
   card.hidden = false
   await new Promise((resolve) => { card.querySelector('button').onclick = resolve })
@@ -761,7 +905,7 @@ export function startMorning(options) {
   player = createAvatar(opts.run.character?.avatar)
   player.userData.pose = 'stand'
   scene.add(player)
-  roommate = createAvatar({ skin: 'deep', hair: 'curls', outfit: 'jacket' })
+  roommate = makeZanele()
   roommate.userData.pose = 'stand'
   scene.add(roommate)
   packet.visible = true
@@ -775,7 +919,8 @@ export function startMorning(options) {
   door.rotation.y = 0
   bus.position.x = -40
   busDoor.position.x = 2.4
-  for (const n of uiRoot.querySelectorAll('.mm-bar,.mm-card,.mm-sign,.mm-bubble,.mm-float,.mm-fade')) n.hidden = true
+  for (const n of uiRoot.querySelectorAll('.mm-bar,.mm-card,.mm-sign,.mm-bubble,.mm-float,.mm-fade,.mm-clock,.mm-tag')) n.hidden = true
+  uiq('.mm-bar').innerHTML = ''
   last = 0
   if (!frame) frame = requestAnimationFrame(tick)
   play().catch((e) => { console.error(e) }).finally(() => { running = false })

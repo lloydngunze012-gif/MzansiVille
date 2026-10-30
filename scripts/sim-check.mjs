@@ -499,4 +499,22 @@ check('boards rank by residence and overall', () => {
   assert.ok(houses.length >= 4 && houses.some((h) => h.mine))
 })
 
+check('day 1 morning lines exist for every key the morning uses', () => {
+  const src = readFileSync(new URL('../src/world/morning.js', import.meta.url), 'utf8')
+  const lines = JSON.parse(readFileSync(new URL('../data/campusville/day1_morning.json', import.meta.url), 'utf8'))
+  const get = (path) => path.split('.').reduce((node, key) => (node == null ? undefined : node[key]), lines)
+  const keys = new Set()
+  for (const m of src.matchAll(/line\(\s*['`]([^'`]+)['`]/g)) {
+    if (m[1].includes('${res}')) { keys.add(m[1].replace('${res}', 'on_time')); keys.add(m[1].replace('${res}', 'late')) } else keys.add(m[1])
+  }
+  assert.ok(keys.size >= 15, `only ${keys.size} line keys found`)
+  for (const key of keys) {
+    const v = get(key)
+    assert.ok(typeof v === 'string' || typeof v?.text === 'string', `missing line ${key}`)
+  }
+  const ids = [...src.matchAll(/setStep\('([^']+)'\)/g)].map((m) => m[1])
+  const internal = new Set(['greet', 'snooze', 'eating'])
+  for (const id of ids) assert.ok(internal.has(id) || lines.steps[id], `no steps.${id} in day1_morning.json`)
+})
+
 console.log(`${passed} checks passed`)

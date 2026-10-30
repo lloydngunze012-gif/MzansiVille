@@ -378,3 +378,14 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 .g-scrim:has(+ .g-menu){inset:0;background:#12081fb3}
 .g-route p{font-weight:700;color:#ffd23f}
+.mm-name{display:block;font:800 11px system-ui;letter-spacing:.06em;text-transform:uppercase;color:#1f8a4c;margin-bottom:2px}
+.mm-tag{position:absolute;transform:translate(-50%,-100%);margin:0;padding:3px 10px;border-radius:999px;background:#2a1846;color:#f0c400;font:800 12px system-ui;border:2px solid #f0c400;pointer-events:none}
+.mm-clock{position:absolute;left:50%;top:230px;transform:translateX(-50%);margin:0;padding:8px 18px;border-radius:16px;background:#2a1846;border:3px solid #f0c400;color:#f0c400;font:800 40px/1 ui-monospace,monospace;height:56px;overflow:hidden;box-sizing:border-box}
+.mm-roll{display:flex;flex-direction:column}
+.mm-roll b{display:block;height:40px}
+.mm-roll.rolling{animation:mm-roll .9s cubic-bezier(.5,0,.3,1) forwards}
+@keyframes mm-roll{from{transform:translateY(0)}to{transform:translateY(-40px)}}
+.mm-sign .mm-delayed{color:#ff6b5a;font-weight:800;animation:mm-blink 1s steps(2) infinite}
+.mm-sign.late{border-color:#ff6b5a}
+@keyframes mm-blink{50%{opacity:.35}}
+.mm-go:disabled{opacity:.5}
