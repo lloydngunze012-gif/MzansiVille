@@ -1,0 +1,12 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Target page, context or browser has been closed
+    at info (C:\Users\organ\Projects\MzansiVille-qa\docs\qa\scripts\play.mjs:14:22)
+    at snap (C:\Users\organ\Projects\MzansiVille-qa\docs\qa\scripts\play.mjs:27:49)
+    at C:\Users\organ\Projects\MzansiVille-qa\docs\qa\scripts\play.mjs:80:7 {
+  log: []
+}
+
+Node.js v24.16.0

@@ -1,0 +1,12 @@
+import { chromium } from '@playwright/test'
+const b = await chromium.launch({ channel: 'msedge' })
+const p = await b.newPage({ viewport: { width: 390, height: 844 } })
+const errs = []; p.on('pageerror', e => errs.push('PAGEERR ' + e.message)); p.on('console', m => m.type() === 'error' && errs.push('CONSOLE ' + m.text()))
+await p.goto('http://127.0.0.1:5199/')
+await p.waitForTimeout(1500)
+const dump = async () => console.log(await p.evaluate(() => document.querySelector('[data-screen]')?.dataset.screen + ' | ' + [...document.querySelectorAll('[data-act]')].map(b => b.dataset.act + (b.dataset.go ? ':' + b.dataset.go : '') + (b.dataset.id ? ':' + b.dataset.id : '') + '"' + b.textContent.trim().slice(0, 30) + '"' + (b.disabled ? '(dis)' : '')).join(' ; ')))
+await dump()
+await p.locator('[data-act=start]').first().click().catch(e => console.log('nostart'))
+await p.waitForTimeout(800); await dump()
+console.log(await p.evaluate(() => document.querySelector('main')?.innerText.slice(0, 1500)))
+console.log(errs.join('\n')); await b.close()

@@ -1,0 +1,22 @@
+ERRS 28 
+ERROR WebSocket connection to 'wss://qa-offline-test.supabase.co/realtime/v1/websocket?apikey=qa-fake-anon-key&vsn=2.0.0' failed: Error in connection establishment: net::ERR_NAME_NOT_RESOLVED
+ERROR Failed to load resource: net::ERR_INTERNET_DISCONNECTED
+WARNING THREE.WebGLShadowMap: PCFSoftShadowMap has been removed. Using PCFShadowMap instead.
+NET ABORT https://qa-offline-test.supabase.co/rest/v1/rpc/leaderboard
+FAILED https://qa-offline-test.supabase.co/rest/v1/rpc/leaderboard
+ABORT https://qa-offline-test.supabase.co/rest/v1/chat_messages?select=id%2Cuser_id%2Cbody%2Ccre
+FAILED https://qa-offline-test.supabase.co/rest/v1/chat_messages?select=id%2Cuser_id%2Cbody%2Ccre
+cover@title > rules@rules > agree-unchecked@rules > create@create > begin-empty@create > create-filled@create > after-begin@play > loop-end@play > nav-milestones@milestones > nav-profile@profile > nav-board@leaderboard > nav-chat@chat > chat-sent@rules > nav-save@save > magic-sent@save > nav-privacy@privacy > nav-world@play > final@chat
+OVER CLIPPED H1.sr-only "CampusVille"
+OFFRIGHT DIV.tc-art "" right=398
+OFFRIGHT PICTURE. "" right=398
+OFFRIGHT IMG. "" right=398
+CLIPPED STRONG. "Thandeka Mkhize-Ndlovu L"
+CLIPPED INPUT. ""
+OFFRIGHT SPAN.g-cloud c2 "" right=529
+OFFRIGHT SPAN.g-sun "" right=450
+OFFRIGHT SPAN.g-cloud c2 "" right=534
+OFFRIGHT SPAN.g-sun "" right=451
+{"clickfail":"[data-act=send]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('[data-act=send]').first() |     - locator resolved to <button type=\"button\" data-act=\"send\" class=\"btn primary block\">Send</button> |   - attempting click action |     2 × waiting for element to be visible, enabled and stable |       - element is visible, enabled and stable |       - scrolling into view if needed"}
+{"navfail":"share","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"clickfail":"[data-act=magic]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('[data-act=magic]').first() |     - locator resolved to <button type=\"button\" data-act=\"magic\" class=\"btn primary block\">Send a magic link</button> |   - attempting click action |     2 × waiting for element to be visible, enabled and stable |       - element is visible, enabled and stable |       - scrolling into view i"}
