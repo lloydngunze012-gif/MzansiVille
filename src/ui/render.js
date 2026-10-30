@@ -378,26 +378,30 @@ function create(state) {
     return `<optgroup label="${label}">${rows.map((row) =>
       `<option value="${esc(row.name)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)}${row.distanceKm ? ` · ${row.distanceKm} km` : ''}</option>`).join('')}</optgroup>`
   }).join('')
-  const picker = (label, items, key) => `<div class="stack"><span>${label}</span><div class="choices">${items.map((item) =>
-    `<button class="choice" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
-      item.fill ? `<i class="swatch" style="background:${item.fill}"></i>` : esc(item.label)
-    }</button>`).join('')}</div></div>`
-  return `<main class="screen pad" data-screen="create">
-    <a class="link" href="#/rules">Rules</a>
-    <h1 style="margin-top:12px">Who's arriving?</h1>
-    <div class="avatar-preview">${avatarSvg(draft.avatar, district.meta.dialCode, 140)}</div>
-    <div class="stack">
-      <label class="field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname"></label>
-      <label class="field">Residence<select id="residence"><option value="">Choose</option>${groups}</select></label>
-      <label class="field">Course<select id="course"><option value="">Choose</option>${district.courses.map((course) =>
-        `<option ${course === draft.course ? 'selected' : ''}>${esc(course)}</option>`).join('')}</select></label>
-      ${picker('Skin', skins, 'skin')}
-      ${picker('Hair', hairs, 'hair')}
-      ${picker('Outfit', outfits, 'outfit')}
-      <label class="field">Instagram or TikTok <span class="fine">optional</span><input id="handle" maxlength="30" placeholder="handle" value="${esc(draft.handle)}"></label>
-      ${draft.error ? `<p class="error">${esc(draft.error)}</p>` : ''}
-      <button class="btn primary block" type="button" data-act="begin">Walk onto campus</button>
+  const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips">${items.map((item) =>
+    `<button class="cc-chip${item.fill ? ' sw' : ''}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
+      item.fill ? `<i style="background:${item.fill}"></i>` : esc(item.label)
+    }</button>`).join('')}</div></fieldset>`
+  return `<main class="screen cc" data-screen="create">
+    <header class="cc-top"><a class="cc-back" href="#/">‹ Back</a><h1>Who's arriving?</h1><a class="cc-back" href="#/rules">Rules</a></header>
+    <div class="cc-body">
+      <div class="cc-opts">
+        ${picker('Skin', skins, 'skin')}
+        ${picker('Hair', hairs, 'hair')}
+        ${picker('Outfit', outfits, 'outfit')}
+      </div>
+      <aside class="cc-preview"><div class="cc-stage"><div class="cc-bob">${avatarSvg(draft.avatar, district.meta.dialCode, 120)}</div></div>
+        <p class="cc-name">${esc(draft.name || 'New student')}</p></aside>
     </div>
+    <div class="cc-fields">
+      <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="What do friends call you?"></label>
+      <label class="cc-field">Residence<select id="residence"><option value="">Choose your res</option>${groups}</select></label>
+      <label class="cc-field">Course<select id="course"><option value="">Choose your course</option>${district.courses.map((course) =>
+        `<option ${course === draft.course ? 'selected' : ''}>${esc(course)}</option>`).join('')}</select></label>
+      <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
+    </div>
+    ${draft.error ? `<p class="error cc-err">${esc(draft.error)}</p>` : ''}
+    <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">Walk onto campus</button></div>
   </main>`
 }
 
@@ -575,20 +579,63 @@ function admin(state) {
   </main>`
 }
 
+function campusScene(district, avatar) {
+  const places = Object.fromEntries((district.places || []).map((p) => [p.id, p]))
+  const nm = (id, fb) => esc(places[id]?.name || fb)
+  const res = ['res_o', 'res_r', 'res_s'].map((id, i) => ({ name: nm(id, ['O Block', 'R Block', 'S Block'][i]) }))
+  return `<svg class="ts-scene" viewBox="0 -170 390 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <rect y="-170" width="390" height="690" fill="#ffd9a8"/>
+    <rect y="-170" width="390" height="250" fill="#ffc37a"/>
+    <circle class="ts-sun" cx="300" cy="118" r="46" fill="#ff8a3d"/>
+    <g class="ts-cloud c1" fill="#fff4e4"><ellipse cx="60" cy="70" rx="34" ry="11"/><ellipse cx="80" cy="62" rx="18" ry="11"/></g>
+    <g class="ts-cloud c2" fill="#fff4e4"><ellipse cx="220" cy="46" rx="28" ry="9"/><ellipse cx="236" cy="40" rx="14" ry="9"/></g>
+    <rect y="140" width="390" height="22" fill="#1d7fb8"/>
+    <path d="M0 150h390" stroke="#7cc6e8" stroke-width="2" stroke-dasharray="14 20" class="ts-wave"/>
+    <path d="M0 162c80-14 160-14 240-4s110 4 150-2V674H0z" fill="#5cb85c"/>
+    <path d="M0 230c90-18 200-18 390 0V674H0z" fill="#4aa34f"/>
+    <path d="M195 674L195 300M40 330c80-10 230-10 330 0" stroke="#f3e2c2" stroke-width="16" fill="none" stroke-linecap="round"/>
+    <!-- Sports Centre -->
+    <g transform="translate(262 206)"><rect width="110" height="56" rx="4" fill="#1d7fb8"/><path d="M-4 4q64-38 128 0z" fill="#165f8a"/>
+      <rect x="48" y="30" width="24" height="26" fill="#fffaf2"/><rect x="10" y="16" width="28" height="10" fill="#7cc6e8"/><rect x="82" y="16" width="28" height="10" fill="#7cc6e8"/>
+      <text x="60" y="-14" class="ts-lbl">${nm('sports_centre', 'Sports Centre')}</text></g>
+    <!-- Library -->
+    <g transform="translate(14 214)"><rect width="96" height="50" fill="#c4512a"/><path d="M-4 0h104l-52-20z" fill="#9c3f20"/>
+      <rect x="12" y="14" width="10" height="36" fill="#f4efe4"/><rect x="43" y="14" width="10" height="36" fill="#f4efe4"/><rect x="74" y="14" width="10" height="36" fill="#f4efe4"/>
+      <text x="48" y="-26" class="ts-lbl" text-anchor="middle">${nm('library', 'Library')}</text></g>
+    <!-- The Quad -->
+    <g transform="translate(195 328)"><ellipse rx="96" ry="30" fill="#7fd07f"/><ellipse rx="96" ry="30" fill="none" stroke="#f3e2c2" stroke-width="6"/>
+      <circle r="10" fill="#7b3fe4"/><circle r="5" fill="#f0c400"/>
+      <text x="-50" y="-38" class="ts-lbl big">${nm('quad', 'The Quad')}</text></g>
+    <!-- Residences -->
+    ${res.map((r, i) => `<g transform="translate(${14 + i * 70} ${378 + (i % 2) * 14})"><rect width="64" height="${74 - i * 6}" fill="${['#fff4e4', '#ffe1b8', '#fff4e4'][i]}" stroke="#c9a57a" stroke-width="2"/>
+      ${[0, 1, 2].map((row) => `<rect x="8" y="${10 + row * 18}" width="12" height="9" fill="#1d7fb8"/><rect x="26" y="${10 + row * 18}" width="12" height="9" fill="#ff8a3d"/><rect x="44" y="${10 + row * 18}" width="12" height="9" fill="#1d7fb8"/>`).join('')}
+      <rect x="0" y="-8" width="64" height="10" fill="#7b3fe4"/><text x="32" y="0" class="ts-tag">${r.name}</text></g>`).join('')}
+    <!-- Palms -->
+    ${[[360, 300, 1], [150, 236, .8], [250, 420, .9]].map(([x, y, k]) => `<g transform="translate(${x} ${y}) scale(${k})"><path d="M0 0q4-40-2-70" stroke="#8a5a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <g class="ts-palm" transform="translate(-2 -70)" fill="#1f6b45"><path d="M0 0q-30-14-44 6q22-12 44-6z"/><path d="M0 0q30-14 44 6q-22-12-44-6z"/><path d="M0 0q-14-26-36-26q22 6 36 26z"/><path d="M0 0q14-26 36-26q-22 6-36 26z"/></g></g>`).join('')}
+    
+    <g class="ts-avatar" transform="translate(200 250)">${avatar}</g>
+  </svg>`
+}
+
 function title(state) {
   const district = state.district
   const day = state.save.run?.day
-  return `<main class="screen dark" data-screen="title">
-    <div class="avatar-preview">${avatarSvg({ skin: 'amber', hair: 'braids', outfit: 'organt' }, district.meta.dialCode, 140)}</div>
-    <p class="chip">${esc(district.meta.name)} · ${esc(district.meta.city)}</p>
-    <h1 class="wordmark" style="margin-top:18px">Mzansi<br><em>Ville</em></h1>
-    <p class="lede">A life sim you can finish on the bus. Guest first. Your person stays when the next district opens.</p>
-    <div class="grow"></div>
-    <div class="stack">
-      ${day ? `<button class="btn ghost block" type="button" data-act="continue">Continue · day ${day}</button>` : ''}
-      <button class="btn primary block" type="button" data-act="start">Start as guest</button>
+  const look = state.save.run?.character?.avatar || { skin: 'amber', hair: 'braids', outfit: 'organt' }
+  const avatar = avatarSvg(look, district.meta.dialCode, 76).replace('<svg ', '<svg x="0" y="0" ')
+  return `<main class="screen ts" data-screen="title">
+    ${campusScene(district, avatar)}
+    <header class="ts-sign" aria-label="CampusVille">
+      <div class="ts-board"><small>Welcome to</small><h1>Campus<span>Ville</span></h1></div>
+      <div class="ts-plaque">${esc(district.meta.city || 'Durban')} · Est. first year</div>
+      <i class="ts-post l"></i><i class="ts-post r"></i>
+    </header>
+    <div class="ts-foot">
+      <p class="ts-tag-line">Res, lectures, bunny chows and besties. Survive first year.</p>
+      <button class="btn ts-start" type="button" data-act="start">Start first year</button>
+      ${day ? `<button class="ts-continue" type="button" data-act="continue">Continue · day ${day}</button>` : ''}
+      <nav class="ts-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
     </div>
-    <nav class="links" style="margin-top:18px"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
   </main>`
 }
 
