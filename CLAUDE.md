@@ -35,6 +35,43 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# TOP PRIORITY (owner review after the Quad and cafeteria): above Part 3
+
+NEW RULE: TEST WHAT IT LOOKS LIKE, NOT JUST WHETHER IT WORKS
+After every change, play it in the browser from the player's view, take screenshots, and LOOK at them before pushing. Check each one for:
+- anyone walking through tables, chairs, doors, walls or other people
+- the camera inside an object or a person
+- labels or building names showing through buildings
+- anything cut off at the screen edge
+- an action that's just a progress bar instead of something happening
+Fix what you find. In your report, list what you checked and what you fixed.
+
+1. TALK TO ANYONE
+Every person in the game is tappable: students, vendors, lecturers, SRC campaigners, the roommate. Tapping opens a conversation with their name and a few lines, and 2-3 replies to choose from. Choices affect Social and how well you know them. People remember you: the second conversation is different from the first.
+
+2. ACTIVITIES ARE ACTIONS YOU SEE
+Every activity shows the character doing it:
+- Buying food: walk to the queue, stand in line behind other students, move forward, reach the front, the vendor hands you the food, you walk away eating.
+- "Sit and read": walk to the grass, a bench or a library table, sit down, open a book.
+- Same idea for every activity: eating sits at a table, the busker plays while you watch, the open mic has someone performing.
+The progress bar can stay as a small timer, but the character must be doing the thing.
+
+3. REALISM AND LOOK
+- Collisions: nobody walks through tables, chairs or walls. In the lecture hall, walk around the desks. At the residence, the door opens before the character walks through.
+- Campus surroundings: no ocean around the campus. Replace it with roads, grass, trees, a perimeter fence, parking lots, a taxi rank and the town edge, like a real SA campus.
+- Every building looks different: shape, colour, height, signage, entrance. Use Kenney/Quaternius building kits so the library, SMIG, the residences, the cafeteria and the sports centre are recognisable at a glance.
+- Labels: building names must never show through buildings. Only show labels for nearby buildings or your destination, and hide labels that are behind something.
+
+4. QUAD AND CAFETERIA (compare against docs/benchmark/lagoslife/02 and 05)
+- When arriving at or opening a place, show a wide 3/4-angle establishing shot so the whole place reads at a glance.
+- Night needs real contrast: darker ground and sky, bright pools of light under lamps and string lights, glowing windows, a spotlight on the stage.
+- People doing things: a performer at the open mic, a queue at Mam' Gugu's stall with her serving, students on benches, SRC campaigners at their tables in ANC-, EFF- and DA-aligned colours, a queue at the cafeteria counter with the auntie serving.
+- Pull the cafeteria eye-view camera back so the menu board is fully visible.
+
+ORDER: 3 (collisions, labels, surroundings) first, because they make everything look broken. Then 2 at the Quad and cafeteria, then 1, then the rest of 4. Push after each, and stop for my review after item 2 at the Quad.
+
+---
+
 # Plan 2 (current): owner feedback and next plan
 
 Save all of this to CLAUDE.md, then work through it in order. Push after each item, with the usual three lines: what changed, what to test on my phone, what's still broken.
