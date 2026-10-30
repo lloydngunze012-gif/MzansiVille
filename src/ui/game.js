@@ -3,6 +3,7 @@ import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml } from './campus.js'
+import { pinResidenceLine, residenceFacts, residencesAt } from './residence.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -174,6 +175,22 @@ function effectChips(deltas, cls = '') {
   }).join('')
 }
 
+function residenceCards(district, placeId, homeName) {
+  const homes = residencesAt(district, placeId)
+  if (!homes.length) return ''
+  const card = (row, mine) => {
+    const facts = residenceFacts(row)
+    return `<article class="g-rescard${mine ? ' mine' : ''}">
+      <b>${esc(row.name)}${mine ? ' · you' : ''}</b>
+      <span>${esc(facts.line)}</span>
+      ${homes.length === 1 || mine ? `<p>${esc(facts.tendency)}</p>` : ''}
+    </article>`
+  }
+  if (homes.length === 1) return card(homes[0], homes[0].name === homeName)
+  const head = `<p class="g-reshead">${homes.length} homes share this stop</p>`
+  return `<div class="g-reslist">${head}${homes.map((row) => card(row, row.name === homeName)).join('')}</div>`
+}
+
 function sheetHtml(district, run, placeId) {
   const place = district.places.find((p) => p.id === placeId)
   if (!place) return ''
@@ -191,6 +208,7 @@ function sheetHtml(district, run, placeId) {
     </button>`
   }).join('')
   const later = opensAt(district, run, placeId)
+  const homes = residenceCards(district, placeId, run.character?.residence)
   const empty = status.public
     ? `The ${placeName(place).replace(/^The /, '')} is always open. ${later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
     : status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
@@ -198,6 +216,7 @@ function sheetHtml(district, run, placeId) {
   <section class="g-sheet" role="dialog" aria-label="${esc(place.name)}">
     <div class="g-grab"></div>
     <div class="g-sheet-head"><span>${ICON[place.kind] || ''}</span><div><h2>${esc(place.name)}</h2><p>${esc(place.blurb || '')}</p></div><button type="button" class="g-x" data-act="close-sheet" aria-label="Close">\u00d7</button></div>
+    ${homes}
     <div class="g-acts">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>
   </section>`
 }
@@ -274,9 +293,12 @@ export function mapHome(state, openPlace = '') {
     const st = placeStatus(district, run, place.id)
     const mine = place.id === home ? ' mine' : ''
     const art = (ART[place.id] || ART.res_other)()
-    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%">
+    const resLine = pinResidenceLine(district, place.id, run.character?.residence)
+    const pinLabel = resLine.detail || `${placeName(place)}${place.id === home ? ' · home' : ''}`
+    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%" aria-label="${esc(pinLabel)}" title="${esc(pinLabel)}">
       ${st.open ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
       <span class="g-name">${esc(placeName(place))}${place.id === home ? ' \u00b7 home' : ''}</span>
+      ${resLine.chip ? `<span class="g-res">${esc(resLine.chip)}</span>` : ''}
       ${st.open ? '' : st.label ? `<small>${esc(st.label)}</small>` : ''}
     </button>`
   }).join('')

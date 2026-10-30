@@ -181,6 +181,16 @@
 .g-pin.dim .g-name{color:#d9cdea}
 .g-pin small{margin-top:2px;font-size:11px;font-weight:800;color:#ffb36b;background:#1a0f2ee6;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .g-pin.mine .g-name{border-color:#b48cff}
+.g-pin.mine{z-index:4}
+.g-res{margin-top:2px;font-size:9px;font-weight:800;line-height:1.15;text-align:center;color:#2a1206;background:#ffd23f;border-radius:8px;padding:1px 5px;white-space:nowrap}
+.g-pin.mine .g-res{white-space:normal;max-width:112px}
+.g-reslist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.g-reshead{margin:0;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#ffd23f}
+.g-rescard{background:#ffffff0d;border:1px solid #f0c40066;border-radius:12px;padding:8px 10px}
+.g-rescard.mine{border-color:#b48cff;background:#b48cff18}
+.g-rescard b{display:block;font-size:14px}
+.g-rescard span{display:block;margin-top:2px;font-size:12px;color:#ffe58a}
+.g-rescard p{margin:4px 0 0;font-size:12.5px;line-height:1.35}
 .g-b-quad{z-index:1}
 .g-b-quad .g-name{margin-top:-14px}
 

@@ -1,7 +1,7 @@
 id,phase,place_id,name,money,energy,grades,social,hunger,time_slots,risk_or_twist
 wake_noodles,morning,res_o,Noodles in res,-8,0,0,-2,25,1,"Cheap and sad; small chance roommate steals your last packet"
 wake_skip,morning,res_o,Skip breakfast,0,5,0,0,-15,0,"Saves a slot; hunger bites by afternoon"
-wake_phone,morning,res_o,Check your phone,0,0,0,5,0,0,"Triggers the day's event early (NSFAS, group chat drama, bursary email)"
+wake_phone,morning,res_o,Check your phone,0,0,0,5,0,0,"Triggers the day's event early (student funding, group chat drama, a bursary email)"
 go_walk,transit,bus_station,Walk to campus,0,-10,0,0,-5,1,"Free; 10% chance of rain (energy -10 more)"
 go_bus,transit,bus_station,Take the bus,-12,0,0,3,0,1,"Costs money; 15% chance the bus is late and you miss the first lecture"
 lecture_attend,lecture,smig,Attend lecture,0,-10,8,2,-5,1,"Grades up; surprise test event can double the gain or punish skipping"

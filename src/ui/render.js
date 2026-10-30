@@ -6,6 +6,7 @@ import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
 import { gameOverScreen, mapHome, milestonesScreen, withHud } from './game.js'
+import { residenceFacts } from './residence.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -375,11 +376,15 @@ function rules() {
 function create(state) {
   const { district, draft } = state
   const code = district.meta.dialCode
+  const chosen = district.residences.find((row) => row.name === draft.residence)
+  const chosenFacts = chosen ? residenceFacts(chosen) : null
   const groups = RES_GROUPS.map(([type, label]) => {
     const rows = district.residences.filter((row) => row.type === type)
     if (!rows.length) return ''
-    return `<optgroup label="${label}">${rows.map((row) =>
-      `<option value="${esc(row.name)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)}${row.distanceKm ? ` · ${row.distanceKm} km` : ''}</option>`).join('')}</optgroup>`
+    return `<optgroup label="${label}">${rows.map((row) => {
+      const facts = residenceFacts(row)
+      return `<option value="${esc(row.name)}" data-line="${esc(facts.line)}" data-tend="${esc(facts.tendency)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)} · ${esc(facts.line)}</option>`
+    }).join('')}</optgroup>`
   }).join('')
   const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? ' sk' : ' thumbs'}">${items.map((item) =>
     `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${(draft.avatar[key] || (key === 'body' ? 'regular' : '')) === item.id}">${
@@ -412,10 +417,15 @@ function create(state) {
     </div>
     <div class="cc-fields">
       <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Your name"></label>
-      <label class="cc-field">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
       <label class="cc-field">Course<select id="course"><option value="">Choose course</option>${district.courses.map((course) =>
         `<option ${course === draft.course ? 'selected' : ''}>${esc(course)}</option>`).join('')}</select></label>
-      <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
+      <label class="cc-field cc-span">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
+      <aside class="cc-res" data-card="res-box" ${chosenFacts ? '' : 'hidden'}>
+        <strong data-card="res-name">${esc(chosen?.name || '')}</strong>
+        <p data-card="res-facts">${esc(chosenFacts?.line || '')}</p>
+        <p data-card="res-tend">${esc(chosenFacts?.tendency || '')}</p>
+      </aside>
+      <label class="cc-field cc-span"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
     </div>
     ${draft.error ? `<p class="error cc-err">${esc(draft.error)}</p>` : ''}
     <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">Walk onto campus</button></div>

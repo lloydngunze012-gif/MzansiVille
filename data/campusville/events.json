@@ -1,7 +1,7 @@
 [
   {
     "id": "nsfas_delayed",
-    "title": "NSFAS is late",
+    "title": "Student funding is late",
     "text": "Your allowance has not landed. The res group chat is one long sigh.",
     "icon": "💸",
     "placeholder": true,
