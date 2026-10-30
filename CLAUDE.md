@@ -78,3 +78,20 @@ PART 3: RETENTION
 
 ON HOLD
 Off-campus residence names: wait for my decision, don't change them.
+
+PART 5: FEEL LIKE A LIVING PLACE (from the Lagos Life benchmark)
+Order: do Part 5 right after the Part 1 bugs, before Parts 2 and 3. Multiplayer waits until we have reviewed the backend.
+Reference: docs/benchmark/lagoslife/ (7 screenshots + README). Learn from them; do not copy their art, names or layouts.
+1. Atmosphere: a day/night cycle tied to the game clock; night lighting (lit windows, string lights, lamp posts); occasional rain; glowing signs.
+2. Every place gets a story: the Quad with an open-mic stage, benches under the trees and a vendor stall; the cafeteria with a queue and menu board; a res party or campus tavern with music and lights. Add signage, posters and SA details (a taxi with a slogan sticker, NSFAS posters, SRC banners).
+3. A bottom sheet for each place: name, a live flavour line, "Spots here - tap to walk there", and paid actions showing cost and effects.
+4. HUD: day/time, mood, money with a top-up button, needs bars, an active-task chip, an event countdown ("Open mic in 2d 4h"), a streak counter.
+5. Travel: Skip, plus a mini-game option during the bus ride.
+
+What the screenshots teach (notes, not a spec):
+- The scene carries the mood: night, warm point lights, string lights and lit windows do more than any UI.
+- Places are full: named characters with floating name tags, a stage, a stall, props you can read from above.
+- The place sheet is compact and sits over the scene, not instead of it: name + one live flavour line ("Cool breeze under the trees"), spots as chips with counts, then people here.
+- Paid actions are small cards: icon, timer, price, then effect chips (+Fun +Social); the money in the HUD visibly drops.
+- The HUD is one slim top pill (day, time, mood, money and +), with stacked chips on the left (current task, event countdown, streak, needs bars) and a "clean screen" toggle.
+- Travel is a scene, not a loading bar: rain, traffic, a slogan bumper sticker, a Horn button, Skip, and a mini-game.
