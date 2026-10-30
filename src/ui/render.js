@@ -406,7 +406,8 @@ function create(state) {
         <div class="cc-stage">
           <i class="cc-bg" aria-hidden="true"></i><svg class="cc-gem" viewBox="0 0 24 30" aria-hidden="true"><path d="M12 0l10 11-10 19L2 11z" fill="#8b4dff"/><path d="M12 0l4 11-4 19-4-19z" fill="#b48cff"/><path d="M2 11h20" stroke="#5b23c9" stroke-width="1"/></svg>
           <span class="cc-ready${todo ? '' : ' ok'}" data-card="ready">${todo ? `${todo} to go` : 'Ready ✓'}</span>
-          <div class="cc-bob">${avatarSvg(draft.avatar, code, 118)}</div>
+          <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
+          <div class="cc-bob cc-dance">${avatarSvg(draft.avatar, code, 118)}</div>
         </div>
         <div class="cc-id"><div class="cc-id-top"><small>Student card</small><svg class="cc-crest" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#5b23c9" stroke="#f0c400" stroke-width="2"/><path d="M6 15l1-7 3 3 2-4 2 4 3-3 1 7z" fill="#f0c400"/></svg></div>
           <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong data-card="name">${esc(draft.name.trim() || 'Your name')}</strong>

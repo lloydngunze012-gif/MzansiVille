@@ -9,6 +9,7 @@ const FADE = 0.25
 
 let ctx = null
 let master = null
+let grooveOut = null
 const buffers = {}
 const wanted = {}
 const playing = {}
@@ -68,6 +69,17 @@ function apply(name) {
     delete playing[name]
   }
   document.body.dataset.sounds = Object.keys(playing).sort().join(' ')
+}
+
+// The live groove (src/groove.js) plays through the same master, so mute covers it.
+export function bus() {
+  if (!ctx || ctx.state !== 'running') return null
+  if (!grooveOut) {
+    grooveOut = ctx.createGain()
+    grooveOut.gain.value = 0.55
+    grooveOut.connect(master)
+  }
+  return { ctx, out: grooveOut }
 }
 
 // Safe to call every frame: it only acts when the wanted state changes.

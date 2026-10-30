@@ -33,6 +33,7 @@ import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setMuted, unlock as unlockSound } from './audio.js'
 import { roommateOf } from './avatar.js'
+import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
 let shareBlob = null
@@ -234,6 +235,9 @@ function syncWorld(viewState) {
   // Music plays in the morning and on campus; the crowd only on campus.
   soundLoop('music_campus', on || morningOn)
   soundLoop('crowd', on)
+  // The character creator dances to its own house groove.
+  if (viewState?.screen === 'create') startGroove()
+  else stopGroove()
   if (!on) {
     worldPromise?.then((mod) => {
       if (ticket === worldTicket) mod.setVisible(false)
@@ -688,7 +692,7 @@ app.addEventListener('click', async (event) => {
     go('title')
     return
   }
-  if (act === 'sound' && route().name === 'settings') {
+  if (act === 'sound' && (route().name === 'settings' || route().name === 'new')) {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
     setMuted(!soundOn())
     paint()
