@@ -3,12 +3,12 @@ const SAMPLE_PEOPLE = [
   ['s1', 'Lerato M.', 'R Block', 2860, 71, 82],
   ['s2', 'Sipho K.', 'O Block', 2410, 64, 77],
   ['s3', 'Ayesha P.', 'S Block', 1980, 88, 69],
-  ['s4', 'Pieter v.d.M.', 'Dunstaple Heights', 3120, 52, 61],
+  ['s4', 'Pieter v.d.M.', 'Jacaranda Court', 3120, 52, 61],
   ['s5', 'Nomsa D.', 'O Block', 1640, 79, 86],
-  ['s6', 'Thabo N.', 'Santa Cruz', 2210, 58, 73],
+  ['s6', 'Thabo N.', 'Cane Crescent', 2210, 58, 73],
   ['s7', 'Kayla R.', 'R Block', 1310, 92, 66],
   ['s8', 'Zanele S.', 'S Block', 2750, 61, 80],
-  ['s9', 'Mohammed A.', 'Homii Residence', 1890, 74, 71],
+  ['s9', 'Mohammed A.', 'Harbour Walk', 1890, 74, 71],
   ['s10', 'Jabu T.', 'O Block', 980, 67, 58],
 ]
 
@@ -23,7 +23,7 @@ export function sampleLobby(now = Date.now()) {
   const lines = [
     ['s2', 'Sipho K.', 'O Block', 'Anyone at the Quad? Free time vibes', 42],
     ['s5', 'Nomsa D.', 'O Block', 'Library opens 15:00, saving us a table', 31],
-    ['s4', 'Pieter v.d.M.', 'Dunstaple Heights', 'That surprise test was kak hard, jissis', 22],
+    ['s4', 'Pieter v.d.M.', 'Jacaranda Court', 'That surprise test was kak hard, jissis', 22],
     ['s7', 'Kayla R.', 'R Block', 'Derby Day on Sunday!! who is coming', 15],
     ['s10', 'Jabu T.', 'O Block', 'Cafeteria special is lekker today', 6],
     ['s8', 'Zanele S.', 'S Block', 'Sho, see you all at the bus station', 2],

@@ -1,0 +1,230 @@
+{
+  "_keys": {
+    "note": "Day 1, 9:00 lecture slice. Written by Content Writer. Same voice as day1_morning.json. Westville Campus only, no real institution branding. Every line is kept under about 90 characters for phone screens.",
+    "who": "Who speaks: player, zanele, lecturer, student, auntie, narrator.",
+    "caption": "Narration line shown while something moves on screen.",
+    "move": "The on-screen motion cue for that tap, so no tap is only a bar and numbers.",
+    "variants": "on_time and late versions of the same beat. Pick by whether the player arrived by 09:00.",
+    "seats": "Three seat choices. 'deltas' are small extras on top of the normal lecture_attend gain (grades +8, energy -10). Scale matches activities.csv.",
+    "moments": "Pick one moment per lecture at random. Each has two choices. Each choice has outcomes with a tone (good, neutral, bad), a weight (chance), the result line and the stat deltas. Weights in a choice add up to 1.",
+    "deltas": "Stat changes on the existing scale: money, energy, hunger (Fullness), grades, social."
+  },
+  "goal": {
+    "text": "Find a seat and get through the lecture.",
+    "hint": "Pick your spot, then see what the morning throws at you.",
+    "done": "Lecture done. Not bad for day one."
+  },
+  "arrive_venue": {
+    "place": "smig",
+    "caption": "Business Hall. A sign, a heavy door, and the smell of old chalk.",
+    "sign": "Business Hall \u00b7 Westville Campus",
+    "bell": "The bell rings. Everyone suddenly walks faster.",
+    "lecturer_line": { "who": "lecturer", "text": "Doors close at nine. Not five past, nine." },
+    "move": "Students stream toward the door, bag straps swing, a bell rings from the courtyard.",
+    "prompt": "\ud83d\udeaa Walk into the venue"
+  },
+  "walk_in": {
+    "on_time": {
+      "caption": "Packed, but not full. Voices bounce off the high ceiling.",
+      "move": "Door swings open, camera glides over rows of heads, hands wave you toward a gap.",
+      "lecturer_line": { "who": "lecturer", "text": "Welcome. Phones away. Pens out." },
+      "student_line": { "who": "student", "text": "Is this the right venue? Please say yes." }
+    },
+    "late": {
+      "caption": "The room goes quiet. Every head turns, slowly.",
+      "move": "Door creaks, one chair scrapes, a hundred eyes swing toward you.",
+      "lecturer_line": { "who": "lecturer", "text": "Ah. Our guest of honour. Please, sit." },
+      "student_line": { "who": "student", "text": "Pssst. Back row. Quick." },
+      "note": "Late: front rows are full. The front seat is not offered, or is marked taken."
+    }
+  },
+  "find_seat": {
+    "prompt": "Where do you sit?",
+    "caption": "Rows of fold-down seats, a few gaps, one wave from across the room.",
+    "options": [
+      {
+        "id": "front",
+        "label": "Front row",
+        "note": "+Grades \u00b7 \u2212Social",
+        "line": "Front row. Nobody is brave enough to sit near the lecturer's gaze.",
+        "zanele": { "who": "zanele", "text": "Front row? You are insane. I respect it." },
+        "deltas": { "grades": 2, "social": -2 },
+        "available_late": false
+      },
+      {
+        "id": "back",
+        "label": "Back corner",
+        "note": "+Energy \u00b7 \u2212Grades",
+        "line": "Back corner. Good view of everyone else's mistakes.",
+        "zanele": { "who": "zanele", "text": "Back corner. A classic. I will visit." },
+        "deltas": { "energy": 3, "grades": -2, "social": 2 },
+        "available_late": true
+      },
+      {
+        "id": "zanele",
+        "label": "Next to Zanele",
+        "note": "+Social",
+        "line": "Zanele pats the seat beside her like she owns it. She might.",
+        "zanele": { "who": "zanele", "text": "I saved you a seat. And one biscuit. Do not tell." },
+        "deltas": { "social": 4 },
+        "available_late": true
+      }
+    ]
+  },
+  "zanele_lines": [
+    { "when": "seat", "who": "zanele", "text": "Sit, sit. We only have forty minutes of shame left." },
+    { "when": "seat_late", "who": "zanele", "text": "You were so slow. I almost told them you moved to Joburg." },
+    { "when": "moment", "who": "zanele", "text": "Did you see that? Tell me you saw that." },
+    { "when": "good", "who": "zanele", "text": "You are a genius. I will say it exactly once." },
+    { "when": "neutral", "who": "zanele", "text": "Fine. We live to fight another lecture." },
+    { "when": "bad", "who": "zanele", "text": "Ooh. That was bold. Slightly stupid, but bold." },
+    { "when": "end", "who": "zanele", "text": "Tuck shop? I owe you noodles. And you owe me a story." },
+    { "when": "end_alone", "who": "zanele", "text": "Text me from the back. I want a full report." }
+  ],
+  "moments": [
+    {
+      "id": "cold_call",
+      "title": "Cold call",
+      "caption": "The lecturer scans the room and stops. Right on you.",
+      "line": { "who": "lecturer", "text": "You. Name one reason to study this subject." },
+      "move": "Lecturer points, the room turns, a chair creaks, your pulse shows as a tiny thump.",
+      "choices": [
+        {
+          "label": "Wing it with confidence",
+          "note": "Risky",
+          "outcomes": [
+            { "tone": "good", "weight": 0.4, "text": "You say something clever. The lecturer nods once. That is a standing ovation.", "deltas": { "grades": 4, "social": 2 } },
+            { "tone": "neutral", "weight": 0.35, "text": "You say something vague with great confidence. It works, mostly.", "deltas": { "grades": 1 } },
+            { "tone": "bad", "weight": 0.25, "text": "You say \"vibes\". The room laughs. The lecturer does not.", "deltas": { "grades": -3, "social": -2 } }
+          ]
+        },
+        {
+          "label": "Admit you do not know",
+          "note": "Safe",
+          "outcomes": [
+            { "tone": "good", "weight": 0.3, "text": "\"Honest.\" The lecturer asks someone else. You live.", "deltas": { "social": 2 } },
+            { "tone": "neutral", "weight": 0.7, "text": "You shrug. The lecturer moves on, but you feel the look.", "deltas": { "grades": -1 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "load_shedding",
+      "title": "Projector dies",
+      "caption": "A click, a hum, a long sigh. Load shedding catches the whole room.",
+      "line": { "who": "lecturer", "text": "Stage four. We continue on the board. Pens out." },
+      "move": "Lights flicker and drop, the projector fan winds down, phone torches pop up.",
+      "choices": [
+        {
+          "label": "Copy every word off the board",
+          "note": "Hard work",
+          "outcomes": [
+            { "tone": "good", "weight": 0.5, "text": "Your hand cramps. You have the best notes in the room.", "deltas": { "energy": -4, "grades": 4 } },
+            { "tone": "neutral", "weight": 0.5, "text": "You miss a few lines, but the gist survives the dark.", "deltas": { "energy": -4, "grades": 2 } }
+          ]
+        },
+        {
+          "label": "Chat while it is dark",
+          "note": "Fun",
+          "outcomes": [
+            { "tone": "good", "weight": 0.5, "text": "Someone tells a story. You laugh until your cheeks hurt.", "deltas": { "social": 5, "grades": -1 } },
+            { "tone": "bad", "weight": 0.5, "text": "You miss the one thing the lecturer says will be on the test.", "deltas": { "social": 3, "grades": -4 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sleeper",
+      "title": "Someone is sleeping",
+      "caption": "Two rows ahead, a head is slowly sliding off a desk.",
+      "line": { "who": "narrator", "text": "The snoring is soft. The lecturer has not noticed. Yet." },
+      "move": "Student's head tilts, drool shine, a pen rolls off the desk and clatters.",
+      "choices": [
+        {
+          "label": "Wake them gently",
+          "note": "Kind",
+          "outcomes": [
+            { "tone": "good", "weight": 0.6, "text": "They jerk up, whisper thanks, and offer you a sweet.", "deltas": { "social": 4 } },
+            { "tone": "neutral", "weight": 0.4, "text": "They grunt, go back to sleep, and you feel mildly useless.", "deltas": {} }
+          ]
+        },
+        {
+          "label": "Let them sleep",
+          "note": "Not your problem",
+          "outcomes": [
+            { "tone": "neutral", "weight": 0.6, "text": "The lecturer's glare lands on the wrong person. Not you.", "deltas": { "grades": 1 } },
+            { "tone": "bad", "weight": 0.4, "text": "The lecturer catches it, and the snore turns into a speech.", "deltas": { "energy": -3, "social": -1 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pen",
+      "title": "A stranger needs a pen",
+      "caption": "Someone leans over and whispers. \"Please. Mine died.\"",
+      "line": { "who": "student", "text": "Please. I will give it back. Probably." },
+      "move": "A hand reaches over, you hold out your only pen, a small grateful smile.",
+      "choices": [
+        {
+          "label": "Lend it",
+          "note": "Kind",
+          "outcomes": [
+            { "tone": "good", "weight": 0.5, "text": "They return it with a snack. A tiny friendship begins.", "deltas": { "social": 4, "hunger": 5 } },
+            { "tone": "neutral", "weight": 0.3, "text": "They give it back at the end. Chewed, but returned.", "deltas": { "social": 2 } },
+            { "tone": "bad", "weight": 0.2, "text": "You never see the pen again. Gone with the stranger.", "deltas": { "money": -5, "social": 1 } }
+          ]
+        },
+        {
+          "label": "Say you only have one",
+          "note": "Selfish",
+          "outcomes": [
+            { "tone": "neutral", "weight": 0.6, "text": "They find another one. The room moves on.", "deltas": { "social": -1 } },
+            { "tone": "bad", "weight": 0.4, "text": "They sigh loudly. Three rows hear it.", "deltas": { "social": -3 } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "register",
+      "title": "The attendance register",
+      "caption": "A clipboard drifts down the row, hand to hand.",
+      "line": { "who": "lecturer", "text": "Sign your own name. Yes, I will check." },
+      "move": "Clipboard passes from hand to hand, a pen swings from a string, a row of heads leans in.",
+      "choices": [
+        {
+          "label": "Sign your own name",
+          "note": "Honest",
+          "outcomes": [
+            { "tone": "good", "weight": 0.7, "text": "A neat signature. The lecturer ticks you and moves on.", "deltas": { "grades": 2 } },
+            { "tone": "neutral", "weight": 0.3, "text": "Your pen skips, so you sign twice. Close enough.", "deltas": { "grades": 1 } }
+          ]
+        },
+        {
+          "label": "Sign for a friend too",
+          "note": "Risky",
+          "outcomes": [
+            { "tone": "good", "weight": 0.5, "text": "Nobody checks. Your friend owes you a bunny chow.", "deltas": { "social": 5 } },
+            { "tone": "bad", "weight": 0.5, "text": "The lecturer spots the handwriting. A warning, in writing.", "deltas": { "grades": -4, "social": -2 } }
+          ]
+        }
+      ]
+    }
+  ],
+  "end_of_lecture": {
+    "caption": "Chairs scrape. A hundred people breathe out at once.",
+    "bell": "The bell rings. Notes get stuffed into bags. Someone claps. Nobody knows why.",
+    "lecturer_line": { "who": "lecturer", "text": "Read chapter one. Yes, all of it." },
+    "move": "Students stand, bags zip, the door opens and sunlight crosses the floor.",
+    "summary": {
+      "grades_note": "Attended lecture, the normal +8 grades applies.",
+      "line": "Day one, lecture one. You have survived. Probably learned something."
+    }
+  },
+  "tap_feedback": [
+    "A pen clicks two rows away.",
+    "Someone whispers, \"Shhh.\"",
+    "A chair squeaks like a small protest.",
+    "Chalk dust drifts in the light.",
+    "A cough echoes. Somebody sniggers."
+  ]
+}
