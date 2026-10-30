@@ -25,3 +25,8 @@ THEN, in order:
 9. Bugs from QA (B02): sending a chat message lands on the rules page, and the sign-in link resets the player.
 
 Golden rule: every tap must show movement or something happening, never just a progress bar and numbers.
+
+Added by the owner during the build (keep these):
+- Characters have a gender, picked in the creator. The day 1 roommate is the same gender: Zanele for female students, Sipho for male students.
+- Include feminine clothing (Dress, Skirt & top, Shweshwe so far) and keep adding variety.
+- In the character creator the student dances and South African house music plays. A mute button is fine, but music and dancing are the default.
