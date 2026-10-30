@@ -937,6 +937,7 @@ export function startMorning(options) {
   host.dataset.roomie = ROOMIE
   uiq('.mm-tag').textContent = ROOMIE
   player = createAvatar(opts.run.character?.avatar)
+  host.dataset.look = JSON.stringify(player.userData.look)
   player.userData.pose = 'stand'
   scene.add(player)
   roommate = makeZanele()

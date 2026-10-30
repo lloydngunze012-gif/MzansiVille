@@ -224,6 +224,7 @@ export function lookOf(avatar = {}) {
     skirt: skirted ? avatar.skirtColor || cloth[1] : '',
     print: avatar.outfit === 'shweshwe',
     organt: avatar.outfit === 'organt',
+    curvy: avatar.body === 'curvy',
   }
 }
 
@@ -235,6 +236,7 @@ async function attachModel(group, look) {
   recolour(model, look)
   const box = new THREE.Box3().setFromObject(model)
   model.scale.setScalar(HEIGHT / Math.max(0.1, box.max.y - box.min.y))
+  if (look.curvy) { model.scale.x *= 1.14; model.scale.z *= 1.1 }
   model.name = 'rig'
   if (look.organt) addOrgantMark(model)
   if (look.skirt) addSkirt(model, look)

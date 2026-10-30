@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, poseAvatar } from './avatar3d.js'
+import { createAvatar, lookOf, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createCampus, fitLabels, markDoors } from './campus.js'
 import { createCrowd } from './crowd.js'
@@ -449,6 +449,7 @@ function respawn(district, run) {
   if (builtId !== `${district.meta.id}|${homeId}`) rebuild(district, homeId)
   if (player) scene.remove(player)
   player = createAvatar(run.character?.avatar)
+  host.dataset.look = JSON.stringify(player.userData.look)
   const home = campus.layout.buildings.find((building) => building.id === homeId) || campus.layout.buildings[0]
   const gate = run.at === 'gate' && campus.layout.buildings.find((building) => building.id === 'gate')
   const open = nearestOpen(campus.grid, gate ? { x: gate.x, z: gate.minZ - 12 } : doorPoint(home))
@@ -474,8 +475,7 @@ function respawn(district, run) {
 }
 
 function spawnKey(district, run) {
-  const avatar = run.character?.avatar || {}
-  return [district.meta.id, run.character?.residence, run.character?.name, avatar.skin, avatar.hair, avatar.outfit].join('|')
+  return [district.meta.id, run.character?.residence, run.character?.name, JSON.stringify(lookOf(run.character?.avatar))].join('|')
 }
 
 function refreshMarkers() {
