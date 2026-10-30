@@ -140,6 +140,7 @@ export async function fileReport(reporterId, message, reason) {
     message_id: message.id,
     reported_user_id: message.user_id,
     reason,
+    message_body: String(message.body || '').slice(0, 500),
   })
   return { error: error?.message || '' }
 }
