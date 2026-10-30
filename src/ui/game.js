@@ -202,7 +202,7 @@ function ctaBar(district, run) {
   let line
   if (run.phase === 'night') line = 'Night. Go home and sleep to end the day.'
   else if (run.slotsLeft === 1) line = `1 slot left \u2014 keep it for Sleep at 21:00.`
-  else if (glowing.length) line = `Tap a glowing place: ${glowing.slice(0, 2).map(placeName).join(' or ')}.`
+  else if (glowing.length) line = `Golden glow = open now. Try ${glowing.slice(0, 2).map(placeName).join(' or ')}.`
   else line = 'Nothing open now.'
   if (run.phase === 'night') {
     return `<div class="g-cta"><p>${esc(line)}</p><button type="button" class="g-go" data-act="place-open" data-id="${sleepPlace}">Go home</button></div>`
@@ -254,12 +254,12 @@ function mapSvg() {
     return `<line x1="50" y1="45" x2="${x}" y2="${y}" />`
   }).join('')
   return `<svg class="g-ground" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    <defs><radialGradient id="gq" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#2f6b3f"/><stop offset="1" stop-color="#173825"/></radialGradient></defs>
-    <rect width="100" height="100" fill="url(#gq)"/>
-    <path d="M0 95 Q30 90 50 93 T100 92 L100 100 L0 100Z" fill="#2a2f3a"/>
+    <defs><radialGradient id="gq" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#3f6a3c"/><stop offset=".65" stop-color="#2c3f34"/><stop offset="1" stop-color="#2a1846"/></radialGradient><radialGradient id="gs" cx="85%" cy="5%" r="55%"><stop offset="0" stop-color="#ff8a3d" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient></defs>
+    <rect width="100" height="100" fill="url(#gq)"/><rect width="100" height="100" fill="url(#gs)"/>
+    <path d="M0 95 Q30 90 50 93 T100 92 L100 100 L0 100Z" fill="#2a1846"/>
     <ellipse cx="50" cy="45" rx="14" ry="7" fill="#3e8a52" stroke="#9fd8a8" stroke-opacity=".25" stroke-width=".4"/>
-    <g stroke="#e9dcb8" stroke-opacity=".35" stroke-width=".9" stroke-linecap="round" vector-effect="non-scaling-stroke">${lines}</g>
-    <g fill="#215234">${[[8, 15], [92, 14], [6, 85], [94, 70], [55, 20], [45, 62], [88, 45], [8, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3"/>`).join('')}</g>
+    <g stroke="#ffd23f" stroke-opacity=".35" stroke-width=".9" stroke-linecap="round" vector-effect="non-scaling-stroke">${lines}</g>
+    <g fill="#25472f">${[[8, 15], [92, 14], [6, 85], [94, 70], [55, 20], [45, 62], [88, 45], [8, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3"/>`).join('')}</g>
   </svg>`
 }
 

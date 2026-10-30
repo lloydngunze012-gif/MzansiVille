@@ -243,6 +243,11 @@ async function sync() {
 
 function blip(freq = 660) {
   if (!soundOn()) return
+  // Defer so the first tap paints before the audio context spins up.
+  setTimeout(() => blipNow(freq), 30)
+}
+
+function blipNow(freq) {
   try {
     const ctx = blip.ctx || (blip.ctx = new (window.AudioContext || window.webkitAudioContext)())
     const o = ctx.createOscillator()
