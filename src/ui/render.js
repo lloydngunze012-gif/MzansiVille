@@ -381,7 +381,7 @@ function create(state) {
   }).join('')
   const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? '' : ' thumbs'}">${items.map((item) =>
     `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
-      item.fill ? `<i style="background:${item.fill}"></i>`
+      item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
         : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 44)}</span><b>${esc(item.label)}</b>`
     }</button>`).join('')}</div></fieldset>`
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
@@ -396,19 +396,23 @@ function create(state) {
       <aside class="cc-preview">
         <div class="cc-stage">
           <svg class="cc-bg" viewBox="0 0 150 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-            <rect width="150" height="260" fill="#ffc37a"/><circle cx="118" cy="96" r="22" fill="#ff8a3d"/>
-            <path d="M20 110Q50 40 80 110" fill="none" stroke="#fff4e4" stroke-width="3"/>
+            <rect width="150" height="260" fill="#ffc37a"/><circle cx="112" cy="92" r="36" fill="#ffd08a" opacity=".6"/><circle cx="112" cy="96" r="20" fill="#ff8a3d"/>
+            <g class="cc-bird" fill="none" stroke="#5a3a5e" stroke-width="1.6" stroke-linecap="round"><path d="M28 50q4-4 8 0q4-4 8 0"/><path d="M50 64q3-3 6 0q3-3 6 0"/></g>
+            <path d="M14 112Q42 44 72 112" fill="none" stroke="#fff4e4" stroke-width="3"/>
             <rect y="108" width="150" height="20" fill="#1d7fb8"/><rect y="128" width="150" height="132" fill="#5cb85c"/>
-            <ellipse cx="75" cy="214" rx="66" ry="22" fill="#7fd07f" stroke="#f3e2c2" stroke-width="5"/>
-            <path d="M136 200c2-20 0-36-6-52" stroke="#8a5a3a" stroke-width="4" fill="none"/>
-            <g fill="#1f6b45" transform="translate(130 148)"><path d="M0 0q-14-10-26 2q12-6 26-2z"/><path d="M0 0q14-10 26 2q-12-6-26-2z"/><path d="M0 0q-6-14-20-16q12 4 20 16z"/><path d="M0 0q6-14 20-16q-12 4-20 16z"/></g>
+            <ellipse cx="75" cy="160" rx="70" ry="16" fill="#7fd07f" stroke="#f3e2c2" stroke-width="4"/><text x="75" y="163" class="cc-quad" text-anchor="middle">THE QUAD</text>
+            <ellipse cx="75" cy="248" rx="64" ry="12" fill="#4aa34f"/>
+            <path d="M44 166V130" stroke="#5a3a5e" stroke-width="2"/><path class="cc-flag" d="M45 131h16l-4 5 4 5H45z" fill="#7b3fe4"/>
+            <path d="M98 176l1.5-50h3l1.5 50z" fill="#8a5a3a"/><path d="M99 164h4M99 152h4M99.5 140h3" stroke="#5a3820" stroke-width="1.2"/>
+            <g transform="translate(101 126) scale(.75)"><g class="ts-palm" fill="#1f6b45"><path d="M0 0q-12-12-24-4q12-2 24 4z"/><path d="M0 0q12-12 24-4q-12-2-24 4z"/><path d="M0 0q-4-14-16-18q10 6 16 18z" fill="#2e8b57"/><path d="M0 0q4-14 16-18q-10 6-16 18z" fill="#2e8b57"/><path d="M0 0q-14-2-22 8q10-8 22-8z" fill="#2e8b57"/><path d="M0 0q14-2 22 8q-10-8-22-8z"/></g></g>
           </svg>
           <span class="cc-ready${todo ? '' : ' ok'}">${todo ? `${todo} to go` : 'Ready ✓'}</span>
           <div class="cc-bob">${avatarSvg(draft.avatar, code, 118)}</div>
         </div>
-        <div class="cc-id"><small>Student card</small>
-          <strong>${esc(draft.name.trim() || 'Your name')}</strong>
-          <span>${esc(draft.residence || 'Res: choose below')}</span><span>${esc(draft.course || 'Course: choose below')}</span></div>
+        <div class="cc-id"><div class="cc-id-top"><small>Student card</small><i class="cc-crest">CV</i></div>
+          <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong>${esc(draft.name.trim() || 'Your name')}</strong>
+          <span>${esc(draft.residence || 'Res: choose')}</span><span>${esc(draft.course || 'Course: choose')}</span></div></div>
+          <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
       </aside>
     </div>
     <div class="cc-fields">
@@ -605,14 +609,14 @@ function isoBlock(x, y, w, h, d, front, side, roof) {
 }
 
 function palm(x, y, k) {
-  const fronds = [[-46, 8], [-38, -14], [-16, -30], [16, -30], [38, -14], [46, 8]]
+  const fronds = [[-54, 26], [-48, 8], [-30, -10], [-10, -18], [10, -18], [30, -10], [48, 8], [54, 26]]
   return `<g transform="translate(${x} ${y}) scale(${k})">
-    <ellipse cx="6" cy="2" rx="16" ry="4" fill="#1c1915" opacity=".14"/>
-    <path d="M0 0c4-24 2-50-8-78" stroke="#8a5a3a" stroke-width="7" fill="none" stroke-linecap="round"/>
-    <path d="M2-14h-7M3-30h-7M1-46h-7M-3-62h-7" stroke="#6b4429" stroke-width="2"/>
-    <g class="ts-palm" transform="translate(-8 -78)">
-      ${fronds.map(([fx, fy], i) => `<path d="M0 0Q${fx * .5} ${fy - 14} ${fx} ${fy}Q${fx * .45} ${fy - 2} 0 0z" fill="${i % 2 ? '#2e8b57' : '#1f6b45'}"/>`).join('')}
-      <circle cx="-3" cy="3" r="3" fill="#8a5a3a"/><circle cx="3" cy="4" r="3" fill="#6b4429"/></g></g>`
+    <ellipse cx="8" cy="2" rx="20" ry="4.5" fill="#1c1915" opacity=".14"/>
+    <path d="M-5 0L-2.5-80h5L5 0z" fill="#8a5a3a"/><path d="M1 0L2.5-80H0L0 0z" fill="#6b4429"/>
+    <path d="M-4.6-12h9.2M-4.3-24h8.6M-4-36h8M-3.7-48h7.4M-3.3-60h6.6M-3-72h6" stroke="#5a3820" stroke-width="1.6"/>
+    <g class="ts-palm" transform="translate(0 -80)">
+      ${fronds.map(([fx, fy], i) => `<path d="M0 0Q${fx * .45} ${fy - 18} ${fx} ${fy}Q${fx * .5} ${fy - 4} 0 0z" fill="${i % 2 ? '#2e8b57' : '#1f6b45'}"/><path d="M0 0Q${fx * .45} ${fy - 18} ${fx} ${fy}" stroke="#6fcf6f" stroke-width="1" fill="none" opacity=".6"/>`).join('')}
+      <circle cx="-3" cy="3" r="3.4" fill="#8a5a3a"/><circle cx="3" cy="4" r="3.4" fill="#6b4429"/><circle cy="7" r="3" fill="#7a4c2e"/></g></g>`
 }
 
 function campusScene(district, avatar) {
@@ -627,9 +631,11 @@ function campusScene(district, avatar) {
     <g class="ts-cloud c1" fill="#fff4e4"><ellipse cx="40" cy="40" rx="38" ry="11"/><ellipse cx="62" cy="31" rx="20" ry="12"/></g>
     <g class="ts-cloud c2" fill="#fff4e4" opacity=".85"><ellipse cx="180" cy="66" rx="30" ry="8"/><ellipse cx="196" cy="59" rx="15" ry="9"/></g>
     <g class="ts-cloud c3" fill="#fff4e4" opacity=".8"><ellipse cx="300" cy="-14" rx="30" ry="8"/><ellipse cx="316" cy="-21" rx="14" ry="8"/></g><g class="ts-cloud c4" fill="#fff4e4" opacity=".6"><ellipse cx="120" cy="2" rx="22" ry="6"/></g>
+    <g class="ts-balloon"><g transform="translate(232 52) scale(.7)"><path d="M0-30c-18 0-26 12-26 24 0 14 16 24 22 32h8c6-8 22-18 22-32 0-12-8-24-26-24z" fill="#7b3fe4"/><path d="M0-30c-7 0-10 12-10 24 0 14 6 24 7 32h6c1-8 7-18 7-32 0-12-3-24-10-24z" fill="#f0c400"/><path d="M-4 26l-2 8M4 26l2 8" stroke="#5a3a5e" stroke-width="1.2"/><rect x="-7" y="34" width="14" height="9" rx="2" fill="#c4512a"/></g></g>
+    <g class="ts-plane"><g transform="translate(0 12)"><path d="M150 8h-60" stroke="#5a3a5e" stroke-width="1"/><rect x="0" y="0" width="92" height="16" rx="3" fill="#fff4e4"/><text x="46" y="11.5" class="ts-banner" text-anchor="middle">WELCOME FIRST YEARS</text><path d="M150 4h22q6 0 8 4q-2 4-8 4h-22z" fill="#1d7fb8"/><path d="M160 4l-6-7h5l8 7zM160 12l-6 7h5l8-7z" fill="#165f8a"/><path d="M150 3v10" stroke="#165f8a" stroke-width="3"/></g></g>
     <g class="ts-birds" fill="none" stroke="#5a3a5e" stroke-width="2" stroke-linecap="round">
       <path d="M90 60q5-5 10 0q5-5 10 0"/><path d="M118 48q4-4 8 0q4-4 8 0"/><path d="M104 76q3-3 6 0q3-3 6 0"/></g>
-    <circle cx="318" cy="132" r="44" fill="#ff8a3d"/><circle cx="318" cy="132" r="30" fill="#ffa95e"/>
+    <circle cx="318" cy="132" r="96" fill="#ffd08a" opacity=".55"/><circle cx="318" cy="132" r="70" fill="#ffbd73" opacity=".55"/><circle cx="318" cy="132" r="44" fill="#ff8a3d"/><circle cx="318" cy="132" r="30" fill="#ffa95e"/>
     <g fill="#b0527a">${towers.map(([tx, th]) => `<rect x="${tx}" y="${140 - th}" width="14" height="${th}"/>`).join('')}</g>
     <g fill="#ffd27a" opacity=".8">${towers.filter((_, i) => i % 2).map(([tx, th]) => `<rect x="${tx + 4}" y="${148 - th}" width="3" height="3"/><rect x="${tx + 4}" y="${158 - th}" width="3" height="3"/>`).join('')}</g>
     <path d="M96 140q0-22 54-26q54 4 54 26z" fill="#8f3f68"/>
@@ -650,14 +656,14 @@ function campusScene(district, avatar) {
     <g transform="translate(195 340)"><ellipse cx="6" cy="8" rx="100" ry="30" fill="#1c1915" opacity=".1"/><ellipse rx="100" ry="30" fill="#7fd07f" stroke="#f3e2c2" stroke-width="7"/>
       <ellipse rx="14" ry="6" fill="#7b3fe4"/><ellipse cy="-3" rx="7" ry="3" fill="#f0c400"/>
       <text x="-48" y="-38" class="ts-lbl big" text-anchor="middle">${nm('quad', 'The Quad')}</text></g>
-    <g class="ts-kombi"><g transform="translate(0 318)"><ellipse cx="22" cy="18" rx="24" ry="3" fill="#1c1915" opacity=".18"/>
+    <g class="ts-kombi"><g transform="translate(0 300) scale(1.45)"><ellipse cx="22" cy="18" rx="24" ry="3" fill="#1c1915" opacity=".18"/>
       <path d="M0 4q0-6 6-6h28q8 0 12 10v8H0z" fill="#fffaf2"/><rect y="8" width="46" height="4" fill="#1d7fb8"/>
       <rect x="6" y="0" width="9" height="6" fill="#7cc6e8"/><rect x="18" y="0" width="9" height="6" fill="#7cc6e8"/><path d="M30 0h5q4 0 6 6h-11z" fill="#7cc6e8"/>
-      <circle cx="10" cy="16" r="4" fill="#1c1915"/><circle cx="36" cy="16" r="4" fill="#1c1915"/></g></g>
-    ${[[0, '#ff8a3d', '#1c1915'], [1, '#7b3fe4', '#3f291c']].map(([i, c, h]) => `<g class="ts-walker w${i}"><g transform="translate(0 ${i ? 470 : 420})">
+      <circle cx="10" cy="16" r="4" fill="#1c1915"/><circle cx="36" cy="16" r="4" fill="#1c1915"/><circle cx="10" cy="16" r="1.5" fill="#ccc"/><circle cx="36" cy="16" r="1.5" fill="#ccc"/><rect x="8" y="-5" width="26" height="4" rx="1" fill="#ff8a3d"/><rect x="12" y="-8" width="8" height="3" fill="#7b3fe4"/></g></g>
+    ${[[0, '#ff8a3d', '#1c1915'], [1, '#7b3fe4', '#3f291c']].map(([i, c, h]) => `<g class="ts-walker w${i}"><g transform="translate(0 ${i ? 372 : 352}) scale(1.8)"><g class="ts-step">
       <ellipse cx="0" cy="18" rx="6" ry="1.6" fill="#1c1915" opacity=".2"/><path d="M-2 10v8M2 10v8" stroke="#2b3a55" stroke-width="2.4"/>
-      <rect x="-5" y="0" width="10" height="11" rx="4" fill="${c}"/><circle cy="-4" r="4.2" fill="${i ? '#8a5a3a' : '#d2956b'}"/><path d="M-4.2-5a4.2 4.2 0 0 1 8.4 0z" fill="${h}"/></g></g>`).join('')}
-    ${res.map((r, i) => { const x = 12 + i * 62, y = 400 + (i % 2) * 18; return `<g>${isoBlock(x, y, 52, 64 - i * 4, 14, ['#fff4e4', '#ffe1b8', '#fff4e4'][i], '#e8c79c', '#c9a57a')}
+      <rect x="-5" y="0" width="10" height="11" rx="4" fill="${c}"/><circle cy="-4" r="4.2" fill="${i ? '#8a5a3a' : '#d2956b'}"/><path d="M-4.2-5a4.2 4.2 0 0 1 8.4 0z" fill="${h}"/><rect x="${i ? -7 : 3}" y="1" width="5" height="7" rx="1.5" fill="${i ? '#f0c400' : '#1d7fb8'}"/></g></g></g>`).join('')}
+    ${res.map((r, i) => { const x = 12 + i * 62, y = 384 + (i % 2) * 8; return `<g>${isoBlock(x, y, 52, 64 - i * 4, 14, ['#fff4e4', '#ffe1b8', '#fff4e4'][i], '#e8c79c', '#c9a57a')}
       ${[0, 1, 2].map((row) => `<rect x="${x + 6}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/><rect x="${x + 21}" y="${y + 8 + row * 17}" width="10" height="8" fill="#ff8a3d"/><rect x="${x + 36}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/>`).join('')}
       <rect x="${x}" y="${y - 10}" width="52" height="11" rx="2" fill="#7b3fe4"/><text x="${x + 26}" y="${y - 1.5}" class="ts-tag">${r}</text></g>` }).join('')}
     ${palm(368, 330, 1.05)}${palm(150, 262, .8)}${palm(214, 470, .95)}${palm(20, 312, .7)}
