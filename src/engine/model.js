@@ -105,6 +105,7 @@ export function buildDistrict(parts) {
     title: event.title,
     text: event.text || event.body || '',
     placeholder: Boolean(event.placeholder),
+    icon: event.icon || '',
     choices: (event.choices || []).map((choice) => ({
       label: choice.label,
       deltas: { ...EMPTY_DELTAS, ...(choice.deltas || {}) },
