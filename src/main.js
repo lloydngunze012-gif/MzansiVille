@@ -747,6 +747,7 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'nav') {
+    ui.gear = false
     go(button.dataset.go)
     return
   }
@@ -1170,6 +1171,10 @@ app.addEventListener('click', async (event) => {
 
 window.addEventListener('hashchange', () => {
   const name = route().name
+  // QA B02: a screen change always closes the gear menu, so it never sits on top
+  // of the new screen and steals its taps (chat Send, Save's magic link).
+  ui.gear = false
+  ui.confirmReset = false
   if (needsRun(name) && !save.run) {
     location.hash = '#/'
     return
