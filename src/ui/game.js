@@ -2,21 +2,12 @@ import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { cardHtml, esc, summaryRows } from './render.js'
+import { ART, LAYOUT, groundHtml } from './campus.js'
 import './game.css'
 
 // UI-only state that should not be saved.
 export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '' }
 
-// Display layout (percent of map box). Keeps places.csv geography (north up)
-// but spreads the clustered centre so every label is tappable at 360px.
-const LAYOUT = {
-  science: [34, 9], law: [68, 11],
-  engineering: [13, 27], library: [37, 28], sports_centre: [86, 27],
-  cafeteria: [70, 38], quad: [50, 45], smig: [22, 47],
-  health_sciences: [76, 54], res_other: [12, 61],
-  res_o: [17, 73], res_r: [36, 73], res_s: [27, 84],
-  bus_station: [60, 74], gate: [62, 88], off_campus: [86, 88],
-}
 const ICON = {
   hub: '\u{1F333}', food: '\u{1F37D}', transit: '\u{1F68C}', venue: '\u26BD', study: '\u{1F4DA}',
   lecture: '\u{1F393}', residence: '\u{1F3E0}',
@@ -26,6 +17,22 @@ const SHORT = {
   'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Other on-campus blocks': 'Other blocks',
   'Off-campus res (bus home)': 'Off-campus res', 'Main Bus Station': 'Bus station',
 }
+const CHIP_TIPS = [
+  ['exam', '', '', 'Exam week: study counts double and the exam is at the Sports Centre on the last day.'],
+  ['behind', '', '', 'Falling behind: grade gains are halved for a few days. Attend lectures and study to recover.'],
+  ['broke', '', '', 'Broke: below R0 you can only eat noodles. Work a shift to get back above zero.'],
+  ['hungry', '', '', 'Slept hungry: you woke tired. Eat today so fullness is 20+ before you sleep.'],
+]
+
+export function statusChips(run) {
+  return [
+    run.examWeek ? ['exam', '\u270D\uFE0F', 'Exam week'] : null,
+    run.fallingBehind > 0 || run.status ? ['behind', '\u{1F4C9}', 'Falling behind'] : null,
+    run.noodlesOnly ? ['broke', '\u{1F35C}', 'Noodles only'] : null,
+    run.sleptHungry ? ['hungry', '\u{1F971}', 'Slept hungry'] : null,
+  ].filter(Boolean)
+}
+
 export const STATS = [
   ['money', 'Money', '#f5c542', 'Rands in your pocket. Below R0 it is noodles only until a shift pays.'],
   ['energy', 'Energy', '#47d18c', 'Energy. Sleep gives +60; skipping sleep costs 30.'],
@@ -86,6 +93,9 @@ export function placeStatus(district, run, placeId) {
   const items = visibleActions(district, run, placeId)
   const open = items.filter((item) => !item.state.disabled)
   if (open.length) return { open: true, label: '' }
+  // Public spaces with no opening hours are never "closed".
+  const place = district.places.find((p) => p.id === placeId)
+  if (place?.kind === 'hub' && !district.hours.places[placeId]) return { open: false, public: true, label: '' }
   const at = opensAt(district, run, placeId)
   if (at) return { open: false, label: `opens ${at}` }
   const closed = items.find((item) => /Closed/.test(item.state.reason))
@@ -114,8 +124,8 @@ export function phaseStrip(district, run) {
 export function hud(district, run, opts = {}) {
   if (!run) return ''
   const day = weekdayName(district.meta, run.day).slice(0, 3)
-  const tip = STATS.find((s) => s[0] === ui.tip)
-  const chips = [run.examWeek ? 'Exam week' : '', run.status || '', run.noodlesOnly ? 'Noodles only' : ''].filter(Boolean)
+  const tip = STATS.find((s) => s[0] === ui.tip) || CHIP_TIPS.find((s) => `chip-${s[0]}` === ui.tip)
+  const chips = statusChips(run)
   return `<header class="g-hud">
     <div class="g-row">
       <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
@@ -124,7 +134,7 @@ export function hud(district, run, opts = {}) {
     </div>
     <div class="g-stats">${STATS.map(([k, w, c]) => bar(k, w, c, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100))).join('')}</div>
     ${tip ? `<p class="g-tip" role="status">${esc(tip[3])}</p>` : ''}
-    ${chips.length ? `<p class="g-chips">${chips.map((c) => `<span>${esc(c)}</span>`).join('')}</p>` : ''}
+    ${chips.length ? `<p class="g-chips">${chips.map(([k, ic, c]) => `<button type="button" class="g-chip ${k}" data-act="stat" data-k="chip-${k}">${ic} ${esc(c)}</button>`).join('')}</p>` : ''}
     ${opts.strip === false ? '' : phaseStrip(district, run)}
   </header>
   ${ui.gear ? gearMenu(run) : ''}`
@@ -139,6 +149,7 @@ function gearMenu(run) {
   <aside class="g-menu" role="dialog" aria-label="Menu">
     <h3>Menu</h3>
     <button type="button" data-act="sound">Sound: <b>${soundOn() ? 'On' : 'Off'}</b></button>
+    <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>
     <button type="button" data-act="nav" data-go="board">Leaderboard</button>
     <button type="button" data-act="nav" data-go="chat">Campus chat</button>
@@ -179,7 +190,10 @@ function sheetHtml(district, run, placeId) {
       ${state.disabled ? `<span class="g-why">${esc(state.reason)}</span>` : warn}
     </button>`
   }).join('')
-  const empty = status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
+  const later = opensAt(district, run, placeId)
+  const empty = status.public
+    ? `The ${placeName(place).replace(/^The /, '')} is always open. ${later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
+    : status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
   return `<div class="g-scrim soft" data-act="close-sheet"></div>
   <section class="g-sheet" role="dialog" aria-label="${esc(place.name)}">
     <div class="g-grab"></div>
@@ -217,6 +231,9 @@ function resultCard(state) {
   const q = run.queue
   const card = q[0]
   if (!card) return ''
+  if (card.kind === 'event' && card.choices) return eventCard(state, card)
+  if (card.kind === 'consequence' || card.kind === 'over') return consequenceCard(card)
+  if (card.kind === 'milestone') return milestoneCard(state, card)
   if (card.choices || card.kind === 'shop') return `<div class="g-card-wrap">${cardHtml(card, state)}</div>`
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
   const label = { result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
@@ -248,21 +265,6 @@ function summaryCard(state) {
   </aside>`
 }
 
-function mapSvg() {
-  const lines = Object.keys(LAYOUT).filter((k) => k !== 'quad').map((k) => {
-    const [x, y] = LAYOUT[k]
-    return `<line x1="50" y1="45" x2="${x}" y2="${y}" />`
-  }).join('')
-  return `<svg class="g-ground" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-    <defs><radialGradient id="gq" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#3f6a3c"/><stop offset=".65" stop-color="#2c3f34"/><stop offset="1" stop-color="#2a1846"/></radialGradient><radialGradient id="gs" cx="85%" cy="5%" r="55%"><stop offset="0" stop-color="#ff8a3d" stop-opacity=".55"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient></defs>
-    <rect width="100" height="100" fill="url(#gq)"/><rect width="100" height="100" fill="url(#gs)"/>
-    <path d="M0 95 Q30 90 50 93 T100 92 L100 100 L0 100Z" fill="#2a1846"/>
-    <ellipse cx="50" cy="45" rx="14" ry="7" fill="#3e8a52" stroke="#9fd8a8" stroke-opacity=".25" stroke-width=".4"/>
-    <g stroke="#ffd23f" stroke-opacity=".35" stroke-width=".9" stroke-linecap="round" vector-effect="non-scaling-stroke">${lines}</g>
-    <g fill="#25472f">${[[8, 15], [92, 14], [6, 85], [94, 70], [55, 20], [45, 62], [88, 45], [8, 45]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3"/>`).join('')}</g>
-  </svg>`
-}
-
 export function mapHome(state, openPlace = '') {
   const { district, run } = state
   const here = hereOf(district, run)
@@ -271,25 +273,26 @@ export function mapHome(state, openPlace = '') {
     const [x, y] = layoutOf(place.id)
     const st = placeStatus(district, run, place.id)
     const mine = place.id === home ? ' mine' : ''
-    return `<button type="button" class="g-pin ${st.open ? 'open' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%">
-      <span class="g-dot">${ICON[place.kind] || ''}</span>
+    const art = (ART[place.id] || ART.res_other)()
+    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%">
+      ${st.open ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
       <span class="g-name">${esc(placeName(place))}${place.id === home ? ' \u00b7 home' : ''}</span>
       ${st.open ? '' : st.label ? `<small>${esc(st.label)}</small>` : ''}
     </button>`
   }).join('')
   const [ax, ay] = layoutOf(here)
   let layer = ''
-  if (run.mode === 'summary') layer = summaryCard(state)
-  else if (run.queue?.[0]) layer = resultCard(state)
+  if (run.queue?.[0]) layer = resultCard(state)
+  else if (run.mode === 'summary') layer = summaryCard(state)
   else if (run.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
     layer = `<div class="g-scrim"></div><aside class="g-result"><p class="g-kind">Day ${run.day}</p><h2>Keep ${esc(run.character.name)}?</h2><p>Guests live on this phone only. Make a free account so this student survives a cleared browser.</p><div class="g-two"><button type="button" class="g-go ghost" data-act="snooze">Not now</button><button type="button" class="g-go" data-act="nav" data-go="save">Save progress</button></div></aside>`
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
   return `<main class="screen g-screen" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">
     ${hud(district, run)}
     <section class="g-map" aria-label="Campus map">
-      ${mapSvg()}
+      ${groundHtml()}
       ${pins}
-      <span class="g-me" id="g-me" style="left:${ax}%;top:${ay}%" aria-label="You"><span>${esc((run.character.name || '?').slice(0, 1).toUpperCase())}</span></span>
+      <span class="g-me" id="g-me" style="left:${ax}%;top:${ay}%" aria-label="You"><span class="g-me-head">${esc((run.character.name || '?').slice(0, 1).toUpperCase())}</span><span class="g-me-tag">You</span></span>
     </section>
     ${run.mode === 'play' && !layer ? ctaBar(district, run) : ''}
     ${ui.notice ? `<p class="g-notice" role="status">${esc(ui.notice)}</p>` : ''}
@@ -300,4 +303,125 @@ export function mapHome(state, openPlace = '') {
 export function withHud(state, html) {
   if (!state.run) return html
   return html.replace(/(<main[^>]*>)/, `$1${hud(state.district, state.run, { strip: false })}`)
+}
+
+const TONE = {
+  behind: ['\u{1F4C9}', 'Consequence'],
+  broke: ['\u{1F35C}', 'Consequence'],
+  hungry: ['\u{1F971}', 'Consequence'],
+  over: ['\u{1F6AA}', 'Game over'],
+}
+
+function eventCard(state, card) {
+  const event = state.district.events.find((item) => item.id === card.eventId) || {}
+  const buttons = card.choices.map((label, i) => {
+    const deltas = event.choices?.[i]?.deltas || {}
+    return `<button type="button" class="g-choice" data-act="choice" data-i="${i}"><strong>${esc(label)}</strong><span class="g-act-fx">${effectChips(deltas)}</span></button>`
+  }).join('')
+  return `<section class="g-full g-event" role="dialog" aria-label="${esc(card.title)}" data-screen-card="event">
+    <div class="g-full-in">
+      <p class="g-kind">Today's event \u00b7 Day ${state.run.day}</p>
+      <div class="g-emblem">${event.icon || '\u2728'}</div>
+      <h2>${esc(card.title)}</h2>
+      <p class="g-lede">${esc(card.text)}</p>
+      <div class="g-choices">${buttons}</div>
+    </div>
+  </section>`
+}
+
+function consequenceCard(card) {
+  const tone = card.kind === 'over' ? 'over' : card.tone || 'behind'
+  const [icon, label] = TONE[tone] || TONE.behind
+  return `<section class="g-full g-cons ${tone}" role="dialog" aria-label="${esc(card.title)}" data-screen-card="consequence">
+    <div class="g-full-in">
+      <p class="g-kind">${label}</p>
+      <div class="g-emblem">${icon}</div>
+      <h2>${esc(card.title)}</h2>
+      <p class="g-lede">${esc(card.text)}</p>
+      ${tone === 'over' ? '' : `<p class="g-chipnote">Watch for the <b>${esc(card.title === 'Broke' ? 'Noodles only' : card.title === 'You slept hungry' ? 'Slept hungry' : card.title)}</b> chip in your top bar while it lasts.</p>`}
+      <button type="button" class="g-go block" data-act="dismiss">${tone === 'over' ? 'See what happened' : 'Got it'}</button>
+    </div>
+  </section>`
+}
+
+function milestoneCard(state, card) {
+  const grad = card.id.startsWith('grad')
+  if (grad) return graduationScreen(state, card)
+  return `<div class="g-scrim"></div>
+  <aside class="g-result g-mile" role="dialog" data-screen-card="milestone">
+    <p class="g-kind">\u2B50 Milestone</p>
+    <h2>${esc(card.title)}</h2>
+    <p>${esc(card.text)}</p>
+    <div class="g-two"><button type="button" class="g-go ghost" data-act="nav" data-go="milestones">All milestones</button><button type="button" class="g-go" data-act="dismiss">Nice</button></div>
+  </aside>`
+}
+
+function confetti() {
+  const colors = ['#ffd23f', '#ff8a3d', '#d77bff', '#6fb6ff', '#47d18c']
+  return Array.from({ length: 24 }, (_, i) => `<i style="left:${(i * 41) % 100}%;background:${colors[i % 5]};animation-delay:${(i % 8) * 0.25}s;animation-duration:${3 + (i % 4) * 0.6}s"></i>`).join('')
+}
+
+function graduationScreen(state, card) {
+  const { run } = state
+  return `<section class="g-full g-grad" role="dialog" aria-label="Graduated" data-screen-card="graduation">
+    <div class="g-confetti" aria-hidden="true">${confetti()}</div>
+    <div class="g-full-in">
+      <p class="g-kind">Day ${run.day} \u00b7 First year complete</p>
+      <div class="g-emblem big">\u{1F393}</div>
+      <h2>${esc(run.character.name)} graduated first year</h2>
+      <p class="g-lede">${esc(card.text)}</p>
+      <ul class="g-delta">${summaryRows(null, run.stats)}</ul>
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="nav" data-go="share">Share it</button><button type="button" class="g-go" data-act="dismiss">Celebrate</button></div>
+    </div>
+  </section>`
+}
+
+export function gameOverScreen(state) {
+  const { run, district } = state
+  return `<main class="screen g-screen g-overscreen" data-screen="gameover">
+    <section class="g-full g-cons over static">
+      <div class="g-full-in">
+        <p class="g-kind">Game over \u00b7 Day ${run.day}</p>
+        <div class="g-emblem">\u{1F6AA}</div>
+        <h2>Excluded</h2>
+        <p class="g-lede">${esc(run.excludeText || 'Excluded.')} ${esc(run.character.name)}'s first year at ${esc(district.meta.name)} ends here.</p>
+        <p class="g-chipnote">Next time: keep grades above ${district.meta.day.lowGrades}, attend lectures, and never fall behind in exam week.</p>
+        <ul class="g-delta">${summaryRows(null, run.stats)}</ul>
+        <button type="button" class="g-go block" data-act="restart">Start first year again</button>
+        <button type="button" class="g-go ghost block" data-act="new">New character</button>
+      </div>
+    </section>
+  </main>`
+}
+
+export function milestonesScreen(state) {
+  const { run, district } = state
+  const list = district.meta.milestones || []
+  const done = (m) => {
+    if (m.badge) return run.badges.includes(m.badge)
+    if (m.id === 'graduate') return run.graduated
+    if (m.exam) return run.day >= m.day || run.examWeek
+    return run.day >= (m.day || 1)
+  }
+  const progress = (m) => {
+    if (m.badge === 'lectures') return `${Math.min(run.lectureStreak || 0, district.meta.day.streakBadge)} of ${district.meta.day.streakBadge} in a row`
+    if (m.day) return run.day >= m.day ? `Day ${m.day}` : `Day ${m.day} \u00b7 ${m.day - run.day} day${m.day - run.day === 1 ? '' : 's'} to go`
+    return ''
+  }
+  const got = list.filter(done).length
+  const rows = list.map((m) => {
+    const ok = done(m)
+    return `<li class="${ok ? 'got' : 'locked'}"><span class="g-ms-ic">${ok ? m.icon : '\u{1F512}'}</span><div><strong>${esc(m.title)}</strong><p>${esc(m.text)}</p><small>${esc(ok ? 'Unlocked' : progress(m))}</small></div></li>`
+  }).join('')
+  return `<main class="screen g-screen lg" data-screen="milestones">
+    ${hud(district, run, { strip: false })}
+    <div class="lg-top"><a class="lg-back" href="#/play">\u2190 Back to campus</a></div>
+    <article class="lg-card g-ms">
+      <p class="lg-kicker">First year</p>
+      <h1>Milestones</h1>
+      <p class="g-ms-sum"><b>${got}</b> of ${list.length} unlocked \u00b7 Day ${run.day} of ${district.meta.day.graduateDay}</p>
+      <div class="g-ms-bar"><span style="width:${Math.round((Math.min(run.day, district.meta.day.graduateDay) / district.meta.day.graduateDay) * 100)}%"></span></div>
+      <ol class="g-ms-list">${rows}</ol>
+    </article>
+  </main>`
 }
