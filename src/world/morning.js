@@ -650,7 +650,9 @@ function follow(obj, offset) {
 function stopFollow(obj) { obj.userData.followEnd = true }
 
 // ---------- the scripted morning ----------
+let cafBreakfast = false
 async function play() {
+  cafBreakfast = false
   const run = opts.run
   const q = new URLSearchParams(location.search)
   const roomieTakes = opts.forceRoommate ?? Math.random() < 0.35
@@ -715,10 +717,19 @@ async function play() {
   // 2. kettle
   setStep('kettle')
   lookAtKettle(true)
-  await tapOn([kettle], line('steps.kettle.prompt', '\u2615 Make noodles at the kettle'), ANCHORS.kettle)
+  // Breakfast is a choice every morning: noodles in res, the tuck shop, the caf on
+  // campus, or out the door hungry. Each costs something different.
+  const OPT = {
+    noodles: { label: line('steps.choice_breakfast.options.0.label', '\u{1F35C} Noodles in res'), note: line('steps.choice_breakfast.options.0.note', 'Free \u00b7 +35 Fullness \u00b7 15 min') },
+    tuck: { label: line('steps.choice_breakfast.options.1.label', '\u{1F6D2} Tuck shop on the way'), note: line('steps.choice_breakfast.options.1.note', 'R12 \u00b7 +25 Fullness \u00b7 10 min') },
+    caf: { label: line('steps.choice_breakfast.options.2.label', '\u{1F373} Caf breakfast on campus'), note: line('steps.choice_breakfast.options.2.note', 'R30 \u00b7 +40 Fullness \u00b7 10 min there') },
+    hungry: { label: line('steps.choice_breakfast.options.3.label', '\u{1F6B6} Walk to the bus hungry'), note: line('steps.choice_breakfast.options.3.note', '\u221215 Fullness \u00b7 out the door now') },
+  }
+  const first = await choices(line('steps.choice_breakfast.title', 'Breakfast?'), [OPT.noodles, OPT.tuck, OPT.caf, OPT.hungry])
+  let plan = ['noodles', 'tuck', 'caf', 'hungry'][first]
   setStep('kettle-walk')
   let rushOut = false
-  if (roomieTakes) {
+  if (plan === 'noodles' && roomieTakes) {
     // roommate gets there first
     walkTo(roommate, 1.55, -1.95, 2.6)
     await walkTo(player, 0.5, -1.8)
@@ -732,45 +743,44 @@ async function play() {
     await talk(line('steps.roommate.bare', 'The shelf is bare. Your roommate got the last packet.'), player)
     walkTo(roommate, 2.1, -0.35, 1.8)
     lookAtKettle(false)
-    const pick = await choices(line('steps.choice_no_noodles.title', 'No noodles left. What now?'), [
-      { label: line('steps.choice_no_noodles.options.0.label', '\u{1F6D2} Tuck shop noodles'), note: line('steps.choice_no_noodles.options.0.note', 'R12 \u00b7 +25 Fullness \u00b7 costs 10 min') },
-      { label: line('steps.choice_no_noodles.options.1.label', '\u{1F6AB} Skip breakfast'), note: line('steps.choice_no_noodles.options.1.note', '\u221210 Fullness \u00b7 \u22125 Energy \u00b7 no time') },
-      { label: line('steps.choice_no_noodles.options.2.label', '\u{1F6B6} Walk to the bus hungry'), note: line('steps.choice_no_noodles.options.2.note', '\u221215 Fullness \u00b7 out the door now') },
-    ])
-    host.dataset.choice = ['tuck', 'skip', 'hungry'][pick]
-    if (pick === 0) {
-      setStep('tuckshop')
-      await walkTo(player, 2.3, 1.2)
-      sfx('door')
-      await tween(0.6, (k) => { door.rotation.y = -k * 1.4 })
-      await walkTo(player, 3.6, 1.2)
-      await walk(player, [[6.5, 1.2]])
-      await fadeOut('\u{1F6D2} Tuck shop\u2026 R12 noodles')
-      await addMinutes(10, 1.2)
-      player.position.set(6.5, 0, 1.2)
-      face(player, 2, 1.2)
-      steamGroup.visible = true
-      const held = holdBowl()
-      await fadeIn()
-      await walk(player, [[3.6, 1.2]])
-      await walkTo(player, 2.2, 1.2)
-      await tween(0.5, (k) => { door.rotation.y = -1.4 * (1 - k) })
-      void held
-      await eat()
-      changeStats({ money: -12, hunger: 25 })
-    } else if (pick === 1) {
-      setStep('skip')
-      lookAtKettle(false)
-      await talk('Fine. I\u2019ll survive till lunch\u2026', player)
-      changeStats({ hunger: -10, energy: -5 })
-    } else {
-      // Straight out: no breakfast, no door prompt, the walk starts now.
-      setStep('hungry')
-      lookAtKettle(false)
-      await talk(line('steps.hungry.bubble', 'No breakfast, no problem. Probably. Bus, here I come.'), player)
-      changeStats({ hunger: -15 })
-      rushOut = true
-    }
+    const pick = await choices(line('steps.choice_no_noodles.title', 'No noodles left. What now?'), [OPT.tuck, OPT.caf, OPT.hungry])
+    plan = ['tuck', 'caf', 'hungry'][pick]
+  }
+  host.dataset.choice = plan
+  if (plan === 'tuck') {
+    setStep('tuckshop')
+    lookAtKettle(false)
+    await walkTo(player, 2.3, 1.2)
+    sfx('door')
+    await tween(0.6, (k) => { door.rotation.y = -k * 1.4 })
+    await walkTo(player, 3.6, 1.2)
+    await walk(player, [[6.5, 1.2]])
+    await fadeOut('\u{1F6D2} Tuck shop\u2026 R12 noodles')
+    await addMinutes(10, 1.2)
+    player.position.set(6.5, 0, 1.2)
+    face(player, 2, 1.2)
+    steamGroup.visible = true
+    const held = holdBowl()
+    await fadeIn()
+    await walk(player, [[3.6, 1.2]])
+    await walkTo(player, 2.2, 1.2)
+    await tween(0.5, (k) => { door.rotation.y = -1.4 * (1 - k) })
+    void held
+    await eat()
+    changeStats({ money: -12, hunger: 25 })
+  } else if (plan === 'caf') {
+    // Breakfast waits on campus: you eat at the caf when the bus drops you.
+    setStep('caf-later')
+    lookAtKettle(false)
+    await talk(line('steps.caf_later.bubble', 'Caf pap on campus. Hold on, stomach.'), player)
+    cafBreakfast = true
+  } else if (plan === 'hungry') {
+    // Straight out: no breakfast, no door prompt, the walk starts now.
+    setStep('hungry')
+    lookAtKettle(false)
+    await talk(line('steps.hungry.bubble', 'No breakfast, no problem. Probably. Bus, here I come.'), player)
+    changeStats({ hunger: -15 })
+    rushOut = true
   } else {
     await walkTo(player, 0.8, -1.85)
     face(player, 0.9, -2.55)
@@ -886,6 +896,17 @@ async function play() {
   follow(player, [0, 5, 8])
   await walk(player, [ANCHORS.arrive])
   face(player, ANCHORS.campus[0], ANCHORS.campus[1])
+  if (cafBreakfast) {
+    setStep('caf-breakfast')
+    await fadeOut('\u{1F373} Caf breakfast\u2026 R30 pap and egg')
+    await addMinutes(10, 1.2)
+    steamGroup.visible = true
+    const held = holdBowl()
+    await fadeIn()
+    void held
+    await eat()
+    changeStats({ money: -30, hunger: 40, energy: 5 })
+  }
   const arrived = run.minutes
   const onTime = arrived <= ON_TIME_BY
   if (!onTime) changeStats({ grades: -2 })
