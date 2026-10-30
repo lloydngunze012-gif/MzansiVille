@@ -42,6 +42,7 @@ let actionCommit = null
 let tourIndex = 0
 let pendingAction = null
 let snapTo = null
+let gateDay = ''
 let speed = WALK
 const raycaster = new THREE.Raycaster()
 const screenPoint = new THREE.Vector3()
@@ -365,9 +366,20 @@ function respawn(district, run) {
   if (player) scene.remove(player)
   player = createAvatar(run.character?.avatar)
   const home = campus.layout.buildings.find((building) => building.id === homeId) || campus.layout.buildings[0]
-  const open = nearestOpen(campus.grid, doorPoint(home))
+  const gate = run.at === 'gate' && campus.layout.buildings.find((building) => building.id === 'gate')
+  const open = nearestOpen(campus.grid, gate ? { x: gate.x, z: gate.minZ - 12 } : doorPoint(home))
   const spot = cellCenter(open.c, open.r)
   player.position.set(spot.x, 0, spot.z)
+  if (gate) {
+    // Arriving by bus: stand inside the gate, facing the quad, camera behind.
+    const quad = campus.layout.buildings.find((building) => building.id === 'quad') || { x: 0, z: 0 }
+    player.rotation.y = Math.atan2(quad.x - spot.x, quad.z - spot.z)
+    rig.facing = player.rotation.y
+    rig.yaw = player.rotation.y + Math.PI
+    gateDay = String(run.day)
+  }
+  host.dataset.spawn = gate ? 'gate' : 'home'
+  host.dataset.facing = player.rotation.y.toFixed(2)
   scene.add(player)
   route = []
   routeGoal = null
@@ -531,7 +543,7 @@ export function showCampus(district, run) {
   currentRun = run
   const homeId = homePlaceId(district, run.character?.residence)
   const key = spawnKey(district, run)
-  if (builtId !== `${district.meta.id}|${homeId}` || key !== spawnedKey) respawn(district, run)
+  if (builtId !== `${district.meta.id}|${homeId}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))) respawn(district, run)
   refreshMarkers()
   const shot = new URLSearchParams(location.search).get('shot') || ''
   if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
