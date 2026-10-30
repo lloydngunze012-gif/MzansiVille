@@ -359,9 +359,24 @@ app.addEventListener('input', (event) => {
   if (event.target.id === 'composer') chat.draft = event.target.value
   if (event.target.id === 'residence') draft.residence = event.target.value
   if (event.target.id === 'course') draft.course = event.target.value
+  if (['name', 'handle', 'residence', 'course'].includes(event.target.id)) syncCard()
 })
 
+function syncCard() {
+  const set = (key, text) => { const el = app.querySelector(`[data-card="${key}"]`); if (el && el.textContent !== text) el.textContent = text }
+  const h = draft.handle.trim().replace(/^@/, '')
+  set('name', draft.name.trim() || 'Your name')
+  set('residence', draft.residence || 'Res: choose')
+  set('course', draft.course || 'Course: choose')
+  set('handle', h ? '@' + h : '@handle')
+  const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
+  const ready = app.querySelector('[data-card="ready"]')
+  if (ready) { ready.classList.toggle('ok', !todo); const t = todo ? todo + ' to go' : 'Ready \u2713'; if (ready.textContent !== t) ready.textContent = t }
+}
+
 app.addEventListener('change', (event) => {
+  if (event.target.id === 'residence') { draft.residence = event.target.value; syncCard() }
+  if (event.target.id === 'course') { draft.course = event.target.value; syncCard() }
   if (event.target.id === 'event-id') {
     admin.eventId = event.target.value
     paint()
