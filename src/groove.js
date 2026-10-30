@@ -112,7 +112,11 @@ function schedule() {
   }
 }
 
-export function startGroove() {
+// Several places can want the groove (the creator, the Quad stage); it plays while any does.
+const owners = new Set()
+
+export function startGroove(owner = 'creator') {
+  owners.add(owner)
   if (timer) return
   step = 0
   nextTime = 0
@@ -121,7 +125,9 @@ export function startGroove() {
   document.body.dataset.groove = '1'
 }
 
-export function stopGroove() {
+export function stopGroove(owner = 'creator') {
+  owners.delete(owner)
+  if (owners.size) return
   clearInterval(timer)
   timer = 0
   delete document.body.dataset.groove

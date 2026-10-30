@@ -76,10 +76,17 @@ export function bus() {
   if (!ctx || ctx.state !== 'running') return null
   if (!grooveOut) {
     grooveOut = ctx.createGain()
-    grooveOut.gain.value = 0.55
+    grooveOut.gain.value = 0.55 * grooveLevel
     grooveOut.connect(master)
   }
   return { ctx, out: grooveOut }
+}
+
+// 0..1, how loud the groove is (the Quad fades it with distance from the stage).
+let grooveLevel = 1
+export function setGrooveLevel(level) {
+  grooveLevel = Math.max(0, Math.min(1, level))
+  if (grooveOut && ctx) grooveOut.gain.setTargetAtTime(0.55 * grooveLevel, ctx.currentTime, 0.2)
 }
 
 // Safe to call every frame: it only acts when the wanted state changes.

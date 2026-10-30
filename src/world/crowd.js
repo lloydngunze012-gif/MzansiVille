@@ -9,6 +9,8 @@ import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './n
 
 const WALKERS = 9
 const SITTERS = 4
+// Seat height of a Kenney bench at the scale dress.js uses.
+const BENCH_Y = 0.5
 const TOPS = ['#2e8b57', '#ff8a3d', '#1d7fb8', '#e8497a', '#7b3fe4', '#f7f4ee', '#d9534f', '#2456a6', '#f0c400', '#1c1915']
 const BOTTOMS = ['#2b3a55', '#244e78', '#3a2f4f', '#1c1915', '#5b4a3a', '#7b3fe4']
 
@@ -58,17 +60,15 @@ export function createCrowd(scene, campus) {
     people.push({ avatar, from, route: [], wait: i < 3 ? 0.2 + i * 0.6 : Math.random() * 3, speed: 2 + Math.random() * 1.2, clock: Math.random() * 10 })
   }
 
-  // Sitters in pairs on the lawn just in front of the Quad, facing each other.
+  // Sitters on the Quad's benches (dress.js), plus one on the stage step.
   const quad = campus.layout.buildings.find((building) => building.id === 'quad')
   if (quad) {
-    const spots = [
-      [quad.minX + 2, quad.maxZ + 2.2, 0.6], [quad.minX + 3.4, quad.maxZ + 2.2, -2.5],
-      [quad.maxX - 3.4, quad.maxZ + 2.4, 2.5], [quad.maxX - 2, quad.maxZ + 2.4, -0.6],
-    ]
-    for (let i = 0; i < SITTERS; i++) {
-      const [x, z, facing] = spots[i % spots.length]
+    const seats = (campus.dressing?.benches || []).map((b) => [b.x + Math.sin(b.rot) * 0.05, b.z + Math.cos(b.rot) * 0.05, b.rot, BENCH_Y])
+    seats.push([quad.cx + 1.6, quad.cz - 4.6, 0, 0.3])
+    for (let i = 0; i < Math.min(SITTERS, seats.length); i++) {
+      const [x, z, facing, y] = seats[i]
       const avatar = createAvatar(randomLook(CROWD_MODELS[(i + 3) % CROWD_MODELS.length]))
-      avatar.position.set(x, 0, z)
+      avatar.position.set(x, y, z)
       avatar.rotation.y = facing
       avatar.userData.pose = 'sit'
       group.add(avatar)
@@ -90,7 +90,7 @@ export function createCrowd(scene, campus) {
     const { avatar } = person
     let px = 0
     let pz = 0
-    const others = people.map((other) => other.avatar.position)
+    const others = people.map((other) => other.avatar.position).concat((campus.dressing?.statics || []).map((avatar) => avatar.position))
     if (playerPos) others.push(playerPos)
     for (const pos of others) {
       if (pos === avatar.position) continue
@@ -165,8 +165,10 @@ export function createCrowd(scene, campus) {
   }
 
   // Keep the player out of everyone's personal space (sitters too).
+  // The place's own people (stall vendor, campaigners, the queue) have personal space too.
+  const statics = campus.dressing?.statics || []
   function pushOut(position, radius = 0.85) {
-    for (const person of people) {
+    for (const person of people.concat(statics.map((avatar) => ({ avatar })))) {
       const pos = person.avatar.position
       const dx = position.x - pos.x
       const dz = position.z - pos.z

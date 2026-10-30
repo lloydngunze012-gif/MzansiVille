@@ -4,7 +4,9 @@ import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
 import { createAvatar, lookOf, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
-import { createCampus, fitLabels, markDoors } from './campus.js'
+import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
+import { startGroove, stopGroove } from '../groove.js'
+import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
 import { doorPoint } from './layout.js'
@@ -23,6 +25,8 @@ let campus
 let crowd = null
 let player
 let sun
+let hemi
+let ambient
 let sunTarget
 let mapUi
 let frame = 0
@@ -203,8 +207,9 @@ function ensureRenderer() {
   mapUi = createCampusMap(host)
   mapUi.setHandler((x, z) => walkTo(x, z))
 
-  scene.add(new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9))
-  scene.add(new THREE.AmbientLight(0xfff1dc, 0.25))
+  hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
+  ambient = new THREE.AmbientLight(0xfff1dc, 0.25)
+  scene.add(hemi, ambient)
   sun = new THREE.DirectionalLight(0xffe2b0, 1.25)
   sun.castShadow = true
   sun.shadow.mapSize.set(512, 512)
@@ -436,6 +441,7 @@ function showFloater(before, after) {
 }
 
 function rebuild(district, homeId) {
+  nightNow = -1
   if (campus) scene.remove(campus.group)
   crowd?.dispose()
   campus = createCampus(district, homeId)
@@ -455,6 +461,13 @@ function respawn(district, run) {
   const open = nearestOpen(campus.grid, gate ? { x: gate.x, z: gate.minZ - 12 } : doorPoint(home))
   const spot = cellCenter(open.c, open.r)
   player.position.set(spot.x, 0, spot.z)
+  // ?spawn=<place id> starts at that place (tests and screenshots).
+  const spawnAt = campus.layout.buildings.find((b) => b.id === new URLSearchParams(location.search).get('spawn'))
+  if (spawnAt) {
+    const cell = nearestOpen(campus.grid, doorPoint(spawnAt))
+    const p = cellCenter(cell.c, cell.r)
+    player.position.set(p.x, 0, p.z)
+  }
   if (gate) {
     // Arriving by bus: stand inside the gate, facing the quad, camera behind.
     const quad = campus.layout.buildings.find((building) => building.id === 'quad') || { x: 0, z: 0 }
@@ -529,6 +542,70 @@ function tryStep(dx, dz) {
   else if (!pointBlocked(campus.grid, player.position.x, z)) player.position.z = z
 }
 
+// Day and night follow the game clock (?hour=21 forces a time for screenshots).
+const SKY = { day: new THREE.Color(0x9ecff0), dusk: new THREE.Color(0xf2a868), night: new THREE.Color(0x111a38) }
+const FOG = { day: new THREE.Color(0xc5e6f4), dusk: new THREE.Color(0xe8b08a), night: new THREE.Color(0x141c38) }
+const sky = new THREE.Color()
+const fogColor = new THREE.Color()
+const forcedHour = Number(new URLSearchParams(location.search).get('hour'))
+export function nightAt(minutes) {
+  const m = ((minutes % 1440) + 1440) % 1440
+  if (m >= 7 * 60 && m <= 17 * 60) return 0
+  if (m > 17 * 60 && m < 19 * 60) return (m - 17 * 60) / 120
+  if (m > 5 * 60 && m < 7 * 60) return 1 - (m - 5 * 60) / 120
+  return 1
+}
+let nightNow = -1
+function applyTime() {
+  const minutes = Number.isFinite(forcedHour) && forcedHour > 0 ? forcedHour * 60 : currentRun?.minutes ?? 9 * 60
+  const n = nightAt(minutes)
+  if (Math.abs(n - nightNow) < 0.002) return
+  nightNow = n
+  const dusk = 1 - Math.abs(n - 0.5) * 2
+  sky.copy(SKY.day).lerp(SKY.night, n).lerp(SKY.dusk, Math.max(0, dusk) * 0.6)
+  fogColor.copy(FOG.day).lerp(FOG.night, n).lerp(FOG.dusk, Math.max(0, dusk) * 0.6)
+  renderer.setClearColor(sky)
+  scene.fog.color.copy(fogColor)
+  // Night is properly dark (a little blue moonlight) so lamps and string lights carry it.
+  sun.intensity = 1.25 * (1 - n) + 0.08 * n
+  sun.color.setHSL(0.1 + 0.5 * n, 0.8 - 0.5 * n, 0.75 - dusk * 0.15)
+  hemi.intensity = 0.9 * (1 - n) + 0.16 * n
+  hemi.color.setHSL(0.6, 0.15 + 0.4 * n, 0.85 - n * 0.4)
+  hemi.groundColor.setHSL(0.3, 0.3, 0.4 - n * 0.3)
+  ambient.intensity = 0.25 * (1 - n) + 0.05 * n
+  if (campus) applyNight(campus, n)
+  host.dataset.night = n.toFixed(2)
+}
+
+// The sheet's "Spots here": how many people are at each spot, and walking there.
+let spotTimer = 0
+function countSpots() {
+  const spots = campus?.dressing?.spots
+  if (!spots) return
+  const everyone = (crowd?.people.map((p) => p.avatar) || []).concat(campus.dressing.statics || [])
+  const counts = {}
+  for (const [place, list] of Object.entries(spots)) {
+    for (const s of list) counts[`${place}:${s.id}`] = everyone.filter((a) => Math.hypot(a.position.x - s.x, a.position.z - s.z) < 4).length
+  }
+  host.dataset.spots = JSON.stringify(counts)
+}
+window.addEventListener('mzansi-walk-to', (event) => {
+  const { place, spot } = event.detail || {}
+  const target = campus?.dressing?.spots?.[place]?.find((s) => s.id === spot)
+  if (target) { walkTo(target.x, target.z); host.dataset.walkingTo = `${place}:${spot}` }
+})
+
+// The Quad's open-mic speakers: the groove, louder the closer you are to the stage.
+let quadMusic = false
+function quadSound() {
+  const quad = campus?.layout.buildings.find((b) => b.id === 'quad')
+  if (!quad || !player) return
+  const d = Math.hypot(player.position.x - quad.cx, player.position.z - (quad.cz - 5))
+  const near = visible && d < 24
+  if (near !== quadMusic) { quadMusic = near; near ? startGroove('quad') : stopGroove('quad') }
+  if (near) setGrooveLevel(Math.max(0.08, 1 - d / 24) * 0.7)
+}
+
 function tick(now) {
   frame = requestAnimationFrame(tick)
   const dt = Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)
@@ -573,6 +650,11 @@ function tick(now) {
     clock += dt
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
+    applyTime()
+    campus.dressing?.update(dt)
+    quadSound()
+    spotTimer -= dt
+    if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
     crowd?.pushOut(player.position)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
@@ -620,6 +702,7 @@ function stop() {
   cancelAnimationFrame(frame)
   frame = 0
   soundLoop('footsteps', false)
+  if (quadMusic) { quadMusic = false; stopGroove('quad') }
   input?.clearKeys()
 }
 

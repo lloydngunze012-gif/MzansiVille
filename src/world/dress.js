@@ -1,0 +1,353 @@
+// Dresses the places that have a story (data/campusville/place_story.json):
+// the Quad and the cafeteria for now. Props are Kenney Nature and Furniture Kit
+// GLBs (CC0, public/models/props); stage, stall, signs and lights are built here.
+// Returns night lights for the day/night cycle, people to animate, blockers for
+// the walk grid, and the walkable spots the place sheet lists.
+import * as THREE from 'three'
+import STORY from '../../data/campusville/place_story.json'
+import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
+
+const PROPS = '/models/props/'
+const propCache = {}
+
+// Kenney furniture has its origin at a corner; every prop is re-centred on x/z
+// with its base on the ground, so positions here mean the middle of the thing.
+function loadProp(name) {
+  if (!propCache[name]) {
+    propCache[name] = import('three/addons/loaders/GLTFLoader.js')
+      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(`${PROPS}${name}.glb`))
+      .then((gltf) => {
+        const root = new THREE.Group()
+        const box = new THREE.Box3().setFromObject(gltf.scene)
+        const centre = box.getCenter(new THREE.Vector3())
+        gltf.scene.position.set(-centre.x, -box.min.y, -centre.z)
+        root.add(gltf.scene)
+        return root
+      })
+  }
+  return propCache[name]
+}
+
+// Seat heights at the scales used below (a seated avatar's origin goes here).
+const SEAT = { bench: 0.5, chair: 0.46 }
+
+const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra })
+
+function box(parent, w, h, d, color, x, y, z, extra) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof color === 'object' ? color : mat(color, extra))
+  mesh.position.set(x, y, z)
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  parent.add(mesh)
+  return mesh
+}
+
+// Text on a canvas, shown on a plane. glow: unlit, so it reads at night.
+function sign(parent, lines, { x, y, z, rot = 0, w = 3, h = 0.8, bg = '#22143b', fg = '#f0c400', font = 64, align = 'center' }) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = Math.round((512 * h) / w)
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.strokeStyle = fg
+  ctx.lineWidth = 10
+  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10)
+  ctx.fillStyle = fg
+  ctx.textAlign = align
+  ctx.textBaseline = 'middle'
+  const size = Math.min(font, (canvas.height - 24) / lines.length)
+  ctx.font = `bold ${size}px sans-serif`
+  lines.forEach((text, i) => {
+    ctx.font = `bold ${i === 0 && lines.length > 2 ? size * 1.15 : size}px sans-serif`
+    ctx.fillText(text, align === 'left' ? 28 : canvas.width / 2, (canvas.height / (lines.length + 1)) * (i + 1), canvas.width - 40)
+  })
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }))
+  plane.position.set(x, y, z)
+  plane.rotation.y = rot
+  plane.name = 'sign'
+  parent.add(plane)
+  return plane
+}
+
+const facing = (x, z, tx, tz) => Math.atan2(tx - x, tz - z)
+
+export function dressPlaces(layout) {
+  const group = new THREE.Group()
+  group.name = 'dressing'
+  const lights = [] // { light, base }
+  const glows = [] // { material, base }
+  const people = [] // { avatar, clock, every, move, next }
+  const obstacles = []
+  const spots = {}
+  const benches = []
+
+  function prop(name, x, z, { rot = 0, s = 2.2, y = 0 } = {}) {
+    const holder = new THREE.Group()
+    holder.position.set(x, y, z)
+    holder.rotation.y = rot
+    group.add(holder)
+    loadProp(name).then((src) => {
+      const model = src.clone(true)
+      model.scale.setScalar(s)
+      model.traverse((node) => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = true } })
+      holder.add(model)
+    }).catch(() => {})
+    return holder
+  }
+
+  function block(x, z, w, d) {
+    obstacles.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 })
+  }
+
+  function person(look, x, z, rot, { pose = 'stand', y = 0, every = 0, move = 'interact-right' } = {}) {
+    const avatar = createAvatar(look)
+    avatar.position.set(x, y, z)
+    avatar.rotation.y = rot
+    avatar.userData.pose = pose
+    group.add(avatar)
+    people.push({ avatar, clock: Math.random() * 5, every, move, next: every ? Math.random() * every : 0 })
+    return avatar
+  }
+
+  function lamp(x, z) {
+    box(group, 0.14, 3.4, 0.14, 0x2b2b30, x, 1.7, z)
+    const headMat = mat(0x3a3020, { emissive: 0xffd28a, emissiveIntensity: 0.2 })
+    box(group, 0.5, 0.28, 0.5, headMat, x, 3.45, z)
+    glows.push({ material: headMat, base: 2.2 })
+    const light = new THREE.PointLight(0xffd29a, 0, 12, 1.6)
+    light.position.set(x, 3.2, z)
+    group.add(light)
+    lights.push({ light, base: 26 })
+    block(x, z, 0.4, 0.4)
+  }
+
+  // Bulbs hung on a sagging wire between two points (one shared glowing material).
+  const bulbMat = mat(0xfff0c0, { emissive: 0xffd27a, emissiveIntensity: 0.3 })
+  glows.push({ material: bulbMat, base: 2.6 })
+  function stringLights(a, b, count = 14, sag = 0.7, withLight = true) {
+    const bulbs = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 6, 4), bulbMat, count)
+    const dummy = new THREE.Object3D()
+    const wire = []
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count
+      const p = new THREE.Vector3().lerpVectors(a, b, t)
+      p.y -= Math.sin(t * Math.PI) * sag
+      dummy.position.copy(p)
+      dummy.updateMatrix()
+      bulbs.setMatrixAt(i, dummy.matrix)
+      wire.push(p)
+    }
+    group.add(bulbs)
+    group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, ...wire, b]), new THREE.LineBasicMaterial({ color: 0x1c1915 })))
+    if (withLight) {
+      const mid = new THREE.Vector3().lerpVectors(a, b, 0.5)
+      const light = new THREE.PointLight(0xffcf8a, 0, 10, 1.8)
+      light.position.set(mid.x, mid.y - sag - 0.3, mid.z)
+      group.add(light)
+      lights.push({ light, base: 14 })
+    }
+  }
+
+  const quad = layout.buildings.find((b) => b.id === 'quad')
+  if (quad) dressQuad(quad.cx, quad.cz)
+  const caf = layout.buildings.find((b) => b.id === 'cafeteria')
+  if (caf) dressCafeteria(caf)
+
+  function spotList(id, cx, cz) {
+    spots[id] = (STORY[id]?.spots || []).map((s) => ({ ...s, x: cx + s.x, z: cz + s.z }))
+  }
+
+  function dressQuad(cx, cz) {
+    const story = STORY.quad
+    spotList('quad', cx, cz)
+    // Paving with a ring of darker pavers.
+    const plaza = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.06, 40), mat(0xd9c49c))
+    plaza.position.set(cx, 0.03, cz)
+    plaza.receiveShadow = true
+    group.add(plaza)
+    const ring = new THREE.Mesh(new THREE.RingGeometry(5.6, 6.3, 40), mat(0xb89c6e))
+    ring.rotation.x = -Math.PI / 2
+    ring.position.set(cx, 0.065, cz)
+    group.add(ring)
+
+    // Open-mic stage on the north side (its footprint is the place's "building").
+    const sz = cz - 6.5
+    box(group, 5, 0.6, 3, 0x8a5a3a, cx, 0.3, sz)
+    box(group, 1.6, 0.3, 0.6, 0x7a4e30, cx, 0.15, sz + 1.75)
+    for (const side of [-1, 1]) box(group, 0.2, 3.6, 0.2, 0x2b2b30, cx + side * 2.4, 1.8, sz - 1.3)
+    box(group, 5, 0.22, 0.22, 0x2b2b30, cx, 3.6, sz - 1.3)
+    box(group, 4.6, 2.3, 0.1, 0x5b23c9, cx, 1.85, sz - 1.4)
+    sign(group, [story.stage_sign], { x: cx, y: 2.75, z: sz - 1.33, w: 4.2, h: 0.7, bg: '#22143b', fg: '#f0c400' })
+    stringLights(new THREE.Vector3(cx - 2.4, 3.5, sz - 1.3), new THREE.Vector3(cx + 2.4, 3.5, sz - 1.3), 12, 0.15, false)
+    box(group, 0.05, 1.3, 0.05, 0x1c1915, cx, 1.25, sz + 0.9) // mic stand
+    box(group, 0.12, 0.14, 0.12, 0x444444, cx, 1.95, sz + 0.9)
+    prop('speaker', cx - 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
+    prop('speaker', cx + 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
+    const spot = new THREE.PointLight(0xffe0b0, 0, 9, 1.5)
+    spot.position.set(cx, 3.3, sz + 1.6)
+    group.add(spot)
+    lights.push({ light: spot, base: 22 })
+    prop('tree_palmTall', cx - 3.8, sz - 2.4, { s: 6 })
+    prop('tree_palmTall', cx + 3.8, sz - 2.4, { s: 6, rot: 1.3 })
+    for (const x of [-2.7, 2.7]) prop('plant_bushLarge', cx + x, sz + 1.8, { s: 2.6 })
+    // Someone is always on the mic.
+    person({ model: 'male-f', skin: 'deep', outfit: 'shirt', topColor: '#ff8a3d' }, cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
+
+    // Benches under the trees (north-west, between two paths) and south-west.
+    for (const [angle, r] of [[208, 8.3], [222, 8.3], [146, 9.6]]) {
+      const a = (angle * Math.PI) / 180
+      const x = cx + Math.cos(a) * r
+      const z = cz + Math.sin(a) * r
+      const rot = facing(x, z, cx, cz)
+      prop('bench', x, z, { rot, s: 2.8 })
+      benches.push({ x, z, rot })
+      const tx = cx + Math.cos(a) * (r + 2.2)
+      const tz = cz + Math.sin(a) * (r + 2.2)
+      prop('tree_oak', tx, tz, { s: 4.4, rot: angle })
+      prop('flower_yellowA', x + Math.sin(rot) * -0.9 + 0.7, z + Math.cos(rot) * -0.9, { s: 3 })
+      block(x, z, 1.3, 1.3)
+      block(tx, tz, 1.2, 1.2)
+    }
+
+    // Mam' Gugu's stall (south-west).
+    const sa = (118 * Math.PI) / 180
+    const stx = cx + Math.cos(sa) * 7.4
+    const stz = cz + Math.sin(sa) * 7.4
+    const stall = new THREE.Group()
+    stall.position.set(stx, 0, stz)
+    stall.rotation.y = facing(stx, stz, cx, cz)
+    group.add(stall)
+    box(stall, 2.6, 1, 0.9, 0x9a6a40, 0, 0.5, 0)
+    for (const side of [-1, 1]) box(stall, 0.1, 2.4, 0.1, 0x2b2b30, side * 1.25, 1.2, -0.4)
+    for (let i = 0; i < 6; i++) box(stall, 0.46, 0.08, 1.5, i % 2 ? 0x1f7a3a : 0xf0c400, -1.15 + i * 0.46, 2.45, 0.05)
+    sign(stall, [story.stall_sign], { x: 0, y: 1.95, z: 0.5, w: 2.4, h: 0.45, bg: '#1f7a3a', fg: '#fff6e6', font: 48 })
+    const stallMat = mat(0xfff0c0, { emissive: 0xffc870, emissiveIntensity: 0.2 })
+    box(stall, 2.2, 0.06, 0.06, stallMat, 0, 2.38, 0.75)
+    glows.push({ material: stallMat, base: 2 })
+    loadProp('kitchenCoffeeMachine').then((src) => { const m = src.clone(true); m.scale.setScalar(1.8); m.position.set(0.7, 1, -0.1); stall.add(m) }).catch(() => {})
+    loadProp('radio').then((src) => { const m = src.clone(true); m.scale.setScalar(2); m.position.set(-0.8, 1, -0.1); stall.add(m) }).catch(() => {})
+    const vendorAt = new THREE.Vector3(0, 0, -0.9).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y).add(stall.position)
+    person({ model: 'female-d', skin: 'brown', outfit: 'dress', topColor: '#e8497a', hairColor: '#7b3fe4' }, vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
+    const sl = new THREE.PointLight(0xffcf8a, 0, 7, 1.6)
+    sl.position.set(stx, 2.2, stz)
+    group.add(sl)
+    lights.push({ light: sl, base: 12 })
+    block(stx, stz, 2.8, 2.2)
+
+    // SRC campaign tables (south-east): three equal tables, one per slate.
+    STORY.src_slates.forEach((slate, i) => {
+      const a = ((14 + i * 26) * Math.PI) / 180
+      const x = cx + Math.cos(a) * 7.8
+      const z = cz + Math.sin(a) * 7.8
+      const t = new THREE.Group()
+      t.position.set(x, 0, z)
+      t.rotation.y = facing(x, z, cx, cz)
+      group.add(t)
+      loadProp('table').then((src) => { const m = src.clone(true); m.scale.setScalar(2.4); m.position.set(0, 0, -0.1); t.add(m) }).catch(() => {})
+      for (const side of [-1, 1]) box(t, 0.08, 2.3, 0.08, 0xdddddd, side * 1.1, 1.15, -0.8)
+      const [c1, c2, c3] = slate.colors
+      box(t, 2.4, 0.08, 1.8, c1, 0, 2.3, -0.1)
+      box(t, 2.4, 0.3, 0.05, c2, 0, 2.15, 0.8)
+      sign(t, [slate.name], { x: 0, y: 1.55, z: -0.83, w: 2.1, h: 0.55, bg: c1, fg: c2 === '#ffffff' ? '#ffffff' : c2, font: 52 })
+      const back = new THREE.Vector3(0, 0, -1.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
+      person({ model: ['male-a', 'female-f', 'male-d'][i], skin: ['deep', 'brown', 'sand'][i], outfit: 'hoodie', topColor: c1, bottomColor: c3 }, back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
+      block(x, z, 2.4, 2)
+    })
+
+    // Notice board with posters (north-east).
+    const na = (-32 * Math.PI) / 180
+    const nx = cx + Math.cos(na) * 8.6
+    const nz = cz + Math.sin(na) * 8.6
+    const nrot = facing(nx, nz, cx, cz)
+    for (const side of [-1, 1]) box(group, 0.1, 2.2, 0.1, 0x4a3426, nx + Math.cos(nrot) * side * 1.1, 1.1, nz - Math.sin(nrot) * side * 1.1)
+    sign(group, story.posters, { x: nx, y: 1.55, z: nz, rot: nrot, w: 2.4, h: 1.3, bg: '#c9a66b', fg: '#22143b', font: 34, align: 'left' })
+    block(nx, nz, 2.4, 0.6)
+
+    // Lamp posts and string lights across the plaza.
+    const lampAt = (deg, r = 10.6) => [cx + Math.cos((deg * Math.PI) / 180) * r, cz + Math.sin((deg * Math.PI) / 180) * r]
+    const lamps = [lampAt(66), lampAt(134), lampAt(-62), lampAt(-152)]
+    lamps.forEach(([x, z]) => lamp(x, z))
+    stringLights(new THREE.Vector3(cx - 2.4, 3.55, sz - 1.3), new THREE.Vector3(lamps[1][0], 3.3, lamps[1][1]), 18, 0.9)
+    stringLights(new THREE.Vector3(cx + 2.4, 3.55, sz - 1.3), new THREE.Vector3(lamps[0][0], 3.3, lamps[0][1]), 18, 0.9)
+    for (const deg of [30, 100, 170, 250, -20]) {
+      const [x, z] = lampAt(deg, 11.6)
+      prop(deg % 2 ? 'plant_bush' : 'flower_redA', x, z, { s: 3 })
+    }
+  }
+
+  function dressCafeteria(b) {
+    const story = STORY.cafeteria
+    const cx = b.cx
+    const cz = b.cz
+    spotList('cafeteria', cx, cz)
+    const front = b.maxZ + 0.03
+    // Serving window with a counter and a striped awning, right of the door.
+    const glass = box(group, 3, 1.2, 0.08, mat(0x1d2a33, { emissive: 0xffc870, emissiveIntensity: 0.2 }), cx + 2.8, 1.9, front)
+    glows.push({ material: glass.material, base: 1.2 })
+    box(group, 3.2, 0.12, 0.55, 0xb0b0b0, cx + 2.8, 1.25, front + 0.27)
+    for (let i = 0; i < 7; i++) {
+      const awning = box(group, 0.48, 0.06, 1.2, i % 2 ? 0xffffff : 0xe07a3d, cx + 1.36 + i * 0.48, 2.85, front + 0.5)
+      awning.rotation.x = 0.28
+    }
+    sign(group, story.menu, { x: cx - 2.7, y: 2.1, z: front + 0.02, w: 2.4, h: 1.7, bg: '#1d2a22', fg: '#fff6e6', font: 40, align: 'left' })
+    sign(group, [story.notice], { x: cx + 2.8, y: 0.85, z: front + 0.56, w: 2.6, h: 0.32, bg: '#f0c400', fg: '#22143b', font: 40 })
+    sign(group, [story.sign], { x: cx, y: b.h - 0.6, z: front + 0.02, w: 4.6, h: 0.8, bg: '#c45c22', fg: '#fff6e6' })
+    const winLight = new THREE.PointLight(0xffd29a, 0, 8, 1.6)
+    winLight.position.set(cx + 2.8, 2.2, front + 1.4)
+    group.add(winLight)
+    lights.push({ light: winLight, base: 14 })
+    // The queue at the window.
+    const looks = [
+      { model: 'female-b', skin: 'amber', outfit: 'skirt' },
+      { model: 'male-a', skin: 'ebony', outfit: 'jacket' },
+      { model: 'female-f', skin: 'sand', outfit: 'hoodie', topColor: '#7b3fe4' },
+      { model: 'male-f', skin: 'brown', outfit: 'shirt' },
+    ]
+    looks.forEach((look, i) => person(look, cx + 2.8 + (i % 2 ? 0.25 : -0.15), front + 1.1 + i * 0.95, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' }))
+    block(cx + 2.8, front + 2.5, 0.9, 3.6)
+    // Terrace on the west side: deck, tables, chairs, two people eating, lights.
+    const tx = b.minX - 3
+    box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
+    for (const [dz, who] of [[-1.6, { model: 'female-d', skin: 'deep', outfit: 'shweshwe' }], [1.7, { model: 'male-d', skin: 'amber', outfit: 'organt' }]]) {
+      prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
+      prop('chair', tx - 0.95, cz + dz, { s: 2.2, rot: Math.PI / 2, y: 0.08 })
+      prop('chair', tx + 0.95, cz + dz, { s: 2.2, rot: -Math.PI / 2, y: 0.08 })
+      person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + SEAT.chair })
+      block(tx, cz + dz, 2.6, 1.4)
+    }
+    prop('pottedPlant', tx - 1.9, cz - 3, { s: 2.4 })
+    prop('pottedPlant', tx + 1.9, cz + 3, { s: 2.4 })
+    prop('trashcan', b.minX - 0.5, front + 0.6, { s: 1.1 })
+    for (const [x, z] of [[tx - 2, cz - 3.1], [tx + 2, cz + 3.1]]) box(group, 0.1, 3.2, 0.1, 0x2b2b30, x, 1.6, z)
+    stringLights(new THREE.Vector3(tx - 2, 3.1, cz - 3.1), new THREE.Vector3(tx + 2, 3.1, cz + 3.1), 16, 0.6)
+    lamp(cx - 3.8, front + 3.4)
+  }
+
+  // n: 0 day, 1 night.
+  let lit = null
+  function applyNight(n) {
+    const on = n > 0.05
+    if (on !== lit) {
+      lit = on
+      for (const { light } of lights) light.visible = on
+    }
+    for (const { light, base } of lights) light.intensity = base * n
+    for (const { material, base } of glows) material.emissiveIntensity = 0.15 + base * n
+  }
+
+  function update(dt) {
+    for (const p of people) {
+      p.clock += dt
+      if (p.every) {
+        p.next -= dt
+        if (p.next <= 0) { gesture(p.avatar, p.move); p.next = p.every + Math.random() * 3 }
+      }
+      poseAvatar(p.avatar, false, p.clock)
+    }
+  }
+
+  return { group, obstacles, spots, benches, statics: people.map((p) => p.avatar), applyNight, update }
+}
