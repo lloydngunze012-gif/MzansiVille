@@ -1,0 +1,11 @@
+{
+  "note": "Not read by the game yet. Paths are served from public/ as /audio/<file>. loop true means the clip is meant to repeat.",
+  "sounds": {
+    "kettle": { "file": "/audio/kettle.ogg", "loop": true },
+    "door": { "file": "/audio/door.ogg", "loop": false },
+    "footsteps": { "file": "/audio/footsteps.ogg", "loop": true },
+    "bus_engine": { "file": "/audio/bus_engine.ogg", "loop": true },
+    "crowd": { "file": "/audio/crowd.ogg", "loop": true },
+    "music_campus": { "file": "/audio/music_campus.ogg", "loop": true }
+  }
+}
