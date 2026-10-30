@@ -159,9 +159,8 @@ function gearMenu(run) {
     <button type="button" data-act="nav" data-go="rules">Community rules</button>
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
     ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
-    ${ui.confirmReset
-      ? '<button type="button" class="danger" data-act="new">Tap again: delete this student</button>'
-      : '<button type="button" data-act="reset">Reset character</button>'}
+    <button type="button" data-act="edit-char">Edit character</button>
+    <button type="button" data-act="nav" data-go="settings">Settings</button>
     ${run.userId ? '<button type="button" data-act="signout">Sign out</button>' : '<button type="button" data-act="nav" data-go="save">Save progress / sign in</button>'}
     <button type="button" class="ghost" data-act="gear">Close</button>
   </aside>`
