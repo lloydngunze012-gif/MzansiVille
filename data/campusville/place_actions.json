@@ -1,5 +1,5 @@
 {
-  "note": "Skeleton only. The game does not read this file. Effects are design targets in the existing stat names. lines are empty for Content Writer. existing true means the row already ships in activities.csv; do not retune those numbers.",
+  "note": "Skeleton only. The game does not read this file. Rows marked written by Content Writer, see PR 3, use their ids and phases. Their lines are not stored here. Other rows still need lines. Effects on shipped rows match activities.csv and must not be retuned here.",
   "actions": [
     {
       "id": "lecture_attend",
@@ -40,553 +40,6 @@
       }
     },
     {
-      "id": "smig_notes",
-      "place_id": "smig",
-      "phase": "lecture",
-      "label": "Share notes with the row",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 2,
-        "social": 4,
-        "energy": -4
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "smig_tutorial",
-      "place_id": "smig",
-      "phase": "leisure",
-      "label": "Stay for the tutorial",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 4,
-        "energy": -8,
-        "hunger": -4
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "smig_society",
-      "place_id": "smig",
-      "phase": "leisure",
-      "label": "Business society table",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -10,
-        "energy": -6,
-        "social": 6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "hs_cold_call",
-      "place_id": "health_sciences",
-      "phase": "lecture",
-      "label": "Answer the cold call",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 4,
-        "energy": -6,
-        "social": 1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "hs_skills",
-      "place_id": "health_sciences",
-      "phase": "leisure",
-      "label": "Skills-lab hour",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 5,
-        "energy": -12
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "hs_debrief",
-      "place_id": "health_sciences",
-      "phase": "leisure",
-      "label": "Walk a friend through the practical",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 2,
-        "social": 4,
-        "energy": -6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "sci_demo",
-      "place_id": "science",
-      "phase": "lecture",
-      "label": "Help with the demo",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 6,
-        "energy": -8,
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "sci_writeup",
-      "place_id": "science",
-      "phase": "leisure",
-      "label": "Finish the lab sheet",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 6,
-        "energy": -10,
-        "hunger": -4
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "sci_society",
-      "place_id": "science",
-      "phase": "leisure",
-      "label": "Science society",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -5,
-        "energy": -6,
-        "social": 5
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "law_moot",
-      "place_id": "law",
-      "phase": "lecture",
-      "label": "Take the moot point",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 3,
-        "energy": -6,
-        "social": 6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "law_read",
-      "place_id": "law",
-      "phase": "leisure",
-      "label": "Read the case in the back row",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 5,
-        "energy": -8,
-        "social": -2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "law_chambers",
-      "place_id": "law",
-      "phase": "leisure",
-      "label": "Walk a friend through the facts",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 2,
-        "social": 4,
-        "energy": -4
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "eng_phone",
-      "place_id": "engineering",
-      "phase": "lecture",
-      "label": "Phone buzzes under the desk",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "pocket": {
-          "grades": 2,
-          "energy": -2
-        },
-        "look": {
-          "social": 3,
-          "grades": -2
-        }
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result_a": "",
-        "result_b": ""
-      },
-      "choice": true
-    },
-    {
-      "id": "eng_problem",
-      "place_id": "engineering",
-      "phase": "leisure",
-      "label": "Problem set in the workshop",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "grades": 6,
-        "energy": -10
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "eng_club",
-      "place_id": "engineering",
-      "phase": "leisure",
-      "label": "Build-club hour",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -15,
-        "energy": -10,
-        "social": 6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_card",
-      "place_id": "gate",
-      "phase": "wake",
-      "label": "Show your student card",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -2,
-        "social": 1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_wait",
-      "place_id": "gate",
-      "phase": "wake",
-      "label": "Wait for a res friend",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -2,
-        "social": 3
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_stream",
-      "place_id": "gate",
-      "phase": "transit",
-      "label": "Join the stream onto campus",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -4,
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_directions",
-      "place_id": "gate",
-      "phase": "transit",
-      "label": "Ask which way to your hall",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 2,
-        "energy": -1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_late",
-      "place_id": "gate",
-      "phase": "lecture",
-      "label": "Explain why you are late",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -6,
-        "grades": -2,
-        "social": 1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_point",
-      "place_id": "gate",
-      "phase": "lecture",
-      "label": "Guard points you up the path",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_visitor",
-      "place_id": "gate",
-      "phase": "social",
-      "label": "Meet someone from town",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -10,
-        "energy": -4,
-        "social": 6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_flyer",
-      "place_id": "gate",
-      "phase": "social",
-      "label": "Take a club flyer",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_club",
-      "place_id": "gate",
-      "phase": "leisure",
-      "label": "Stop for the club table",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 4,
-        "energy": -3
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_town",
-      "place_id": "gate",
-      "phase": "leisure",
-      "label": "Walk out for air",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -20,
-        "energy": -8,
-        "social": 3
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_security",
-      "place_id": "gate",
-      "phase": "night",
-      "label": "Chat with night security",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -3,
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "gate_sign_in",
-      "place_id": "gate",
-      "phase": "night",
-      "label": "Sign in late",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -4,
-        "social": -1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "quad_board",
-      "place_id": "quad",
-      "phase": "wake",
-      "label": "Read the noticeboard",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 1
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "quad_coffee",
-      "place_id": "quad",
-      "phase": "wake",
-      "label": "Morning tea at the vendor",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "money": -10,
-        "hunger": 15,
-        "social": 2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "quad_cut",
-      "place_id": "quad",
-      "phase": "transit",
-      "label": "Cut across to class",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -3
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "quad_lost",
-      "place_id": "quad",
-      "phase": "transit",
-      "label": "Point a lost first-year",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "social": 4,
-        "energy": -2
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
       "id": "lecture_skip",
       "place_id": "quad",
       "phase": "lecture",
@@ -598,23 +51,6 @@
         "grades": -6,
         "social": 8,
         "hunger": -5
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
-      "id": "quad_between",
-      "place_id": "quad",
-      "phase": "lecture",
-      "label": "Ten minutes on the grass",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -2,
-        "social": 3
       },
       "lines": {
         "caption": "",
@@ -660,23 +96,6 @@
       }
     },
     {
-      "id": "quad_campaign",
-      "place_id": "quad",
-      "phase": "social",
-      "label": "Listen to an SRC pitch",
-      "existing": false,
-      "needs_lines": true,
-      "effects": {
-        "energy": -4,
-        "social": 6
-      },
-      "lines": {
-        "caption": "",
-        "twist": "",
-        "result": ""
-      }
-    },
-    {
       "id": "job_shift",
       "place_id": "quad",
       "phase": "leisure",
@@ -696,38 +115,808 @@
       }
     },
     {
-      "id": "quad_music",
-      "place_id": "quad",
-      "phase": "leisure",
-      "label": "Someone's speaker",
-      "existing": false,
-      "needs_lines": true,
+      "id": "smig_sitin",
+      "place_id": "smig",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
       "effects": {
-        "energy": -6,
+        "energy": -8,
+        "grades": 4,
+        "social": 1,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "smig_board",
+      "place_id": "smig",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "grades": 1,
+        "social": 1,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "smig_steps",
+      "place_id": "smig",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -8,
+        "energy": 2,
+        "social": 7,
+        "hunger": 15
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "smig_case",
+      "place_id": "smig",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 5,
+        "social": 3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "smig_lab",
+      "place_id": "smig",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "grades": 6,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "smig_beanbag",
+      "place_id": "smig",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 7,
+        "social": 2,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_sitin",
+      "place_id": "health_sciences",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 4,
+        "social": 1,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_board",
+      "place_id": "health_sciences",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "grades": 1,
+        "social": 1,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_lawn",
+      "place_id": "health_sciences",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -8,
+        "energy": 2,
+        "social": 7,
+        "hunger": 15
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_cards",
+      "place_id": "health_sciences",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 5,
+        "social": 3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_prac",
+      "place_id": "health_sciences",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "grades": 6,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "hs_bob",
+      "place_id": "health_sciences",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "grades": 2,
+        "social": 2,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_sitin",
+      "place_id": "science",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 4,
+        "social": 1,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_board",
+      "place_id": "science",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "grades": 1,
+        "social": 1,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_fountain",
+      "place_id": "science",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -8,
+        "energy": 2,
+        "social": 7,
+        "hunger": 15
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_report",
+      "place_id": "science",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 5,
+        "social": 3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_open",
+      "place_id": "science",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "grades": 6,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "sci_lawn",
+      "place_id": "science",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 7,
+        "social": 2,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_sitin",
+      "place_id": "law",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 4,
+        "social": 1,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_board",
+      "place_id": "law",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "grades": 1,
+        "social": 1,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_steps",
+      "place_id": "law",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -8,
+        "energy": 2,
+        "social": 7,
+        "hunger": 15
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_moot",
+      "place_id": "law",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 5,
+        "social": 3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_read",
+      "place_id": "law",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "grades": 6,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "law_lurk",
+      "place_id": "law",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "grades": 2,
+        "social": 3,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_sitin",
+      "place_id": "engineering",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 4,
+        "social": 1,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_board",
+      "place_id": "engineering",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "grades": 1,
+        "social": 1,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_bridge",
+      "place_id": "engineering",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 2,
+        "social": 7,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_eggdrop",
+      "place_id": "engineering",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "grades": 5,
+        "social": 3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_workshop",
+      "place_id": "engineering",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "grades": 6,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "eng_print",
+      "place_id": "engineering",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "grades": 2,
+        "social": 2,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_guard",
+      "place_id": "gate",
+      "phase": "transit",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "social": 3,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_vetkoek",
+      "place_id": "gate",
+      "phase": "transit",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -10,
+        "social": 1,
+        "hunger": 20
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_taxi",
+      "place_id": "gate",
+      "phase": "transit",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 2,
+        "social": 2,
+        "hunger": -2
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_spaza",
+      "place_id": "gate",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "money": -25,
+        "energy": -4,
+        "social": 2,
+        "hunger": 30
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_wall",
+      "place_id": "gate",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 6,
+        "social": 3,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_visitors",
+      "place_id": "gate",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -3,
         "social": 5
       },
       "lines": {
         "caption": "",
-        "twist": "",
-        "result": ""
+        "result": "",
+        "twist": ""
       }
     },
     {
-      "id": "quad_late",
-      "place_id": "quad",
+      "id": "gate_night",
+      "place_id": "gate",
       "phase": "night",
-      "label": "The quad after dark",
-      "existing": false,
-      "needs_lines": true,
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
       "effects": {
-        "energy": -8,
-        "hunger": -4,
-        "social": 6
+        "energy": -2,
+        "social": 3,
+        "hunger": -3
       },
       "lines": {
         "caption": "",
-        "twist": "",
-        "result": ""
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "gate_curfew",
+      "place_id": "gate",
+      "phase": "night",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -8,
+        "social": 4,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_study",
+      "place_id": "quad",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -5,
+        "grades": 3,
+        "social": 1,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_src",
+      "place_id": "quad",
+      "phase": "lecture",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -2,
+        "social": 4,
+        "hunger": -3,
+        "time_slots": 0
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_busker",
+      "place_id": "quad",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 3,
+        "social": 6,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_touch",
+      "place_id": "quad",
+      "phase": "social",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -10,
+        "social": 9,
+        "hunger": -8
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_dance",
+      "place_id": "quad",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -12,
+        "social": 10,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_clouds",
+      "place_id": "quad",
+      "phase": "leisure",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 8,
+        "social": 1,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_lights",
+      "place_id": "quad",
+      "phase": "night",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": 2,
+        "social": 5,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
+      }
+    },
+    {
+      "id": "quad_longway",
+      "place_id": "quad",
+      "phase": "night",
+      "written_by": "Content Writer, see PR 3",
+      "needs_lines": false,
+      "effects": {
+        "energy": -4,
+        "social": 3,
+        "hunger": -3
+      },
+      "lines": {
+        "caption": "",
+        "result": "",
+        "twist": ""
       }
     },
     {
