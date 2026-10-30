@@ -42,9 +42,9 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
 
   // Home screen first: no save yet, so no Continue.
-  await page.goto('/?roommate=1&latebus=0&snooze=1#/')
+  await page.goto('/?roommate=1&latebus=0&snooze=1&talk=auto#/')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?roommate=1&latebus=0&snooze=1#/')
+  await page.goto('/?roommate=1&latebus=0&snooze=1&talk=auto#/')
   await expect(page.locator('[data-act="start"]')).toBeVisible()
   await expect(page.locator('[data-act="continue"]')).toHaveCount(0)
   await expect(page.locator('[data-act="edit-char"]')).toHaveCount(0)
@@ -173,7 +173,7 @@ test('day 1 morning: forced late bus is Running late', async ({ page }) => {
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 40000 })
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
   // A male student rooms with Sipho, not Zanele.
-  await newGame(page, '?roommate=0&latebus=1&snooze=0', 'male')
+  await newGame(page, '?roommate=0&latebus=1&snooze=0&talk=auto', 'male')
   await expect(host).toHaveAttribute('data-roomie', 'Sipho', { timeout: 20000 })
   await atStep('kettle')
   await expect(host).toHaveAttribute('data-latebus', '1')
