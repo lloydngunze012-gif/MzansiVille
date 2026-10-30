@@ -10,7 +10,7 @@ Stats start at R1 500, energy 100, grades 50, social 30, hunger 70. A day has si
 
 Three game days fit in one real day. After that the screen says "Energy refills at 06:00" until the next 06:00 local time.
 
-On campus the map is a low-poly 3D view. Drag to turn the camera, scroll or pinch to zoom, tap the ground to walk, or use WASD. Buildings and paths come from the district files. Drop a CC0 glTF into `public/models/` and name it in `manifest.json` to replace a box. See `public/models/CREDITS.md`.
+On campus the map is a low-poly 3D view. Tap the ground to walk, or use WASD. Drag turns the camera, and a pinch or the scroll wheel zooms. Top, Sims, and Eye (keys 1, 2, 3, or C) change the view. A glowing door has something to do; walk up and the action panel opens. Map (or M) shows the whole campus and can walk you to a door. Drop a CC0 glTF into `public/models/` and name it in `manifest.json` to replace a box. See `public/models/CREDITS.md`.
 
 ## Stack
 

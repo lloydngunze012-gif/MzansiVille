@@ -58,6 +58,9 @@ let admin = { reports: [], eventId: 'nsfas_delayed', notice: '', allowed: false 
 let timer = 0
 let merging = false
 let chatUnsub = null
+let morning = null
+let cardMini = false
+const hiddenToasts = new Set()
 
 function districtNow() {
   const id = save.run?.character?.districtId || defaultDistrictId
@@ -93,10 +96,52 @@ function state() {
     chat,
     board,
     admin,
+    morning,
+    cardMini,
   }
 }
 
-const WORLD_SCREENS = new Set(['play', 'map', 'place', 'closed'])
+function choiceWaiting() {
+  return Boolean(save.run?.queue?.[0]?.choices)
+}
+
+function rememberMorning(run) {
+  if (!run || run.mode !== 'play') return
+  const id = `${run.character?.name || ''}|${run.day}`
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('mzansiville.morning') || 'null')
+    if (saved?.id === id && saved.stats) {
+      morning = saved.stats
+      return
+    }
+  } catch { /* ignore */ }
+  morning = {
+    money: run.stats.money,
+    energy: run.stats.energy,
+    hunger: run.stats.hunger,
+    grades: run.stats.grades,
+    social: run.stats.social,
+  }
+  try {
+    sessionStorage.setItem('mzansiville.morning', JSON.stringify({ id, stats: morning }))
+  } catch { /* ignore */ }
+}
+
+function armToasts() {
+  app.querySelectorAll('.toast').forEach((el) => {
+    const id = el.dataset.toast
+    if (hiddenToasts.has(id)) {
+      el.remove()
+      return
+    }
+    setTimeout(() => {
+      hiddenToasts.add(id)
+      el.remove()
+    }, 5000)
+  })
+}
+
+const WORLD_SCREENS = new Set(['play', 'map', 'place', 'closed', 'summary', 'event', 'twist', 'bestie', 'graduated'])
 let worldPromise = null
 let worldTicket = 0
 
@@ -121,6 +166,7 @@ function syncWorld(viewState) {
 
 function paint() {
   const shot = new URLSearchParams(location.search).get('shot')
+  if (!shot) rememberMorning(save.run)
   if (!shot && save.run?.mode === 'play' && route().name === 'summary') {
     location.hash = '#/play'
     return
@@ -147,6 +193,7 @@ function paint() {
   const district = shown.district
   if (canvas && run) drawShareCard(canvas, { district, run, url: location.origin }).catch(() => {})
   syncWorld(shown)
+  armToasts()
 }
 
 function go(path) {
@@ -347,6 +394,40 @@ app.addEventListener('click', async (event) => {
     go(button.dataset.go)
     return
   }
+  if (act === 'open-map') {
+    window.dispatchEvent(new CustomEvent('mzansi-open-map'))
+    return
+  }
+  if (act === 'cam') {
+    window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: button.dataset.mode }))
+    paint()
+    return
+  }
+  if (act === 'help') {
+    window.dispatchEvent(new CustomEvent('mzansi-help'))
+    return
+  }
+  if (act === 'hud') {
+    const next = localStorage.getItem('mzansiville.hud') === 'icons' ? 'full' : 'icons'
+    localStorage.setItem('mzansiville.hud', next)
+    paint()
+    return
+  }
+  if (act === 'toast') {
+    hiddenToasts.add(button.dataset.toast)
+    button.remove()
+    return
+  }
+  if (act === 'minimise-card') {
+    cardMini = true
+    paint()
+    return
+  }
+  if (act === 'restore-card') {
+    cardMini = false
+    paint()
+    return
+  }
   if (act === 'agree') {
     if (!document.getElementById('agree')?.checked) {
       draft.error = 'Tick the box to continue.'
@@ -391,17 +472,41 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'do') {
-    const result = applyAction(district, save.run, button.dataset.id)
+    if (choiceWaiting()) {
+      cardMini = false
+      paint()
+      return
+    }
+    const id = button.dataset.id
+    if (document.body.dataset.world === '1') {
+      window.dispatchEvent(new CustomEvent('mzansi-act', {
+        detail: {
+          commit() {
+            const result = applyAction(district, save.run, id)
+            if (!result.ok) return
+            finishTurn()
+          },
+        },
+      }))
+      return
+    }
+    const result = applyAction(district, save.run, id)
     if (!result.ok) return
     finishTurn()
     return
   }
   if (act === 'phase') {
+    if (choiceWaiting()) {
+      cardMini = false
+      paint()
+      return
+    }
     advancePhase(district, save.run)
     finishTurn()
     return
   }
   if (act === 'choice') {
+    cardMini = false
     const card = save.run.queue[0]
     if (card?.eventId) chooseEvent(district, save.run, card.eventId, Number(button.dataset.i))
     persist()
@@ -409,6 +514,7 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'dismiss') {
+    cardMini = false
     const card = save.run.queue[0]
     if (card) dismissCard(save.run, card.id)
     if (card?.kind === 'milestone') save.run.milestoneSeen = true
@@ -617,4 +723,26 @@ window.addEventListener('hashchange', () => {
 
 paint()
 arm()
+
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return
+  if (new URLSearchParams(location.search).get('shot')) return
+  const tag = event.target?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+  if (document.querySelector('.map-overlay:not([hidden])')) {
+    window.dispatchEvent(new CustomEvent('mzansi-close-map'))
+    event.preventDefault()
+    return
+  }
+  const card = save.run?.queue?.[0]
+  if (!card) return
+  if (card.choices) {
+    cardMini = true
+    paint()
+    return
+  }
+  dismissCard(save.run, card.id)
+  persist()
+  paint()
+})
 bootAuth()

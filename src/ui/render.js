@@ -1,6 +1,6 @@
 import { avatarSvg, hairs, outfits, skins } from '../avatar.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
-import { formatClock, formatDelta, formatMoney, weekdayName } from '../engine/format.js'
+import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
 import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
@@ -32,72 +32,169 @@ export function emptyDraft() {
   }
 }
 
-function phaseOf(district, id) {
-  return district.meta.phases.find((phase) => phase.id === id) || district.meta.phases[0]
-}
-
-function meter(label, value, max, color) {
-  const width = Math.max(0, Math.min(100, (value / max) * 100))
-  return `<span title="${label} ${value}"><b style="--p:${width}%;--c:${color}"><i></i></b></span>`
-}
-
 function pips(run) {
-  return `<span class="pips" aria-label="${run.slotsLeft} slots left">${Array.from({ length: run.slotsTotal }, (_, index) =>
+  return `<span class="pips" aria-label="${run.slotsLeft} of ${run.slotsTotal} actions left">${Array.from({ length: run.slotsTotal }, (_, index) =>
     `<i class="${index < run.slotsLeft ? 'on' : ''}"></i>`).join('')}</span>`
 }
 
-function banners(district, run) {
-  const bits = []
-  if (run.morningNote) bits.push(`<p class="banner">${esc(run.morningNote)}</p>`)
-  if (run.status) bits.push(`<p class="banner bad">${esc(run.status)}. Grade gains are halved until two study sessions.</p>`)
-  if (run.noodlesOnly) bits.push('<p class="banner bad">Noodles only until a shift.</p>')
-  if (run.examWeek) bits.push('<p class="banner">Exam week. The paper is at the Sports Centre. Study counts double. Parties are quieter.</p>')
-  if (weekdayName(district.meta, run.day) === district.meta.calendar.socialBoostWeekday) {
-    bits.push('<p class="banner good">Friday. Social moves count for more.</p>')
+function icon(path) {
+  return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+}
+
+const ICONS = {
+  wallet: icon('<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/>'),
+  bolt: icon('<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>'),
+  plate: icon('<path d="M4 13a8 8 0 0 0 16 0"/><path d="M2 13h20M8 8c1-2 3-3 4-3s3 1 4 3"/>'),
+  book: icon('<path d="M4 5a3 3 0 0 1 3-2h13v16H7a3 3 0 0 0-3 3z"/><path d="M7 3v16"/>'),
+  people: icon('<circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.2"/><path d="M3 19c1-3 3.2-4.5 6-4.5S14 16 15 19M14 14.5c1.6 0 3.2.8 4 2.5"/>'),
+}
+
+const PHASE_WORD = {
+  wake: 'Morning',
+  transit: 'Heading out',
+  lecture: 'Lectures',
+  social: 'Afternoon',
+  leisure: 'Free time',
+  night: 'Night',
+}
+
+const TIPS = {
+  money: 'Money is the rand in your pocket. Shifts add to it. Meals and a bad day take it away. Below zero, noodles are all you can afford until you work.',
+  energy: 'Energy is how rested you are. Sleep raises it. Lectures, the gym, and a night without sleep use it. When it is empty, very little is possible.',
+  hunger: 'Fullness is how well you have eaten. 100 means you are well fed. Eating raises it. If it drops under 10 you cannot study, and sleeping while it is under 20 leaves you tired.',
+  grades: 'Grades start at 50. Lectures and study raise them. Skipping and a failed spot test lower them. Under 20 for three days, you are excluded.',
+  social: 'Social is how connected you are on campus. Friends, the quad, and a Friday party raise it.',
+  slots: 'Each activity uses one or more of the five time slots in a day. When they run out, the day ends.',
+  phase: 'Moves you on to the next part of the day. The clock jumps ahead, and different places open.',
+}
+
+function phaseWord(id) {
+  return PHASE_WORD[id] || 'Today'
+}
+
+function camMode() {
+  const shot = new URLSearchParams(location.search).get('shot') || ''
+  if (shot.startsWith('cam-')) return shot.slice(4)
+  try {
+    return localStorage.getItem('mzansiville.camera') || 'sims'
+  } catch {
+    return 'sims'
   }
-  return bits.join('')
 }
 
-function nav(active) {
+function hudMode() {
+  try {
+    return localStorage.getItem('mzansiville.hud') === 'icons' ? 'icons' : 'full'
+  } catch {
+    return 'full'
+  }
+}
+
+function nav(active, world) {
   const items = [['play', 'Map'], ['profile', 'You'], ['board', 'Board'], ['chat', 'Chat']]
-  return `<nav class="nav">${items.map(([id, label]) =>
-    `<button type="button" data-act="nav" data-go="${id}" ${active === id ? 'aria-current="page"' : ''}>${label}</button>`).join('')}</nav>`
+  return `<nav class="nav">${items.map(([id, label]) => {
+    if (world && id === 'play') {
+      const here = active === 'play' || active === 'summary' || active === 'place' || active === 'closed'
+      return `<button type="button" data-act="open-map" ${here ? 'aria-current="page"' : ''}>Map</button>`
+    }
+    return `<button type="button" data-act="nav" data-go="${id}" ${active === id ? 'aria-current="page"' : ''}>${label}</button>`
+  }).join('')}</nav>`
 }
 
-function chrome(district, run, active) {
-  const phase = phaseOf(district, run.phase)
+function statRow(key, word, svg, value, max, color) {
+  const width = Math.max(0, Math.min(100, (value / max) * 100))
+  const low = key !== 'money' && value < max * 0.25
+  const shown = key === 'money' ? formatMoney(value) : `${Math.round(value)}/${max}`
+  return `<button class="stat tip-host${low ? ' low' : ''}" type="button">
+    ${svg}
+    <span class="word">${word}</span>
+    <b class="bar" style="--p:${width}%;--c:${color}"><i></i></b>
+    <span class="num">${shown}</span>
+    <p class="tip">${esc(TIPS[key])}</p>
+  </button>`
+}
+
+function chrome(district, run) {
   const next = district.meta.phases[district.meta.phases.findIndex((item) => item.id === run.phase) + 1]
   const nextLabel = next ? `On to ${next.label}` : 'End the day'
-  return `<header class="top">
-    <div class="spread">
-      <p class="kicker">${esc(weekdayName(district.meta, run.day))} · Day ${run.day} · ${esc(phase.label)} · ${formatClock(run.minutes)}</p>
-      ${pips(run)}
+  const word = phaseWord(run.phase)
+  const mode = camMode()
+  const icons = hudMode() === 'icons' ? ' icons' : ''
+  const cams = ['top', 'Top', 'sims', 'Sims', 'eye', 'Eye']
+  let buttons = ''
+  for (let i = 0; i < cams.length; i += 2) {
+    const mark = cams[i] === 'top' ? '▣' : cams[i] === 'eye' ? '◉' : '◢'
+    buttons += `<button type="button" data-act="cam" data-mode="${cams[i]}" aria-pressed="${mode === cams[i]}">${mark} ${cams[i + 1]}</button>`
+  }
+  return `<header class="hud${icons}">
+    <div class="hud-top">
+      <p class="clock-line">${esc(weekdayName(district.meta, run.day))} - Day ${run.day} - ${esc(word)} - ${formatClock(run.minutes)}</p>
+      <button class="btn ghost tiny" type="button" data-act="hud">${icons ? 'Show words' : 'Icons only'}</button>
     </div>
-    <div class="stats"><strong>${formatMoney(run.stats.money)}</strong><span>EN ${run.stats.energy}</span><span>HU ${run.stats.hunger}</span><span>GR ${run.stats.grades}</span><span>SO ${run.stats.social}</span></div>
-    <div class="meters" aria-hidden="true">
-      ${meter('Energy', run.stats.energy, run.energyCap, '#1f6b45')}
-      ${meter('Hunger', run.stats.hunger, 100, '#c4512a')}
-      ${meter('Grades', run.stats.grades, 100, '#244e78')}
-      ${meter('Social', run.stats.social, 100, '#f0c400')}
-    </div>
-    <div class="spread" style="margin-top:8px">
-      <span class="kicker">Today ${run.gameDaysToday} of ${district.meta.day.realDays}</span>
-      <button class="btn ghost" type="button" data-act="phase" style="min-height:40px;padding:8px 12px">${nextLabel}</button>
-    </div>
+    ${statRow('money', 'Money', ICONS.wallet, run.stats.money, 3000, '#f0c400')}
+    ${statRow('energy', 'Energy', ICONS.bolt, run.stats.energy, run.energyCap || 100, '#3cba78')}
+    ${statRow('hunger', 'Fullness', ICONS.plate, run.stats.hunger, 100, '#e07a3d')}
+    ${statRow('grades', 'Grades', ICONS.book, run.stats.grades, 100, '#7eb6e6')}
+    ${statRow('social', 'Social', ICONS.people, run.stats.social, 100, '#f0c400')}
+    <button class="slots tip-host" type="button">Time left today: ${run.slotsLeft} of ${run.slotsTotal} actions ${pips(run)}<span class="tip">${esc(TIPS.slots)}</span></button>
+    <p class="tip-host phase-line"><button class="btn ghost tiny" type="button" data-act="phase">${nextLabel}</button><span class="tip">${esc(TIPS.phase)}</span></p>
   </header>
-  ${run.badges?.includes('lectures') ? '<p class="banner good">Lecture streak</p>' : ''}
-  ${banners(district, run)}`
+  <div class="cam-switch" role="group" aria-label="Camera">${buttons}<button type="button" data-act="help" aria-label="Help">?</button></div>
+  ${toasts(district, run)}`
+}
+
+function toasts(district, run) {
+  const items = []
+  if (run.morningNote) items.push(['morning', run.morningNote])
+  if (run.status) items.push(['status', `${run.status}. Grade gains are halved until two study sessions.`])
+  if (run.noodlesOnly) items.push(['noodles', 'Noodles only until a shift.'])
+  if (run.examWeek) items.push(['exam', 'Exam week. The paper is at the Sports Centre. Study counts double. Parties are quieter.'])
+  if (weekdayName(district.meta, run.day) === district.meta.calendar.socialBoostWeekday) {
+    items.push(['friday', 'Friday. Social moves count for more.'])
+  }
+  if (run.badges?.includes('lectures')) items.push(['streak', 'Lecture streak.'])
+  if (!items.length) return ''
+  return `<div class="toasts">${items.map(([id, text]) => `<button class="toast" type="button" data-act="toast" data-toast="${id}">${esc(text)}</button>`).join('')}</div>`
 }
 
 function laterHint(district, run, placeId) {
   const phases = district.meta.phases
   const index = phases.findIndex((phase) => phase.id === run.phase)
+  const here = phaseWord(run.phase)
   for (const phase of phases.slice(index + 1)) {
     if (actionsAt(district, { ...run, phase: phase.id }, placeId).length) {
-      return `Nothing in ${phaseOf(district, run.phase).label}. Try ${phase.label}.`
+      return `Nothing to do here in the ${here}. Come back in the ${phaseWord(phase.id)}.`
     }
   }
-  return 'Nothing on right now.'
+  return `Nothing to do here in the ${here}.`
+}
+
+const REASONS = {
+  'Already done today': 'You already did this today.',
+  'You already chose': 'You already picked something else.',
+  'No shifts left this week': 'No shifts left this week.',
+  'Too hungry to study': 'You are too hungry to study. Eat something first.',
+  'Noodles only until a shift': 'You can only afford noodles until you work a shift.',
+}
+
+function plainReason(reason) {
+  if (!reason) return ''
+  if (REASONS[reason]) return REASONS[reason]
+  if (reason.startsWith('Closed')) return reason.replace('·', '.').replace('opens', 'Opens at')
+  if (reason.startsWith('Needs')) return `This needs more time than you have left today.`
+  if (reason.startsWith('Unlocks')) return `This opens on ${reason.replace('Unlocks ', '')}.`
+  return reason
+}
+
+function effectBits(deltas) {
+  const bits = []
+  const add = (text, kind) => bits.push(`<em class="${kind}">${text}</em>`)
+  if (deltas.energy) add(`${deltas.energy > 0 ? '+' : ''}${deltas.energy} Energy`, deltas.energy > 0 ? 'up' : 'down')
+  if (deltas.money) add(`${deltas.money > 0 ? '+' : ''}${formatMoney(deltas.money)}`, deltas.money > 0 ? 'up' : 'down')
+  if (deltas.hunger) add(`${deltas.hunger > 0 ? '+' : ''}${deltas.hunger} Fullness`, deltas.hunger > 0 ? 'up' : 'down')
+  if (deltas.grades) add(`${deltas.grades > 0 ? '+' : ''}${deltas.grades} Grades`, deltas.grades > 0 ? 'up' : 'down')
+  if (deltas.social) add(`${deltas.social > 0 ? '+' : ''}${deltas.social} Social`, deltas.social > 0 ? 'up' : 'down')
+  return bits.join(' ')
 }
 
 function sheet(district, run, placeId) {
@@ -107,43 +204,66 @@ function sheet(district, run, placeId) {
   const buttons = actions.map((action) => {
     const state = actionState(district, run, action)
     if (state.hidden) return ''
-    const slots = action.slots === 1 ? '1 slot' : `${action.slots} slots`
-    const left = action.weeklyLimit ? ` · ${action.weeklyLimit - (run.weekly[action.id] || 0)} left this week` : ''
-    const detail = state.reason || `${formatDelta(action.deltas)} · ${slots}${left}`
-    return `<button class="btn block" type="button" data-act="do" data-id="${esc(action.id)}" ${state.disabled ? 'disabled' : ''}>
-      ${esc(action.name)}<small>${esc(detail)}</small>${action.twist ? `<small>${esc(action.twist)}</small>` : ''}
+    const slots = action.slots === 1 ? '1' : String(action.slots)
+    const detail = state.disabled
+      ? esc(plainReason(state.reason))
+      : `${effectBits(action.deltas)} <em>uses ${slots} of your ${run.slotsTotal} time slots</em>`
+    return `<button class="act" type="button" data-act="do" data-id="${esc(action.id)}" ${state.disabled ? 'disabled' : ''}>
+      <strong>${esc(action.name)}</strong><small>${detail}</small>
     </button>`
   }).join('')
   return `<section class="sheet">
-    <div class="handlebar"></div>
-    <div class="spread"><h2>${esc(place.name)}</h2><button class="btn ghost" type="button" data-act="nav" data-go="play" style="min-height:40px">Close</button></div>
+    <div class="spread"><h2>${esc(place.name)}</h2><button class="btn ghost tiny" type="button" data-act="nav" data-go="play">Close</button></div>
     <p class="blurb">${esc(place.blurb)}</p>
-    <div class="stack">${buttons || `<p class="fine">${esc(laterHint(district, run, placeId))}</p>`}</div>
+    <div class="stack">${buttons || `<p>${esc(laterHint(district, run, placeId))}</p>`}</div>
   </section>`
 }
 
-function cardHtml(card) {
-  const choices = (card.choices || []).map((label, index) =>
-    `<button class="btn block" type="button" data-act="choice" data-i="${index}">${esc(label)}</button>`).join('')
+const CARD_LABEL = {
+  event: 'Random event',
+  bestie: 'New bestie',
+  twist: 'Plot twist',
+  milestone: 'Milestone',
+  shop: 'Campus job',
+  result: 'What happened',
+  spot: 'Spot test',
+  over: 'That is the end',
+}
+
+function cardHtml(card, state) {
+  if (!card) return ''
+  const district = state?.district
+  const choices = (card.choices || []).map((label, index) => {
+    const event = district?.events?.find((item) => item.id === card.eventId)
+    const effect = effectBits(event?.choices?.[index]?.deltas || {})
+    return `<button class="act" type="button" data-act="choice" data-i="${index}"><strong>${esc(label)}</strong>${effect ? `<small>${effect}</small>` : ''}</button>`
+  }).join('')
   let actions = choices
   if (!actions) {
     actions = card.kind === 'shop'
-      ? `<button class="btn primary block" type="button" data-act="open-shop">${esc('This links to a real shop')}</button>
-         <button class="btn ghost block" type="button" data-act="dismiss">Not now</button>`
-      : '<button class="btn primary block" type="button" data-act="dismiss">OK</button>'
+      ? `<button class="act" type="button" data-act="open-shop"><strong>${esc('This links to a real shop')}</strong></button>
+         <button class="act" type="button" data-act="dismiss"><strong>Not now</strong></button>`
+      : '<button class="act" type="button" data-act="dismiss"><strong>OK</strong></button>'
   }
-  return `<div class="modal-back"><section class="card">
-    <p class="kind">${esc(card.kind)}</p>
+  const text = String(card.text || '').replaceAll('Hunger', 'Fullness')
+  return `<aside class="glass-card">
+    <div class="spread"><p class="kind">${esc(CARD_LABEL[card.kind] || 'Note')}</p><button class="btn ghost tiny" type="button" data-act="${card.choices ? 'minimise-card' : 'dismiss'}" aria-label="Close">×</button></div>
     <h2>${esc(card.title)}</h2>
-    <p>${esc(card.text)}</p>
+    <p>${esc(text)}</p>
     <div class="stack">${actions}</div>
-  </section></div>`
+  </aside>`
 }
 
-function overlay(run) {
-  if (run?.queue?.[0]) return cardHtml(run.queue[0])
+function overlay(state) {
+  const run = state.run
+  if (run?.queue?.[0]) {
+    if (state.cardMini && run.queue[0].choices) {
+      return `<button class="decision-chip" type="button" data-act="restore-card">1 decision waiting</button>`
+    }
+    return cardHtml(run.queue[0], state)
+  }
   if (run?.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
-    return `<div class="modal-back"><section class="card"><h2>Save your progress</h2><p>Day ${run.day}. Keep this person on an account.</p><div class="stack"><button class="btn primary block" type="button" data-act="nav" data-go="save">Save your progress</button><button class="btn ghost block" type="button" data-act="snooze">Not now</button></div></section></div>`
+    return `<aside class="glass-card"><h2>Save your progress</h2><p>Day ${run.day}. Keep this person on an account.</p><div class="stack"><button class="act" type="button" data-act="nav" data-go="save"><strong>Save your progress</strong></button><button class="act" type="button" data-act="snooze"><strong>Not now</strong></button></div></aside>`
   }
   return ''
 }
@@ -151,32 +271,49 @@ function overlay(run) {
 function play(state, screenName, placeId) {
   const { district, run } = state
   return `<main class="screen world-hud" data-screen="${screenName}">
-    ${chrome(district, run, 'play')}
+    ${chrome(district, run)}
     <div class="world-space"></div>
-    <p class="world-hint">Drag to turn. Tap the ground to walk.</p>
     ${placeId ? sheet(district, run, placeId) : ''}
-    ${nav('play')}
-    ${overlay(run)}
+    ${nav('play', true)}
+    ${overlay(state)}
   </main>`
 }
 
+function summaryRows(morning, stats) {
+  const rows = [
+    ['Money', morning?.money, stats.money],
+    ['Energy', morning?.energy, stats.energy],
+    ['Fullness', morning?.hunger, stats.hunger],
+    ['Grades', morning?.grades, stats.grades],
+    ['Social', morning?.social, stats.social],
+  ]
+  return rows.map(([label, from, to]) => {
+    if (from == null) return `<li><span>${label}</span><span>${label === 'Money' ? formatMoney(to) : to}</span></li>`
+    const delta = Math.round(to - from)
+    const shownFrom = label === 'Money' ? formatMoney(from) : from
+    const shownTo = label === 'Money' ? formatMoney(to) : to
+    return `<li><span>${label}</span><span>${shownFrom} → ${shownTo} (${delta > 0 ? '+' : ''}${delta})</span></li>`
+  }).join('')
+}
+
 function summary(state) {
-  const { run } = state
+  const { district, run } = state
   const line = run.summary?.hungry
-    ? 'You slept hungry'
+    ? 'You slept hungry. Tomorrow starts a little tired.'
     : run.summary?.slept
       ? 'You made it to bed.'
       : 'You did not sleep. Tomorrow starts with less energy.'
-  return `<main class="screen pad" data-screen="summary">
-    <p class="kicker">Day ${run.summary?.day || run.day}</p>
-    <h1>That's the day</h1>
-    <p class="lede">${esc(line)}</p>
-    <p>${esc(run.lastStatLine)}</p>
-    <p class="fine">${esc(run.lastEventLine)}</p>
-    <div class="stack" style="margin-top:18px">
-      <button class="btn primary block" type="button" data-act="next">Start tomorrow</button>
-    </div>
-    ${overlay(run)}
+  return `<main class="screen world-hud" data-screen="summary">
+    ${chrome(district, run)}
+    <section class="summary-panel">
+      <p class="kind">End of day ${run.summary?.day || run.day}</p>
+      <h2>That's the day</h2>
+      <p>${esc(line)}</p>
+      <ul class="delta-list">${summaryRows(state.morning, run.stats)}</ul>
+      <button class="btn primary block" type="button" data-act="next">Start next day</button>
+    </section>
+    ${nav('summary', true)}
+    ${overlay(state)}
   </main>`
 }
 
@@ -491,7 +628,11 @@ export function view(state) {
   if (screen === 'leaderboard' || screen === 'board') return board(state)
   if (screen === 'admin') return admin(state)
   if (screen === 'event' || screen === 'twist' || screen === 'bestie' || screen === 'graduated') {
-    return `<main class="screen" data-screen="${screen}">${cardHtml(state.run.queue[0])}</main>`
+    return `<main class="screen world-hud" data-screen="${screen}">
+      ${chrome(state.district, state.run)}
+      ${cardHtml(state.run.queue[0], state)}
+      ${nav(screen, true)}
+    </main>`
   }
   return title(state)
 }
@@ -558,10 +699,13 @@ export function shotState(name) {
   if (name === 'bestie') {
     run.queue = [{ id: 'shot-bestie', kind: 'bestie', title: 'Thandi', text: 'Thandi from O Block holds the door and waits like they already decided you are their person.' }]
   }
+  if (name.startsWith('cam-')) state.screen = 'play'
   if (name === 'summary') {
     run.day = 4
     run.mode = 'summary'
+    run.stats = { money: 1420, energy: 45, hunger: 30, grades: 58, social: 55 }
     run.summary = { day: 4, slept: true, hungry: true, stats: { ...run.stats } }
+    state.morning = { money: 1500, energy: 80, hunger: 70, grades: 50, social: 40 }
     run.lastEventLine = 'You slept hungry'
   }
   if (name === 'refill') {
