@@ -354,6 +354,14 @@ export function morningScreen(state) {
   </main>`
 }
 
+export function lectureScreen(state) {
+  const { district, run } = state
+  return `<main class="screen g-screen g-3d g-morning g-lecture-screen" data-screen="lecture">
+    ${hud(district, run)}
+    <p class="g-goal" role="status"><span>\u{1F3AF} Find a seat and get through the lecture.</span><b>SMIG</b></p>
+  </main>`
+}
+
 export function withHud(state, html) {
   if (!state.run) return html
   return html.replace(/(<main[^>]*>)/, `$1${hud(state.district, state.run, { strip: false })}`)
