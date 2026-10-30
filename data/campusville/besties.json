@@ -1,0 +1,11 @@
+{
+  "names": ["Thandi", "Lethabo", "Aya", "Sipho", "Naledi", "Jordan", "Priya", "Luke", "Zanele", "Noah", "Kea", "Amir"],
+  "moments": [
+    { "day": 1, "text": "{name} from {residence} holds the door and waits like they already decided you are their person." },
+    { "day": 4, "text": "{name} saves you a seat and does not make a speech about it." },
+    { "day": 9, "text": "The lights go. {name} has a candle, two mugs, and nowhere else to be." },
+    { "day": 15, "text": "{name} asks if you are actually fine. You both know the answer is a long one." },
+    { "day": 22, "text": "Exam week. {name} slides notes under your door and leaves before you can perform gratitude." },
+    { "day": 30, "text": "{name} says, whatever the board says, you were here. That counts." }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "go_walk": { "p": 0.1, "text": "Rain. You arrive soaked.", "deltas": { "energy": -10 } },
+  "go_bus": { "p": 0.15, "text": "The bus is late. You miss the start of the lecture.", "deltas": { "grades": -6 } },
+  "wake_noodles": { "p": 0.15, "text": "Your roommate already ate the last packet.", "deltas": { "hunger": -25, "social": -2 } },
+  "quad_friends": { "p": 0.25, "text": "Someone needs R50. You send it.", "deltas": { "money": -50, "social": 4 } },
+  "quad_vendor": { "p": 0.12, "text": "That kota fights back.", "deltas": { "hunger": -15, "energy": -8 } },
+  "cafeteria_meal": { "p": 0.2, "text": "Special day. Half price.", "moneyFactor": 0.5 },
+  "res_party": { "p": 0.15, "text": "A legendary night. People will tell it wrong, and better.", "deltas": { "social": 25 } },
+  "call_home": {
+    "branches": [
+      { "p": 0.2, "text": "They send R200.", "deltas": { "money": 200 } },
+      { "p": 0.1, "text": "A long lecture about your marks.", "deltas": { "social": -3 } }
+    ]
+  },
+  "sleep": { "p": 0.12, "text": "A fire alarm at 01:00. You stood outside in socks.", "deltas": { "energy": -10 } },
+  "sports_gym": { "always": { "text": "You feel a bit more room in the tank this week." } }
+}
