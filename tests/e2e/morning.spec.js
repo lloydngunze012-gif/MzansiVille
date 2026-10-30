@@ -132,7 +132,14 @@ test('day 1 morning: room to campus', async ({ page }) => {
   expect(run.phase).toBe('lecture')
   expect(run.morningDone).toBe(true)
   expect(run.at).toBe('gate')
+  // The clock keeps the arrival time, and Zanele (met in the room) is the bestie with no repeat card.
+  const hhmm = `${String(Math.floor(run.minutes / 60)).padStart(2, '0')}:${String(run.minutes % 60).padStart(2, '0')}`
+  expect(hhmm).toBe(arrived)
+  expect(run.bestieName).toBe('Zanele')
+  expect(run.queue.some((card) => card.kind === 'bestie')).toBe(false)
   await expect(page.locator('[data-spawn="gate"]')).toBeAttached({ timeout: 20000 })
+  await page.waitForTimeout(1500)
+  await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
     await page.locator('.g-result [data-act]').first().tap()

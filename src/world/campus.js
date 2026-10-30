@@ -53,7 +53,32 @@ function labelSprite(text, home) {
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }))
   sprite.scale.set(7.2, 1.62, 1)
   sprite.raycast = () => {}
+  sprite.name = 'label'
   return sprite
+}
+
+const labelAt = new THREE.Vector3()
+const labelEdge = new THREE.Vector3()
+const camRight = new THREE.Vector3()
+
+// Name tags are world sprites, so one close to the camera gets wide and runs off
+// the screen edge as a dark cut-off slab. Fade out any tag that would not fit.
+export function fitLabels(buildings, camera, dt) {
+  camRight.setFromMatrixColumn(camera.matrixWorld, 0)
+  for (const group of buildings.children) {
+    for (const label of group.children) {
+      if (label.name !== 'label') continue
+      label.getWorldPosition(labelAt)
+      labelEdge.copy(labelAt).addScaledVector(camRight, label.scale.x / 2)
+      labelAt.project(camera)
+      labelEdge.project(camera)
+      const half = Math.abs(labelEdge.x - labelAt.x)
+      const fits = labelAt.z < 1 && labelAt.x - half > -0.98 && labelAt.x + half < 0.98 && half < 0.6
+      const material = label.material
+      material.opacity += ((fits ? 1 : 0) - material.opacity) * Math.min(1, dt * 10)
+      label.visible = material.opacity > 0.02
+    }
+  }
 }
 
 function ribbon(a, b) {
