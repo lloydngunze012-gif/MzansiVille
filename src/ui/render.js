@@ -5,7 +5,7 @@ import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
-import { mapHome, withHud } from './game.js'
+import { gameOverScreen, mapHome, milestonesScreen, withHud } from './game.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -637,7 +637,8 @@ export function view(state) {
   if (screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
   if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)
-  if (screen === 'gameover' || screen === 'over') return gameover(state)
+  if (screen === 'gameover' || screen === 'over') return gameOverScreen(state)
+  if (screen === 'milestones') return milestonesScreen(state)
   if (screen === 'profile') return withHud(state, profile(state))
   if (screen === 'share') return withHud(state, share(state))
   if (screen === 'shop') return shop(state)
