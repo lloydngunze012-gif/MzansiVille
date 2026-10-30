@@ -2,99 +2,91 @@
   {
     "id": "nsfas_delayed",
     "title": "NSFAS is late",
-    "text": "Your allowance has not landed. The res group chat is one long sigh.",
+    "text": "The 25th has come and gone and your NSFAS allowance has not landed. The res group chat is one long sigh with a lot of crying emojis.",
     "icon": "💸",
-    "placeholder": true,
     "choices": [
-      { "label": "Stretch what you have", "deltas": { "hunger": -10, "social": -2 }, "result": "Bread, peanut butter, patience." },
-      { "label": "Borrow R50 from a friend", "deltas": { "money": 50, "social": -4 }, "result": "A friend sends it, with a voice note." }
+      { "label": "Stretch what you have", "deltas": { "hunger": -10, "social": -2 }, "result": "Bread, peanut butter and patience. You discover that two-minute noodles can be a personality." },
+      { "label": "Borrow R50 from a friend", "deltas": { "money": 50, "social": -4 }, "result": "A friend sends it with a voice note. The voice note is four minutes of advice, but the R50 is real." }
     ]
   },
   {
     "id": "load_shedding",
     "title": "Load shedding at the library",
-    "text": "Stage 4. The library lights die mid-paragraph and the generator coughs but will not start.",
+    "text": "Stage 4. The lights die mid-paragraph, the library goes silent, and the generator coughs once and gives up.",
     "icon": "🕯️",
-    "placeholder": true,
     "choices": [
-      { "label": "Study by phone torch", "deltas": { "energy": -8, "grades": 3 }, "result": "You get through half a chapter in a circle of light." },
-      { "label": "Sit outside with everyone", "deltas": { "social": 6, "grades": -2 }, "result": "Someone has a speaker. Someone has a story." }
+      { "label": "Study by phone torch", "deltas": { "energy": -8, "grades": 3 }, "result": "Half a chapter in a small circle of light, at 11% battery. Somehow it sticks." },
+      { "label": "Sit outside with everyone", "deltas": { "social": 6, "grades": -2 }, "result": "Someone has a speaker, someone has a story, and nobody remembers which chapter was due." }
     ]
   },
   {
     "id": "surprise_test",
     "title": "Surprise test",
-    "text": "The lecturer smiles in that specific way. \"Notes closed, phones away.\"",
+    "text": "The lecturer smiles in that specific way. \"Notes closed, phones away.\" Forty people stop breathing at once.",
     "icon": "📝",
-    "placeholder": true,
     "choices": [
-      { "label": "Write what you know", "deltas": { "grades": 4, "energy": -6 }, "result": "Not pretty, but you filled the page." },
-      { "label": "Peek at your neighbour", "deltas": { "grades": -6, "social": -3 }, "result": "They saw. The whole row went quiet." }
+      { "label": "Write what you know", "deltas": { "grades": 4, "energy": -6 }, "result": "Not pretty, but the page is full and your pen survived. That counts." },
+      { "label": "Peek at your neighbour", "deltas": { "grades": -6, "social": -3 }, "result": "They saw you. The whole row saw you. The lecturer definitely saw you." }
     ]
   },
   {
     "id": "res_wifi_down",
     "title": "Res Wi-Fi is down",
-    "text": "The router blinks orange. Your assignment is due at midnight and the portal will not load.",
+    "text": "The router blinks orange like it is judging you. Your assignment is due at midnight and the portal will not load.",
     "icon": "📶",
-    "placeholder": true,
     "choices": [
-      { "label": "Buy data and push through", "deltas": { "money": -60, "grades": 3 }, "result": "R60 of data later, it is submitted. Breathe." },
-      { "label": "Ask the lecturer for an extension", "deltas": { "grades": -2, "social": 2 }, "result": "A polite email. A short reply: \"Fine. Monday.\"" }
+      { "label": "Buy data and push through", "deltas": { "money": -60, "grades": 3 }, "result": "R60 of data later it is submitted, with four minutes to spare. Breathe." },
+      { "label": "Ask the lecturer for an extension", "deltas": { "grades": -2, "social": 2 }, "result": "A very polite email, then a very short reply: \"Fine. Monday.\"" }
     ]
   },
   {
     "id": "friend_r50",
     "title": "A friend needs R50",
-    "text": "Your friend from next door is short for taxi fare home this weekend. They look embarrassed asking.",
+    "text": "The friend from next door is short for taxi fare home this weekend. They look at their shoes while they ask.",
     "icon": "🤝",
-    "placeholder": true,
     "choices": [
-      { "label": "Send the R50", "deltas": { "money": -50, "social": 8 }, "result": "\"I owe you big.\" You believe them." },
-      { "label": "Say you are broke too", "deltas": { "social": -4 }, "result": "They nod. It is true for everyone, a bit." }
+      { "label": "Send the R50", "deltas": { "money": -50, "social": 8 }, "result": "\"I owe you big.\" You believe them, mostly, and you are fine with that." },
+      { "label": "Say you are broke too", "deltas": { "social": -4 }, "result": "They nod. It is true for everyone, a little, and nobody says it out loud." }
     ]
   },
   {
     "id": "cafeteria_special",
     "title": "Cafeteria special",
-    "text": "Bunny chow special: half price until two. The queue is already round the corner.",
+    "text": "Bunny chow special: half price until two. The queue is already round the corner and past the notice board.",
     "icon": "🍛",
-    "placeholder": true,
     "choices": [
-      { "label": "Join the queue", "deltas": { "money": -25, "hunger": 30, "energy": -3 }, "result": "Worth every minute. The gravy is a hug." },
-      { "label": "Skip it and save", "deltas": { "hunger": -4, "money": 0 }, "result": "Your stomach files a complaint." }
+      { "label": "Join the queue", "deltas": { "money": -25, "hunger": 30, "energy": -3 }, "result": "Worth every minute. The gravy is a hug and the bread is the best part." },
+      { "label": "Skip it and save", "deltas": { "hunger": -4, "money": 0 }, "result": "Your stomach files a formal complaint and copies in your wallet." }
     ]
   },
   {
     "id": "bursary_email",
     "title": "Bursary email",
-    "text": "Subject line: \"Application window closes Friday.\" It needs a motivation letter and two signatures.",
+    "text": "Subject line: \"Application window closes Friday.\" It wants a motivation letter, two signatures and a certified copy of everything you own.",
     "icon": "📧",
-    "placeholder": true,
     "choices": [
-      { "label": "Write the letter tonight", "deltas": { "energy": -10, "money": 200, "grades": 1 }, "result": "Submitted. A small first payment lands as a book allowance." },
-      { "label": "Leave it for later", "deltas": { "social": 2 }, "result": "Later becomes never. You try not to think about it." }
+      { "label": "Write the letter tonight", "deltas": { "energy": -10, "money": 200, "grades": 1 }, "result": "Submitted at 23:58. A small first payment lands as a book allowance." },
+      { "label": "Leave it for later", "deltas": { "social": 2 }, "result": "Later becomes never. You try very hard not to think about it." }
     ]
   },
   {
     "id": "rain",
     "title": "Durban rain",
-    "text": "The sky opens at once, the way it only does here. Everyone runs for the nearest roof.",
+    "text": "The sky opens all at once, the way it only does here. Everyone runs for the nearest roof and the taxi rank turns into a river.",
     "icon": "🌧️",
-    "placeholder": true,
     "choices": [
-      { "label": "Wait it out with a stranger", "deltas": { "social": 5, "energy": -2 }, "result": "Ten minutes under the awning and you have a new friend." },
-      { "label": "Run for it", "deltas": { "energy": -6, "hunger": -3 }, "result": "Soaked to the socks, but on time." }
+      { "label": "Wait it out with a stranger", "deltas": { "social": 5, "energy": -2 }, "result": "Ten minutes under the awning and you leave with a new friend and a better umbrella plan." },
+      { "label": "Run for it", "deltas": { "energy": -6, "hunger": -3 }, "result": "Soaked to the socks, but on time. Your shoes squeak for the rest of the day." }
     ]
   },
   {
     "id": "derby_day",
     "title": "Derby Day",
-    "text": "Sunday. Gold or Black. The whole campus is loud either way.",
+    "text": "Sunday. Gold or Black. The whole campus is loud either way and nobody has studied.",
     "icon": "🏆",
     "choices": [
-      { "label": "Wear Gold", "deltas": { "social": 10 }, "result": "Gold. The Quad answers back." },
-      { "label": "Wear Black", "deltas": { "social": 10 }, "result": "Black. Somebody lends you a scarf." }
+      { "label": "Wear Gold", "deltas": { "social": 10 }, "result": "Gold. The Quad answers back and a stranger high-fives you for no reason." },
+      { "label": "Wear Black", "deltas": { "social": 10 }, "result": "Black. Somebody lends you a scarf and a very strong opinion." }
     ]
   }
 ]
