@@ -192,8 +192,10 @@ function endMorning(skip, result) {
   morningPromise?.then((mod) => mod.stopMorning())
   if (!skip) {
     const district = districtNow()
+    // advancePhase resets the clock to 09:00; campus starts when the bus got in.
+    const arrived = result?.arrived || run.minutes
     for (let i = 0; i < 3 && run.phase !== 'lecture'; i++) advancePhase(district, run)
-    run.minutes = Math.max(run.minutes, result?.arrived || 0)
+    run.minutes = arrived
     run.at = 'gate'
     run.lectureRoute = true
   }
