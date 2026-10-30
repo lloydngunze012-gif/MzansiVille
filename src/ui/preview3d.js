@@ -58,7 +58,8 @@ function tick(now) {
     camera.aspect = w / h
     // Frame the whole student (about 2 m tall, 1.6 m wide with the sway) in any stage shape.
     const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
-    const dist = Math.max(1.05 / half, 0.68 / (half * camera.aspect)) + 0.2
+    // Head (with the dance bounce) to feet, and arms out with the sway, plus a margin.
+    const dist = Math.max(1.02 / half, 1.0 / (half * camera.aspect)) + 0.4
     camera.position.set(0, 1.0, dist)
     camera.lookAt(0, 0.82, 0)
     camera.updateProjectionMatrix()
