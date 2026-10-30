@@ -13,7 +13,7 @@ export function esc(value) {
 
 const RES_GROUPS = [
   ['on_campus', 'On campus'],
-  ['off_campus_ukzn_owned', 'UKZN residences'],
+  ['off_campus_campus_owned', 'Campus-owned (off campus)'],
   ['off_campus_leased', 'Leased'],
   ['private_accredited', 'Private accredited'],
   ['other', 'Other'],

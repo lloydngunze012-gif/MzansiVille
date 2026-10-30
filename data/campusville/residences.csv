@@ -3,8 +3,8 @@ O Block,on_campus,0,confirm block letter and any nickname
 R Block,on_campus,0,confirm block letter and any nickname
 S Block,on_campus,0,confirm block letter and any nickname
 ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,Lloyd to complete: all on-campus blocks by letter plus common nicknames
-Dunstaple Heights,off_campus_ukzn_owned,2.4,Varsity Drive Reservoir Hills; single and two-bed flats
-Santa Cruz,off_campus_ukzn_owned,,Kies Avenue Reservoir Hills; two-bed sharing flats
+Dunstaple Heights,off_campus_campus_owned,2.4,Varsity Drive Reservoir Hills; single and two-bed flats
+Santa Cruz,off_campus_campus_owned,,Kies Avenue Reservoir Hills; two-bed sharing flats
 Homii Residence,off_campus_leased,12,
 AKA Greenacres Residence,off_campus_leased,12,
 Millarosa,off_campus_leased,12,
