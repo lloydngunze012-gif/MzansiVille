@@ -7,7 +7,7 @@ test.describe.configure({ mode: 'serial' })
 const OUT = process.env.LECTURE_SHOTS || 'test-results/lecture'
 
 // A new student, moved straight to the start of the 9:00 lecture.
-async function atLecture(page, minutes) {
+async function atLecture(page, minutes, extra = '') {
   await page.goto('/?morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?morning=0#/new')
@@ -22,7 +22,7 @@ async function atLecture(page, minutes) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   }, minutes)
   // A new query string forces a full reload, so the edited save is read fresh.
-  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
+  await page.goto(`/?morning=0&lecture=1&talk=auto${extra}#/lecture`)
 }
 
 test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
@@ -30,7 +30,7 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
-  await atLecture(page, 8 * 60 + 45)
+  await atLecture(page, 8 * 60 + 45, '&moment=cold_call')
   const host = page.locator('#lecture3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 30000 })
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.grades)
@@ -48,6 +48,8 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await atStep('moment')
   await page.screenshot({ path: `${OUT}/3_moment.png` })
   await atStep('choice')
+  await expect(host).toHaveAttribute('data-moment', 'cold_call')
+  await page.screenshot({ path: `${OUT}/3b_cold_call.png` })
   await expect(page.locator('[data-lc="choice"]')).toHaveCount(2)
   await page.locator('[data-lc="choice"]').first().tap()
   await atStep('result')

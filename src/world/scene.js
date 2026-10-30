@@ -579,6 +579,9 @@ function tick(now) {
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
+    // Eye view looks out of the player's eyes: hide their own head and hair.
+    const head = player.getObjectByName('head-mesh')
+    if (head) head.visible = rig.mode !== 'eye'
     camera.updateMatrixWorld()
     fitLabels(campus.buildings, camera, dt)
     sun.position.set(player.position.x + 22, 34, player.position.z + 12)
