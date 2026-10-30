@@ -40,6 +40,9 @@ let currentDistrict = null
 let actionLeft = 0
 let actionCommit = null
 let tourIndex = 0
+let pendingAction = null
+let snapTo = null
+let speed = WALK
 const raycaster = new THREE.Raycaster()
 const screenPoint = new THREE.Vector3()
 
@@ -141,7 +144,7 @@ function ensureRenderer() {
     cameraRig: rig,
     raycaster,
     worldOn: () => visible && host.dataset.on === '1',
-    blocked: () => mapUi.isOpen() || actionLeft > 0 || !host.querySelector('.onboard').hidden,
+    blocked: () => mapUi.isOpen() || actionLeft > 0 || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
     pickables: () => ({
       buildings: campus ? [campus.buildings] : [],
       ground: campus ? [campus.ground] : [],
@@ -212,6 +215,17 @@ function walkTo(x, z, done) {
   if (route.length && Math.hypot(route[0].x - player.position.x, route[0].z - player.position.z) < 0.8) route.shift()
   arrive = done || null
   stuck = 0
+  speed = WALK
+}
+
+function routeLength() {
+  let len = 0
+  let from = player.position
+  for (const p of route) {
+    len += Math.hypot(p.x - from.x, p.z - from.z)
+    from = p
+  }
+  return len
 }
 
 function approach(id) {
@@ -263,7 +277,7 @@ function follow(dt) {
     }
     return false
   }
-  const step = followStep(campus.grid, { x: player.position.x, z: player.position.z }, route, WALK * dt)
+  const step = followStep(campus.grid, { x: player.position.x, z: player.position.z }, route, speed * dt)
   if (step.blocked) {
     stuck += 1
     if (stuck >= 6) {
@@ -284,7 +298,31 @@ function follow(dt) {
 
 function beginAction(detail) {
   if (!visible || !detail?.commit) return
-  if (actionLeft > 0) return
+  if (actionLeft > 0 || pendingAction) return
+  const building = detail.placeId && campus?.layout.buildings.find((item) => item.id === detail.placeId)
+  if (building && player) {
+    const door = doorPoint(building)
+    if (Math.hypot(door.x - player.position.x, door.z - player.position.z) > 0.6) {
+      pendingAction = detail
+      host.dataset.walk = 'walking'
+      host.dataset.doorx = door.x.toFixed(2)
+      host.dataset.doorz = door.z.toFixed(2)
+      walkTo(door.x, door.z, () => {
+        // Finish on the door anchor itself, not just the nearest grid cell.
+        snapTo = { x: door.x, z: door.z }
+        pendingAction = null
+        host.dataset.walk = 'arrived'
+        startBar(detail)
+      })
+      // Action walks are paced to land in about 2.5 s however far the door is.
+      speed = Math.max(WALK, routeLength() / 2.5)
+      return
+    }
+  }
+  startBar(detail)
+}
+
+function startBar(detail) {
   actionLeft = 1.2
   actionCommit = detail.commit
   const bar = host.querySelector('.act-bar')
@@ -422,6 +460,15 @@ function tick(now) {
     } else if (follow(dt)) {
       walking = true
     }
+    if (snapTo) {
+      const sx = snapTo.x - player.position.x
+      const sz = snapTo.z - player.position.z
+      const d = Math.hypot(sx, sz)
+      const k = Math.min(1, (speed * dt) / Math.max(d, 1e-6))
+      player.position.x += sx * k
+      player.position.z += sz * k
+      if (d > 0.02) { walking = true; player.rotation.y = Math.atan2(sx, sz) } else snapTo = null
+    }
     if (rig.mode === 'eye') {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
@@ -441,6 +488,8 @@ function tick(now) {
     mapUi.frame({ x: player.position.x, z: player.position.z, facing: player.rotation.y })
     host.dataset.x = player.position.x.toFixed(1)
     host.dataset.z = player.position.z.toFixed(1)
+    host.dataset.px = player.position.x.toFixed(2)
+    host.dataset.pz = player.position.z.toFixed(2)
     host.dataset.cam = rig.mode
   }
   renderer.render(scene, camera)
@@ -488,7 +537,7 @@ export function showCampus(district, run) {
   if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
   if (shot === 'map') mapUi.open()
   setVisible(true)
-  if (host.querySelector('.onboard').hidden) showTour(false)
+  // The first-load hint now lives in the shared UI (game.js ctaBar), so the old tour only opens from Help.
 }
 
 export function isWorldVisible() {
