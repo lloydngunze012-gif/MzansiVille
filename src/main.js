@@ -32,6 +32,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setMuted, unlock as unlockSound } from './audio.js'
+import { roommateOf } from './avatar.js'
 
 let shareMilestone = null
 let shareBlob = null
@@ -190,9 +191,9 @@ function endMorning(skip, result) {
   if (skip && run.morningStart) { run.stats = { ...run.morningStart.stats }; run.minutes = run.morningStart.minutes }
   run.morningDone = true
   delete run.morningStart
-  // The morning already introduced Zanele as the roommate, so she is the bestie
+  // The morning already introduced the roommate (Zanele, or Sipho for a male student), so they are the bestie
   // and the day 1 "New bestie" card would only repeat it.
-  run.bestieName = 'Zanele'
+  run.bestieName = roommateOf(run.character?.avatar)
   run.queue = run.queue.filter((card) => card.id !== 'bestie-1')
   morningPromise?.then((mod) => mod.stopMorning())
   if (!skip) {

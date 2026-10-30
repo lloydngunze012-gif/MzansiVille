@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { skins } from '../avatar.js'
+import { genderOf, SKIRTED, skins } from '../avatar.js'
 
 // Students are Kenney "Mini Characters" (CC0, public/models/characters).
 // createAvatar returns at once with a capsule stand-in; the rigged model swaps in
@@ -7,8 +7,11 @@ import { skins } from '../avatar.js'
 // skin, hair, top, trousers and shoes follow the character creator.
 
 const BASE = '/models/characters/'
-// Creator hair -> the Kenney head that reads closest to it.
-const HAIR_MODEL = { braids: 'female-d', curls: 'female-f', fade: 'male-f', crop: 'male-d' }
+// Gender and creator hair -> the Kenney body and head that read closest to it.
+const HAIR_MODEL = {
+  female: { braids: 'female-d', curls: 'female-f', fade: 'female-b', crop: 'female-b' },
+  male: { braids: 'male-f', curls: 'male-a', fade: 'male-f', crop: 'male-d' },
+}
 export const CROWD_MODELS = ['female-b', 'female-d', 'female-f', 'male-a', 'male-d', 'male-f']
 const HEIGHT = 1.55
 
@@ -18,6 +21,9 @@ const CLOTH = {
   shirt: ['#ff8a3d', '#244e78', '#1c1915'],
   jacket: ['#1d7fb8', '#3a2f4f', '#f0c400'],
   organt: ['#f0c400', '#1c1915', '#7b3fe4'],
+  dress: ['#e8497a', '#e8497a', '#f7f4ee'],
+  skirt: ['#f7f4ee', '#7b3fe4', '#1c1915'],
+  shweshwe: ['#2456a6', '#2456a6', '#c58a3a'],
 }
 const HAIR = '#1c1915'
 
@@ -168,15 +174,55 @@ function addOrgantMark(model) {
   torso.add(mark)
 }
 
+// A flared low-poly hem from the waist, carried by the torso bone so it turns
+// and bobs with the walk while the legs swing underneath.
+function addSkirt(model, look) {
+  const torso = model.getObjectByName('torso')
+  const body = model.getObjectByName('body-mesh')
+  if (!torso || !body?.isSkinnedMesh) return
+  model.updateMatrixWorld(true)
+  const pos = body.geometry.attributes.position
+  const waist = new THREE.Box3()
+  const legs = new THREE.Box3()
+  const point = new THREE.Vector3()
+  for (let i = 0; i < pos.count; i++) {
+    const part = partOf(body, i)
+    if (part === 'torso') waist.expandByPoint(point.fromBufferAttribute(pos, i))
+    else if (part === 'leg') legs.expandByPoint(point.fromBufferAttribute(pos, i))
+  }
+  if (waist.isEmpty() || legs.isEmpty()) return
+  const width = Math.max(waist.max.x - waist.min.x, legs.max.x - legs.min.x)
+  const depth = Math.max(waist.max.z - waist.min.z, legs.max.z - legs.min.z)
+  const top = waist.min.y + (waist.max.y - waist.min.y) * 0.25
+  const height = (top - legs.min.y) * 0.62
+  const geometry = new THREE.CylinderGeometry(0.5, 0.68, height, 8, 1, true)
+  geometry.scale(width, 1, depth * 1.1)
+  const material = new THREE.MeshStandardMaterial({ color: look.skirt, roughness: 0.8, side: THREE.DoubleSide, flatShading: true })
+  if (look.print) material.emissive = new THREE.Color(0x0b1a3a)
+  const hem = new THREE.Mesh(geometry, material)
+  hem.name = 'skirt'
+  hem.castShadow = true
+  hem.position.set((waist.min.x + waist.max.x) / 2, top - height / 2, (waist.min.z + waist.max.z) / 2)
+  body.add(hem)
+  hem.updateMatrixWorld(true)
+  torso.attach(hem)
+}
+
 export function lookOf(avatar = {}) {
   const cloth = CLOTH[avatar.outfit] || CLOTH.hoodie
+  const gender = genderOf(avatar)
+  const skin = avatar.skinColor || colorOf(skins, avatar.skin, '#d2956b')
+  const skirted = SKIRTED.has(avatar.outfit)
   return {
-    model: avatar.model || HAIR_MODEL[avatar.hair] || 'male-d',
-    skin: avatar.skinColor || colorOf(skins, avatar.skin, '#d2956b'),
+    model: avatar.model || HAIR_MODEL[gender][avatar.hair] || HAIR_MODEL[gender].crop,
+    skin,
     hair: avatar.hairColor || HAIR,
     top: avatar.topColor || cloth[0],
-    bottom: avatar.bottomColor || cloth[1],
+    // Under a skirt or dress the legs are bare; the hem is its own mesh.
+    bottom: skirted ? skin : avatar.bottomColor || cloth[1],
     shoes: avatar.shoeColor || cloth[2],
+    skirt: skirted ? avatar.skirtColor || cloth[1] : '',
+    print: avatar.outfit === 'shweshwe',
     organt: avatar.outfit === 'organt',
   }
 }
@@ -191,6 +237,7 @@ async function attachModel(group, look) {
   model.scale.setScalar(HEIGHT / Math.max(0.1, box.max.y - box.min.y))
   model.name = 'rig'
   if (look.organt) addOrgantMark(model)
+  if (look.skirt) addSkirt(model, look)
   const mixer = new THREE.AnimationMixer(model)
   const actions = {}
   for (const clip of gltf.animations) actions[clip.name] = mixer.clipAction(clip)

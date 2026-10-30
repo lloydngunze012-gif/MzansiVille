@@ -6,6 +6,22 @@ export const skins = [
   { id: 'ebony', label: 'Ebony', fill: '#2c1b12' },
 ]
 
+export const genders = [
+  { id: 'female', label: 'Female' },
+  { id: 'male', label: 'Male' },
+]
+
+// Saves from before the gender picker: braids and curls read as female.
+export function genderOf(avatar = {}) {
+  if (avatar.gender === 'female' || avatar.gender === 'male') return avatar.gender
+  return avatar.hair === 'braids' || avatar.hair === 'curls' ? 'female' : 'male'
+}
+
+// The day 1 roommate shares the student's gender (res rooms are single-gender).
+export function roommateOf(avatar = {}) {
+  return genderOf(avatar) === 'male' ? 'Sipho' : 'Zanele'
+}
+
 export const bodies = [
   { id: 'regular', label: 'Regular' },
   { id: 'curvy', label: 'Curvy' },
@@ -23,7 +39,13 @@ export const outfits = [
   { id: 'shirt', label: 'Shirt' },
   { id: 'jacket', label: 'Jacket' },
   { id: 'organt', label: 'Organt' },
+  { id: 'dress', label: 'Dress' },
+  { id: 'skirt', label: 'Skirt & top' },
+  { id: 'shweshwe', label: 'Shweshwe' },
 ]
+
+// Outfits with bare legs below a hem.
+export const SKIRTED = new Set(['dress', 'skirt', 'shweshwe'])
 
 // Flat Durban palette per outfit: [top, shade, trousers, shoes]
 const cloth = {
@@ -31,6 +53,9 @@ const cloth = {
   shirt: ['#ff8a3d', '#e0662a', '#244e78', '#1c1915'],
   jacket: ['#1d7fb8', '#165f8a', '#3a2f4f', '#f0c400'],
   organt: ['#f0c400', '#d1a800', '#1c1915', '#7b3fe4'],
+  dress: ['#e8497a', '#c23863', '#e8497a', '#f7f4ee'],
+  skirt: ['#f7f4ee', '#d9d2c5', '#7b3fe4', '#1c1915'],
+  shweshwe: ['#2456a6', '#163a78', '#2456a6', '#c58a3a'],
 }
 
 const HAIR = '#1c1915'
@@ -87,6 +112,22 @@ function top(id, c, skin, code) {
       <path d="M32 49l8 8 8-8" fill="none" stroke="${s}" stroke-width="2"/>
       <g fill="#fffaf2" opacity=".9"><path d="M26 63l4 2-3 3z"/><path d="M51 68l4-1-1 4z"/><path d="M33 75l3-3 2 4z"/><path d="M46 60l3 2-3 2z"/></g>`
   }
+  if (id === 'dress' || id === 'shweshwe') {
+    const short = `<path d="M19 55c-3 3-5 7-5 11" stroke="${t}" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M14 66c-1 5-1 10 0 14" stroke="${skin}" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="13.5" cy="81" r="4" fill="${skin}"/>
+      <g class="av-arm-r"><path d="M61 55c3 3 5 7 5 11" stroke="${t}" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M66 66c1 5 1 10 0 14" stroke="${skin}" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="66.5" cy="81" r="4" fill="${skin}"/></g>`
+    const print = id === 'shweshwe'
+      ? `<g fill="#fffaf2" opacity=".85">${[[28, 60], [40, 58], [52, 60], [24, 72], [34, 70], [46, 70], [56, 72], [30, 81], [42, 80], [52, 82]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3"/><path d="M${x - 3} ${y + 4}h6" stroke="#fffaf2" stroke-width=".8"/>`).join('')}</g>`
+      : `<path d="M22 66h36" stroke="${s}" stroke-width="2.4"/>`
+    return `${short}<path d="M22 56c4-6 10-8 18-8s14 2 18 8l2 10 6 21H14l6-21z" fill="${t}"/>${print}
+      <path d="M34 49c3 4 9 4 12 0" fill="${skin}"/>`
+  }
+  if (id === 'skirt') {
+    return `${arms}<path d="M20 56c4-6 12-8 20-8s16 2 20 8l1 12H19z" fill="${t}"/>
+      <path d="M34 49c3 4 9 4 12 0" fill="none" stroke="${s}" stroke-width="2"/>
+      <path d="M20 67h40l5 19H15z" fill="${c[2]}"/><path d="M27 68l-3 17M40 68v18M53 68l3 17" stroke="#000" stroke-width=".8" opacity=".2"/>`
+  }
   if (id === 'jacket') {
     return `${arms}${body}<path d="M35 50l5 32 5-32" fill="#fffaf2"/>
       <path d="M40 52v30" stroke="${s}" stroke-width="1.6"/>
@@ -111,7 +152,7 @@ export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 102" width="${size}" height="${height}" role="img" aria-label="Avatar">
     <ellipse cx="40" cy="99" rx="20" ry="3" fill="#000" opacity=".18"/>
     ${hairBack(hair)}
-    <g${wide}><path d="M28 80h10l-1 15h-8zM42 80h10l-1 15h-8z" fill="${c[2]}"/>
+    <g${wide}><path d="M28 80h10l-1 15h-8zM42 80h10l-1 15h-8z" fill="${SKIRTED.has(outfit) ? skin : c[2]}"/>
     <path d="M26 94h12v4H25zM42 94h12l1 4H42z" fill="${c[3]}"/>
     <rect x="35" y="42" width="10" height="9" rx="3" fill="${skin}"/>
     <path d="M35 47h10" stroke="${cheek}" stroke-width="2" opacity=".5"/>

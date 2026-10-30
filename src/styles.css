@@ -683,6 +683,7 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .cc-thumb svg { display: block; margin: 0 auto; }
 .cc-thumb.hair svg { transform: translateY(1px) scale(1.25); transform-origin: 50% 0; }
 .cc-thumb.outfit svg { transform: translateY(-14px); }
+.cc-thumb.gender { display: grid; place-items: center; font: 900 26px/1 var(--display); color: #fff; }
 .cc-chip[aria-pressed="true"] { border-color: var(--grape); background: #f1e9ff; box-shadow: 0 3px 0 var(--grape); animation: cc-pick .35s cubic-bezier(.2,1.8,.4,1); }
 @keyframes cc-pick { 40% { transform: scale(1.08); } }
 .cc-preview { display: flex; flex-direction: column; gap: 8px; }
