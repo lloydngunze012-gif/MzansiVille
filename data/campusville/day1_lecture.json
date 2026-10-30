@@ -16,8 +16,8 @@
   },
   "arrive_venue": {
     "place": "smig",
-    "caption": "Business Hall. A sign, a heavy door, and the smell of old chalk.",
-    "sign": "Business Hall \u00b7 Westville Campus",
+    "caption": "SMIG. A sign, a heavy door, and the smell of old chalk.",
+    "sign": "SMIG \u00b7 Westville Campus",
     "bell": "The bell rings. Everyone suddenly walks faster.",
     "lecturer_line": { "who": "lecturer", "text": "Doors close at nine. Not five past, nine." },
     "move": "Students stream toward the door, bag straps swing, a bell rings from the courtyard.",

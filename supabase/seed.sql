@@ -10,7 +10,7 @@ insert into public.district_places (district_id, id, name, kind, x, y, blurb) va
 ('campusville', 'bus_station', 'Main Bus Station', 'transit', 500, 900, 'Buses into town and back to off-campus res; a late bus, or the choice to walk'),
 ('campusville', 'sports_centre', 'Sports Centre', 'venue', 820, 420, 'Gym, sport, and where exams and graduation happen'),
 ('campusville', 'library', 'Library', 'study', 380, 420, 'Study sessions, group work, the 24-hour section in exam week'),
-('campusville', 'smig', 'Business Hall', 'lecture', 300, 560, 'Business, management, and IT lectures'),
+('campusville', 'smig', 'SMIG', 'lecture', 300, 560, 'Business, management, and IT lectures'),
 ('campusville', 'health_sciences', 'Health Sciences Lecture Venue', 'lecture', 640, 600, 'Health Sciences lectures and labs'),
 ('campusville', 'science', 'Science Lecture Venue', 'lecture', 360, 300, 'Science lectures and labs'),
 ('campusville', 'law', 'Law Lecture Venue', 'lecture', 680, 320, 'Law lectures'),

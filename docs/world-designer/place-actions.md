@@ -10,7 +10,7 @@ Phases: wake 07:00–08:00, transit 08:00–09:00, lecture 09:00–13:00, social
 
 A row’s `place_id` is not always where it appears. Home-scoped actions (noodles, skip breakfast, phone, sleep, call home) follow the student’s residence. Course-scoped attend and back-row follow the course venue, even though the CSV says `smig`. `res_party` is any on-campus residence, not only R Block.
 
-So a Law student in O Block already gets attend and back-row at the Law venue. Business Hall, Health Sciences, Science, and Engineering show those two only when the course points there. These seven CSV places have no row of their own: Health Sciences, Science, Law, Engineering, other on-campus blocks, off-campus res, Main Gate. Most other places have one row. Tapping them in the wrong phase says there is nothing here.
+So a Law student in O Block already gets attend and back-row at the Law venue. SMIG, Health Sciences, Science, and Engineering show those two only when the course points there. These seven CSV places have no row of their own: Health Sciences, Science, Law, Engineering, other on-campus blocks, off-campus res, Main Gate. Most other places have one row. Tapping them in the wrong phase says there is nothing here.
 
 Shipped effects, for scale (do not retune them here):
 
@@ -40,7 +40,7 @@ Content Writer owns these places (PR 3). Their ids and phases win. Lines are not
 
 Course-scoped `lecture_attend` and `lecture_back` still ship for the student’s own venue. They are not replaced.
 
-### Business Hall `smig`
+### SMIG `smig`
 
 | id | phase | effects | status |
 | --- | --- | --- | --- |
@@ -268,7 +268,7 @@ Home actions if the student lives off campus. No res party.
 
 ## Content Writer
 
-The 46 rows for Business Hall, Health Sciences, Science, Law, Engineering, Main Gate, and the Quad are written by Content Writer, see PR 3. Their ids and phases are the ones in the skeleton. Their lines are not copied into this file.
+The 46 rows for SMIG, Health Sciences, Science, Law, Engineering, Main Gate, and the Quad are written by Content Writer, see PR 3. Their ids and phases are the ones in the skeleton. Their lines are not copied into this file.
 
 Still to write: every row below with `needs_lines: true`. Those places are the bus station, cafeteria, library, sports centre, O Block, R Block, S Block, other on-campus blocks, and off-campus res. Caption, result, and twist (twist may stay blank). Do not rewrite shipped rows.
 

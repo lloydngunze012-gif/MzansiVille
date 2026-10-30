@@ -145,7 +145,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
     await page.locator('.g-result [data-act]').first().tap()
     await page.waitForTimeout(300)
   }
-  await expect(page.locator('.g-route')).toContainText('Your lecture is at the Business Hall')
+  await expect(page.locator('.g-route')).toContainText('Your lecture is at SMIG')
   // Home keeps the save: Continue appears.
   await page.locator('.g-home').first().tap()
   await expect(page.locator('[data-act="continue"]')).toBeVisible()
