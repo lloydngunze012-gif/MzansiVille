@@ -10,9 +10,11 @@ Stats start at R1 500, energy 100, grades 50, social 30, hunger 70. A day has si
 
 Three game days fit in one real day. After that the screen says "Energy refills at 06:00" until the next 06:00 local time.
 
+On campus the map is a low-poly 3D view. Drag to turn the camera, scroll or pinch to zoom, tap the ground to walk, or use WASD. Buildings and paths come from the district files. Drop a CC0 glTF into `public/models/` and name it in `manifest.json` to replace a box. See `public/models/CREDITS.md`.
+
 ## Stack
 
-Vite and vanilla JavaScript. No other UI framework. Supabase is used for auth, the profile row, realtime lobby chat, leaderboards, reports, and event-text edits. The day simulation runs on the phone. Deploy with Vercel. The production JS bundle stays under 400 KB uncompressed.
+Vite and vanilla JavaScript, with Three.js for the campus. No other UI framework. Supabase is used for auth, the profile row, realtime lobby chat, leaderboards, reports, and event-text edits. The day simulation runs on the phone. Deploy with Vercel. Menu-screen JavaScript stays under 400 KB uncompressed. The 3D world loads as its own chunk when you step onto campus.
 
 ## Local
 

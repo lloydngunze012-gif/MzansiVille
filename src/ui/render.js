@@ -1,7 +1,6 @@
 import { avatarSvg, hairs, outfits, skins } from '../avatar.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatDelta, formatMoney, weekdayName } from '../engine/format.js'
-import { homePlaceId } from '../engine/model.js'
 import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
@@ -10,16 +9,6 @@ export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[char]))
-}
-
-const KIND_COLOR = {
-  hub: '#f0c400',
-  food: '#e07a3d',
-  transit: '#8aa0b4',
-  venue: '#3f8f62',
-  study: '#6d8cae',
-  lecture: '#d07a52',
-  residence: '#b08968',
 }
 
 const RES_GROUPS = [
@@ -45,15 +34,6 @@ export function emptyDraft() {
 
 function phaseOf(district, id) {
   return district.meta.phases.find((phase) => phase.id === id) || district.meta.phases[0]
-}
-
-function shortName(place) {
-  const cleaned = place.name
-    .replace(' Lecture Venue', '')
-    .replace(/^The /, '')
-    .replace(/^Main /, '')
-    .replace(' (bus home)', '')
-  return cleaned.length > 14 ? cleaned.slice(0, 12) : cleaned
 }
 
 function meter(label, value, max, color) {
@@ -107,32 +87,6 @@ function chrome(district, run, active) {
   </header>
   ${run.badges?.includes('lectures') ? '<p class="banner good">Lecture streak</p>' : ''}
   ${banners(district, run)}`
-}
-
-function mapSvg(district, run) {
-  const home = homePlaceId(district, run.character.residence)
-  const paths = (district.meta.paths || []).map((path) => {
-    const d = path.map((point, index) => `${index ? 'L' : 'M'}${point[0]} ${point[1]}`).join(' ')
-    return `<path d="${d}" fill="none" stroke="#c5d7a4" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>`
-  }).join('')
-  const shapes = district.places.map((place) => {
-    const fill = KIND_COLOR[place.kind] || '#ccc'
-    return `<g data-place="${esc(place.id)}" transform="translate(${place.x} ${place.y})">
-      <title>${esc(place.name)}</title>
-      <rect x="-50" y="-30" width="100" height="58" rx="12" fill="${fill}" stroke="${place.id === home ? '#1c1915' : '#fffaf2'}" stroke-width="${place.id === home ? 8 : 4}"/>
-      <text y="8" text-anchor="middle" font-size="20" font-family="sans-serif" fill="#1c1915">${esc(shortName(place))}</text>
-    </g>`
-  }).join('')
-  return `<svg viewBox="-70 -70 1140 1140" role="img" aria-label="${esc(district.meta.name)} map">
-    <rect x="-70" y="-70" width="1140" height="1140" fill="#e7f0d4"/>
-    ${paths}${shapes}
-  </svg>`
-}
-
-function chips(district, run) {
-  const home = homePlaceId(district, run.character.residence)
-  return `<div class="chips">${district.places.map((place) =>
-    `<button type="button" class="${place.id === home ? 'here' : ''}" data-act="place" data-id="${esc(place.id)}">${esc(place.name)}</button>`).join('')}</div>`
 }
 
 function laterHint(district, run, placeId) {
@@ -196,10 +150,10 @@ function overlay(run) {
 
 function play(state, screenName, placeId) {
   const { district, run } = state
-  return `<main class="screen" data-screen="${screenName}">
+  return `<main class="screen world-hud" data-screen="${screenName}">
     ${chrome(district, run, 'play')}
-    <div class="map-wrap"><div class="map-stage">${mapSvg(district, run)}</div></div>
-    ${chips(district, run)}
+    <div class="world-space"></div>
+    <p class="world-hint">Drag to turn. Tap the ground to walk.</p>
     ${placeId ? sheet(district, run, placeId) : ''}
     ${nav('play')}
     ${overlay(run)}
