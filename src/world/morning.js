@@ -2,7 +2,7 @@
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { loop as soundLoop, sfx } from '../audio.js'
-import { createAvatar, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 
 const WAKE = 7 * 60
@@ -242,18 +242,19 @@ async function clockRoll(add) {
   await addMinutes(add, 0.9)
   node.innerHTML = `<span class="mm-roll"><b>${to}</b></span>`
 }
-// Zanele has arms (the base avatar has none) so she can wave.
+// Zanele: red top, yellow headwrap. The capsule arms and wrap are only the
+// stand-in until her rigged model loads.
 function makeZanele() {
-  const z = createAvatar({ skin: 'deep', hair: 'fade', outfit: 'hoodie' })
+  const z = createAvatar({ model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' })
   z.name = 'zanele'
-  z.userData.bob.material = z.userData.bob.material.clone()
-  z.userData.bob.material.color.set(0xd9534f)
   const wrap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0xf0c400, roughness: 0.7 }))
   wrap.position.y = 1.5
   wrap.scale.set(1, 1.25, 1)
+  markStandIn(wrap)
   z.add(wrap)
   const bud = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshStandardMaterial({ color: 0xffffff }))
   bud.position.set(0.21, 1.42, 0.03)
+  markStandIn(bud)
   z.add(bud)
   const armMat = z.userData.bob.material
   for (const side of [-1, 1]) {
@@ -264,11 +265,17 @@ function makeZanele() {
     arm.castShadow = true
     pivot.add(arm)
     pivot.name = side > 0 ? 'arm-r' : 'arm-l'
+    markStandIn(pivot)
     z.add(pivot)
   }
   return z
 }
 function wave(who, seconds = 1.6) {
+  if (who.userData.rigged) {
+    host.dataset.wave = '1'
+    const length = gesture(who, 'interact-right')
+    return wait(Math.max(seconds, length))
+  }
   const arm = who.getObjectByName('arm-r')
   if (!arm) return Promise.resolve()
   host.dataset.wave = '1'
@@ -559,7 +566,7 @@ function tick(now) {
   }
   soundLoop('footsteps', walking.player && player?.visible)
   for (const [who, key] of [[player, 'player'], [roommate, 'roommate']]) {
-    if (who && who.userData.pose === 'stand') poseAvatar(who, walking[key], clock)
+    if (who) poseAvatar(who, walking[key], clock)
   }
   if (marker.visible) { marker.scale.setScalar(1 + Math.sin(clock * 5) * 0.12); halo.material.opacity = 0.25 + Math.sin(clock * 5) * 0.15 }
   if (kettleLight.userData.pulse) kettleLight.intensity = 3 + Math.sin(clock * 5) * 2
