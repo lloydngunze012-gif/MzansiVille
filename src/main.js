@@ -228,6 +228,18 @@ function syncMorning(viewState) {
 }
 
 let lecturePromise = null
+let previewPromise = null
+
+// The creator shows the real 3D student, so what you dress is what you play.
+function syncPreview(viewState) {
+  const stage = viewState?.screen === 'create' && hasGL() ? app.querySelector('.cc-stage') : null
+  if (!stage) { previewPromise?.then((mod) => mod.hidePreview()); return }
+  if (!previewPromise) previewPromise = import('./ui/preview3d.js')
+  previewPromise.then((mod) => {
+    const now = app.querySelector('.cc-stage')
+    if (now) mod.showPreview(now, draft.avatar)
+  }).catch((error) => console.error(error))
+}
 
 function lectureWanted(run) {
   return Boolean(run && run.mode === 'play' && run.phase === 'lecture' && !run.lectureResolved && hasGL())
@@ -323,6 +335,7 @@ function paint() {
   if (newLog) newLog.scrollTop = chat.menuId && logTop != null ? logTop : newLog.scrollHeight
   const screen = app.querySelector('[data-screen]')
   app.dataset.screen = screen?.dataset.screen || 'title'
+  syncPreview(viewState)
   if (focusId) {
     const el = document.getElementById(focusId)
     if (el) {

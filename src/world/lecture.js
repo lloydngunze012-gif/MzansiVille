@@ -319,6 +319,7 @@ async function play() {
   lecturer.position.set(0, 0.5, -4.9)
   scene.add(lecturer)
   player = createAvatar(run.character?.avatar)
+  host.dataset.look = JSON.stringify(player.userData.look)
   player.position.set(AISLE_X, 0, 8.4)
   player.rotation.y = Math.PI
   scene.add(player)

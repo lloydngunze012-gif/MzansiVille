@@ -683,7 +683,7 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .cc-thumb svg { display: block; margin: 0 auto; }
 .cc-thumb.hair svg { transform: translateY(1px) scale(1.25); transform-origin: 50% 0; }
 .cc-thumb.outfit svg { transform: translateY(-14px); }
-.cc-thumb.gender { display: grid; place-items: center; font: 900 26px/1 var(--display); color: #fff; }
+.cc-thumb.gender { display: grid; place-items: center; font: 900 26px/1 var(--display); color: #5b23c9; }
 .cc-chip[aria-pressed="true"] { border-color: var(--grape); background: #f1e9ff; box-shadow: 0 3px 0 var(--grape); animation: cc-pick .35s cubic-bezier(.2,1.8,.4,1); }
 @keyframes cc-pick { 40% { transform: scale(1.08); } }
 .cc-preview { display: flex; flex-direction: column; gap: 8px; }
@@ -703,6 +703,8 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 }
 @keyframes cc-arm { from { transform: rotate(0); } to { transform: rotate(-130deg); } }
 @media (prefers-reduced-motion: reduce) { .cc-bob.cc-dance, .cc-dance .av-arm-r { animation-duration: 2.4s; } }
+.cc-3d { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+.cc-stage.cc-has3d .cc-bob { visibility: hidden; }
 .cc-mute { position: absolute; top: 8px; right: 8px; z-index: 3; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #f0c400; background: #2a1a44; color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
 .cc-id { position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 8px 10px 8px 14px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; box-shadow: 0 4px 0 var(--ink); }
 .cc-id::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--grape); }
