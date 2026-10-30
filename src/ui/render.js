@@ -5,6 +5,8 @@ import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
+import { mapHome, withHud } from './game.js'
+
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -13,7 +15,7 @@ export function esc(value) {
 
 const RES_GROUPS = [
   ['on_campus', 'On campus'],
-  ['off_campus_ukzn_owned', 'UKZN residences'],
+  ['off_campus_campus_owned', 'Campus-owned (off campus)'],
   ['off_campus_leased', 'Leased'],
   ['private_accredited', 'Private accredited'],
   ['other', 'Other'],
@@ -90,7 +92,7 @@ function hudMode() {
   }
 }
 
-function nav(active, world) {
+export function nav(active, world) {
   const items = [['play', 'Map'], ['profile', 'You'], ['board', 'Board'], ['chat', 'Chat']]
   return `<nav class="nav">${items.map(([id, label]) => {
     if (world && id === 'play') {
@@ -230,7 +232,7 @@ const CARD_LABEL = {
   over: 'That is the end',
 }
 
-function cardHtml(card, state) {
+export function cardHtml(card, state) {
   if (!card) return ''
   const district = state?.district
   const choices = (card.choices || []).map((label, index) => {
@@ -279,7 +281,7 @@ function play(state, screenName, placeId) {
   </main>`
 }
 
-function summaryRows(morning, stats) {
+export function summaryRows(morning, stats) {
   const rows = [
     ['Money', morning?.money, stats.money],
     ['Energy', morning?.energy, stats.energy],
@@ -348,28 +350,28 @@ function gameover(state) {
   </main>`
 }
 
+function legalShell(screen, kicker, title, body) {
+  return `<main class="screen lg" data-screen="${screen}">
+    <div class="lg-top"><a class="lg-back" href="#/">\u2190 Back</a></div>
+    <article class="lg-card"><p class="lg-kicker">${kicker}</p><h1>${title}</h1>${body}</article>
+  </main>`
+}
+function legalList(items) {
+  return `<ol>${items.map((text, i) => `<li><b>${i + 1}</b><span>${text}</span></li>`).join('')}</ol>`
+}
 function legalText(screen, title, paragraphs) {
-  return `<main class="screen pad legal" data-screen="${screen}">
-    <a class="link" href="#/">Back</a>
-    <h1 style="margin-top:16px">${title}</h1>
-    ${paragraphs.map((text) => `<p>${text}</p>`).join('')}
-  </main>`
+  return legalShell(screen, 'Westville Campus', title, legalList(paragraphs))
 }
-
 function rules() {
-  return `<main class="screen pad legal" data-screen="rules">
-    <a class="link" href="#/">Back</a>
-    <h1 style="margin-top:16px">Community rules</h1>
-    <p>The lobby is one public room. Talk like a person other people have to sit next to.</p>
-    <p>No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information.</p>
-    <p>Every message has mute, block, and report. Reports go to admins. A suspended account cannot post.</p>
-    <p>Chat is rate limited: a short pause between messages, and 30 messages in 10 minutes.</p>
-    <label class="field" style="font-weight:500"><span><input id="agree" type="checkbox" style="width:auto;min-height:0"/> I agree</span></label>
-    <button class="btn primary block" type="button" data-act="agree">Continue</button>
-    <p class="fine">Full community text can be extended later. These are the rules that already bind the lobby.</p>
-  </main>`
+  return legalShell('rules', 'Before you move in', 'Community rules', legalList([
+    'The lobby is one public room. Talk like a person other people have to sit next to.',
+    'No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone\'s private information.',
+    'Every message has mute, block, and report. Reports go to admins. A suspended account cannot post.',
+    'Chat is rate limited: a short pause between messages, and 30 messages in 10 minutes.',
+  ]) + `<label class="lg-agree"><input id="agree" type="checkbox"/> I agree to keep campus kind</label>
+    <button class="lg-go" type="button" data-act="agree">Continue</button>
+    <p class="lg-fine">These are the rules that already bind the lobby. Full community text can be extended later.</p>`)
 }
-
 function create(state) {
   const { district, draft } = state
   const code = district.meta.dialCode
@@ -399,12 +401,12 @@ function create(state) {
       <aside class="cc-preview">
         <div class="cc-stage">
           <i class="cc-bg" aria-hidden="true"></i><svg class="cc-gem" viewBox="0 0 24 30" aria-hidden="true"><path d="M12 0l10 11-10 19L2 11z" fill="#8b4dff"/><path d="M12 0l4 11-4 19-4-19z" fill="#b48cff"/><path d="M2 11h20" stroke="#5b23c9" stroke-width="1"/></svg>
-          <span class="cc-ready${todo ? '' : ' ok'}">${todo ? `${todo} to go` : 'Ready ✓'}</span>
+          <span class="cc-ready${todo ? '' : ' ok'}" data-card="ready">${todo ? `${todo} to go` : 'Ready ✓'}</span>
           <div class="cc-bob">${avatarSvg(draft.avatar, code, 118)}</div>
         </div>
         <div class="cc-id"><div class="cc-id-top"><small>Student card</small><svg class="cc-crest" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#5b23c9" stroke="#f0c400" stroke-width="2"/><path d="M6 15l1-7 3 3 2-4 2 4 3-3 1 7z" fill="#f0c400"/></svg></div>
-          <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong>${esc(draft.name.trim() || 'Your name')}</strong>
-          <span>${esc(draft.residence || 'Res: choose')}</span><span>${esc(draft.course || 'Course: choose')}</span></div></div>
+          <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong data-card="name">${esc(draft.name.trim() || 'Your name')}</strong>
+          <span data-card="residence">${esc(draft.residence || 'Res: choose')}</span><span data-card="course">${esc(draft.course || 'Course: choose')}</span><span data-card="handle">${esc(draft.handle.trim() ? '@' + draft.handle.trim().replace(/^@/, '') : '@handle')}</span></div></div>
           <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
       </aside>
     </div>
@@ -631,22 +633,20 @@ export function view(state) {
     ])
   }
   if (screen === 'create') return create(state)
-  if (screen === 'map' || screen === 'play') return play(state, screen === 'map' ? 'map' : 'play', '')
-  if (screen === 'place' || screen === 'closed') return play(state, screen, state.placeId)
-  if (screen === 'summary') {
-    if (state.run?.mode === 'play') return play(state, 'play', '')
-    return summary(state)
-  }
+  if (screen === 'world') return play(state, 'play', '')
+  if (screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
+  if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)
   if (screen === 'gameover' || screen === 'over') return gameover(state)
-  if (screen === 'profile') return profile(state)
-  if (screen === 'share') return share(state)
+  if (screen === 'profile') return withHud(state, profile(state))
+  if (screen === 'share') return withHud(state, share(state))
   if (screen === 'shop') return shop(state)
-  if (screen === 'save') return saveScreen(state)
-  if (screen === 'chat') return chat(state)
-  if (screen === 'leaderboard' || screen === 'board') return board(state)
+  if (screen === 'save') return withHud(state, saveScreen(state))
+  if (screen === 'chat') return withHud(state, chat(state))
+  if (screen === 'leaderboard' || screen === 'board') return withHud(state, board(state))
   if (screen === 'admin') return admin(state)
   if (screen === 'event' || screen === 'twist' || screen === 'bestie' || screen === 'graduated') {
+    if (!state.run?.queue?.[0]) return mapHome(state, '')
     return `<main class="screen world-hud" data-screen="${screen}">
       ${chrome(state.district, state.run)}
       ${cardHtml(state.run.queue[0], state)}
