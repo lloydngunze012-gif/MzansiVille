@@ -834,3 +834,11 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 #world .act-say b { display: block; font: 900 10.5px system-ui; letter-spacing: .08em; text-transform: uppercase; color: #1f7a4a; }
 #world .act-bar.small { width: 120px; height: 8px; padding: 0; }
 #world .act-bar.small em { display: none; }
+
+/* Scene cuts (into a room, onto the bus): a quick fade with an optional caption. */
+#world .scene-fade { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; background: #160c28; animation: sfade .3s ease-out; pointer-events: none; }
+#world .scene-fade[hidden] { display: none; }
+#world .scene-fade.out { animation: sfadeout .35s ease-in forwards; }
+#world .scene-fade p { color: #f0c400; font: 800 20px system-ui; margin: 0; }
+@keyframes sfade { from { opacity: 0 } }
+@keyframes sfadeout { to { opacity: 0 } }

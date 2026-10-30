@@ -80,6 +80,17 @@ check('a shift pays money and costs a little grades time, not +120 grades (QA B0
   assert.ok(job.deltas.grades <= 0, `job gives ${job.deltas.grades} grades`)
 })
 
+check('every action in activities.csv plays a visible scene (no blank progress bars)', () => {
+  const scenesSrc = readFileSync(new URL('../src/world/scenes.js', import.meta.url), 'utf8')
+  const actsSrc = readFileSync(new URL('../src/world/activities.js', import.meta.url), 'utf8')
+  const quad = new Set([...actsSrc.matchAll(/^\s{2}(\w+): '(\w+)',$/gm)].map((m) => m[1]))
+  const mapped = new Set([...scenesSrc.matchAll(/^\s{2}(\w+): \['(\w+)'/gm)].map((m) => m[1]))
+  const names = new Set([...scenesSrc.matchAll(/^\s{4}async (\w+)\(place/gm)].map((m) => m[1]))
+  for (const m of scenesSrc.matchAll(/^\s{2}(\w+): \['(\w+)'/gm)) assert.ok(names.has(m[2]), `${m[1]} uses missing scene ${m[2]}`)
+  const missing = district.activities.filter((a) => !a.id.startsWith('organt') && !quad.has(a.id) && !mapped.has(a.id)).map((a) => a.id)
+  assert.deepEqual(missing, [], `no scene for: ${missing.join(', ')}`)
+})
+
 check('home and course places', () => {
   assert.equal(homePlaceId(district, 'O Block'), 'res_o')
   assert.equal(homePlaceId(district, 'Gapwood Residence'), 'off_campus')
