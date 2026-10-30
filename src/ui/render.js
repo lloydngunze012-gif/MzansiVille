@@ -5,7 +5,8 @@ import { actionState, actionsAt, createRun } from '../engine/sim.js'
 import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
-import { gameOverScreen, mapHome, milestonesScreen, withHud } from './game.js'
+import { boardScreen, lobbyScreen } from './social.js'
+import { gameOverScreen, hud, mapHome, milestonesScreen, withHud } from './game.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -457,15 +458,19 @@ function profile(state) {
 }
 
 function share(state) {
-  return `<main class="screen pad" data-screen="share">
-    <a class="link" href="#/profile">Back</a>
-    <h1 style="margin:12px 0">Share card</h1>
-    <canvas id="share-card" class="share-preview" width="1080" height="1080"></canvas>
-    <div class="stack" style="margin-top:12px">
-      <button class="btn primary block" type="button" data-act="share">Share</button>
-      <button class="btn ghost block" type="button" data-act="copy">Copy link</button>
-    </div>
-    <p class="fine" id="copy-note"></p>
+  const { run, district } = state
+  const m = state.shareMilestone
+  const files = typeof navigator !== 'undefined' && navigator.canShare && (() => { try { return navigator.canShare({ files: [new File([''], 'x.png', { type: 'image/png' })] }) } catch { return false } })()
+  return `<main class="screen g-screen lg" data-screen="share">
+    ${hud(district, run, { strip: false })}
+    <div class="lg-top"><a class="lg-back" href="#/play">\u2190 Back to campus</a></div>
+    <article class="lg-card sc-card sh-card">
+      <p class="lg-kicker">${m ? 'Share your milestone' : 'Share your day'}</p>
+      <h1>${m ? esc(m.title) : `Day ${run.day} on campus`}</h1>
+      <canvas id="share-card" class="sh-preview" width="1080" height="1080" aria-label="Share card preview"></canvas>
+      <div class="g-two"><button type="button" class="g-go" data-act="share">${files ? '\u{1F4E4} Share image' : '\u2B07\uFE0F Download PNG'}</button><button type="button" class="g-go ghost" data-act="copy">\u{1F517} Copy link</button></div>
+      <p class="sc-note" id="copy-note">1080 \u00d7 1080 PNG \u00b7 made on your phone</p>
+    </article>
   </main>`
 }
 
@@ -640,11 +645,11 @@ export function view(state) {
   if (screen === 'gameover' || screen === 'over') return gameOverScreen(state)
   if (screen === 'milestones') return milestonesScreen(state)
   if (screen === 'profile') return withHud(state, profile(state))
-  if (screen === 'share') return withHud(state, share(state))
+  if (screen === 'share') return share(state)
   if (screen === 'shop') return shop(state)
   if (screen === 'save') return withHud(state, saveScreen(state))
-  if (screen === 'chat') return withHud(state, chat(state))
-  if (screen === 'leaderboard' || screen === 'board') return withHud(state, board(state))
+  if (screen === 'chat') return state.run ? lobbyScreen(state) : chat(state)
+  if (screen === 'leaderboard' || screen === 'board') return state.run ? boardScreen(state, localBoardRow(state.run)) : board(state)
   if (screen === 'admin') return admin(state)
   if (screen === 'event' || screen === 'twist' || screen === 'bestie' || screen === 'graduated') {
     if (!state.run?.queue?.[0]) return mapHome(state, '')
