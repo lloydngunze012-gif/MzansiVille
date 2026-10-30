@@ -2,7 +2,7 @@ name,type,distance_km,monthly_rent,vibe,mod_energy,mod_social,mod_grades,mod_hun
 O Block,on_campus,0,3100,Loud and cheap,-3,5,-2,-2,"Speaker on the balcony, two-minute noodles, and a party that starts in someone's room."
 R Block,on_campus,0,4200,Quiet and dear,3,-3,3,1,"The corridor goes still after ten. Bring earplugs only if you snore."
 S Block,on_campus,0,3600,Courtyard middle,1,2,0,0,"Courtyard soccer until the floodlight clicks off, then someone shares the fridge."
-ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,,,,,,"Not playable. Add each remaining on-campus block as its own row when the letters are settled."
+ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,,,,,,,"Not playable. Add each remaining on-campus block as its own row when the letters are settled."
 Jacaranda Court,off_campus_campus_owned,2.4,4800,Leafy and settled,2,0,2,0,"Campus flats under the jacarandas. The guard knows your name. Single and two-bed."
 Cane Crescent,off_campus_campus_owned,3.2,4400,Warm and shared,0,2,1,1,"Two-bed sharing and a kitchen that always smells like stew. A short bus, then you are home."
 Harbour Walk,off_campus_leased,11.8,3600,Far and salty,-4,2,-1,0,"The cheap rooms by the sea. The bus eats the evening and the breeze gives a little of it back."

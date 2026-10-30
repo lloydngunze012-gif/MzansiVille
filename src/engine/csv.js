@@ -1,4 +1,5 @@
-export function parseCsv(text) {
+// Raw rows (arrays of cells), blank lines dropped. The header is row 0.
+export function parseCsvRows(text) {
   const rows = []
   let row = []
   let cell = ''
@@ -30,7 +31,11 @@ export function parseCsv(text) {
     row.push(cell)
     rows.push(row)
   }
-  const kept = rows.filter((r) => r.some((value) => String(value).trim() !== ''))
+  return rows.filter((r) => r.some((value) => String(value).trim() !== ''))
+}
+
+export function parseCsv(text) {
+  const kept = parseCsvRows(text)
   if (!kept.length) return []
   const header = kept[0].map((h) => h.trim())
   return kept.slice(1).map((r) => {

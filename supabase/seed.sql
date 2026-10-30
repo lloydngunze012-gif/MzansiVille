@@ -38,7 +38,7 @@ insert into public.district_activities
 ('campusville', 'library_study', 'leisure', 'library', 'Study at the library', 0, -15, 10, -3, -5, 1, 'Best grade gain; exam week doubles it'),
 ('campusville', 'sports_gym', 'leisure', 'sports_centre', 'Gym or sport', -10, -15, 0, 6, -10, 1, 'Raises energy cap by 2 for the week; sports day events'),
 ('campusville', 'res_party', 'leisure', 'res_r', 'Res party', -20, -25, -4, 15, -5, 2, 'Big social; tomorrow starts with energy -20; chance of a legendary night (social +25)'),
-('campusville', 'job_shift', 'work', 'quad', 'Work a shift (tutoring', 0, 0, 120, -20, 0, 2, '-5'),
+('campusville', 'job_shift', 'work', 'quad', 'Work a shift (tutoring, library desk, promo)', 120, -20, 0, 2, -5, 2, 'Only unlocked after day 3; shifts are limited per week'),
 ('campusville', 'call_home', 'leisure', 'res_s', 'Call home', 0, 5, 0, 6, 0, 0, '20% chance of R200 arriving; 10% chance of a lecture about your marks'),
 ('campusville', 'sleep', 'night', 'res_o', 'Sleep', 0, 60, 0, 0, -20, 1, 'Ends the day; night events: load shedding, fire alarm, party next door'),
 ('campusville', 'smig_sitin', 'lecture', 'smig', 'Sit in on a Management lecture', 0, -8, 4, 1, -5, 1, 'Learn a bit even if it is not your course; chance the lecturer asks who you are'),
