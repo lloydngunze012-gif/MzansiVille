@@ -30,3 +30,51 @@ Added by the owner during the build (keep these):
 - Characters have a gender, picked in the creator. The day 1 roommate is the same gender: Zanele for female students, Sipho for male students.
 - Include feminine clothing (Dress, Skirt & top, Shweshwe so far) and keep adding variety.
 - In the character creator the student dances and South African house music plays. A mute button is fine, but music and dancing are the default.
+
+Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a).
+
+---
+
+# Plan 2 (current): owner feedback and next plan
+
+Save all of this to CLAUDE.md, then work through it in order. Push after each item, with the usual three lines: what changed, what to test on my phone, what's still broken.
+
+LAUNCH TARGET
+Day 1 fully playable, then a 5-day week where each day has a goal, real choices, and reasons to come back tomorrow. Everything below serves that.
+
+GOLDEN RULES
+- Every tap shows movement or something happening, never just a progress bar and numbers.
+- Never force a path: every scene offers another way through.
+- Every prompt leads to a choice, never just information.
+
+PART 1: BUGS
+1. The character in the world doesn't match the creator (wrong skin, outfit and gender). Trace whether creator choices are saved to run.character.avatar and used in the morning, campus and lecture. Note the rebuild key in src/world/scene.js (~line 478) ignores gender and body. Test: create a female in a dress with dark skin; she must look identical in every scene.
+2. Students walk into and stand inside the player. Add avoidance and personal space for everyone.
+3. Speech bubbles close too fast. Every line stays until the player taps, with a small "tap to continue" hint.
+4. Breakfast isn't forced: when the noodles are gone, add a third option, "Walk to the bus hungry".
+5. Eye view: the camera is inside the player's head. Move it forward and hide the player's own head and hair.
+6. Lecture hall: brighter, with camera angles on the lecturer and board, not chair backs. Dark only during load shedding.
+7. B01: the job pays R0.
+8. Sipho needs his own morning lines, not Zanele's with words swapped.
+9. Arms stick out while lying in bed in the morning.
+
+PART 2: DESIGN, EVERY PLACE UNIQUE
+Use free CC0 asset packs (Kenney, Quaternius) for buildings and props. Each place gets a signature look:
+- Cafeteria: tables, serving counter, a queue, a menu board.
+- Quad: grass, benches, trees, vendor stalls, music, students hanging out.
+- Library, sports centre, lecture venues, residences: each recognisable at a glance.
+SRC campaigners at the Quad in ANC-, EFF- and DA-aligned party colours, no official logos. All represented equally, each with funny but fair lines, none made the villain.
+
+PART 3: RETENTION
+1. Conversations: tap any student to talk. Short dialogues with choices that affect Social and friendships.
+2. Voice notes: WhatsApp-style voice notes from the roommate and classmates. Use text-to-speech for now, built so real recordings can replace each one later.
+3. Decision prompts. Each one has a deadline (tonight, tomorrow, Friday), 2-3 options where none is free, and a consequence that shows up later, not instantly. Save choices so later events can reference them ("You skipped Zanele's birthday..."). Write 10 for the first week, for example:
+   - "Grades slipping, test on Friday": study at the library tonight or go to the res party.
+   - "Roommate's birthday tomorrow, R80 left": buy a gift, make a card, or forget.
+   - "NSFAS is late and rent is due": borrow from a friend, extra shifts, or call home.
+   - "SRC wants your vote": hear the candidates at the Quad, vote, or skip.
+   - "Two lectures from the Dean's List": skip the soccer match or risk it.
+4. Progress prompts both ways: warnings ("Your grades are low, you're close to not qualifying for exams", "Rent is due in 2 days", "You're running on empty") and wins ("One step closer to the Dean's List", "On track for cum laude"). Show progress bars toward the Dean's List and cum laude on the student card.
+
+ON HOLD
+Off-campus residence names: wait for my decision, don't change them.
