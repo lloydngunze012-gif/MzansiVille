@@ -1,0 +1,126 @@
+{
+  "id": "campusville",
+  "name": "CampusVille",
+  "city": "Durban",
+  "dialCode": "031",
+  "grid": [1000, 1000],
+  "start": { "money": 1500, "energy": 100, "grades": 50, "social": 30, "hunger": 70 },
+  "phases": [
+    { "id": "wake", "label": "Wake", "start": "07:00", "end": "08:00" },
+    { "id": "transit", "label": "Transit", "start": "08:00", "end": "09:00" },
+    { "id": "lecture", "label": "Lecture", "start": "09:00", "end": "13:00" },
+    { "id": "social", "label": "Social", "start": "13:00", "end": "15:00" },
+    { "id": "leisure", "label": "Leisure", "start": "15:00", "end": "21:00" },
+    { "id": "night", "label": "Night", "start": "21:00", "end": "23:00" }
+  ],
+  "phaseAliases": {
+    "morning": ["wake"],
+    "food": ["wake", "social", "leisure"],
+    "work": ["leisure"]
+  },
+  "slotMinutes": { "wake": 20, "transit": 40, "lecture": 60, "social": 40, "leisure": 70, "night": 30 },
+  "day": {
+    "slots": 5,
+    "sleepEnergy": 60,
+    "noSleepEnergy": -30,
+    "hungrySleepBelow": 20,
+    "hungrySleepEnergy": 75,
+    "hungrySleepMessage": "You slept hungry",
+    "hangoverEnergy": -20,
+    "realDays": 3,
+    "refillHour": 6,
+    "refillMessage": "Energy refills at 06:00",
+    "lowGrades": 20,
+    "lowGradesDays": 3,
+    "hungerStudyBlock": 10,
+    "graduateDay": 30,
+    "graduateGrades": 50,
+    "streakBadge": 5,
+    "savePromptDay": 3,
+    "fallingBehindDays": 3,
+    "studiesToClear": 2,
+    "gradeHalve": 0.5,
+    "missedExamGrades": -8
+  },
+  "calendar": {
+    "startWeekday": "Monday",
+    "weekend": ["Saturday", "Sunday"],
+    "sundayEvent": "derby_day",
+    "socialBoostWeekday": "Friday",
+    "socialBoost": 1.5,
+    "prepResetWeekday": "Monday",
+    "examEvery": 30,
+    "examTail": 7,
+    "spotTest": { "Wednesday": 0.4, "defaultWeekday": 0.15, "weekend": 0 },
+    "prep": {
+      "attend": 2,
+      "study": 3,
+      "skip": -2,
+      "high": 6,
+      "mid": 3,
+      "highGrades": 10,
+      "midGrades": 2,
+      "lowGrades": -8,
+      "highText": "Smashed it",
+      "midText": "You held the line",
+      "lowText": "Falling behind"
+    }
+  },
+  "residencePlaces": {
+    "O Block": "res_o",
+    "R Block": "res_r",
+    "S Block": "res_s",
+    "default_on_campus": "res_other",
+    "default_off_campus": "off_campus"
+  },
+  "courseVenues": {
+    "Accounting": "smig",
+    "Information Systems": "smig",
+    "Management": "smig",
+    "Marketing": "smig",
+    "Computer Science": "smig",
+    "Engineering": "engineering",
+    "Law": "law",
+    "Medicine": "health_sciences",
+    "Nursing": "health_sciences",
+    "Science": "science",
+    "default": "smig"
+  },
+  "scopes": {
+    "home": ["wake_noodles", "wake_skip", "wake_phone", "sleep", "call_home"],
+    "course": ["lecture_attend", "lecture_back"],
+    "campusRes": ["res_party"]
+  },
+  "exclusive": [
+    ["wake_noodles", "wake_skip"],
+    ["go_walk", "go_bus"],
+    ["lecture_attend", "lecture_back", "lecture_skip"]
+  ],
+  "tags": {
+    "library_study": ["study"],
+    "lecture_attend": ["attend"],
+    "lecture_back": ["backrow"],
+    "lecture_skip": ["skip"],
+    "res_party": ["party"],
+    "off_campus_party": ["party"],
+    "job_shift": ["job"],
+    "organt_rep": ["job", "shop"],
+    "tutor": ["job"],
+    "sleep": ["sleep"],
+    "wake_phone": ["phone"],
+    "write_exam": ["exam"],
+    "cafeteria_meal": ["meal"],
+    "quad_vendor": ["meal"],
+    "wake_noodles": ["meal"],
+    "sports_gym": ["gym"]
+  },
+  "paths": [
+    [[500, 940], [500, 500], [820, 420]],
+    [[500, 500], [300, 560]],
+    [[500, 500], [360, 300]],
+    [[500, 500], [680, 320]],
+    [[500, 500], [220, 420]],
+    [[150, 700], [350, 820], [500, 900]]
+  ],
+  "bestieDays": [1, 4, 9, 15, 22, 30]
+}

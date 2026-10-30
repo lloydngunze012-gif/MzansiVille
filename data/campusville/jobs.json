@@ -1,0 +1,65 @@
+[
+  {
+    "id": "job_shift",
+    "unlockDay": 3,
+    "weeklyLimit": 3
+  },
+  {
+    "id": "organt_rep",
+    "name": "Rep for Organt",
+    "placeId": "quad",
+    "phases": ["leisure"],
+    "unlockDay": 7,
+    "weeklyLimit": 3,
+    "money": 150,
+    "energy": -12,
+    "social": 4,
+    "hunger": -4,
+    "slots": 2,
+    "twist": "In-game pay, plus a profile card. The button after this leaves the game for a real shop.",
+    "tags": ["job", "shop"]
+  },
+  {
+    "id": "tutor",
+    "name": "Tutor a first-year",
+    "placeId": "library",
+    "phases": ["leisure"],
+    "unlockDay": 14,
+    "weeklyLimit": 3,
+    "money": 90,
+    "energy": -15,
+    "grades": 4,
+    "social": 3,
+    "hunger": -5,
+    "slots": 2,
+    "twist": "You explain it until you understand it too.",
+    "tags": ["job"]
+  },
+  {
+    "id": "off_campus_party",
+    "name": "Off-campus party",
+    "placeId": "gate",
+    "phases": ["leisure"],
+    "unlockDay": 7,
+    "money": -30,
+    "energy": -20,
+    "grades": -3,
+    "social": 16,
+    "hunger": -6,
+    "slots": 2,
+    "twist": "The bus back is a rumour.",
+    "tags": ["party"]
+  },
+  {
+    "id": "write_exam",
+    "name": "Write the exam",
+    "placeId": "sports_centre",
+    "phases": ["lecture"],
+    "unlockExam": true,
+    "energy": -18,
+    "hunger": -8,
+    "slots": 2,
+    "twist": "The Sports Centre is a hall this week. Your prep decides the paper.",
+    "tags": ["exam"]
+  }
+]

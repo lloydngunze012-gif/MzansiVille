@@ -1,0 +1,41 @@
+[
+  {
+    "id": "nsfas_delayed",
+    "title": "NSFAS delayed",
+    "text": "Your allowance has not landed. The group chat is already loud about it.",
+    "placeholder": true,
+    "choices": [
+      { "label": "Wait it out", "deltas": { "social": -2 }, "result": "You stretch yesterday's bread." },
+      { "label": "Borrow R50", "deltas": { "money": 50, "social": -4 }, "result": "A friend sends it, with a voice note." }
+    ]
+  },
+  {
+    "id": "load_shedding",
+    "title": "Load shedding",
+    "text": "The lights go. Your res is suddenly a dark corridor and a row of phone torches.",
+    "placeholder": true,
+    "choices": [
+      { "label": "Study by phone torch", "deltas": { "energy": -8, "grades": 3 }, "result": "You get through half a chapter." },
+      { "label": "Sit outside with everyone", "deltas": { "social": 6, "grades": -2 }, "result": "Someone has a speaker. Someone has a story." }
+    ]
+  },
+  {
+    "id": "surprise_test",
+    "title": "Lecturer surprise test",
+    "text": "The lecturer smiles in that specific way. Notes closed.",
+    "placeholder": true,
+    "choices": [
+      { "label": "Write what you know", "deltas": { "grades": 4, "energy": -6 }, "result": "Not pretty, but you filled the page." },
+      { "label": "Peek once", "deltas": { "grades": -6, "social": -3 }, "result": "They saw. The whole row went quiet." }
+    ]
+  },
+  {
+    "id": "derby_day",
+    "title": "Derby Day",
+    "text": "Sunday. Gold or Black. The campus is loud either way.",
+    "choices": [
+      { "label": "Gold", "deltas": { "social": 10 }, "result": "Gold. The quad answers back." },
+      { "label": "Black", "deltas": { "social": 10 }, "result": "Black. Somebody lends you a scarf." }
+    ]
+  }
+]
