@@ -3,6 +3,7 @@ import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml } from './campus.js'
+import STORY from '../../data/campusville/place_story.json'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -176,23 +177,38 @@ function effectChips(deltas, cls = '') {
   }).join('')
 }
 
+// "Spots here" counts come from the 3D scene (#world data-spots), refreshed every second.
+function spotCounts() {
+  try { return JSON.parse(document.getElementById('world')?.dataset.spots || '{}') } catch { return {} }
+}
+
+function isNight(run) {
+  const m = run.minutes % 1440
+  return m >= 18 * 60 || m < 6 * 60
+}
+
 function sheetHtml(district, run, placeId) {
   const place = district.places.find((p) => p.id === placeId)
   if (!place) return ''
+  const story = STORY[placeId]
   const items = visibleActions(district, run, placeId)
   const status = placeStatus(district, run, placeId)
   const rows = items.map(({ action, state }) => {
     const mins = action.slots > 0 ? (district.meta.slotMinutes[run.phase] || 30) * action.slots : 10
-    const cost = [action.slots ? `${action.slots} slot${action.slots > 1 ? 's' : ''}` : 'free', `${mins} min`].join(' \u00b7 ')
     // Play-through fix: show what a slot action leaves for the rest of the day.
     const after = run.slotsLeft - (action.slots || 0)
     const warn = action.slots > 0 && !state.disabled && run.phase !== 'night'
-      ? `<span class="g-left${after <= 1 ? ' low' : ''}">${after <= 0 ? 'Uses your last slot \u2014 the day ends' : after === 1 ? 'Leaves 1 slot (for Sleep)' : `Leaves ${after} of ${run.slotsTotal} slots today`}</span>`
+      ? `<span class="g-left${after <= 1 ? ' low' : ''}">${after <= 0 ? 'Last slot: the day ends' : after === 1 ? 'Leaves 1 slot (Sleep)' : `Leaves ${after} of ${run.slotsTotal} slots`}</span>`
       : ''
-    return `<button class="g-act" type="button" data-act="do" data-id="${action.id}" data-place="${placeId}"${state.disabled ? ' disabled' : ''}>
-      <span class="g-act-top"><strong>${esc(action.name)}</strong><small>${cost}</small></span>
-      <span class="g-act-fx">${effectChips(action.deltas)}</span>
-      ${action.twist ? `<span class="g-twist">${esc(action.twist)}</span>` : ''}
+    const money = action.deltas.money || 0
+    const price = money < 0 ? formatMoney(-money) : money > 0 ? `Earn ${formatMoney(money)}` : 'Free'
+    const fx = { ...action.deltas }
+    delete fx.money
+    return `<button class="g-act g-card" type="button" data-act="do" data-id="${action.id}" data-place="${placeId}"${state.disabled ? ' disabled' : ''}>
+      <span class="g-card-top"><span class="g-card-ic">${story?.icon || ICON[place.kind] || '\u2728'}</span><small>\u23F1 ${mins} min</small></span>
+      <b class="g-price${money > 0 ? ' earn' : ''}">${price}</b>
+      <strong>${esc(action.name)}</strong>
+      <span class="g-act-fx">${effectChips(fx)}</span>
       ${state.disabled ? `<span class="g-why">${esc(state.reason)}</span>` : warn}
     </button>`
   }).join('')
@@ -209,11 +225,15 @@ function sheetHtml(district, run, placeId) {
   const empty = status.public
     ? `Nothing to do at ${placeName(place)} during ${nowLabel}. ${ahead.length ? `Coming up \u2014 ${ahead.join(' \u00b7 ')}.` : later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
     : status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
-  return `<div class="g-scrim soft" data-act="close-sheet"></div>
-  <section class="g-sheet" role="dialog" aria-label="${esc(place.name)}">
+  const lines = story ? story.flavour[isNight(run) ? 'night' : 'day'] : [place.blurb || '']
+  const counts = spotCounts()
+  const spots = (story?.spots || []).map((s) => `<button type="button" class="g-spot" data-act="spot" data-place="${placeId}" data-spot="${s.id}">${s.icon} ${esc(s.label)}${counts[`${placeId}:${s.id}`] ? ` <b>${counts[`${placeId}:${s.id}`]}</b>` : ''}</button>`).join('')
+  return `<section class="g-sheet g-sheet2" role="dialog" aria-label="${esc(place.name)}">
     <div class="g-grab"></div>
-    <div class="g-sheet-head"><span>${ICON[place.kind] || ''}</span><div><h2>${esc(place.name)}</h2><p>${esc(place.blurb || '')}</p></div><button type="button" class="g-x" data-act="close-sheet" aria-label="Close">\u00d7</button></div>
-    <div class="g-acts">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>
+    <div class="g-sheet-head"><span class="g-sheet-ic">${story?.icon || ICON[place.kind] || ''}</span><div><h2>${esc(place.name)}</h2><p class="g-flavour" data-lines="${esc(JSON.stringify(lines))}">${esc(lines[0] || '')}</p></div><button type="button" class="g-x" data-act="close-sheet" aria-label="Close">\u00d7</button></div>
+    ${spots ? `<div class="g-row-title"><span>Spots here</span><small>\u{1F463} Tap one to walk there</small></div><div class="g-spots">${spots}</div>` : ''}
+    <div class="g-row-title"><span>Things to do</span>${rows ? `<small>${run.slotsLeft} of ${run.slotsTotal} slots left</small>` : ''}</div>
+    <div class="g-acts g-cards">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>
   </section>`
 }
 

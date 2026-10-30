@@ -12,8 +12,12 @@ Intended kits, both CC0:
 | Files | Pack | Author | Source | Licence |
 | --- | --- | --- | --- | --- |
 | `characters/character-*.glb`, `characters/Textures/colormap.png` | Mini Characters 1.0 (6 of the 12 characters) | Kenney | https://kenney.nl/assets/mini-characters | CC0 (`characters/License.txt`) |
+| `props/tree_*.glb`, `props/plant_*.glb`, `props/flower_*.glb`, `props/grass_large.glb` | Nature Kit | Kenney | https://kenney.nl/assets/nature-kit | CC0 (`props/License-nature-kit.txt`) |
+| `props/bench.glb`, `props/table*.glb`, `props/chair.glb`, `props/stoolBar.glb`, `props/kitchen*.glb`, `props/trashcan.glb`, `props/speaker.glb`, `props/pottedPlant.glb`, `props/radio.glb` | Furniture Kit | Kenney | https://kenney.nl/assets/furniture-kit | CC0 (`props/License-furniture-kit.txt`) |
 
-`src/world/avatar3d.js` loads these for the player, Zanele and the students on campus. It swaps the palette texture for vertex colours, so the character creator sets skin, hair, top, trousers and shoes. Clips used: `idle`, `walk`, `sit`, `static`, `interact-right`.
+`src/world/avatar3d.js` loads these for the player, Zanele and the students on campus. It swaps the palette texture for vertex colours, so the character creator sets skin, hair, top, trousers and shoes. Clips used: `idle`, `walk`, `sit`, `static`, `interact-right`, `interact-left`, `emote-yes`, `emote-no`, `pick-up`.
+
+`src/world/dress.js` places the props for the Quad and the cafeteria (layout and story in `data/campusville/place_story.json`) and re-centres each one, since Kenney furniture has its origin at a corner.
 
 `manifest.json` maps a place id or a place kind to a URL under `/models/`. The character field is reserved for the rigged student in a later pass.
 

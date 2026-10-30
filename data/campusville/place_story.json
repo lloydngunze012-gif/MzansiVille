@@ -1,0 +1,86 @@
+{
+  "note": "What makes each place feel lived in: an icon, live flavour lines (day and night), spots you can walk to, and signs. Spot x/z are metres from the place's centre (its x,y in places.csv). The SRC slates are fictional, use party-aligned colours only (no names, slogans or logos of real parties), get equal space, and none is the villain.",
+  "quad": {
+    "icon": "🌳",
+    "sign": "THE QUAD",
+    "flavour": {
+      "day": [
+        "Someone is testing the mic: “Check, check, one-two.”",
+        "Vetkoek smell drifts across the paving.",
+        "Three SRC slates, three megaphones, one very patient security guard.",
+        "A jacaranda drops purple on the benches."
+      ],
+      "night": [
+        "String lights on. Someone is freestyling on the stage.",
+        "Mam’ Gugu’s last kota goes for half price.",
+        "A guitar under the trees, and half the Quad singing along."
+      ]
+    },
+    "spots": [
+      { "id": "stage", "label": "Open-mic stage", "icon": "🎤", "x": 0, "z": -3.6 },
+      { "id": "benches", "label": "Benches under the trees", "icon": "🌳", "x": -8.2, "z": -1.5 },
+      { "id": "stall", "label": "Mam’ Gugu’s stall", "icon": "🍩", "x": -6.4, "z": 6.2 },
+      { "id": "src", "label": "SRC campaign tables", "icon": "📣", "x": 7.2, "z": 5.4 },
+      { "id": "board", "label": "Notice board", "icon": "📌", "x": 7.6, "z": -3.2 }
+    ],
+    "stage_sign": "OPEN MIC · FRIDAY 19:00",
+    "stall_sign": "MAM’ GUGU · VETKOEK & KOTA",
+    "posters": [
+      "NSFAS: check your allowance status",
+      "SRC ELECTIONS · THURSDAY",
+      "LOST: blue umbrella (sentimental)",
+      "Room to rent. R2500. Quiet. (It is not.)"
+    ]
+  },
+  "cafeteria": {
+    "icon": "🍛",
+    "sign": "CAFETERIA",
+    "flavour": {
+      "day": [
+        "The queue moves at the speed of the auntie’s ladle.",
+        "Bunny chow special: R35 and worth every cent.",
+        "Two people at the terrace arguing whether pap is breakfast."
+      ],
+      "night": [
+        "Last orders. The chips are hot and the lights are humming.",
+        "Someone is studying over a cold plate of wors."
+      ]
+    },
+    "spots": [
+      { "id": "queue", "label": "Food queue", "icon": "🧍", "x": 2.8, "z": 5.6 },
+      { "id": "terrace", "label": "Terrace tables", "icon": "🍽️", "x": -7.2, "z": 0 },
+      { "id": "menu", "label": "Menu board", "icon": "📋", "x": 1.2, "z": 4.4 }
+    ],
+    "menu": ["CAF MENU", "Pap & wors   R30", "Bunny chow   R35", "Vetkoek      R10", "Chips & russian R28", "Rooibos       R8"],
+    "notice": "NSFAS meal cards welcome"
+  },
+  "src_slates": [
+    {
+      "id": "ubuntu",
+      "name": "Ubuntu Forward",
+      "colors": ["#1f7a3a", "#f0c400", "#1c1915"],
+      "lines": [
+        "We fixed the bus shelter. Give us a year and we fix the bus.",
+        "Experience matters. So does the Wi-Fi password, and we have both."
+      ]
+    },
+    {
+      "id": "fees",
+      "name": "Free Food Fridays",
+      "colors": ["#c62828", "#ffffff", "#7a0e0e"],
+      "lines": [
+        "Free education, free Wi-Fi, free Fridays. Ask us how.",
+        "We are loud because the fees are louder."
+      ]
+    },
+    {
+      "id": "fixit",
+      "name": "Fix-It Society",
+      "colors": ["#1e5bb8", "#ffffff", "#0d3473"],
+      "lines": [
+        "We got the library printer working. Imagine what we do with your vote.",
+        "Clean audits, clean bathrooms. Boring? Maybe. Working? Yes."
+      ]
+    }
+  ]
+}

@@ -31,7 +31,7 @@ import {
 } from './net.js'
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
-import { loop as soundLoop, setMuted, unlock as unlockSound } from './audio.js'
+import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
 import { roommateOf } from './avatar.js'
 import { startGroove, stopGroove } from './groove.js'
 
@@ -230,6 +230,26 @@ function syncMorning(viewState) {
 let lecturePromise = null
 let previewPromise = null
 
+// The place sheet's flavour line changes every few seconds, like a live feed.
+let flavourTimer = 0
+function cycleFlavour() {
+  clearInterval(flavourTimer)
+  const node = app.querySelector('.g-flavour')
+  if (!node) return
+  let lines = []
+  try { lines = JSON.parse(node.dataset.lines || '[]') } catch { lines = [] }
+  if (lines.length < 2) return
+  let i = 0
+  flavourTimer = setInterval(() => {
+    if (!node.isConnected) { clearInterval(flavourTimer); return }
+    i = (i + 1) % lines.length
+    node.classList.remove('in')
+    void node.offsetWidth
+    node.textContent = lines[i]
+    node.classList.add('in')
+  }, 4500)
+}
+
 // The creator shows the real 3D student, so what you dress is what you play.
 function syncPreview(viewState) {
   const stage = viewState?.screen === 'create' && hasGL() ? app.querySelector('.cc-stage') : null
@@ -283,8 +303,7 @@ function syncWorld(viewState) {
   soundLoop('music_campus', on || morningOn)
   soundLoop('crowd', on)
   // The character creator dances to its own house groove.
-  if (viewState?.screen === 'create') startGroove()
-  else stopGroove()
+  if (viewState?.screen === 'create') { setGrooveLevel(1); startGroove('creator') } else stopGroove('creator')
   if (!on) {
     worldPromise?.then((mod) => {
       if (ticket === worldTicket) mod.setVisible(false)
@@ -336,6 +355,7 @@ function paint() {
   const screen = app.querySelector('[data-screen]')
   app.dataset.screen = screen?.dataset.screen || 'title'
   syncPreview(viewState)
+  cycleFlavour()
   if (focusId) {
     const el = document.getElementById(focusId)
     if (el) {
@@ -541,6 +561,13 @@ function gameAct(act, button) {
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
   if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
   if (act === 'close-sheet') { go('play'); return true }
+  if (act === 'spot') {
+    // Walk to a spot in the place: the sheet closes so you watch yourself go.
+    blip(600)
+    go('play')
+    window.dispatchEvent(new CustomEvent('mzansi-walk-to', { detail: { place: button.dataset.place, spot: button.dataset.spot } }))
+    return true
+  }
   if (act === 'to-night') {
     while (save.run.mode === 'play' && save.run.phase !== 'night') advancePhase(district, save.run)
     flash(phaseNotice())

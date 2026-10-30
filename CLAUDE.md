@@ -95,3 +95,8 @@ What the screenshots teach (notes, not a spec):
 - Paid actions are small cards: icon, timer, price, then effect chips (+Fun +Social); the money in the HUD visibly drops.
 - The HUD is one slim top pill (day, time, mood, money and +), with stacked chips on the left (current task, event countdown, streak, needs bars) and a "clean screen" toggle.
 - Travel is a scene, not a loading bar: rain, traffic, a slogan bumper sticker, a Horn button, Skip, and a mini-game.
+
+STATUS (plan 2)
+- Part 1: done and confirmed by the owner.
+- Parts 2 + 5 together, place by place: the Quad and the cafeteria are dressed (night lighting, signage, props, new place sheet). Waiting for the owner's review before the other places.
+- After the places: Part 3, starting with decision prompts.

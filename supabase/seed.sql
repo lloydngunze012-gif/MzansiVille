@@ -6,7 +6,7 @@ delete from public.district_events where district_id = 'campusville';
 
 insert into public.district_places (district_id, id, name, kind, x, y, blurb) values
 ('campusville', 'quad', 'The Quad', 'hub', 500, 500, 'Centre of everything: cafeteria, vendors, SRC campaigns, promos, meeting friends, events'),
-('campusville', 'cafeteria', 'Cafeteria', 'food', 540, 470, 'Buy a meal; specials; queue events'),
+('campusville', 'cafeteria', 'Cafeteria', 'food', 610, 443, 'Buy a meal; specials; queue events'),
 ('campusville', 'bus_station', 'Main Bus Station', 'transit', 500, 900, 'Buses into town and back to off-campus res; a late bus, or the choice to walk'),
 ('campusville', 'sports_centre', 'Sports Centre', 'venue', 820, 420, 'Gym, sport, and where exams and graduation happen'),
 ('campusville', 'library', 'Library', 'study', 380, 420, 'Study sessions, group work, the 24-hour section in exam week'),

@@ -16,6 +16,13 @@ const KIND = {
   residence: { w: 9, d: 11, h: 8, color: 0xc4a484, roof: 0x8d6b4a },
 }
 
+// Places with their own shape. open: no walls (the Quad is a plaza; its footprint
+// is the stage, dz metres north of the centre).
+const PLACE = {
+  quad: { w: 5, d: 3, h: 0.6, dz: -6.5, open: true },
+  cafeteria: { w: 10, d: 6, h: 4.5 },
+}
+
 export function csvToWorld(x, y) {
   return {
     x: (x - CSV_ORIGIN) * CSV_SCALE,
@@ -25,12 +32,16 @@ export function csvToWorld(x, y) {
 
 export function buildingLayout(district) {
   const buildings = district.places.map((place) => {
-    const style = KIND[place.kind] || KIND.hub
-    const { x, z } = csvToWorld(place.x, place.y)
+    const style = { ...(KIND[place.kind] || KIND.hub), ...(PLACE[place.id] || {}) }
+    const { x: cx, z: cz } = csvToWorld(place.x, place.y)
+    const x = cx
+    const z = cz + (style.dz || 0)
     return {
       id: place.id,
       name: place.name,
       kind: place.kind,
+      cx,
+      cz,
       x,
       z,
       ...style,

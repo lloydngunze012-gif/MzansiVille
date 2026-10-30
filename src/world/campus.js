@@ -1,11 +1,40 @@
 import * as THREE from 'three'
 import { buildingLayout } from './layout.js'
 import { buildGrid } from './nav.js'
+import { dressPlaces } from './dress.js'
 import { loadGlb, modelManifest, modelUrl } from './models.js'
 
 const pathMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d2b0, roughness: 1 })
 const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x74b254, roughness: 1 })
 const skirtMaterial = new THREE.MeshStandardMaterial({ color: 0x5d8f42, roughness: 1 })
+// Windows: most glow warm at night, a few stay dark (applyNight sets the glow).
+const litWindow = new THREE.MeshStandardMaterial({ color: 0x2a3442, emissive: 0xffc870, emissiveIntensity: 0.05, roughness: 0.4 })
+const darkWindow = new THREE.MeshStandardMaterial({ color: 0x26303c, roughness: 0.4 })
+const windowGeo = new THREE.BoxGeometry(0.7, 0.8, 0.06)
+
+function addWindows(group, building) {
+  const floors = Math.max(1, Math.floor((building.h - 0.6) / 2.2))
+  const across = Math.max(1, Math.floor((building.w - 1.4) / 1.6))
+  const spots = []
+  for (const side of [1, -1]) {
+    for (let f = 0; f < floors; f++) {
+      for (let i = 0; i < across; i++) {
+        const x = -((across - 1) * 1.6) / 2 + i * 1.6
+        if (side === 1 && f === 0 && Math.abs(x) < 1.2) continue // the door
+        spots.push([x, 1.6 + f * 2.2, side * (building.d / 2 + 0.03)])
+      }
+    }
+  }
+  const lit = spots.filter((_, i) => (i * 7 + building.w) % 10 >= 3)
+  const dark = spots.filter((_, i) => (i * 7 + building.w) % 10 < 3)
+  const dummy = new THREE.Object3D()
+  for (const [list, material] of [[lit, litWindow], [dark, darkWindow]]) {
+    if (!list.length) continue
+    const mesh = new THREE.InstancedMesh(windowGeo, material, list.length)
+    list.forEach(([x, y, z], i) => { dummy.position.set(x, y, z); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix) })
+    group.add(mesh)
+  }
+}
 
 function shortName(name) {
   const cleaned = name.replace(' Lecture Venue', '').replace(/^The /, '').replace(/^Main /, '').replace(' (bus home)', '')
@@ -97,24 +126,28 @@ function buildingMesh(building, home) {
   const group = new THREE.Group()
   group.position.set(building.x, 0, building.z)
   group.userData.placeId = building.id
-  const wall = new THREE.MeshStandardMaterial({ color: building.color, roughness: 0.86 })
-  const roofMat = new THREE.MeshStandardMaterial({ color: building.roof, roughness: 0.8 })
-  const body = new THREE.Mesh(new THREE.BoxGeometry(building.w, building.h, building.d), wall)
-  body.position.y = building.h / 2
-  body.castShadow = true
-  body.receiveShadow = true
-  group.add(body)
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(building.w + 0.5, 0.5, building.d + 0.5), roofMat)
-  roof.position.y = building.h + 0.22
-  roof.castShadow = true
-  group.add(roof)
-  const door = new THREE.Mesh(
-    new THREE.BoxGeometry(1.25, 2.15, 0.16),
-    new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
-  )
-  door.position.set(0, 1.08, building.d / 2 + 0.02)
-  door.name = 'door'
-  group.add(door)
+  // An open place (the Quad) is dressed in dress.js; it has no walls, roof or door here.
+  if (!building.open) {
+    const wall = new THREE.MeshStandardMaterial({ color: building.color, roughness: 0.86 })
+    const roofMat = new THREE.MeshStandardMaterial({ color: building.roof, roughness: 0.8 })
+    const body = new THREE.Mesh(new THREE.BoxGeometry(building.w, building.h, building.d), wall)
+    body.position.y = building.h / 2
+    body.castShadow = true
+    body.receiveShadow = true
+    group.add(body)
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(building.w + 0.5, 0.5, building.d + 0.5), roofMat)
+    roof.position.y = building.h + 0.22
+    roof.castShadow = true
+    group.add(roof)
+    const door = new THREE.Mesh(
+      new THREE.BoxGeometry(1.25, 2.15, 0.16),
+      new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
+    )
+    door.position.set(0, 1.08, building.d / 2 + 0.02)
+    door.name = 'door'
+    group.add(door)
+    addWindows(group, building)
+  }
   const beacon = new THREE.Mesh(
     new THREE.SphereGeometry(0.22, 12, 10),
     new THREE.MeshStandardMaterial({ color: 0xf0c400, emissive: 0xf0c400, emissiveIntensity: 0.9, roughness: 0.4 }),
@@ -129,7 +162,7 @@ function buildingMesh(building, home) {
   badge.visible = false
   group.add(badge)
   const label = labelSprite(shortName(building.name), home)
-  label.position.y = Math.min(building.h + 1.3, 5.6)
+  label.position.y = building.open ? 4.8 : Math.min(building.h + 1.3, 5.6)
   group.add(label)
   return group
 }
@@ -152,7 +185,7 @@ function addTrees(parent, layout) {
     const z = (rand() - 0.5) * 180
     const blocked = layout.buildings.some((building) => (
       x > building.minX - 2.2 && x < building.maxX + 2.2 && z > building.minZ - 2.2 && z < building.maxZ + 2.2
-    ))
+    )) || (layout.plazas || []).some((p) => Math.hypot(x - p.x, z - p.z) < p.r)
     const onPath = layout.paths.some((path) => path.some((point, index) => (
       index && distToSegment(x, z, path[index - 1], point) < 3.4
     )))
@@ -215,11 +248,19 @@ export function createCampus(district, homeId) {
     buildings.add(buildingMesh(building, building.id === homeId))
   }
   group.add(buildings)
-  addTrees(group, layout)
+  const dressing = dressPlaces(layout)
+  group.add(dressing.group)
+  addTrees(group, { ...layout, buildings: layout.buildings.concat(dressing.obstacles.map((o) => ({ ...o }))), plazas: [{ x: 0, z: 0, r: 13 }] })
 
-  const grid = buildGrid(layout.obstacles)
+  const grid = buildGrid(layout.obstacles.concat(dressing.obstacles))
   upgrade(buildings, layout.buildings)
-  return { group, ground: lawn, buildings, grid, layout }
+  return { group, ground: lawn, buildings, grid, layout, dressing }
+}
+
+// n: 0 day, 1 night. Windows across campus plus the dressed places' lights.
+export function applyNight(campus, n) {
+  litWindow.emissiveIntensity = 0.05 + n * 1.5
+  campus.dressing?.applyNight(n)
 }
 
 export function markDoors(buildings, ids) {
