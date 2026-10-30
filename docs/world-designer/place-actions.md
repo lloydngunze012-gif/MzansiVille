@@ -36,103 +36,108 @@ Shipped effects, for scale (do not retune them here):
 
 ## Priority
 
+Content Writer owns these places (PR 3). Their ids and phases win. Lines are not copied here. Effects below are the numbers on their `activities.csv` rows, so this doc does not invent a second set. Each of those rows is marked written by Content Writer, see PR 3.
+
+Course-scoped `lecture_attend` and `lecture_back` still ship for the student’s own venue. They are not replaced.
+
 ### Business Hall `smig`
 
-No clock. Class in lecture. A short stay in leisure. Not a night venue.
-
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| lecture_attend | lecture | Attend lecture | shipped | no |
-| lecture_back | lecture | Sit at the back | shipped | no |
-| smig_notes | lecture | Share notes with the row | grades +2, social +4, energy −4 | yes |
-| smig_tutorial | leisure | Stay for the tutorial | grades +4, energy −8, hunger −4 | yes |
-| smig_society | leisure | Business society table | money −10, energy −6, social +6 | yes |
-
-`smig_notes` is the moment: a classmate asks. One result line for yes.
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_attend | lecture | shipped, course venue | already in the game |
+| lecture_back | lecture | shipped, course venue | already in the game |
+| smig_sitin | lecture | energy −8, grades +4, social +1, hunger −5 | written by Content Writer, see PR 3 |
+| smig_board | lecture | energy −2, grades +1, social +1, 0 slots | written by Content Writer, see PR 3 |
+| smig_steps | social | money −8, energy +2, social +7, hunger +15 | written by Content Writer, see PR 3 |
+| smig_case | social | energy −8, grades +5, social +3, hunger −5 | written by Content Writer, see PR 3 |
+| smig_lab | leisure | energy −12, grades +6, hunger −5 | written by Content Writer, see PR 3 |
+| smig_beanbag | leisure | energy +7, social +2, hunger −3 | written by Content Writer, see PR 3 |
 
 ### Health Sciences `health_sciences`
 
-Same window as Business Hall. Attend and back-row already show for Medicine and Nursing.
-
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| lecture_attend | lecture | Attend lecture | shipped, course-scoped | no |
-| lecture_back | lecture | Sit at the back | shipped | no |
-| hs_cold_call | lecture | Answer the cold call | grades +4, energy −6, social +1 | yes |
-| hs_skills | leisure | Skills-lab hour | grades +5, energy −12 | yes |
-| hs_debrief | leisure | Walk a friend through the practical | grades +2, social +4, energy −6 | yes |
-
-`hs_cold_call` needs two result lines later (you knew it / you did not). Skeleton has one slot.
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_attend | lecture | shipped when the course is Medicine or Nursing | already in the game |
+| lecture_back | lecture | shipped with attend | already in the game |
+| hs_sitin | lecture | energy −8, grades +4, social +1, hunger −5 | written by Content Writer, see PR 3 |
+| hs_board | lecture | energy −2, grades +1, social +1, 0 slots | written by Content Writer, see PR 3 |
+| hs_lawn | social | money −8, energy +2, social +7, hunger +15 | written by Content Writer, see PR 3 |
+| hs_cards | social | energy −8, grades +5, social +3, hunger −5 | written by Content Writer, see PR 3 |
+| hs_prac | leisure | energy −12, grades +6, hunger −5 | written by Content Writer, see PR 3 |
+| hs_bob | leisure | energy +5, grades +2, social +2, hunger −3 | written by Content Writer, see PR 3 |
 
 ### Science `science`
 
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| lecture_attend | lecture | Attend lecture | shipped for Science | no |
-| lecture_back | lecture | Sit at the back | shipped | no |
-| sci_demo | lecture | Help with the demo | grades +6, energy −8, social +2 | yes |
-| sci_writeup | leisure | Finish the lab sheet | grades +6, energy −10, hunger −4 | yes |
-| sci_society | leisure | Science society | money −5, energy −6, social +5 | yes |
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_attend | lecture | shipped when the course is Science | already in the game |
+| lecture_back | lecture | shipped with attend | already in the game |
+| sci_sitin | lecture | energy −8, grades +4, social +1, hunger −5 | written by Content Writer, see PR 3 |
+| sci_board | lecture | energy −2, grades +1, social +1, 0 slots | written by Content Writer, see PR 3 |
+| sci_fountain | social | money −8, energy +2, social +7, hunger +15 | written by Content Writer, see PR 3 |
+| sci_report | social | energy −8, grades +5, social +3, hunger −5 | written by Content Writer, see PR 3 |
+| sci_open | leisure | energy −12, grades +6, hunger −5 | written by Content Writer, see PR 3 |
+| sci_lawn | leisure | energy +7, social +2, hunger −3 | written by Content Writer, see PR 3 |
 
 ### Law `law`
 
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| lecture_attend | lecture | Attend lecture | shipped for Law | no |
-| lecture_back | lecture | Sit at the back | shipped | no |
-| law_moot | lecture | Take the moot point | grades +3, energy −6, social +6 | yes |
-| law_read | leisure | Read the case in the back row | grades +5, energy −8, social −2 | yes |
-| law_chambers | leisure | Walk a friend through the facts | grades +2, social +4, energy −4 | yes |
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_attend | lecture | shipped when the course is Law | already in the game |
+| lecture_back | lecture | shipped with attend | already in the game |
+| law_sitin | lecture | energy −8, grades +4, social +1, hunger −5 | written by Content Writer, see PR 3 |
+| law_board | lecture | energy −2, grades +1, social +1, 0 slots | written by Content Writer, see PR 3 |
+| law_steps | social | money −8, energy +2, social +7, hunger +15 | written by Content Writer, see PR 3 |
+| law_moot | social | energy −8, grades +5, social +3, hunger −5 | written by Content Writer, see PR 3 |
+| law_read | leisure | energy −12, grades +6, hunger −5 | written by Content Writer, see PR 3 |
+| law_lurk | leisure | energy +5, grades +2, social +3, hunger −3 | written by Content Writer, see PR 3 |
 
 ### Engineering `engineering`
 
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| lecture_attend | lecture | Attend lecture | shipped for Engineering | no |
-| lecture_back | lecture | Sit at the back | shipped | no |
-| eng_phone | lecture | Phone buzzes under the desk | choice: pocket it (grades +2, energy −2) or look (social +3, grades −2) | yes, two results |
-| eng_problem | leisure | Problem set in the workshop | grades +6, energy −10 | yes |
-| eng_club | leisure | Build-club hour | money −15, energy −10, social +6 | yes |
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_attend | lecture | shipped when the course is Engineering | already in the game |
+| lecture_back | lecture | shipped with attend | already in the game |
+| eng_sitin | lecture | energy −8, grades +4, social +1, hunger −5 | written by Content Writer, see PR 3 |
+| eng_board | lecture | energy −2, grades +1, social +1, 0 slots | written by Content Writer, see PR 3 |
+| eng_bridge | social | energy +2, social +7, hunger −3 | written by Content Writer, see PR 3 |
+| eng_eggdrop | social | energy −8, grades +5, social +3, hunger −5 | written by Content Writer, see PR 3 |
+| eng_workshop | leisure | energy −12, grades +6, hunger −5 | written by Content Writer, see PR 3 |
+| eng_print | leisure | energy +5, grades +2, social +2, hunger −3 | written by Content Writer, see PR 3 |
 
 ### Main Gate `gate`
 
-No clock. It is open in every phase. Nothing is shipped.
+No clock. Content Writer covered transit, leisure, and night. No wake or lecture rows in PR 3.
 
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| gate_card | wake | Show your student card | energy −2, social +1 | yes |
-| gate_wait | wake | Wait for a res friend | energy −2, social +3 | yes |
-| gate_stream | transit | Join the stream onto campus | energy −4, social +2 | yes |
-| gate_directions | transit | Ask which way to your hall | social +2, energy −1 | yes |
-| gate_late | lecture | Explain why you are late | energy −6, grades −2, social +1 | yes |
-| gate_point | lecture | Guard points you up the path | social +2 | yes |
-| gate_visitor | social | Meet someone from town | money −10, energy −4, social +6 | yes |
-| gate_flyer | social | Take a club flyer | social +2 | yes |
-| gate_club | leisure | Stop for the club table | social +4, energy −3 | yes |
-| gate_town | leisure | Walk out for air | money −20, energy −8, social +3 | yes |
-| gate_security | night | Chat with night security | energy −3, social +2 | yes |
-| gate_sign_in | night | Sign in late | energy −4, social −1 | yes |
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| gate_guard | transit | social +3, 0 slots | written by Content Writer, see PR 3 |
+| gate_vetkoek | transit | money −10, social +1, hunger +20 | written by Content Writer, see PR 3 |
+| gate_taxi | transit | energy +2, social +2, hunger −2 | written by Content Writer, see PR 3 |
+| gate_spaza | leisure | money −25, energy −4, social +2, hunger +30 | written by Content Writer, see PR 3 |
+| gate_wall | leisure | energy +6, social +3, hunger −3 | written by Content Writer, see PR 3 |
+| gate_visitors | leisure | energy −3, social +5 | written by Content Writer, see PR 3 |
+| gate_night | night | energy −2, social +3, hunger −3 | written by Content Writer, see PR 3 |
+| gate_curfew | night | energy −8, social +4, hunger −3 | written by Content Writer, see PR 3 |
 
 ### The Quad `quad`
 
-No place clock. Vendor action is 07:00–19:00. Friends, skip, vendor, and the day-3 shift are shipped.
+Friends, vendor, skip, and the day-3 shift still ship. The eight `quad_*` rows below are Content Writer’s, on their phases. Vendor clock stays 07:00–19:00 on the shipped vendor action only.
 
-| id | phase | label | effects | writer |
-| --- | --- | --- | --- | --- |
-| quad_board | wake | Read the noticeboard | social +1 | yes |
-| quad_coffee | wake | Morning tea at the vendor | money −10, hunger +15, social +2 | yes |
-| quad_cut | transit | Cut across to class | energy −3 | yes |
-| quad_lost | transit | Point a lost first-year | social +4, energy −2 | yes |
-| lecture_skip | lecture | Skip and chill | shipped | no |
-| quad_between | lecture | Ten minutes on the grass | energy −2, social +3 | yes |
-| quad_friends | social | Meet friends | shipped | no |
-| quad_vendor | social | Buy from the vendors | shipped | no |
-| quad_campaign | social | Listen to an SRC pitch | energy −4, social +6 | yes |
-| job_shift | leisure | Work a shift | shipped, day 3 | no |
-| quad_music | leisure | Someone’s speaker | energy −6, social +5 | yes |
-| quad_late | night | The quad after dark | energy −8, hunger −4, social +6 | yes |
-
-`quad_coffee` fits the vendor clock (opens 07:00). It is a new wake action, not a change to `quad_vendor`.
+| id | phase | effects | status |
+| --- | --- | --- | --- |
+| lecture_skip | lecture | shipped | already in the game |
+| quad_study | lecture | energy −5, grades +3, social +1, hunger −3 | written by Content Writer, see PR 3 |
+| quad_src | lecture | energy −2, social +4, hunger −3, 0 slots | written by Content Writer, see PR 3 |
+| quad_friends | social | shipped | already in the game |
+| quad_vendor | social | shipped, 07:00–19:00 | already in the game |
+| quad_busker | social | energy +3, social +6, hunger −3 | written by Content Writer, see PR 3 |
+| quad_touch | social | energy −10, social +9, hunger −8 | written by Content Writer, see PR 3 |
+| job_shift | leisure | shipped, day 3 | already in the game |
+| quad_dance | leisure | energy −12, social +10, hunger −5 | written by Content Writer, see PR 3 |
+| quad_clouds | leisure | energy +8, social +1, hunger −3 | written by Content Writer, see PR 3 |
+| quad_lights | night | energy +2, social +5, hunger −3 | written by Content Writer, see PR 3 |
+| quad_longway | night | energy −4, social +3, hunger −3 | written by Content Writer, see PR 3 |
 
 ## The other nine
 
@@ -263,9 +268,11 @@ Home actions if the student lives off campus. No res party.
 
 ## Content Writer
 
-Write caption, result, and twist (twist may stay blank) for every skeleton row with `needs_lines: true`. Do not rewrite shipped rows. Tone: Westville Campus, Durban, no real university, no real residence brand, no NSFAS logo. NSFAS may be named the way students already say it in the phone action.
+The 46 rows for Business Hall, Health Sciences, Science, Law, Engineering, Main Gate, and the Quad are written by Content Writer, see PR 3. Their ids and phases are the ones in the skeleton. Their lines are not copied into this file.
 
-Priority order for the lines: Business Hall, Health Sciences, Science, Law, Engineering, Main Gate, the Quad, then the rest.
+Still to write: every row below with `needs_lines: true`. Those places are the bus station, cafeteria, library, sports centre, O Block, R Block, S Block, other on-campus blocks, and off-campus res. Caption, result, and twist (twist may stay blank). Do not rewrite shipped rows.
+
+Tone for the remaining lines: Westville Campus, Durban, no real university, no real residence brand.
 
 ## Out of scope
 
