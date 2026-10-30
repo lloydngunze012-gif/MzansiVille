@@ -150,6 +150,26 @@ function recolour(root, look) {
 
 // The Organt tee: a dark wordmark bar on the chest, parented to the torso bone
 // so it moves with the walk. Placed from the torso's own vertices in bind pose.
+let printTexture = null
+function organtPrint(code = '031') {
+  if (printTexture) return printTexture
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 192
+  const ctx = canvas.getContext('2d')
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#1c1915'
+  ctx.font = '900 112px "Arial Black", Impact, sans-serif'
+  ctx.fillText(code, 128, 82, 240)
+  ctx.fillStyle = '#7b3fe4'
+  ctx.font = '900 40px "Arial Black", Impact, sans-serif'
+  ctx.fillText('ORGANT', 128, 160, 230)
+  printTexture = new THREE.CanvasTexture(canvas)
+  printTexture.colorSpace = THREE.SRGBColorSpace
+  return printTexture
+}
+
 function addOrgantMark(model) {
   const torso = model.getObjectByName('torso')
   const body = model.getObjectByName('body-mesh')
@@ -163,12 +183,11 @@ function addOrgantMark(model) {
   }
   if (box.isEmpty()) return
   const size = box.getSize(new THREE.Vector3())
-  const mark = new THREE.Mesh(
-    new THREE.BoxGeometry(size.x * 0.5, size.y * 0.16, size.z * 0.06),
-    new THREE.MeshStandardMaterial({ color: 0x1c1915, roughness: 0.5 }),
-  )
+  // The print, like the cover: a big black "031" (the district's dialling code)
+  // with "ORGANT" in purple underneath, on a decal across the chest.
+  const mark = new THREE.Mesh(new THREE.PlaneGeometry(size.x * 0.82, size.y * 0.62), new THREE.MeshStandardMaterial({ map: organtPrint(), transparent: true, roughness: 0.6 }))
   mark.name = 'organt-mark'
-  const front = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y + size.y * 0.62, box.max.z + size.z * 0.02).applyMatrix4(body.matrixWorld)
+  const front = new THREE.Vector3((box.min.x + box.max.x) / 2, box.min.y + size.y * 0.55, box.max.z + size.z * 0.015).applyMatrix4(body.matrixWorld)
   torso.worldToLocal(front)
   mark.position.copy(front)
   torso.add(mark)

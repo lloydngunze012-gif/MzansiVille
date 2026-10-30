@@ -773,8 +773,12 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .tc { container-type: inline-size; }
 .tc::before { content: ''; position: absolute; inset: -30px; background: #2a1f33 url(/cover.webp) center 40% / cover; filter: blur(22px) brightness(.45) saturate(1.2); }
 .tc .tc-art { top: max(0px, calc(100% - 156cqw - 196px)); }
-.tc-art::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 8%; z-index: 1; background: linear-gradient(to top, rgba(42,31,51,0), rgba(42,31,51,.55)); }
+/* No dark band over the top of the cover: it sat on the top row of faces. */
+.tc-art::before { content: none; }
 @keyframes tc-zoom { from { transform: scale(1); } to { transform: scale(1.03); } }
+/* The slow zoom grows from the top edge, so it never crops the heads at the top. */
+.tc .tc-art { width: 100%; }
+.tc .tc-art img { transform-origin: 50% 0; object-position: 50% 0; }
 .tc-tag { text-wrap: balance; max-width: 340px; align-self: center; }
 @media (min-aspect-ratio: 1/2) { .tc .tc-art { top: max(0px, calc(100% - 150cqw - 196px)); } }
 @media (min-width: 520px) { .tc { max-width: min(480px, calc((100vh - 190px) / 1.5)); } }
@@ -842,3 +846,12 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 #world .scene-fade p { color: #f0c400; font: 800 20px system-ui; margin: 0; }
 @keyframes sfade { from { opacity: 0 } }
 @keyframes sfadeout { to { opacity: 0 } }
+
+/* Creator on portrait phones: the 3D student on a wide stage first, the card beside it,
+   the options below. The whole student (head to feet) fits the stage. */
+@media (max-width: 600px) {
+  .cc-body { grid-template-columns: 1fr; }
+  .cc-preview { order: -1; display: grid; grid-template-columns: 1fr 44%; gap: 8px; align-items: stretch; }
+  .cc-stage { min-height: 0; height: min(46vh, 380px); }
+  .cc-id { align-self: end; }
+}
