@@ -1,5 +1,10 @@
 {
   "places": {
+    "smig": { "opens": "06:00", "closes": "18:00" },
+    "health_sciences": { "opens": "06:00", "closes": "18:00" },
+    "science": { "opens": "06:00", "closes": "18:00" },
+    "law": { "opens": "06:00", "closes": "18:00" },
+    "engineering": { "opens": "06:00", "closes": "18:00" },
     "cafeteria": { "opens": "07:00", "closes": "17:00" },
     "library": { "opens": "08:00", "closes": "22:00", "examOpen": true },
     "sports_centre": { "opens": "06:00", "closes": "21:00" }
