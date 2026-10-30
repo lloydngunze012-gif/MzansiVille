@@ -69,6 +69,18 @@
       "move": "Zanele steps in with the wrapper, crinkles it, gives you the biggest sorry eyes.",
       "bare": "The shelf is bare. Your roommate got the last packet."
     },
+    "choice_breakfast": {
+      "title": "Breakfast?",
+      "options": [
+        { "label": "🍜 Noodles in res", "note": "Free · +35 Fullness · 15 min" },
+        { "label": "🛒 Tuck shop on the way", "note": "R12 · +25 Fullness · 10 min" },
+        { "label": "🍳 Caf breakfast on campus", "note": "R30 · +40 Fullness · 10 min there" },
+        { "label": "🚶 Walk to the bus hungry", "note": "−15 Fullness · out the door now" }
+      ]
+    },
+    "caf_later": { "bubble": "Caf pap on campus. Hold on, stomach." },
+    "caf-later": { "caption": "Breakfast can wait for the caf on campus. Your stomach disagrees." },
+    "caf-breakfast": { "caption": "Off the bus and straight into the caf queue. Pap and egg, R30." },
     "choice_no_noodles": {
       "title": "No noodles left. What now?",
       "options": [
