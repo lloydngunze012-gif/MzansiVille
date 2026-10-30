@@ -2,17 +2,19 @@ import * as THREE from 'three'
 import { buildingLayout } from './layout.js'
 import { buildGrid } from './nav.js'
 import { dressPlaces } from './dress.js'
+import { applyBuildingNight, buildSpecial, setWindowBuilder, upgradeBuilding } from './buildings.js'
+import { addSurroundings } from './surroundings.js'
 import { loadGlb, modelManifest, modelUrl } from './models.js'
 
 const pathMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d2b0, roughness: 1 })
 const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x74b254, roughness: 1 })
-const skirtMaterial = new THREE.MeshStandardMaterial({ color: 0x5d8f42, roughness: 1 })
 // Windows: most glow warm at night, a few stay dark (applyNight sets the glow).
 const litWindow = new THREE.MeshStandardMaterial({ color: 0x2a3442, emissive: 0xffc870, emissiveIntensity: 0.05, roughness: 0.4 })
 const darkWindow = new THREE.MeshStandardMaterial({ color: 0x26303c, roughness: 0.4 })
 const windowGeo = new THREE.BoxGeometry(0.7, 0.8, 0.06)
+setWindowBuilder((group, building, out) => addWindows(group, building, out))
 
-function addWindows(group, building) {
+function addWindows(group, building, out = 0.03) {
   const floors = Math.max(1, Math.floor((building.h - 0.6) / 2.2))
   const across = Math.max(1, Math.floor((building.w - 1.4) / 1.6))
   const spots = []
@@ -21,7 +23,7 @@ function addWindows(group, building) {
       for (let i = 0; i < across; i++) {
         const x = -((across - 1) * 1.6) / 2 + i * 1.6
         if (side === 1 && f === 0 && Math.abs(x) < 1.2) continue // the door
-        spots.push([x, 1.6 + f * 2.2, side * (building.d / 2 + 0.03)])
+        spots.push([x, 1.6 + f * 2.2, side * (building.d / 2 + out)])
       }
     }
   }
@@ -57,7 +59,7 @@ function badgeSprite() {
   ctx.fillText('!', 32, 36)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }))
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
   sprite.scale.set(1.35, 1.35, 1)
   sprite.raycast = () => {}
   return sprite
@@ -79,7 +81,8 @@ function labelSprite(text, home) {
   ctx.fillText(text, 160, 38)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false }))
+  // Depth-tested: a building in front hides the name (it never shows through walls).
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
   sprite.scale.set(7.2, 1.62, 1)
   sprite.raycast = () => {}
   sprite.name = 'label'
@@ -90,11 +93,13 @@ const labelAt = new THREE.Vector3()
 const labelEdge = new THREE.Vector3()
 const camRight = new THREE.Vector3()
 
-// Name tags are world sprites, so one close to the camera gets wide and runs off
-// the screen edge as a dark cut-off slab. Fade out any tag that would not fit.
-export function fitLabels(buildings, camera, dt) {
+// Name tags: only for buildings near the player or the destination, and never one
+// that would run off the screen edge (a close tag gets wide). Fade the rest out.
+const LABEL_NEAR = 26
+export function fitLabels(buildings, camera, dt, focus = null) {
   camRight.setFromMatrixColumn(camera.matrixWorld, 0)
   for (const group of buildings.children) {
+    const near = !focus || group.userData.placeId === focus.dest || Math.hypot(group.position.x - focus.x, group.position.z - focus.z) < LABEL_NEAR
     for (const label of group.children) {
       if (label.name !== 'label') continue
       label.getWorldPosition(labelAt)
@@ -102,7 +107,7 @@ export function fitLabels(buildings, camera, dt) {
       labelAt.project(camera)
       labelEdge.project(camera)
       const half = Math.abs(labelEdge.x - labelAt.x)
-      const fits = labelAt.z < 1 && labelAt.x - half > -0.98 && labelAt.x + half < 0.98 && half < 0.6
+      const fits = near && labelAt.z < 1 && labelAt.x - half > -0.98 && labelAt.x + half < 0.98 && half < 0.6
       const material = label.material
       material.opacity += ((fits ? 1 : 0) - material.opacity) * Math.min(1, dt * 10)
       label.visible = material.opacity > 0.02
@@ -127,26 +132,35 @@ function buildingMesh(building, home) {
   group.position.set(building.x, 0, building.z)
   group.userData.placeId = building.id
   // An open place (the Quad) is dressed in dress.js; it has no walls, roof or door here.
-  if (!building.open) {
+  // The sports hall, bus station and gate are built by hand in buildings.js.
+  const special = buildSpecial(group, building)
+  if (!building.open && !special) {
     const wall = new THREE.MeshStandardMaterial({ color: building.color, roughness: 0.86 })
     const roofMat = new THREE.MeshStandardMaterial({ color: building.roof, roughness: 0.8 })
     const body = new THREE.Mesh(new THREE.BoxGeometry(building.w, building.h, building.d), wall)
     body.position.y = building.h / 2
     body.castShadow = true
     body.receiveShadow = true
+    body.name = 'body'
     group.add(body)
     const roof = new THREE.Mesh(new THREE.BoxGeometry(building.w + 0.5, 0.5, building.d + 0.5), roofMat)
     roof.position.y = building.h + 0.22
     roof.castShadow = true
+    roof.name = 'roof'
     group.add(roof)
     const door = new THREE.Mesh(
       new THREE.BoxGeometry(1.25, 2.15, 0.16),
       new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
     )
-    door.position.set(0, 1.08, building.d / 2 + 0.02)
+    // The door swings on a hinge as you arrive (scene.js opens it).
+    const hinge = new THREE.Group()
+    hinge.position.set(-0.62, 0, building.d / 2 + 0.1)
+    hinge.name = 'door-pivot'
+    door.position.set(0.62, 1.08, 0)
     door.name = 'door'
-    group.add(door)
-    addWindows(group, building)
+    hinge.add(door)
+    group.add(hinge)
+    if (!upgradeBuilding(group, building)) addWindows(group, building)
   }
   const beacon = new THREE.Mesh(
     new THREE.SphereGeometry(0.22, 12, 10),
@@ -162,7 +176,8 @@ function buildingMesh(building, home) {
   badge.visible = false
   group.add(badge)
   const label = labelSprite(shortName(building.name), home)
-  label.position.y = building.open ? 4.8 : Math.min(building.h + 1.3, 5.6)
+  const LABEL_Y = { sports_centre: 8, gate: 7, bus_station: 4.6 }
+  label.position.y = building.open ? 4.8 : LABEL_Y[building.id] || Math.min(building.h + 1.3, 5.6)
   group.add(label)
   return group
 }
@@ -225,15 +240,12 @@ export function createCampus(district, homeId) {
   const group = new THREE.Group()
   group.name = 'campus'
 
-  const skirt = new THREE.Mesh(new THREE.CircleGeometry(108, 40), skirtMaterial)
-  skirt.rotation.x = -Math.PI / 2
-  skirt.position.y = -0.04
-  skirt.receiveShadow = true
+  const surroundings = addSurroundings(group)
   const lawn = new THREE.Mesh(new THREE.CircleGeometry(102, 48), grassMaterial)
   lawn.rotation.x = -Math.PI / 2
   lawn.receiveShadow = true
   lawn.name = 'ground'
-  group.add(skirt, lawn)
+  group.add(lawn)
 
   for (const path of layout.paths) {
     for (let i = 1; i < path.length; i += 1) {
@@ -254,13 +266,15 @@ export function createCampus(district, homeId) {
 
   const grid = buildGrid(layout.obstacles.concat(dressing.obstacles))
   upgrade(buildings, layout.buildings)
-  return { group, ground: lawn, buildings, grid, layout, dressing }
+  return { group, ground: lawn, buildings, grid, layout, dressing, surroundings }
 }
 
 // n: 0 day, 1 night. Windows across campus plus the dressed places' lights.
 export function applyNight(campus, n) {
   litWindow.emissiveIntensity = 0.05 + n * 1.5
   campus.dressing?.applyNight(n)
+  campus.surroundings?.applyNight(n)
+  applyBuildingNight(n)
 }
 
 export function markDoors(buildings, ids) {

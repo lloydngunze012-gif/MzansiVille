@@ -29,3 +29,26 @@ export async function loadGlb(url) {
   })
   return gltf.scene
 }
+
+// Cached Kenney kit models, re-centred on x/z with their base on the ground,
+// so a placed model's position is the middle of its footprint.
+const kitCache = {}
+export function loadModel(url) {
+  if (!kitCache[url]) {
+    kitCache[url] = import('three/addons/loaders/GLTFLoader.js')
+      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(url))
+      .then(async (gltf) => {
+        const THREE = await import('three')
+        const root = new THREE.Group()
+        const box = new THREE.Box3().setFromObject(gltf.scene)
+        const centre = box.getCenter(new THREE.Vector3())
+        gltf.scene.position.set(-centre.x, -box.min.y, -centre.z)
+        gltf.scene.traverse((node) => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = true } })
+        root.add(gltf.scene)
+        root.userData.size = box.getSize(new THREE.Vector3())
+        return root
+      })
+    kitCache[url].catch(() => { delete kitCache[url] })
+  }
+  return kitCache[url]
+}
