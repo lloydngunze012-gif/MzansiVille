@@ -788,6 +788,12 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .cc-id { border: 3px solid #5b23c9; box-shadow: 0 4px 0 #f0c400; color: #1c1915; }
 .cc-id::before { background: linear-gradient(#e53950 0 25%, #2fbf4f 25% 50%, #f0c400 50% 75%, #2b8cf0 75%); }
 .cc-crest { width: 22px; height: 22px; }
+.cc-span { grid-column: 1 / -1; }
+.cc-res { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 14px; background: #fff8ea; color: #2a1846; border: 2px solid #f0c400; box-shadow: 0 3px 0 #5b23c9; }
+.cc-res[hidden] { display: none; }
+.cc-res strong { display: block; font: 900 16px/1.2 var(--display); color: #5b23c9; text-transform: none; letter-spacing: 0; }
+.cc-res p { margin: 4px 0 0; font: 600 13px/1.35 system-ui; text-transform: none; letter-spacing: 0; color: #2a1846; }
+.cc-res [data-card="res-tend"] { color: #4c2678; }
 .cc-field { color: #f0c400; }
 .cc-field .fine { color: #d8c8f5; }
 .cc-field input, .cc-field select { border: 2px solid #b48cff; }

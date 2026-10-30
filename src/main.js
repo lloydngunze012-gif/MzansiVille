@@ -485,6 +485,15 @@ function syncCard() {
   set('residence', draft.residence || 'Res: choose')
   set('course', draft.course || 'Course: choose')
   set('handle', h ? '@' + h : '@handle')
+  const picked = app.querySelector('#residence')?.selectedOptions?.[0]
+  const box = app.querySelector('[data-card="res-box"]')
+  if (box) {
+    const line = picked?.dataset.line || ''
+    box.hidden = !line
+    set('res-name', picked?.value || '')
+    set('res-facts', line)
+    set('res-tend', picked?.dataset.tend || '')
+  }
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
   const ready = app.querySelector('[data-card="ready"]')
   if (ready) { ready.classList.toggle('ok', !todo); const t = todo ? todo + ' to go' : 'Ready \u2713'; if (ready.textContent !== t) ready.textContent = t }

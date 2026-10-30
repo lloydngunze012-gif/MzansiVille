@@ -3,6 +3,12 @@ import { hashString } from './format.js'
 
 const EMPTY_DELTAS = { money: 0, energy: 0, grades: 0, social: 0, hunger: 0 }
 
+function optionalNum(value) {
+  if (value === '' || value == null) return null
+  const n = Number(String(value).trim())
+  return Number.isFinite(n) ? n : null
+}
+
 function asArray(value, parser) {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') return parser(value)
@@ -98,6 +104,13 @@ export function buildDistrict(parts) {
       type: row.type || 'other',
       distanceKm: row.distance_km === '' || row.distance_km == null ? null : num(row.distance_km),
       notes: row.notes || '',
+      // Display only. The day loop does not charge rent or apply these mods.
+      monthlyRent: optionalNum(row.monthly_rent),
+      vibe: row.vibe || '',
+      modEnergy: optionalNum(row.mod_energy),
+      modSocial: optionalNum(row.mod_social),
+      modGrades: optionalNum(row.mod_grades),
+      modHunger: optionalNum(row.mod_hunger),
     }))
 
   const events = (parts.events || []).map((event) => ({
