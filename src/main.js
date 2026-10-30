@@ -189,6 +189,10 @@ function endMorning(skip, result) {
   if (skip && run.morningStart) { run.stats = { ...run.morningStart.stats }; run.minutes = run.morningStart.minutes }
   run.morningDone = true
   delete run.morningStart
+  // The morning already introduced Zanele as the roommate, so she is the bestie
+  // and the day 1 "New bestie" card would only repeat it.
+  run.bestieName = 'Zanele'
+  run.queue = run.queue.filter((card) => card.id !== 'bestie-1')
   morningPromise?.then((mod) => mod.stopMorning())
   if (!skip) {
     const district = districtNow()
