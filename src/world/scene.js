@@ -46,7 +46,7 @@ let gateDay = ''
 let guide = null
 let guideFrom = null
 
-// Day-1 arrival: a glowing ground route from the player to the Business Hall door, plus a pulsing marker.
+// Day-1 arrival: a glowing ground route from the player to the SMIG door, plus a pulsing marker.
 function lectureDoor() {
   const hall = campus?.layout.buildings.find((building) => building.id === 'smig')
   return hall ? doorPoint(hall) : null

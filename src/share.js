@@ -1,5 +1,5 @@
 // 1080x1080 share card in the cover style: deep purple, gold, flat vector,
-// with a "Westville Campus" crest.
+// with a round game badge (no university crest).
 import { avatarSvg } from './avatar.js'
 
 const PURPLE = '#2a1846'
@@ -50,45 +50,25 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath()
 }
 
-// Shield crest: gold rim, purple field, open book and star, ribbon below.
-function crest(ctx, cx, cy, s) {
+// Round game badge: gold rim, purple coin, crown. Not a university crest.
+function badge(ctx, cx, cy, s) {
   ctx.save()
   ctx.translate(cx, cy)
   ctx.scale(s, s)
-  const shield = () => {
-    ctx.beginPath()
-    ctx.moveTo(-60, -70)
-    ctx.lineTo(60, -70)
-    ctx.lineTo(60, 0)
-    ctx.quadraticCurveTo(60, 55, 0, 82)
-    ctx.quadraticCurveTo(-60, 55, -60, 0)
-    ctx.closePath()
-  }
   ctx.fillStyle = '#120d18'
-  ctx.translate(0, 6); shield(); ctx.fill(); ctx.translate(0, -6)
-  shield(); ctx.fillStyle = GOLD; ctx.fill()
-  ctx.save(); ctx.scale(0.84, 0.84); shield(); ctx.fillStyle = VIOLET; ctx.fill(); ctx.restore()
-  // book
-  ctx.fillStyle = CREAM
-  ctx.beginPath(); ctx.moveTo(-34, 4); ctx.quadraticCurveTo(-16, -6, 0, 4); ctx.lineTo(0, 34); ctx.quadraticCurveTo(-16, 24, -34, 34); ctx.closePath(); ctx.fill()
-  ctx.beginPath(); ctx.moveTo(34, 4); ctx.quadraticCurveTo(16, -6, 0, 4); ctx.lineTo(0, 34); ctx.quadraticCurveTo(16, 24, 34, 34); ctx.closePath(); ctx.fill()
-  // star
+  ctx.beginPath(); ctx.arc(0, 6, 72, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = GOLD
+  ctx.beginPath(); ctx.arc(0, 0, 72, 0, Math.PI * 2); ctx.fill()
+  ctx.fillStyle = VIOLET
+  ctx.beginPath(); ctx.arc(0, 0, 60, 0, Math.PI * 2); ctx.fill()
+  // crown
   ctx.fillStyle = GOLD
   ctx.beginPath()
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 ? 9 : 22
-    const a = -Math.PI / 2 + (i * Math.PI) / 5
-    ctx.lineTo(Math.cos(a) * r, -26 + Math.sin(a) * r)
-  }
+  ctx.moveTo(-36, 22); ctx.lineTo(-40, -18); ctx.lineTo(-18, 2); ctx.lineTo(0, -28)
+  ctx.lineTo(18, 2); ctx.lineTo(40, -18); ctx.lineTo(36, 22)
   ctx.closePath(); ctx.fill()
-  // ribbon
-  ctx.fillStyle = ORANGE
-  ctx.beginPath(); ctx.moveTo(-96, 60); ctx.lineTo(96, 60); ctx.lineTo(84, 79); ctx.lineTo(96, 98); ctx.lineTo(-96, 98); ctx.lineTo(-84, 79); ctx.closePath(); ctx.fill()
-  ctx.fillStyle = '#2a1206'
-  ctx.font = `900 15px ${DISPLAY}`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText('WESTVILLE CAMPUS', 0, 80)
+  ctx.fillStyle = CREAM
+  ctx.fillRect(-36, 26, 72, 10)
   ctx.restore()
 }
 
@@ -141,7 +121,7 @@ export async function drawShareCard(canvas, { district, run, url, milestone = nu
   ctx.strokeStyle = GOLD
   roundRect(ctx, 26, 26, 1028, 1028, 44); ctx.stroke()
 
-  crest(ctx, 150, 150, 1.05)
+  badge(ctx, 150, 150, 1.05)
 
   ctx.textAlign = 'left'
   ctx.textBaseline = 'alphabetic'
