@@ -30,14 +30,16 @@ const world = new Set(['map', 'place', 'closed', 'event', 'twist', 'bestie', 'su
 for (const name of screens) {
   test(name, async ({ page }) => {
     await page.goto(`/?shot=${name}`)
-    await page.waitForSelector(`[data-screen="${name}"]`)
-    if (world.has(name)) await page.waitForSelector('#world[data-ready="1"]')
-    if (name === 'map') await page.waitForSelector('.map-overlay:not([hidden])')
-    if (name === 'place') await page.waitForSelector('.sheet')
+    // World screens share the 3D home (.g-screen.g-3d) and name themselves play/place/summary.
+    if (world.has(name)) {
+      await page.waitForSelector('.g-screen.g-3d')
+      await page.waitForSelector('#world[data-ready="1"]')
+    } else await page.waitForSelector(`[data-screen="${name}"]`)
+    if (name === 'place' || name === 'closed') await page.waitForSelector('.g-sheet')
     if (name === 'event' || name === 'twist' || name === 'bestie' || name === 'graduated') {
-      await page.waitForSelector('.glass-card')
+      await page.waitForSelector('.g-full, .g-result, .g-card-wrap')
     }
-    if (name === 'summary') await page.waitForSelector('.summary-panel')
+    if (name === 'summary') await page.waitForSelector('.g-summary')
     await page.screenshot({ path: `screenshots/${name}.png`, fullPage: !world.has(name), animations: 'disabled' })
   })
 }
