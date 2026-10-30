@@ -68,8 +68,8 @@ function hairFront(id) {
 function top(id, c, skin, code) {
   const [t, s] = c
   const arms = `<path d="M19 55c-5 4-7 14-6 24" stroke="${t}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <path d="M61 55c5 4 7 14 6 24" stroke="${t}" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <circle cx="13.5" cy="81" r="4" fill="${skin}"/><circle cx="66.5" cy="81" r="4" fill="${skin}"/>`
+    <circle cx="13.5" cy="81" r="4" fill="${skin}"/><g class="av-arm-r"><path d="M61 55c5 4 7 14 6 24" stroke="${t}" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <circle cx="66.5" cy="81" r="4" fill="${skin}"/></g>`
   const body = `<path d="M20 56c4-6 12-8 20-8s16 2 20 8l2 26H18z" fill="${t}"/>`
   if (id === 'hoodie') {
     return `${arms}${body}<path d="M28 50c3 6 21 6 24 0" fill="none" stroke="${s}" stroke-width="4" stroke-linecap="round"/>

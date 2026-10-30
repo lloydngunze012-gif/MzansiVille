@@ -372,16 +372,19 @@ function rules() {
 
 function create(state) {
   const { district, draft } = state
+  const code = district.meta.dialCode
   const groups = RES_GROUPS.map(([type, label]) => {
     const rows = district.residences.filter((row) => row.type === type)
     if (!rows.length) return ''
     return `<optgroup label="${label}">${rows.map((row) =>
       `<option value="${esc(row.name)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)}${row.distanceKm ? ` · ${row.distanceKm} km` : ''}</option>`).join('')}</optgroup>`
   }).join('')
-  const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips">${items.map((item) =>
-    `<button class="cc-chip${item.fill ? ' sw' : ''}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
-      item.fill ? `<i style="background:${item.fill}"></i>` : esc(item.label)
+  const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? '' : ' thumbs'}">${items.map((item) =>
+    `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
+      item.fill ? `<i style="background:${item.fill}"></i>`
+        : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 44)}</span><b>${esc(item.label)}</b>`
     }</button>`).join('')}</div></fieldset>`
+  const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
   return `<main class="screen cc" data-screen="create">
     <header class="cc-top"><a class="cc-back" href="#/">‹ Back</a><h1>Who's arriving?</h1><a class="cc-back" href="#/rules">Rules</a></header>
     <div class="cc-body">
@@ -390,13 +393,28 @@ function create(state) {
         ${picker('Hair', hairs, 'hair')}
         ${picker('Outfit', outfits, 'outfit')}
       </div>
-      <aside class="cc-preview"><div class="cc-stage"><div class="cc-bob">${avatarSvg(draft.avatar, district.meta.dialCode, 120)}</div></div>
-        <p class="cc-name">${esc(draft.name || 'New student')}</p></aside>
+      <aside class="cc-preview">
+        <div class="cc-stage">
+          <svg class="cc-bg" viewBox="0 0 150 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+            <rect width="150" height="260" fill="#ffc37a"/><circle cx="118" cy="96" r="22" fill="#ff8a3d"/>
+            <path d="M20 110Q50 40 80 110" fill="none" stroke="#fff4e4" stroke-width="3"/>
+            <rect y="108" width="150" height="20" fill="#1d7fb8"/><rect y="128" width="150" height="132" fill="#5cb85c"/>
+            <ellipse cx="75" cy="214" rx="66" ry="22" fill="#7fd07f" stroke="#f3e2c2" stroke-width="5"/>
+            <path d="M136 200c2-20 0-36-6-52" stroke="#8a5a3a" stroke-width="4" fill="none"/>
+            <g fill="#1f6b45" transform="translate(130 148)"><path d="M0 0q-14-10-26 2q12-6 26-2z"/><path d="M0 0q14-10 26 2q-12-6-26-2z"/><path d="M0 0q-6-14-20-16q12 4 20 16z"/><path d="M0 0q6-14 20-16q-12 4-20 16z"/></g>
+          </svg>
+          <span class="cc-ready${todo ? '' : ' ok'}">${todo ? `${todo} to go` : 'Ready ✓'}</span>
+          <div class="cc-bob">${avatarSvg(draft.avatar, code, 118)}</div>
+        </div>
+        <div class="cc-id"><small>Student card</small>
+          <strong>${esc(draft.name.trim() || 'Your name')}</strong>
+          <span>${esc(draft.residence || 'Res: choose below')}</span><span>${esc(draft.course || 'Course: choose below')}</span></div>
+      </aside>
     </div>
     <div class="cc-fields">
-      <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="What do friends call you?"></label>
-      <label class="cc-field">Residence<select id="residence"><option value="">Choose your res</option>${groups}</select></label>
-      <label class="cc-field">Course<select id="course"><option value="">Choose your course</option>${district.courses.map((course) =>
+      <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Your name"></label>
+      <label class="cc-field">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
+      <label class="cc-field">Course<select id="course"><option value="">Choose course</option>${district.courses.map((course) =>
         `<option ${course === draft.course ? 'selected' : ''}>${esc(course)}</option>`).join('')}</select></label>
       <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
     </div>
@@ -579,42 +597,71 @@ function admin(state) {
   </main>`
 }
 
+function isoBlock(x, y, w, h, d, front, side, roof) {
+  return `<path d="M${x + 6} ${y + h}h${w}l${d} ${-d / 2}h${-w}z" fill="#1c1915" opacity=".14" transform="translate(${d * .6} ${d * .5})"/>
+    <path d="M${x} ${y}h${w}v${h}h${-w}z" fill="${front}"/>
+    <path d="M${x + w} ${y}l${d} ${-d / 2}v${h}l${-d} ${d / 2}z" fill="${side}"/>
+    <path d="M${x} ${y}l${d} ${-d / 2}h${w}l${-d} ${d / 2}z" fill="${roof}"/>`
+}
+
+function palm(x, y, k) {
+  const fronds = [[-46, 8], [-38, -14], [-16, -30], [16, -30], [38, -14], [46, 8]]
+  return `<g transform="translate(${x} ${y}) scale(${k})">
+    <ellipse cx="6" cy="2" rx="16" ry="4" fill="#1c1915" opacity=".14"/>
+    <path d="M0 0c4-24 2-50-8-78" stroke="#8a5a3a" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="M2-14h-7M3-30h-7M1-46h-7M-3-62h-7" stroke="#6b4429" stroke-width="2"/>
+    <g class="ts-palm" transform="translate(-8 -78)">
+      ${fronds.map(([fx, fy], i) => `<path d="M0 0Q${fx * .5} ${fy - 14} ${fx} ${fy}Q${fx * .45} ${fy - 2} 0 0z" fill="${i % 2 ? '#2e8b57' : '#1f6b45'}"/>`).join('')}
+      <circle cx="-3" cy="3" r="3" fill="#8a5a3a"/><circle cx="3" cy="4" r="3" fill="#6b4429"/></g></g>`
+}
+
 function campusScene(district, avatar) {
   const places = Object.fromEntries((district.places || []).map((p) => [p.id, p]))
   const nm = (id, fb) => esc(places[id]?.name || fb)
-  const res = ['res_o', 'res_r', 'res_s'].map((id, i) => ({ name: nm(id, ['O Block', 'R Block', 'S Block'][i]) }))
+  const res = ['res_o', 'res_r', 'res_s'].map((id, i) => nm(id, ['O Block', 'R Block', 'S Block'][i]))
+  const towers = [[0, 52], [14, 70], [30, 44], [44, 84], [60, 58], [250, 64], [266, 90], [284, 50], [300, 76], [318, 60], [334, 96], [352, 54], [368, 72]]
   return `<svg class="ts-scene" viewBox="0 -170 390 844" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-    <rect y="-170" width="390" height="690" fill="#ffd9a8"/>
-    <rect y="-170" width="390" height="250" fill="#ffc37a"/>
-    <circle class="ts-sun" cx="300" cy="118" r="46" fill="#ff8a3d"/>
-    <g class="ts-cloud c1" fill="#fff4e4"><ellipse cx="60" cy="70" rx="34" ry="11"/><ellipse cx="80" cy="62" rx="18" ry="11"/></g>
-    <g class="ts-cloud c2" fill="#fff4e4"><ellipse cx="220" cy="46" rx="28" ry="9"/><ellipse cx="236" cy="40" rx="14" ry="9"/></g>
-    <rect y="140" width="390" height="22" fill="#1d7fb8"/>
-    <path d="M0 150h390" stroke="#7cc6e8" stroke-width="2" stroke-dasharray="14 20" class="ts-wave"/>
-    <path d="M0 162c80-14 160-14 240-4s110 4 150-2V674H0z" fill="#5cb85c"/>
-    <path d="M0 230c90-18 200-18 390 0V674H0z" fill="#4aa34f"/>
-    <path d="M195 674L195 300M40 330c80-10 230-10 330 0" stroke="#f3e2c2" stroke-width="16" fill="none" stroke-linecap="round"/>
-    <!-- Sports Centre -->
-    <g transform="translate(262 206)"><rect width="110" height="56" rx="4" fill="#1d7fb8"/><path d="M-4 4q64-38 128 0z" fill="#165f8a"/>
-      <rect x="48" y="30" width="24" height="26" fill="#fffaf2"/><rect x="10" y="16" width="28" height="10" fill="#7cc6e8"/><rect x="82" y="16" width="28" height="10" fill="#7cc6e8"/>
-      <text x="60" y="-14" class="ts-lbl">${nm('sports_centre', 'Sports Centre')}</text></g>
-    <!-- Library -->
-    <g transform="translate(14 214)"><rect width="96" height="50" fill="#c4512a"/><path d="M-4 0h104l-52-20z" fill="#9c3f20"/>
-      <rect x="12" y="14" width="10" height="36" fill="#f4efe4"/><rect x="43" y="14" width="10" height="36" fill="#f4efe4"/><rect x="74" y="14" width="10" height="36" fill="#f4efe4"/>
-      <text x="48" y="-26" class="ts-lbl" text-anchor="middle">${nm('library', 'Library')}</text></g>
-    <!-- The Quad -->
-    <g transform="translate(195 328)"><ellipse rx="96" ry="30" fill="#7fd07f"/><ellipse rx="96" ry="30" fill="none" stroke="#f3e2c2" stroke-width="6"/>
-      <circle r="10" fill="#7b3fe4"/><circle r="5" fill="#f0c400"/>
-      <text x="-50" y="-38" class="ts-lbl big">${nm('quad', 'The Quad')}</text></g>
-    <!-- Residences -->
-    ${res.map((r, i) => `<g transform="translate(${14 + i * 70} ${378 + (i % 2) * 14})"><rect width="64" height="${74 - i * 6}" fill="${['#fff4e4', '#ffe1b8', '#fff4e4'][i]}" stroke="#c9a57a" stroke-width="2"/>
-      ${[0, 1, 2].map((row) => `<rect x="8" y="${10 + row * 18}" width="12" height="9" fill="#1d7fb8"/><rect x="26" y="${10 + row * 18}" width="12" height="9" fill="#ff8a3d"/><rect x="44" y="${10 + row * 18}" width="12" height="9" fill="#1d7fb8"/>`).join('')}
-      <rect x="0" y="-8" width="64" height="10" fill="#7b3fe4"/><text x="32" y="0" class="ts-tag">${r.name}</text></g>`).join('')}
-    <!-- Palms -->
-    ${[[360, 300, 1], [150, 236, .8], [250, 420, .9]].map(([x, y, k]) => `<g transform="translate(${x} ${y}) scale(${k})"><path d="M0 0q4-40-2-70" stroke="#8a5a3a" stroke-width="6" fill="none" stroke-linecap="round"/>
-      <g class="ts-palm" transform="translate(-2 -70)" fill="#1f6b45"><path d="M0 0q-30-14-44 6q22-12 44-6z"/><path d="M0 0q30-14 44 6q-22-12-44-6z"/><path d="M0 0q-14-26-36-26q22 6 36 26z"/><path d="M0 0q14-26 36-26q-22 6-36 26z"/></g></g>`).join('')}
-    
-    <g class="ts-avatar" transform="translate(200 250)">${avatar}</g>
+    <rect y="-170" width="390" height="844" fill="#ffd9a8"/>
+    <rect y="-170" width="390" height="190" fill="#ffc37a"/>
+    <rect y="20" width="390" height="70" fill="#ffcf92"/>
+    <g class="ts-cloud c1" fill="#fff4e4"><ellipse cx="40" cy="40" rx="38" ry="11"/><ellipse cx="62" cy="31" rx="20" ry="12"/></g>
+    <g class="ts-cloud c2" fill="#fff4e4" opacity=".85"><ellipse cx="180" cy="66" rx="30" ry="8"/><ellipse cx="196" cy="59" rx="15" ry="9"/></g>
+    <g class="ts-cloud c3" fill="#fff4e4" opacity=".8"><ellipse cx="300" cy="-14" rx="30" ry="8"/><ellipse cx="316" cy="-21" rx="14" ry="8"/></g><g class="ts-cloud c4" fill="#fff4e4" opacity=".6"><ellipse cx="120" cy="2" rx="22" ry="6"/></g>
+    <g class="ts-birds" fill="none" stroke="#5a3a5e" stroke-width="2" stroke-linecap="round">
+      <path d="M90 60q5-5 10 0q5-5 10 0"/><path d="M118 48q4-4 8 0q4-4 8 0"/><path d="M104 76q3-3 6 0q3-3 6 0"/></g>
+    <circle cx="318" cy="132" r="44" fill="#ff8a3d"/><circle cx="318" cy="132" r="30" fill="#ffa95e"/>
+    <g fill="#b0527a">${towers.map(([tx, th]) => `<rect x="${tx}" y="${140 - th}" width="14" height="${th}"/>`).join('')}</g>
+    <g fill="#ffd27a" opacity=".8">${towers.filter((_, i) => i % 2).map(([tx, th]) => `<rect x="${tx + 4}" y="${148 - th}" width="3" height="3"/><rect x="${tx + 4}" y="${158 - th}" width="3" height="3"/>`).join('')}</g>
+    <path d="M96 140q0-22 54-26q54 4 54 26z" fill="#8f3f68"/>
+    <path d="M108 140Q150 22 196 140" fill="none" stroke="#fff4e4" stroke-width="5" stroke-linecap="round"/>
+    <rect y="140" width="390" height="44" fill="#1d7fb8"/>
+    <g fill="#ffa95e" opacity=".85"><rect x="290" y="146" width="56" height="3" rx="1.5"/><rect x="298" y="155" width="40" height="3" rx="1.5"/><rect x="306" y="164" width="24" height="3" rx="1.5"/></g>
+    <path d="M0 176h390" stroke="#7cc6e8" stroke-width="2" stroke-dasharray="14 20" class="ts-wave"/>
+    <path d="M0 184c80-12 200-12 390 0v10H0z" fill="#f3e2c2"/>
+    <path d="M0 192c90-14 220-14 390-2V674H0z" fill="#5cb85c"/>
+    <path d="M0 260c110-18 240-18 390 0V674H0z" fill="#4aa34f"/>
+    <path d="M195 674V330M20 340c80-8 270-8 360 0" stroke="#f3e2c2" stroke-width="18" fill="none" stroke-linecap="round"/>
+    <g transform="translate(0 -6)">${isoBlock(14, 220, 92, 50, 18, '#c4512a', '#9c3f20', '#e0662a')}
+      <rect x="26" y="234" width="10" height="36" fill="#fff4e4"/><rect x="52" y="234" width="10" height="36" fill="#fff4e4"/><rect x="78" y="234" width="10" height="36" fill="#fff4e4"/>
+      <text x="60" y="196" class="ts-lbl" text-anchor="middle">${nm('library', 'Library')}</text></g>
+    <g>${isoBlock(250, 226, 104, 52, 22, '#1d7fb8', '#165f8a', '#7cc6e8')}
+      <rect x="290" y="250" width="24" height="28" fill="#fff4e4"/><rect x="258" y="236" width="24" height="9" fill="#bfe6f7"/><rect x="322" y="236" width="24" height="9" fill="#bfe6f7"/>
+      <text x="306" y="196" class="ts-lbl" text-anchor="middle">${nm('sports_centre', 'Sports Centre')}</text></g>
+    <g transform="translate(195 340)"><ellipse cx="6" cy="8" rx="100" ry="30" fill="#1c1915" opacity=".1"/><ellipse rx="100" ry="30" fill="#7fd07f" stroke="#f3e2c2" stroke-width="7"/>
+      <ellipse rx="14" ry="6" fill="#7b3fe4"/><ellipse cy="-3" rx="7" ry="3" fill="#f0c400"/>
+      <text x="-48" y="-38" class="ts-lbl big" text-anchor="middle">${nm('quad', 'The Quad')}</text></g>
+    <g class="ts-kombi"><g transform="translate(0 318)"><ellipse cx="22" cy="18" rx="24" ry="3" fill="#1c1915" opacity=".18"/>
+      <path d="M0 4q0-6 6-6h28q8 0 12 10v8H0z" fill="#fffaf2"/><rect y="8" width="46" height="4" fill="#1d7fb8"/>
+      <rect x="6" y="0" width="9" height="6" fill="#7cc6e8"/><rect x="18" y="0" width="9" height="6" fill="#7cc6e8"/><path d="M30 0h5q4 0 6 6h-11z" fill="#7cc6e8"/>
+      <circle cx="10" cy="16" r="4" fill="#1c1915"/><circle cx="36" cy="16" r="4" fill="#1c1915"/></g></g>
+    ${[[0, '#ff8a3d', '#1c1915'], [1, '#7b3fe4', '#3f291c']].map(([i, c, h]) => `<g class="ts-walker w${i}"><g transform="translate(0 ${i ? 470 : 420})">
+      <ellipse cx="0" cy="18" rx="6" ry="1.6" fill="#1c1915" opacity=".2"/><path d="M-2 10v8M2 10v8" stroke="#2b3a55" stroke-width="2.4"/>
+      <rect x="-5" y="0" width="10" height="11" rx="4" fill="${c}"/><circle cy="-4" r="4.2" fill="${i ? '#8a5a3a' : '#d2956b'}"/><path d="M-4.2-5a4.2 4.2 0 0 1 8.4 0z" fill="${h}"/></g></g>`).join('')}
+    ${res.map((r, i) => { const x = 12 + i * 62, y = 400 + (i % 2) * 18; return `<g>${isoBlock(x, y, 52, 64 - i * 4, 14, ['#fff4e4', '#ffe1b8', '#fff4e4'][i], '#e8c79c', '#c9a57a')}
+      ${[0, 1, 2].map((row) => `<rect x="${x + 6}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/><rect x="${x + 21}" y="${y + 8 + row * 17}" width="10" height="8" fill="#ff8a3d"/><rect x="${x + 36}" y="${y + 8 + row * 17}" width="10" height="8" fill="#1d7fb8"/>`).join('')}
+      <rect x="${x}" y="${y - 10}" width="52" height="11" rx="2" fill="#7b3fe4"/><text x="${x + 26}" y="${y - 1.5}" class="ts-tag">${r}</text></g>` }).join('')}
+    ${palm(368, 330, 1.05)}${palm(150, 262, .8)}${palm(214, 470, .95)}${palm(20, 312, .7)}
+    <g class="ts-avatar">${avatar}</g>
   </svg>`
 }
 
@@ -622,11 +669,11 @@ function title(state) {
   const district = state.district
   const day = state.save.run?.day
   const look = state.save.run?.character?.avatar || { skin: 'amber', hair: 'braids', outfit: 'organt' }
-  const avatar = avatarSvg(look, district.meta.dialCode, 76).replace('<svg ', '<svg x="0" y="0" ')
+  const avatar = avatarSvg(look, district.meta.dialCode, 104).replace('<svg ', '<svg x="206" y="236" class="wave" ')
   return `<main class="screen ts" data-screen="title">
     ${campusScene(district, avatar)}
     <header class="ts-sign" aria-label="CampusVille">
-      <div class="ts-board"><small>Welcome to</small><h1>Campus<span>Ville</span></h1></div>
+      <div class="ts-board"><small>Welcome to</small><h1>Campus<span>Ville</span></h1><i class="bolt a"></i><i class="bolt b"></i><i class="bolt c"></i><i class="bolt d"></i></div>
       <div class="ts-plaque">${esc(district.meta.city || 'Durban')} · Est. first year</div>
       <i class="ts-post l"></i><i class="ts-post r"></i>
     </header>
