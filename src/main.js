@@ -35,7 +35,7 @@ import { shareUrl } from './config.js'
 let shareMilestone = null
 let shareBlob = null
 import { emptyDraft, shotState, view } from './ui/render.js'
-import { anyEnabled, hereOf, layoutOf, soundOn, ui } from './ui/game.js'
+import { anyEnabled, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
 import { homePlaceId } from './engine/model.js'
 
 const KEY = 'mzansiville.v1'
@@ -147,12 +147,27 @@ function armToasts() {
   })
 }
 
-const WORLD_SCREENS = new Set(['world'])
+const WORLD_SCREENS = new Set(['world', 'play', 'map', 'place', 'closed', 'summary', 'event', 'twist', 'bestie', 'graduated'])
+let glOk = null
+
+function hasGL() {
+  if (glOk !== null) return glOk
+  if (new URLSearchParams(location.search).get('nogl') === '1') return (glOk = false)
+  try {
+    const c = document.createElement('canvas')
+    glOk = Boolean(c.getContext('webgl2') || c.getContext('webgl'))
+  } catch { glOk = false }
+  return glOk
+}
+
+function worldWanted(viewState) {
+  return Boolean(viewState?.run) && WORLD_SCREENS.has(viewState.screen) && viewPref() === '3d' && hasGL()
+}
 let worldPromise = null
 let worldTicket = 0
 
 function syncWorld(viewState) {
-  const on = Boolean(viewState?.run) && WORLD_SCREENS.has(viewState.screen)
+  const on = worldWanted(viewState)
   const ticket = ++worldTicket
   document.body.dataset.world = on ? '1' : '0'
   if (!on) {
@@ -180,7 +195,10 @@ function paint() {
   const active = document.activeElement
   const focusId = active && app.contains(active) ? active.id : ''
   const caret = active && typeof active.selectionStart === 'number' ? active.selectionStart : null
-  const html = shot ? view(shotState(shot)) : view(state())
+  const viewState = shot ? shotState(shot) : state()
+  viewFlags.gl = hasGL()
+  viewFlags.world = worldWanted(viewState)
+  const html = view(viewState)
   const oldLog = document.getElementById('log')
   const logTop = oldLog ? oldLog.scrollTop : null
   app.innerHTML = html
@@ -574,6 +592,16 @@ app.addEventListener('click', async (event) => {
     window.dispatchEvent(new CustomEvent('mzansi-open-map'))
     return
   }
+  if (act === 'view') {
+    const mode = button.dataset.mode
+    try { localStorage.setItem('mzansiville.view', mode === 'map' ? 'map' : '3d') } catch { /* ignore */ }
+    if (mode !== 'map') {
+      try { localStorage.setItem('mzansiville.camera', mode) } catch { /* ignore */ }
+      window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: mode }))
+    }
+    paint()
+    return
+  }
   if (act === 'cam') {
     window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: button.dataset.mode }))
     paint()
@@ -656,11 +684,21 @@ app.addEventListener('click', async (event) => {
     }
     const id = button.dataset.id
     if (document.body.dataset.world === '1') {
+      button.classList.add('busy')
+      blip()
+      const sheet = app.querySelector('.g-sheet')
+      if (sheet) sheet.style.transform = 'translateY(110%)', sheet.style.transition = 'transform .2s'
+      app.querySelectorAll('.g-scrim').forEach((el) => el.remove())
       window.dispatchEvent(new CustomEvent('mzansi-act', {
         detail: {
+          placeId: button.dataset.place || '',
           commit() {
+            const before = { ...save.run.stats }
             const result = applyAction(district, save.run, id)
-            if (!result.ok) return
+            if (!result.ok) { ui.notice = result.error; paint(); return }
+            save.run.at = button.dataset.place || save.run.at
+            ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(save.run.stats[k] - before[k])]))
+            autoAdvance()
             finishTurn()
           },
         },

@@ -320,3 +320,18 @@
 .g-act:not(:disabled)::after{content:"\203a";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:26px;font-weight:700;color:#f0c400}
 .g-act:not(:disabled){background:#f0c4001a}
 .g-hint p{font-weight:700;color:#ffe08a}
+/* home-3d: the 3D campus is the home layer; UI floats on top */
+.g-screen.g-3d{background:transparent}
+.g-world-gap{background:transparent!important;pointer-events:none}
+body[data-world="1"] #app .g-hud,body[data-world="1"] #app .g-sheet,body[data-world="1"] #app .g-result,body[data-world="1"] #app .g-cta,body[data-world="1"] #app .g-views,body[data-world="1"] #app .g-menu,body[data-world="1"] #app .g-scrim,body[data-world="1"] #app .g-card-wrap,body[data-world="1"] #app .g-notice{pointer-events:auto}
+.g-views{position:relative;z-index:4;display:flex;gap:6px;padding:6px 10px;justify-content:center}
+.g-3d .g-views{position:absolute;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom))}
+.g-view{flex:1;max-width:96px;min-height:36px;border-radius:999px;border:1px solid #f0c40066;background:#22143be6;color:#fff6e6;font:600 13px system-ui,sans-serif;box-shadow:0 3px 10px #0006}
+.g-view[aria-pressed="true"]{background:#f0c400;color:#22143b;border-color:#f0c400}
+.g-view:disabled{opacity:.45}
+.g-nogl{margin:0 10px 4px;font-size:12px;color:#f0c400;text-align:center}
+.g-3d .g-cta{position:absolute;left:0;right:0;bottom:0}
+body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .floater{display:none!important}
+.g-3d .g-result{backdrop-filter:blur(8px)}
+.g-3d .g-scrim{background:#12082699}
+.g-3d .g-full{background:linear-gradient(180deg,#1a0f2eb3,#1a0f2ef0 45%)!important}
