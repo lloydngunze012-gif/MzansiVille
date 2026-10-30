@@ -139,6 +139,10 @@ test('day 1 morning: room to campus', async ({ page }) => {
   expect(run.bestieName).toBe('Zanele')
   expect(run.queue.some((card) => card.kind === 'bestie')).toBe(false)
   await expect(page.locator('[data-spawn="gate"]')).toBeAttached({ timeout: 20000 })
+  // Other students: 10-15 on campus, some of them walking between buildings.
+  const world = page.locator('#world')
+  await expect.poll(async () => Number(await world.getAttribute('data-crowd')), { timeout: 20000 }).toBeGreaterThanOrEqual(10)
+  await expect.poll(async () => Number(await world.getAttribute('data-crowd-walking')), { timeout: 20000 }).toBeGreaterThan(0)
   await page.waitForTimeout(1500)
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.

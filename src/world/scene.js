@@ -5,6 +5,7 @@ import { loop as soundLoop } from '../audio.js'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createCampus, fitLabels, markDoors } from './campus.js'
+import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
@@ -19,6 +20,7 @@ let camera
 let rig
 let input
 let campus
+let crowd = null
 let player
 let sun
 let sunTarget
@@ -435,8 +437,10 @@ function showFloater(before, after) {
 
 function rebuild(district, homeId) {
   if (campus) scene.remove(campus.group)
+  crowd?.dispose()
   campus = createCampus(district, homeId)
   scene.add(campus.group)
+  crowd = createCrowd(scene, campus)
   builtId = `${district.meta.id}|${homeId}`
 }
 
@@ -569,6 +573,9 @@ function tick(now) {
     clock += dt
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
+    crowd?.update(dt)
+    host.dataset.crowd = String(crowd?.people.length || 0)
+    host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
     camera.updateMatrixWorld()
     fitLabels(campus.buildings, camera, dt)
