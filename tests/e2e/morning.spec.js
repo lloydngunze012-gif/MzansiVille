@@ -143,6 +143,13 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const world = page.locator('#world')
   await expect.poll(async () => Number(await world.getAttribute('data-crowd')), { timeout: 20000 }).toBeGreaterThanOrEqual(10)
   await expect.poll(async () => Number(await world.getAttribute('data-crowd-walking')), { timeout: 20000 }).toBeGreaterThan(0)
+  // Personal space: over a few seconds nobody gets inside the player.
+  let nearest = 99
+  for (let i = 0; i < 12; i++) {
+    nearest = Math.min(nearest, Number(await world.getAttribute('data-nearest')))
+    await page.waitForTimeout(250)
+  }
+  expect(nearest).toBeGreaterThan(0.7)
   await page.waitForTimeout(1500)
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.

@@ -573,7 +573,9 @@ function tick(now) {
     clock += dt
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
-    crowd?.update(dt)
+    crowd?.update(dt, player.position)
+    crowd?.pushOut(player.position)
+    if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
