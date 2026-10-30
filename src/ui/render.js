@@ -1,4 +1,4 @@
-import { avatarSvg, bodies, hairs, outfits, skins } from '../avatar.js'
+import { avatarSvg, bodies, genderOf, genders, hairs, outfits, skins } from '../avatar.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
 import { actionState, actionsAt, createRun } from '../engine/sim.js'
@@ -28,7 +28,7 @@ export function emptyDraft() {
     residence: '',
     course: '',
     handle: '',
-    avatar: { skin: 'amber', hair: 'crop', outfit: 'hoodie' },
+    avatar: { gender: 'female', skin: 'amber', hair: 'crop', outfit: 'hoodie' },
     email: '',
     notice: '',
     error: '',
@@ -387,6 +387,8 @@ function create(state) {
       item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
         : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 40)}</span><b>${esc(item.label)}</b>`
     }</button>`).join('')}</div></fieldset>`
+  const genderPick = `<fieldset class="cc-group"><legend>Gender</legend><div class="cc-chips thumbs">${genders.map((item) =>
+    `<button class="cc-chip th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" aria-pressed="${genderOf(draft.avatar) === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '\u2640' : '\u2642'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></fieldset>`
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
   return `<main class="screen cc" data-screen="create">
     <i class="cc-backdrop" aria-hidden="true"></i>
@@ -394,6 +396,7 @@ function create(state) {
     <i class="cc-strip" aria-hidden="true"></i>
     <div class="cc-body">
       <div class="cc-opts">
+        ${genderPick}
         ${picker('Skin', skins, 'skin')}
         ${picker('Body', bodies, 'body')}
         ${picker('Hair', hairs, 'hair')}

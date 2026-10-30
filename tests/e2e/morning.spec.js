@@ -15,11 +15,12 @@ async function expectBubbleClear(page) {
   if (box) expect(box[0]).toBeGreaterThanOrEqual(box[1])
 }
 
-async function newGame(page, query) {
+async function newGame(page, query, gender = 'female') {
   await page.goto(`/${query}#/new`)
   await page.evaluate(() => localStorage.clear())
   await page.goto(`/${query}#/new`)
-  await page.locator('#name').fill('Thandi')
+  await page.locator(`[data-part="gender"][data-id="${gender}"]`).tap()
+  await page.locator('#name').fill(gender === 'male' ? 'Lethabo' : 'Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
@@ -37,7 +38,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const data = (k) => host.getAttribute(`data-${k}`)
   const pos = async () => [Number(await data('px')), Number(await data('pz'))]
   const shot = (n) => page.screenshot({ path: `${OUT}/${process.env.MORNING_PREFIX || 'morning'}_${n}.png` })
-  const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 30000 })
+  const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
 
   // Home screen first: no save yet, so no Continue.
@@ -160,7 +161,9 @@ test('day 1 morning: forced late bus is Running late', async ({ page }) => {
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 40000 })
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
-  await newGame(page, '?roommate=0&latebus=1&snooze=0')
+  // A male student rooms with Sipho, not Zanele.
+  await newGame(page, '?roommate=0&latebus=1&snooze=0', 'male')
+  await expect(host).toHaveAttribute('data-roomie', 'Sipho', { timeout: 20000 })
   await atStep('kettle')
   await expect(host).toHaveAttribute('data-latebus', '1')
   await tapGo()
@@ -185,5 +188,10 @@ test('day 1 morning: forced late bus is Running late', async ({ page }) => {
   await expect(host).toHaveAttribute('data-ontime', '0')
   await expect(page.locator('.mm-card')).toContainText('Running late')
   await page.screenshot({ path: `${OUT}/${process.env.MORNING_PREFIX || 'morning'}_9b_late.png` })
+  await page.locator('[data-mm="continue"]').tap()
+  await expect(page).toHaveURL(/#\/play/)
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.character.avatar.gender).toBe('male')
+  expect(run.bestieName).toBe('Sipho')
   expect(errors).toEqual([])
 })

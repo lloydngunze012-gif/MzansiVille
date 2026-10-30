@@ -2,6 +2,7 @@
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { loop as soundLoop, sfx } from '../audio.js'
+import { genderOf, roommateOf } from '../avatar.js'
 import { createAvatar, gesture, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 
@@ -12,7 +13,7 @@ const RIDE = 20
 const BUS_DELAY = 25
 const SNOOZE = 10
 const SNOOZE_MAX = 3
-const ROOMIE = 'Zanele'
+let ROOMIE = 'Zanele'
 
 // Named spots in the morning scene (same names as world-designer's morning.json anchors), as 3D [x, z].
 export const ANCHORS = {
@@ -35,7 +36,19 @@ export function line(path, fallback, vars) {
   let text = path.split('.').reduce((node, key) => (node == null ? undefined : node[key]), LINES)
   if (text && typeof text === 'object' && typeof text.text === 'string') text = text.text
   if (typeof text !== 'string' || !text) text = fallback
+  text = forGender(text)
   return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text
+}
+// The lines are written for Zanele and a female student; swap names and words
+// when the student (and so the roommate) is male.
+let maleRoom = false
+function forGender(text) {
+  if (!maleRoom) return text
+  return text
+    .replace(/Zanele/g, ROOMIE)
+    .replace(/\bShe\b/g, 'He').replace(/\bshe\b/g, 'he')
+    .replace(/\bherself\b/g, 'himself').replace(/\bher\b/g, 'his')
+    .replace(/\bmy girl\b/g, 'my boy')
 }
 const ON_TIME_BY = 9 * 60
 const LECTURE = 9 * 60
@@ -242,11 +255,13 @@ async function clockRoll(add) {
   await addMinutes(add, 0.9)
   node.innerHTML = `<span class="mm-roll"><b>${to}</b></span>`
 }
-// Zanele: red top, yellow headwrap. The capsule arms and wrap are only the
-// stand-in until her rigged model loads.
+// Zanele: red top, yellow headwrap. Sipho (for a male student): blue jacket.
+// The capsule arms and wrap are only the stand-in until the rigged model loads.
 function makeZanele() {
-  const z = createAvatar({ model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' })
-  z.name = 'zanele'
+  const z = createAvatar(maleRoom
+    ? { model: 'male-a', skin: 'brown', outfit: 'jacket', topColor: '#1d7fb8', bottomColor: '#3a2f4f' }
+    : { model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' })
+  z.name = maleRoom ? 'sipho' : 'zanele'
   const wrap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0xf0c400, roughness: 0.7 }))
   wrap.position.y = 1.5
   wrap.scale.set(1, 1.25, 1)
@@ -917,6 +932,10 @@ export function startMorning(options) {
   tasks = []
   if (player) scene.remove(player)
   if (roommate) scene.remove(roommate)
+  ROOMIE = roommateOf(opts.run.character?.avatar)
+  maleRoom = genderOf(opts.run.character?.avatar) === 'male'
+  host.dataset.roomie = ROOMIE
+  uiq('.mm-tag').textContent = ROOMIE
   player = createAvatar(opts.run.character?.avatar)
   player.userData.pose = 'stand'
   scene.add(player)
