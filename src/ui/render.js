@@ -6,6 +6,7 @@ import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
 import { gameOverScreen, mapHome, milestonesScreen, withHud } from './game.js'
+import { morningActive, morningHtml } from './morning.js'
 import { residenceFacts } from './residence.js'
 
 export function esc(value) {
@@ -644,6 +645,9 @@ export function view(state) {
   }
   if (screen === 'create') return create(state)
   if (screen === 'world') return play(state, 'play', '')
+  if ((screen === 'map' || screen === 'play') && state.run && morningActive(state.district, state.run) && !state.run.queue?.length) {
+    return withHud(state, `<main class="screen g-screen m-morning" data-screen="play">${morningHtml(state)}</main>`)
+  }
   if (screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
   if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)
