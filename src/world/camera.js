@@ -55,16 +55,12 @@ export function createCameraRig() {
       }
     }
     if (rig.mode === 'eye') {
+      // First person: just in front of the face (the scene hides the player's head).
       const fx = Math.sin(rig.facing)
       const fz = Math.cos(rig.facing)
-      const back = rig.distance.eye
       return {
-        pos: new THREE.Vector3(
-          origin.x - fx * back + fz * 0.45,
-          1.6,
-          origin.z - fz * back - fx * 0.45,
-        ),
-        look: new THREE.Vector3(origin.x + fx * 6, 1.35 + rig.eyePitch, origin.z + fz * 6),
+        pos: new THREE.Vector3(origin.x + fx * 0.32, 1.42, origin.z + fz * 0.32),
+        look: new THREE.Vector3(origin.x + fx * 6, 1.3 + rig.eyePitch, origin.z + fz * 6),
       }
     }
     const horiz = Math.cos(rig.pitch) * rig.distance.sims

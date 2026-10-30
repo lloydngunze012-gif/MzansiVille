@@ -31,6 +31,21 @@ let walkers = []
 let clipboard = null
 const camTarget = new THREE.Vector3()
 const camWant = new THREE.Vector3()
+// A set shot (position + look) overrides the follow camera: board, lecturer, you.
+let shot = null
+const HEMI = 2.3
+const SUN = 2.4
+const SHOTS = {
+  board: { pos: [0.6, 3.6, 4.2], look: [-1, 3.4, -6.3] },
+  lecturer: { pos: [1.6, 2.3, -1.2], look: [0, 1.5, -4.9] },
+}
+function setShot(name, custom) {
+  const s = custom || SHOTS[name]
+  shot = s ? { pos: new THREE.Vector3(...s.pos), look: new THREE.Vector3(...s.look) } : null
+  // Set shots cut straight there; a glide would fly the camera through the desks.
+  if (shot && camera) { camera.position.copy(shot.pos); camLook.copy(shot.look) }
+  if (host) host.dataset.shot = s ? (name || 'custom') : 'follow'
+}
 const camLook = new THREE.Vector3()
 
 // ---------- tiny task runner (same idea as the morning) ----------
@@ -199,11 +214,11 @@ function build() {
   renderer.shadowMap.enabled = true
   host.prepend(renderer.domElement)
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x3a2a22)
+  scene.background = new THREE.Color(0xf3e6cc)
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100)
-  hemi = new THREE.HemisphereLight(0xfff1dc, 0x4a3a30, 1.4)
+  hemi = new THREE.HemisphereLight(0xfff6e8, 0x8a7360, HEMI)
   scene.add(hemi)
-  sun = new THREE.DirectionalLight(0xfff0d8, 1.6)
+  sun = new THREE.DirectionalLight(0xfff0d8, SUN)
   sun.position.set(-4, 10, 6)
   sun.castShadow = true
   sun.shadow.mapSize.set(1024, 1024)
@@ -218,10 +233,20 @@ function build() {
     scene.add(mesh)
     return mesh
   }
-  box(14, 0.2, 16, 0x8a6a4a, 0, -0.1, 1)          // floor
-  box(14, 6, 0.3, 0xe9dcc4, 0, 3, -6.5)          // front wall
-  box(0.3, 6, 16, 0xdcccb0, -7, 3, 1)            // left wall
-  box(0.3, 6, 16, 0xdcccb0, 7, 3, 1)             // right wall
+  box(14, 0.2, 16, 0xa07e58, 0, -0.1, 1)          // floor
+  // Ceiling strip lights: the hall is bright except during load shedding.
+  for (const z of [-3, 1, 5]) {
+    const strip = box(6, 0.08, 0.4, 0xfffbe8, -0.6, 5.6, z)
+    strip.material.emissive = new THREE.Color(0xfff6d8)
+    strip.name = 'strip'
+    const light = new THREE.PointLight(0xfff2dc, 9, 14, 1.6)
+    light.position.set(-0.6, 5.2, z)
+    light.name = 'strip-light'
+    scene.add(light)
+  }
+  box(14, 6, 0.3, 0xf6ecd8, 0, 3, -6.5)          // front wall
+  box(0.3, 6, 16, 0xeadcc2, -7, 3, 1)            // left wall
+  box(0.3, 6, 16, 0xeadcc2, 7, 3, 1)             // right wall
   box(5, 0.5, 2, 0x6b4a33, -1, 0.25, -5)         // stage
   box(1.2, 1.1, 0.6, 0x5a3c28, 1.2, 1.05, -4.6)  // lectern
   // Tiered rows: a step, a desk and a bench per row.
@@ -249,6 +274,14 @@ function build() {
     renderer.setSize(window.innerWidth, window.innerHeight)
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
+  })
+}
+
+// Ceiling strips on (1) or off (0, load shedding).
+function lights(level) {
+  scene.traverse((node) => {
+    if (node.name === 'strip-light') node.intensity = 9 * level
+    if (node.name === 'strip') node.material.emissiveIntensity = level
   })
 }
 
@@ -313,15 +346,18 @@ function addDelta(total, delta) {
 async function playMoment(moment, mySeat) {
   const [pr, ps] = mySeat
   if (moment.id === 'cold_call') {
-    camTarget.set(seatX(ps), rowY(pr) + 1.2, rowZ(pr))
+    // Close on the lecturer pointing at you while you decide.
+    setShot('lecturer')
     gesture(lecturer, 'interact-right')
+    void ps
   } else if (moment.id === 'load_shedding') {
     sfx('door')
     boardText(['', ''], true)
-    await tween(0.8, (k) => { hemi.intensity = 1.4 - k * 1.1; sun.intensity = 1.6 - k * 1.5 })
+    await tween(0.8, (k) => { hemi.intensity = HEMI * (1 - k * 0.85); sun.intensity = SUN * (1 - k * 0.95); lights(1 - k) })
   } else if (moment.id === 'sleeper') {
     const sleeper = students.find((s) => s.userData.seat?.startsWith(`${Math.max(0, pr - 1)}:`)) || students[0]
-    camTarget.copy(sleeper.position).add(new THREE.Vector3(0, 1, 0))
+    const p = sleeper.position
+    setShot(null, { pos: [p.x + 1.4, p.y + 2.4, p.z + 3], look: [p.x, p.y + 1, p.z] })
     await tween(1.4, (k) => { sleeper.rotation.x = k * 0.5 })
   } else if (moment.id === 'pen') {
     const near = students.find((s) => s.userData.seat === `${pr}:${ps + 1}`) || students.find((s) => s.userData.seat === `${pr}:${ps - 1}`) || students[0]
@@ -339,8 +375,10 @@ async function play() {
   const late = run.minutes > LECTURE
   const total = {}
   boardText(['Welcome to SMIG', 'Lecture 1'])
-  hemi.intensity = 1.4
-  sun.intensity = 1.6
+  hemi.intensity = HEMI
+  sun.intensity = SUN
+  lights(1)
+  setShot(null)
   clipboard.position.y = -5
   populate(late)
   lecturer = createAvatar({ model: 'male-d', skin: 'deep', outfit: 'jacket', topColor: '#5b4a3a', bottomColor: '#2b2b2b' })
@@ -363,6 +401,7 @@ async function play() {
   const v = late ? LINES.walk_in.late : LINES.walk_in.on_time
   await walk(player, [[AISLE_X, 0, 6.5]])
   setStep('walk-in')
+  setShot('board')
   caption(v.caption)
   say(v.lecturer_line)
   gesture(lecturer, late ? 'emote-no' : 'interact-right')
@@ -385,11 +424,13 @@ async function play() {
   const [x, y, z] = seatPos(r, s)
   caption(seat.line)
   say(null)
+  setShot(null)
   await walk(player, [[AISLE_X, rowY(r), z + 0.6], [x, rowY(r), z + 0.6], [x, y, z]])
   player.rotation.y = Math.PI
   player.userData.pose = 'sit'
-  // Seated: look past your row toward the lecturer and the board.
-  camTarget.set(x * 0.5 - 0.5, y + 1.6, (z - 4.9) / 2)
+  // Seated: over your shoulder, up toward the board and the lecturer.
+  camTarget.set(x, y + 1.2, z)
+  setShot(null, { pos: [x * 0.7, y + 3.2, z + 3], look: [-0.6, 3.2, -6] })
   addDelta(total, seat.deltas)
   floatDelta(seat.deltas)
   if (seat.id === 'zanele') say(seat.zanele)
@@ -397,7 +438,9 @@ async function play() {
   await tapNext(uiq('.lc-say'))
 
   // 3. something happens
-  const moment = LINES.moments[Math.floor(Math.random() * LINES.moments.length)]
+  // ?moment=<id> picks one (tests and screenshots); otherwise random.
+  const forced = LINES.moments.find((m) => m.id === new URLSearchParams(location.search).get('moment'))
+  const moment = forced || LINES.moments[Math.floor(Math.random() * LINES.moments.length)]
   host.dataset.moment = moment.id
   setStep('moment')
   caption(moment.caption)
@@ -423,12 +466,13 @@ async function play() {
   await tapNext(uiq(seat.id === 'zanele' && reaction ? '.lc-say' : '.lc-caption'))
   if (moment.id === 'load_shedding') {
     boardText(['Welcome to SMIG', 'Lecture 1'])
-    await tween(0.6, (k) => { hemi.intensity = 0.3 + k * 1.1; sun.intensity = 0.1 + k * 1.5 })
+    await tween(0.6, (k) => { hemi.intensity = HEMI * (0.15 + k * 0.85); sun.intensity = SUN * (0.05 + k * 0.95); lights(k) })
   }
   clipboard.position.y = -5
 
   // 5. the bell
   setStep('end')
+  setShot('board')
   caption(LINES.end_of_lecture.bell)
   say(LINES.end_of_lecture.lecturer_line)
   for (const student of students) student.userData.pose = 'stand'
@@ -468,9 +512,10 @@ function tick(now) {
   soundLoop('footsteps', Boolean(player?.userData.walking))
   if (player) {
     if (player.userData.walking) camTarget.set(player.position.x, player.position.y + 1.2, player.position.z - 1)
-    camWant.set(camTarget.x + 1.2, camTarget.y + 3.4, camTarget.z + 6.8)
+    if (shot) camWant.copy(shot.pos)
+    else camWant.set(camTarget.x + 1.2, camTarget.y + 3.4, camTarget.z + 6.8)
     camera.position.lerp(camWant, Math.min(1, dt * 2.5))
-    camLook.lerp(camTarget, Math.min(1, dt * 3))
+    camLook.lerp(shot ? shot.look : camTarget, Math.min(1, dt * 3))
     camera.lookAt(camLook)
   }
   renderer.render(scene, camera)
