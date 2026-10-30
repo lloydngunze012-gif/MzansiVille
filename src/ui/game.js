@@ -197,8 +197,17 @@ function sheetHtml(district, run, placeId) {
     </button>`
   }).join('')
   const later = opensAt(district, run, placeId)
+  // Say plainly which later phases have something here today.
+  const phases = district.meta.phases
+  const nowIdx = phases.findIndex((p) => p.id === run.phase)
+  const ahead = phases.slice(nowIdx + 1).map((ph) => {
+    const ghost = { ...run, phase: ph.id, minutes: toMinutes(ph.start) }
+    const names = actionsAt(district, ghost, placeId).filter((x) => !run.doneToday.includes(x.id) && !actionState(district, ghost, x).hidden).map((x) => x.name)
+    return names.length ? `${ph.label} ${ph.start}: ${names.join(', ')}` : ''
+  }).filter(Boolean)
+  const nowLabel = phases[nowIdx]?.label || 'now'
   const empty = status.public
-    ? `The ${placeName(place).replace(/^The /, '')} is always open. ${later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
+    ? `Nothing to do at ${placeName(place)} during ${nowLabel}. ${ahead.length ? `Coming up \u2014 ${ahead.join(' \u00b7 ')}.` : later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
     : status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
   return `<div class="g-scrim soft" data-act="close-sheet"></div>
   <section class="g-sheet" role="dialog" aria-label="${esc(place.name)}">
@@ -225,6 +234,12 @@ function ctaBar(district, run) {
   else if (run.slotsLeft === 1) line = `1 slot left \u2014 keep it for Sleep at 21:00.`
   else if (glowing.length) line = `Golden glow = open now. Try ${glowing.slice(0, 2).map(placeName).join(' or ')}.`
   else line = 'Nothing open now.'
+  // First-visit hint: stays until the player taps a place or dismisses it.
+  let seen = true
+  try { seen = localStorage.getItem('mzansiville.mapHint') === '1' } catch { /* private mode */ }
+  if (!seen && run.phase !== 'night') {
+    return `<div class="g-cta g-hint" role="status"><p>\ud83d\udc46 Tap a glowing place to see what you can do.</p><button type="button" class="g-go ghost" data-act="hint-ok" aria-label="Dismiss hint">Got it</button></div>`
+  }
   if (run.phase === 'night') {
     return `<div class="g-cta"><p>${esc(line)}</p><button type="button" class="g-go" data-act="place-open" data-id="${sleepPlace}">${atHome ? 'Sleep' : 'Go home'}</button></div>`
   }
