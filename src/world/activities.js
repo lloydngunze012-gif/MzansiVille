@@ -3,6 +3,7 @@
 // lands. scene.js supplies the api; a small timer bar shows how long is left.
 import * as THREE from 'three'
 import STORY from '../../data/campusville/place_story.json'
+import { createScenes, SCENE_OF } from './scenes.js'
 
 // action id -> script name. Anything unlisted at a dressed place uses 'stand'.
 export const SCRIPTS = {
@@ -20,8 +21,9 @@ export const SCRIPTS = {
   job_shift: 'flyers',
 }
 
-export function hasScript(actionId, placeId) {
-  return placeId === 'quad' && (SCRIPTS[actionId] || true)
+// The scene an action plays: a Quad script, else a reusable scene (scenes.js).
+export function sceneName(actionId) {
+  return SCRIPTS[actionId] || SCENE_OF[actionId]?.[0] || 'stand'
 }
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)]
@@ -51,6 +53,7 @@ export function createActivities(api) {
       const q = api.dressing.queue?.stall
       if (!q) return scripts.stand()
       const end = q.slot(q.people.length)
+      api.frame(q.front)
       await api.walkTo(end.x, end.z)
       api.face(q.front.x, q.front.z)
       api.say('The queue for vetkoek. Worth it.')
@@ -68,6 +71,7 @@ export function createActivities(api) {
       api.hold(holdable('food'))
       api.say('One vetkoek, extra polony. Sharp!')
       const away = quadSpot('benches')
+      api.frame({ x: away.x + 2, z: away.z + 2 })
       await api.walkTo(away.x + 2, away.z + 2)
       api.gesture('emote-yes')
       await api.wait(1.2)
@@ -79,6 +83,7 @@ export function createActivities(api) {
     async benchChat() {
       const seat = api.freeSeat()
       if (!seat) return scripts.stand()
+      api.frame(seat)
       await api.walkTo(seat.x + Math.sin(seat.rot) * 0.9, seat.z + Math.cos(seat.rot) * 0.9)
       api.sitAt(seat)
       const lines = ['Eish, did you see the queue at the caf?', 'Who is performing at open mic Friday?', 'My roommate ate my bread again.']
@@ -95,6 +100,7 @@ export function createActivities(api) {
     // Watch the stage: the performer plays, you clap along.
     async watchStage() {
       const s = quadSpot('stage')
+      api.frame({ x: s.x, z: s.z - 1 })
       await api.walkTo(s.x, s.z + 2.6)
       api.face(s.x, s.z - 3)
       api.groove(1)
@@ -115,6 +121,7 @@ export function createActivities(api) {
       const b = quadSpot('benches')
       const x = b.x - 1.8
       const z = b.z + 3.2
+      api.frame({ x, z })
       await api.walkTo(x, z)
       api.face(0, 0)
       api.pose('sit', 0)
@@ -144,6 +151,7 @@ export function createActivities(api) {
       const tables = api.dressing.srcTables || []
       const t = pick(tables)
       if (!t) return scripts.stand()
+      api.frame(t.campaigner)
       await api.walkTo(t.front.x, t.front.z)
       api.face(t.x, t.z)
       api.gestureOf(t.campaigner, 'interact-right')
@@ -212,11 +220,13 @@ export function createActivities(api) {
     },
   }
 
+  const everywhere = createScenes(api)
   return {
-    async run(actionId) {
-      const name = SCRIPTS[actionId] || 'stand'
-      await scripts[name]()
-      return name
+    async run(actionId, placeId) {
+      if (SCRIPTS[actionId]) { await scripts[SCRIPTS[actionId]](); return SCRIPTS[actionId] }
+      if (everywhere.has(actionId)) return everywhere.run(actionId, placeId)
+      await scripts.stand()
+      return 'stand'
     },
   }
 }

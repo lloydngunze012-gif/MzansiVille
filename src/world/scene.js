@@ -3,9 +3,11 @@ import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
 import { createAvatar, gesture, lookOf, poseAvatar } from './avatar3d.js'
-import { createActivities, SCRIPTS } from './activities.js'
+import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
-import { nameOf } from './cast.js'
+import { lookForPerson, nameOf } from './cast.js'
+import { buildRoom } from './rooms.js'
+import { loadModel } from './models.js'
 import { createCameraRig } from './camera.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
@@ -152,6 +154,7 @@ function ensureHud() {
     <div class="act-bar" hidden><span></span><em>Doing it</em></div>
     <p class="floater" hidden></p>
     <p class="act-say" hidden></p>
+    <div class="scene-fade" hidden><p></p></div>
     <section class="onboard" hidden>
       <p class="step"></p>
       <div class="stack">
@@ -400,6 +403,7 @@ function everyone() {
 // A close camera shot (talking, activities) overrides the follow camera.
 let closeShot = null
 let shotBlend = 0
+const shotCam = new THREE.Vector3()
 const closeLook = new THREE.Vector3()
 // A two-shot from the side: both people in profile, in the top half of a portrait
 // screen (the conversation card covers the bottom). The distance comes from the
@@ -407,13 +411,13 @@ const closeLook = new THREE.Vector3()
 // side with a clear view (no table or stall in front).
 const shotRay = new THREE.Raycaster()
 // Is this mesh part of one of the two people talking? (Their own bodies don't block.)
-function isPart(object, ...people) {
+// (People never block a shot: you can see past someone. Only buildings and props do.)
+function isPart(object) {
   let node = object
   while (node) {
-    if (node === player || (talk && node === talk.avatar)) return true
+    if (node === player || node.userData?.personId || node === tempGroup || (room && node === room.group)) return true
     node = node.parent
   }
-  void people
   return false
 }
 function overShoulder(from, to) {
@@ -438,12 +442,14 @@ function overShoulder(from, to) {
     const rx = Math.cos(side) * ax - Math.sin(side) * az
     const rz = Math.sin(side) * ax + Math.cos(side) * az
     const pos = new THREE.Vector3(mx + rx * dist * Math.cos(tilt), 1 + dist * Math.sin(tilt), mz + rz * dist * Math.cos(tilt))
-    const mid = new THREE.Vector3(mx, 1.1, mz)
-    const dir = pos.clone().sub(mid)
-    shotRay.set(mid, dir.clone().normalize())
-    shotRay.far = dir.length()
-    const hits = shotRay.intersectObjects(crowd ? [campus.group, crowd.group] : [campus.group], true)
-    const blocked = hits.some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && (hit.object.visible || hit.object.name === 'hit') && !isPart(hit.object))
+    // Clear sight lines to both of them (head height), not just the middle.
+    const blocked = [from, to].some((p) => {
+      const eye = new THREE.Vector3(p.x, 1.3, p.z)
+      const dir = pos.clone().sub(eye)
+      shotRay.set(eye, dir.clone().normalize())
+      shotRay.far = dir.length()
+      return shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !isPart(hit.object))
+    })
     if (!blocked) { best = pos; break }
     if (!best) best = pos
   }
@@ -504,6 +510,7 @@ function startTalk(avatar) {
 }
 // Tests: where someone is on screen, so a test can tap them like a player would.
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
+window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
 window.mzansiPersonOnScreen = (id) => {
   const avatar = everyone().find((a) => a.userData.personId === id)
   if (!avatar || !camera) return null
@@ -585,10 +592,15 @@ function activityApi() {
     get player() { return player },
     get dressing() { return campus.dressing },
     spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
+    // Scene walks always finish: if the path is blocked, step into place after a while.
     walkTo: (x, z, pace = WALK) => new Promise((resolve) => {
-      walkTo(x, z, () => { snapTo = { x, z }; setTimeout(resolve, 250) })
+      let done = false
+      const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, 250) }
+      walkTo(x, z, finish)
       speed = pace
-      if (!route.length) { snapTo = { x, z }; setTimeout(resolve, 400) }
+      if (!route.length) finish()
+      const far = Math.hypot(x - player.position.x, z - player.position.z)
+      setTimeout(() => { if (!done) { route = []; arrive = null; finish() } }, 1500 + (far / pace) * 1800)
     }),
     wait: (s) => new Promise((resolve) => setTimeout(resolve, s * 1000)),
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
@@ -639,18 +651,174 @@ function activityApi() {
       if (level == null) stopGroove('activity')
       else { startGroove('activity'); setGrooveLevel(level * 0.8) }
     },
+    // --- scenes everywhere (activities.js) ---
+    get campus() { return campus },
+    placeInfo: (id) => {
+      const b = campus.layout.buildings.find((item) => item.id === id)
+      if (!b) return null
+      const door = doorPoint(b)
+      return { id, b, x: b.x, z: b.z, door, front: { x: b.x, z: b.maxZ + 1.4 }, open: Boolean(b.open) }
+    },
+    frame: (target) => { activityFocus = target || null; focusTimer = 0 },
+    glide: (x, z, pace = 2.4) => new Promise((resolve) => { scriptMove = { x, z, pace, resolve } }),
+    teleport: (x, z, rot) => {
+      route = []
+      arrive = null
+      snapTo = null
+      player.position.set(x, 0, z)
+      if (rot !== undefined) player.rotation.y = rot
+    },
+    fade: (text = '') => new Promise((resolve) => {
+      const node = host.querySelector('.scene-fade')
+      node.querySelector('p').textContent = text
+      node.hidden = false
+      node.classList.remove('out')
+      setTimeout(resolve, text ? 900 : 350)
+    }),
+    unfade: () => new Promise((resolve) => {
+      const node = host.querySelector('.scene-fade')
+      node.classList.add('out')
+      setTimeout(() => { node.hidden = true; node.classList.remove('out'); resolve() }, 350)
+    }),
+    npc: (id, x, z, rot = 0, { pose = 'stand', y = 0 } = {}) => {
+      const avatar = createAvatar(lookForPerson(id, temps.length + 3))
+      avatar.position.set(x, y, z)
+      avatar.rotation.y = rot
+      avatar.userData.pose = pose
+      avatar.userData.personId = id
+      tempGroup.add(avatar)
+      temps.push(avatar)
+      return avatar
+    },
+    moveNpc: (avatar, x, z, pace = 1.8) => new Promise((resolve) => { npcMoves.push({ avatar, x, z, pace, resolve }) }),
+    prop: (url, x, z, { s = 2.2, rot = 0, y = 0 } = {}) => {
+      const holder = new THREE.Group()
+      holder.position.set(x, y, z)
+      holder.rotation.y = rot
+      tempGroup.add(holder)
+      loadModel(url).then((src) => { const m = src.clone(true); m.scale.setScalar(s); holder.add(m) }).catch(() => {})
+      return holder
+    },
+    box: (w, h, d, color, x, y, z, extra = {}) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra }))
+      mesh.position.set(x, y, z)
+      mesh.castShadow = true
+      mesh.receiveShadow = true
+      tempGroup.add(mesh)
+      return mesh
+    },
+    sign: (lines, x, y, z, rot = 0, w = 2.4, h = 1.4) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 512
+      canvas.height = Math.round((512 * h) / w)
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#f4ecd8'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.strokeStyle = '#4a3426'
+      ctx.lineWidth = 14
+      ctx.strokeRect(7, 7, canvas.width - 14, canvas.height - 14)
+      ctx.fillStyle = '#22143b'
+      ctx.textBaseline = 'middle'
+      lines.forEach((text, i) => {
+        ctx.font = `bold ${i === 0 ? 44 : 32}px sans-serif`
+        ctx.fillText(text, 30, (canvas.height / (lines.length + 1)) * (i + 1), canvas.width - 60)
+      })
+      const texture = new THREE.CanvasTexture(canvas)
+      texture.colorSpace = THREE.SRGBColorSpace
+      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }))
+      plane.position.set(x, y, z)
+      plane.rotation.y = rot
+      tempGroup.add(plane)
+      return plane
+    },
+    room: (kind) => {
+      clearRoom()
+      room = buildRoom(kind)
+      scene.add(room.group)
+      return room
+    },
+    clearTemps: () => { clearTemps(); clearRoom() },
     end: () => {
       if (held) { held.removeFromParent(); held = null }
       standUp()
       sayNode().hidden = true
       stopGroove('activity')
+      activityFocus = null
+      closeShot = null
+      scriptMove = null
+      clearTemps()
+      clearRoom()
+      host.querySelector('.scene-fade').hidden = true
     },
+  }
+}
+
+// Temporary people, props and rooms made by a scene, removed when it ends.
+const tempGroup = new THREE.Group()
+tempGroup.name = 'scene-temps'
+let temps = []
+let npcMoves = []
+let room = null
+let scriptMove = null
+let activityFocus = null
+let focusTimer = 0
+// Inside a room the camera looks in from the open corner (the room has two walls).
+function roomShot(from, to) {
+  const mx = (from.x + to.x) / 2
+  const mz = (from.z + to.z) / 2
+  const spread = Math.hypot(to.x - from.x, to.z - from.z)
+  const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+  const halfW = halfH * camera.aspect
+  const dist = Math.max(6.5, Math.min(11, (spread / 2 + 1.6) / halfW))
+  const tilt = THREE.MathUtils.degToRad(40)
+  const dir = new THREE.Vector3(0.55, 0, 0.83).normalize()
+  const pos = new THREE.Vector3(mx + dir.x * dist * Math.cos(tilt), 0.8 + dist * Math.sin(tilt), mz + dir.z * dist * Math.cos(tilt))
+  const look = new THREE.Vector3(mx, 0.8, mz).sub(pos).normalize()
+  const right = new THREE.Vector3().crossVectors(look, new THREE.Vector3(0, 1, 0)).normalize()
+  look.applyAxisAngle(right, -Math.atan(0.35 * halfH))
+  return { pos, look: pos.clone().addScaledVector(look, 10) }
+}
+
+function clearTemps() {
+  for (const a of temps) a.userData.disposed = true
+  temps = []
+  npcMoves = []
+  tempGroup.clear()
+}
+function clearRoom() {
+  if (room) { scene.remove(room.group); room = null }
+}
+function sceneTick(dt) {
+  if (!tempGroup.parent) scene.add(tempGroup)
+  const moving = new Set()
+  for (let i = npcMoves.length - 1; i >= 0; i--) {
+    const m = npcMoves[i]
+    const a = m.avatar.position
+    const dx = m.x - a.x
+    const dz = m.z - a.z
+    const d = Math.hypot(dx, dz)
+    const step = m.pace * dt
+    if (d <= step) { a.x = m.x; a.z = m.z; npcMoves.splice(i, 1); m.resolve(); continue }
+    a.x += (dx / d) * step
+    a.z += (dz / d) * step
+    m.avatar.rotation.y = Math.atan2(dx, dz)
+    moving.add(m.avatar)
+  }
+  for (const a of temps) poseAvatar(a, moving.has(a), clock)
+  // The camera frames you and what you are doing, re-aimed as you move.
+  if (acting && activityFocus) {
+    focusTimer -= dt
+    if (focusTimer <= 0) {
+      focusTimer = 0.5
+      const to = activityFocus.position || activityFocus
+      closeShot = room ? roomShot(player.position, to) : overShoulder(player.position, { x: to.x, z: to.z })
+    }
   }
 }
 
 async function runActivity(detail) {
   acting = true
-  host.dataset.activity = SCRIPTS[detail.actionId] || 'stand'
+  host.dataset.activity = sceneName(detail.actionId)
   host.dataset.activityStep = 'running'
   const bar = host.querySelector('.act-bar')
   bar.hidden = false
@@ -659,7 +827,7 @@ async function runActivity(detail) {
   if (!activities) activities = { api: activityApi() }
   activities.runner = activities.runner || createActivities(activities.api)
   try {
-    await activities.runner.run(detail.actionId)
+    await activities.runner.run(detail.actionId, detail.placeId)
   } catch (error) {
     console.error(error)
   }
@@ -676,7 +844,7 @@ async function runActivity(detail) {
 function beginAction(detail) {
   if (!visible || !detail?.commit) return
   if (actionLeft > 0 || pendingAction || acting) return
-  if (detail.placeId === 'quad' && detail.actionId && campus?.dressing?.spots?.quad) {
+  if (detail.actionId && campus) {
     runActivity(detail)
     return
   }
@@ -973,6 +1141,18 @@ function tick(now) {
         commit?.()
         if (before && currentRun) showFloater(before, currentRun.stats)
       }
+    } else if (scriptMove) {
+      const m = scriptMove
+      const dx = m.x - player.position.x
+      const dz = m.z - player.position.z
+      const d = Math.hypot(dx, dz)
+      const step = m.pace * dt
+      if (d <= step) { player.position.x = m.x; player.position.z = m.z; scriptMove = null; m.resolve() } else {
+        player.position.x += (dx / d) * step
+        player.position.z += (dz / d) * step
+        player.rotation.y = Math.atan2(dx, dz)
+        walking = true
+      }
     } else if (steering) {
       tryStep(steering.x * WALK * dt, steering.z * WALK * dt)
       player.rotation.y = Math.atan2(steering.x, steering.z)
@@ -1010,11 +1190,16 @@ function tick(now) {
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
+    sceneTick(dt)
     if (closeShot) {
-      // Ease from wherever the camera was into the close shot.
-      shotBlend = Math.min(1, shotBlend + dt * 2.2)
-      camera.position.lerp(closeShot.pos, shotBlend)
-      closeLook.lerp(closeShot.look, shotBlend)
+      // Ease from wherever the camera was into the close shot, and follow it smoothly.
+      // (rig.apply above moved the camera back to the follow view; keep our own copy.)
+      if (shotBlend === 0) { shotCam.copy(camera.position); closeLook.copy(closeShot.look) }
+      shotBlend = 1
+      const k = 1 - Math.exp(-dt * 3.5)
+      shotCam.lerp(closeShot.pos, k)
+      closeLook.lerp(closeShot.look, k)
+      camera.position.copy(shotCam)
       camera.lookAt(closeLook)
     } else {
       shotBlend = 0
