@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { filterText, canSend } from '../src/engine/filter.js'
+import { rankRows, sampleBoard } from '../src/engine/social-data.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
@@ -466,6 +468,35 @@ check('low grades end the run', () => {
   run.lowGradeDays = district.meta.day.lowGradesDays - 1
   sleepThrough(run)
   assert.equal(run.mode, 'over')
+})
+
+check('filter masks English, Afrikaans and isiZulu swearing', () => {
+  for (const t of ['that was kak hard', 'fokken taxi', 'msunu wakho', 'sh1tttt', 'f*ck', 'poes', 'nyoko']) {
+    const r = filterText(t)
+    assert.ok(r.masked && !r.blocked, t)
+  }
+  assert.equal(filterText('Lekker vibes, sho ngiyabonga').masked, false)
+  assert.equal(filterText('kakhulu').masked, false)
+})
+
+check('filter blocks slurs', () => {
+  for (const t of ['you k4ffir', 'makwerekwere go home', 'moffie']) assert.equal(filterText(t).blocked, true, t)
+})
+
+check('chat rate limit', () => {
+  const now = 1e9
+  assert.equal(canSend([now - 1000], now).ok, false)
+  assert.equal(canSend(Array.from({ length: 30 }, (_, i) => now - 10000 - i * 1000), now).ok, false)
+  assert.equal(canSend([now - 5000], now).ok, true)
+})
+
+check('boards rank by residence and overall', () => {
+  const rows = sampleBoard()
+  const all = rankRows(rows, 'grades', 'all', 'O Block')
+  assert.equal(all[0].display_name, 'Kayla R.')
+  assert.ok(rankRows(rows, 'money', 'res', 'O Block').every((r) => r.residence === 'O Block'))
+  const houses = rankRows(rows, 'balanced', 'houses', 'O Block')
+  assert.ok(houses.length >= 4 && houses.some((h) => h.mine))
 })
 
 console.log(`${passed} checks passed`)
