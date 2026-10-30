@@ -18,7 +18,8 @@ function lecture(roof, glyph) {
     ${[13, 21, 39, 47].map((x) => `<rect x="${x}" y="25" width="4" height="21" fill="#fffaf0"/>`).join('')}
     <rect x="27" y="33" width="10" height="17" rx="5" fill="#2a1846"/>
     <rect x="6" y="48" width="52" height="3" fill="#d8c29a"/>
-    <circle cx="32" cy="16" r="5" fill="#ffd23f"/><text x="32" y="19" font-size="7" text-anchor="middle">${glyph}</text>`)
+    <circle cx="32" cy="15.5" r="5.6" fill="#ffd23f" stroke="#5b23c9" stroke-width="0.7"/>
+    <text x="32" y="18" font-size="7.5" font-weight="900" text-anchor="middle" fill="#2a1846" font-family="Arial Black,Arial">${glyph}</text>`)
 }
 
 function library() {
@@ -57,13 +58,16 @@ function sports() {
     ${[22, 30, 38, 46, 54].map((x) => `<rect x="${x}" y="8" width="5" height="5" fill="#ffd23f" opacity=".85"/>`).join('')}`)
 }
 
-function residence(letter, tint = '#d9774a') {
+function residence(letter, tint = '#d9774a', roof = '#7a3a26', lit = 0.9) {
   const win = []
-  for (let r = 0; r < 3; r += 1) for (let c = 0; c < 3; c += 1) win.push(`<rect x="${12 + c * 9}" y="${14 + r * 10}" width="5" height="6" rx="1" fill="#ffcf6b" opacity="${(r + c) % 3 ? 0.9 : 0.45}"/>`)
+  for (let r = 0; r < 3; r += 1) for (let c = 0; c < 3; c += 1) {
+    const on = (r + c) % 3 ? lit : lit * 0.45
+    win.push(`<rect x="${12 + c * 9}" y="${14 + r * 10}" width="5" height="6" rx="1" fill="#ffcf6b" opacity="${on}"/>`)
+  }
   return svg(58, 54, `${SHADOW}
     <rect x="7" y="8" width="34" height="42" rx="2" fill="${tint}"/>
     <rect x="33" y="8" width="8" height="42" fill="#1a0f2e" opacity=".14"/>
-    <rect x="5" y="5" width="38" height="5" rx="2" fill="#7a3a26"/>
+    <rect x="5" y="5" width="38" height="5" rx="2" fill="${roof}"/>
     ${win.join('')}
     <rect x="20" y="43" width="8" height="7" fill="#2a1846"/>
     <circle cx="46" cy="16" r="9" fill="#2a1846" stroke="#ffd23f" stroke-width="1.5"/>
@@ -72,7 +76,8 @@ function residence(letter, tint = '#d9774a') {
 
 function blocks() {
   return svg(60, 54, `${SHADOW}
-    <rect x="4" y="18" width="22" height="32" rx="2" fill="#c96a44"/><rect x="30" y="12" width="24" height="38" rx="2" fill="#d9774a"/>
+    <rect x="4" y="18" width="22" height="32" rx="2" fill="#c96a44"/><rect x="4" y="18" width="22" height="4" fill="#5b23c9"/>
+    <rect x="30" y="12" width="24" height="38" rx="2" fill="#e0a04a"/><rect x="30" y="12" width="24" height="4" fill="#ffd23f"/>
     ${[8, 16].map((x) => [24, 33, 42].map((y) => `<rect x="${x}" y="${y}" width="4" height="5" fill="#ffcf6b"/>`).join('')).join('')}
     ${[34, 42].map((x) => [18, 27, 36].map((y) => `<rect x="${x}" y="${y}" width="5" height="5" fill="#ffcf6b" opacity=".8"/>`).join('')).join('')}
     <circle cx="50" cy="44" r="7" fill="#2a1846" stroke="#ffd23f" stroke-width="1.3"/><text x="50" y="47.5" font-size="10" font-weight="900" text-anchor="middle" fill="#ffd23f">+</text>`)
@@ -130,14 +135,14 @@ export const ART = {
   cafeteria: cafeteria,
   library: library,
   sports_centre: sports,
-  smig: () => lecture('#7b3fe4', '\u{1F4BC}'),
-  health_sciences: () => lecture('#2f9e8f', '\u2695\uFE0F'),
-  science: () => lecture('#3d7be0', '\u{1F52C}'),
-  law: () => lecture('#8a3346', '\u2696\uFE0F'),
-  engineering: () => lecture('#d0782a', '\u2699\uFE0F'),
-  res_o: () => residence('O'),
-  res_r: () => residence('R', '#c9704a'),
-  res_s: () => residence('S', '#e08a55'),
+  smig: () => lecture('#7b3fe4', 'B'),
+  health_sciences: () => lecture('#2f9e8f', 'H'),
+  science: () => lecture('#3d7be0', 'S'),
+  law: () => lecture('#8a3346', 'L'),
+  engineering: () => lecture('#d0782a', 'E'),
+  res_o: () => residence('O', '#e0703a', '#7a3418', 1),
+  res_r: () => residence('R', '#8a56b8', '#4c2678', 0.55),
+  res_s: () => residence('S', '#f0b429', '#c4842a', 0.9),
   res_other: blocks,
   off_campus: house,
   bus_station: busStation,
@@ -190,8 +195,8 @@ export function groundHtml() {
   const paths = PATHS.map((d) => `<path d="${d}"/>`).join('')
   return `<svg class="g-ground" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     <defs>
-      <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8aa64a"/><stop offset=".55" stop-color="#5e9445"/><stop offset="1" stop-color="#3f6e3c"/></linearGradient>
-      <radialGradient id="gs" cx="88%" cy="0%" r="70%"><stop offset="0" stop-color="#ffb35c" stop-opacity=".75"/><stop offset=".5" stop-color="#ff8a3d" stop-opacity=".22"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
+      <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a3a84a"/><stop offset=".55" stop-color="#5e9445"/><stop offset="1" stop-color="#3f6e3c"/></linearGradient>
+      <radialGradient id="gs" cx="88%" cy="0%" r="78%"><stop offset="0" stop-color="#ffd27a" stop-opacity=".82"/><stop offset=".45" stop-color="#ff8a3d" stop-opacity=".3"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
       <radialGradient id="gv" cx="50%" cy="48%" r="75%"><stop offset=".6" stop-color="#2a1846" stop-opacity="0"/><stop offset="1" stop-color="#2a1846" stop-opacity=".75"/></radialGradient>
     </defs>
     <rect width="100" height="100" fill="url(#gg)"/>

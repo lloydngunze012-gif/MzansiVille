@@ -1,33 +1,33 @@
-name,type,distance_km,notes
-O Block,on_campus,0,confirm block letter and any nickname
-R Block,on_campus,0,confirm block letter and any nickname
-S Block,on_campus,0,confirm block letter and any nickname
-ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,Lloyd to complete: all on-campus blocks by letter plus common nicknames
-Dunstaple Heights,off_campus_campus_owned,2.4,Varsity Drive Reservoir Hills; single and two-bed flats
-Santa Cruz,off_campus_campus_owned,,Kies Avenue Reservoir Hills; two-bed sharing flats
-Homii Residence,off_campus_leased,12,
-AKA Greenacres Residence,off_campus_leased,12,
-Millarosa,off_campus_leased,12,
-Crystal Valley,off_campus_leased,8,
-Farah Gardens,off_campus_leased,8,
-Delrene Residence,off_campus_leased,7.1,
-Montrose Residence,off_campus_leased,12,
-Seaside Residence,off_campus_leased,12,
-Saints Residence,off_campus_leased,3.5,
-Soni Residence,off_campus_leased,12,
-Gapwood Residence,off_campus_leased,2,
-Urban Up Residence,off_campus_leased,10,
-Azania,off_campus_leased,12,
-Saphire Heights,off_campus_leased,12,
-Students in Dube/Wanstead,off_campus_leased,12,
-Campbel Residence,off_campus_leased,10,
-The Ridge,off_campus_leased,5,
-Westview Residence,private_accredited,4,126 Fulham Road Reservoir Hills; 224 beds (2025 AP list)
-Westwood Lodge,private_accredited,,2026 AP list
-Varsity@225,private_accredited,,2026 AP list
-Khumalo Residence,private_accredited,2.2,288 Varsity Drive (2025 AP list)
-Dunstaple Residence,private_accredited,2.4,20 Dunstaple; 18 beds (2025 AP list)
-MFT House,private_accredited,1.8,19 Westdene; 28 beds (2025 AP list)
-Brindhavan,private_accredited,,2026 AP list
-St Philomenas,private_accredited,,2026 AP list
-Off campus (other),other,,catch-all option in the dropdown
+name,type,distance_km,monthly_rent,vibe,mod_energy,mod_social,mod_grades,mod_hunger,notes
+O Block,on_campus,0,3100,Loud and cheap,-3,5,-2,-2,"Speaker on the balcony, two-minute noodles, and a party that starts in someone's room."
+R Block,on_campus,0,4200,Quiet and dear,3,-3,3,1,"The corridor goes still after ten. Bring earplugs only if you snore."
+S Block,on_campus,0,3600,Courtyard middle,1,2,0,0,"Courtyard soccer until the floodlight clicks off, then someone shares the fridge."
+ADD REMAINING ON-CAMPUS BLOCKS HERE,on_campus,0,,,,,,"Not playable. Add each remaining on-campus block as its own row when the letters are settled."
+Jacaranda Court,off_campus_campus_owned,2.4,4800,Leafy and settled,2,0,2,0,"Campus flats under the jacarandas. The guard knows your name. Single and two-bed."
+Cane Crescent,off_campus_campus_owned,3.2,4400,Warm and shared,0,2,1,1,"Two-bed sharing and a kitchen that always smells like stew. A short bus, then you are home."
+Harbour Walk,off_campus_leased,11.8,3600,Far and salty,-4,2,-1,0,"The cheap rooms by the sea. The bus eats the evening and the breeze gives a little of it back."
+Mango Yard,off_campus_leased,4.6,4300,Courtyard braai,-1,4,-1,1,"Plastic chairs, a braai drum, and someone who will shout that the taxi is here."
+Lantern House,off_campus_leased,7.6,5600,New and hushed,3,-2,2,0,"Fresh paint and a quiet study room on the second floor. The walls are thinner than the brochure."
+Taxi Terrace,off_campus_leased,5.5,3900,Commuter bustle,-2,2,0,-1,"You live on the route. Cheap, loud at six, and never short of a lift."
+Fig Tree Flats,off_campus_leased,2.8,5100,Close and leafy,2,1,1,0,"Close enough to walk when the bus is full. The fig tree out front is the landmark."
+Night Market Rooms,off_campus_leased,9.2,3700,Late and bright,-3,3,-2,2,"Above the evening stalls. Cheap rent, late dinners, and a morning that starts too early."
+Blue Crane House,off_campus_leased,6.2,4700,Neighbourly stoep,1,2,1,0,"A leased house with a stoep. Someone is always borrowing sugar, and someone always has notes."
+Kite Hill Rooms,off_campus_leased,8.4,4000,Windy and plain,-2,0,1,0,"Plain rooms up a windy hill. The view is the amenity."
+Gold Window,off_campus_leased,3.6,5900,Pricey and bright,1,1,2,0,"Gold tint on the glass, a lobby that stays quiet, and wifi that actually holds."
+Stoep House,off_campus_leased,2.1,4500,Close and chatty,1,3,-1,1,"Almost on campus. The stoep is where the group chat happens out loud."
+Raincloud Flats,off_campus_leased,12.4,3500,Far and frugal,-3,0,2,-1,"The frugal lease. You pack lunch, you learn the timetable, you still make the test."
+Drummer's Rest,off_campus_leased,4.8,4100,Music until late,-2,4,-2,0,"Someone is always rehearsing. You will know the chorus. You will also know your earplugs."
+Library Lane,off_campus_leased,3.0,5300,Walk to study,2,-1,3,0,"A walk-up for people who treat Friday like a study date."
+Spice Route,off_campus_leased,10.6,3800,Far and flavourful,-3,2,0,2,"A shared kitchen that feeds the floor. The long ride home is the tax."
+Palm Gate,off_campus_leased,1.8,5000,Almost on campus,2,1,0,0,"The closest lease. You can hear the campus and still make an eight o'clock."
+Red Dust House,off_campus_leased,13,3300,Cheapest ride,-5,1,-1,-1,"Far, hot, and honest about it. The rent leaves money for a kota."
+Veranda House,off_campus_leased,6.8,4900,Plain and solid,1,1,1,0,"A plain good room. Not a story. A door that locks and a desk that fits."
+Amber Lodge,private_accredited,4,6400,Pricey and quiet,4,-2,2,1,"Accredited and serious about quiet hours. You are paying for the hush."
+Cedar Rooms,private_accredited,2.2,6200,Close and calm,3,-1,2,0,"A short walk and a warden who actually does the rounds."
+North Studio,private_accredited,5,7200,Sleek and solo,4,-4,3,-1,"A private studio. You pay to be alone with the laptop, and you forget to eat."
+Marula House,private_accredited,2.6,6000,Homey and accredited,1,2,0,2,"Accredited house, big pots, and a rules page on the fridge."
+Twin Palm,private_accredited,2.4,5500,Small and steady,1,0,2,1,"A small courtyard and a short roll of neighbours. You will know everyone by week two."
+Corner House,private_accredited,1.6,5400,Closest private,1,2,0,1,"The nearest accredited house. Home between lectures is a real option."
+Lotus Rooms,private_accredited,7.2,6000,Calm and far,2,-2,2,1,"Quiet, a longer ride, and a kitchen that closes at ten."
+Chapel Yard,private_accredited,8,5400,Gentle and ordered,2,-1,2,1,"Early nights and a courtyard that smells like rain on warm brick."
+Off campus (other),other,,,Your own place,0,0,0,0,"A room the list does not name. No res bonus until it has its own story."
