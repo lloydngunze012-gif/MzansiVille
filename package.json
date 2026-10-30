@@ -9,7 +9,9 @@
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "seed": "node scripts/seed.mjs",
     "check": "node scripts/sim-check.mjs",
-    "shots": "playwright test"
+    "shots": "playwright test",
+    "test:cameras": "playwright test tests/screenshots.spec.js -g cam-",
+    "test:cameras:edge": "playwright test tests/screenshots.spec.js -g cam- --config playwright.edge.config.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

@@ -638,8 +638,7 @@ export function view(state) {
     ])
   }
   if (screen === 'create') return create(state)
-  if (screen === 'world') return play(state, 'play', '')
-  if (screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
+  if (screen === 'world' || screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
   if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)
   if (screen === 'gameover' || screen === 'over') return gameOverScreen(state)
@@ -652,7 +651,7 @@ export function view(state) {
   if (screen === 'leaderboard' || screen === 'board') return state.run ? boardScreen(state, localBoardRow(state.run)) : board(state)
   if (screen === 'admin') return admin(state)
   if (screen === 'event' || screen === 'twist' || screen === 'bestie' || screen === 'graduated') {
-    if (!state.run?.queue?.[0]) return mapHome(state, '')
+    return mapHome(state, '')
     return `<main class="screen world-hud" data-screen="${screen}">
       ${chrome(state.district, state.run)}
       ${cardHtml(state.run.queue[0], state)}
