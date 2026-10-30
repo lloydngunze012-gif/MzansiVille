@@ -1,0 +1,52 @@
+ERRS 0 
+
+NET 
+cover@title > rules@rules > agree-unchecked@rules > create@create > begin-empty@create > create-filled@create > after-begin@play > card@play > dismiss@play > open-cafeteria@play > sheet@place > do-cafeteria_meal@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_noodles@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_phone@place > card@play > dismiss@play > choice@play > card@play > dismiss@play > open-bus_station@play > sheet@place > do-go_walk@place > card@play > dismiss@play > open-quad@play > sheet@place > do-lecture_skip@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-call_home@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-sleep@place > card@summary > dismiss@summary > summary@summary > next-day@summary > open-cafeteria@play > sheet@place > do-cafeteria_meal@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_noodles@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_phone@place > card@play > dismiss@play > choice@play > card@play > dismiss@play > open-bus_station@play > sheet@place > do-go_walk@place > card@play > dismiss@play > open-quad@play > sheet@place > do-lecture_skip@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-call_home@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-sleep@place > card@summary > dismiss@summary > summary@summary > next-day@summary > card@play > dismiss@play > save-prompt@play > snooze@play > open-cafeteria@play > sheet@place > do-cafeteria_meal@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_noodles@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-wake_phone@place > card@play > dismiss@play > choice@play > card@play > dismiss@play > open-bus_station@play > sheet@place > do-go_walk@place > card@play > dismiss@play > open-quad@play > sheet@place > do-lecture_skip@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-call_home@place > card@play > dismiss@play > open-off_campus@play > sheet@place > do-sleep@place > card@summary > dismiss@summary > summary@summary > loop-end@summary > nav-share@share > share-clicked@share > final@summary
+OVER CLIPPED H1.sr-only "CampusVille"
+OFFRIGHT DIV.tc-art "" right=439
+OFFRIGHT PICTURE. "" right=439
+OFFRIGHT IMG. "" right=439
+CLIPPED STRONG. "Thandeka Mkhize-Ndlovu L"
+CLIPPED INPUT. ""
+OFFRIGHT SPAN.g-cloud c2 "" right=550
+OFFRIGHT SPAN.g-sun "" right=490
+OFFRIGHT BUTTON.g-pin g-b-off_campus open mine "BUS
+      Off-campus res · home" right=447
+OFFRIGHT SPAN.g-halo "" right=454
+OFFRIGHT SPAN.g-name "Off-campus res · home" right=447
+OFFRIGHT SPAN.g-cloud c2 "" right=569
+OFFRIGHT SPAN.g-sun "" right=494
+OFFRIGHT SPAN.g-halo "" right=455
+OFFRIGHT SPAN.g-cloud c2 "" right=515
+OFFRIGHT SPAN.g-sun "" right=485
+OFFRIGHT SPAN.g-halo "" right=457
+OFFRIGHT SPAN.g-cloud c2 "" right=508
+OFFRIGHT SPAN.g-halo "" right=449
+OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel "BUS
+      Off-campus res · home" right=447
+OFFRIGHT SPAN.g-cloud c2 "" right=509
+OFFRIGHT SPAN.g-halo "" right=450
+OFFRIGHT SPAN.g-cloud c2 "" right=517
+OFFRIGHT SPAN.g-halo "" right=459
+OFFRIGHT SPAN.g-cloud c2 "" right=516
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() |     - locator resolved to <button type=\"button\" class=\"g-go block\" data-act=\"dismiss\">Continue</button> |   - attempting click action |     - waiting for element to be visible, enabled and stable |   - element was detached from the DOM, retrying | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() |     - locator resolved to <button type=\"button\" class=\"g-go block\" data-act=\"dismiss\">Continue</button> |   - attempting click action |     - waiting for element to be visible, enabled and stable |     - element is visible, enabled and stable |     - scrolling into view if needed"}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() |     - locator resolved to <button type=\"button\" class=\"g-go block\" data-act=\"dismiss\">Continue</button> |   - attempting click action |     - waiting for element to be visible, enabled and stable |   - element was detached from the DOM, retrying | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"[data-act=next]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('[data-act=next]').first() |     - locator resolved to <button class=\"g-go\" type=\"button\" data-act=\"next\">Start day 3</button> |   - attempting click action |     - waiting for element to be visible, enabled and stable |     - element is visible, enabled and stable |     - scrolling into view if needed"}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() |     - locator resolved to <button type=\"button\" class=\"g-go block\" data-act=\"dismiss\">Continue</button> |   - attempting click action |     - waiting for element to be visible, enabled and stable |     - element is visible, enabled and stable |     - scrolling into view if needed"}
+{"clickfail":"button[data-act=dismiss]","e":"locator.click: Timeout 4000ms exceeded. | Call log: |   - waiting for locator('button[data-act=dismiss]').first() | "}
+{"navfail":"milestones","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"profile","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"board","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"chat","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"save","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"privacy","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}
+{"navfail":"world","e":"locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"}

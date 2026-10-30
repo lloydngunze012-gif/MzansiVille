@@ -1,0 +1,7246 @@
+{
+ "errs": [
+  "WARNING The resource http://127.0.0.1:5199/cover.webp was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally."
+ ],
+ "net": [
+  "FAILED http://127.0.0.1:5199/"
+ ],
+ "log": [
+  {
+   "n": 1,
+   "label": "cover",
+   "f": "shots/360-on/001-title-cover.png",
+   "scr": "title",
+   "btns": [
+    {
+     "act": "start",
+     "cls": "btn tc-start",
+     "t": "Start first year",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED H1.sr-only \"CampusVille\"",
+    "OFFRIGHT DIV.tc-art \"\" right=367",
+    "OFFRIGHT PICTURE. \"\" right=367",
+    "OFFRIGHT IMG. \"\" right=367"
+   ],
+   "text": "CampusVille Res, lectures, bunny chows and besties. Survive first year. Start first year Rules Privacy Terms",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 2,
+   "label": "rules",
+   "f": "shots/360-on/002-rules-rules.png",
+   "scr": "rules",
+   "btns": [
+    {
+     "act": "agree",
+     "cls": "lg-go",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "← Back BEFORE YOU MOVE IN Community rules 1 The lobby is one public room. Talk like a person other people have to sit next to. 2 No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information. 3 Every message has mute, block, and report. Reports go to admins. A suspended account cannot post. 4 Chat is rate limited: a short pause between messages,",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 3,
+   "label": "agree-unchecked",
+   "f": "shots/360-on/003-rules-agree-unchecked.png",
+   "scr": "rules",
+   "btns": [
+    {
+     "act": "agree",
+     "cls": "lg-go",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [],
+   "text": "← Back BEFORE YOU MOVE IN Community rules 1 The lobby is one public room. Talk like a person other people have to sit next to. 2 No harassment, hate, or threats. No sexual content about anyone under 21. No posting someone's private information. 3 Every message has mute, block, and report. Reports go to admins. A suspended account cannot post. 4 Chat is rate limited: a short pause between messages,",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 4,
+   "label": "create",
+   "f": "shots/360-on/004-create-create.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED STRONG. \"Your name\""
+   ],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt 3 TO GO STUDENT CARD Your name Res: choose Course: choose @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km Crystal Valley · ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 5,
+   "label": "begin-empty",
+   "f": "shots/360-on/005-create-begin-empty.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED STRONG. \"Your name\""
+   ],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt 3 TO GO STUDENT CARD Your name Res: choose Course: choose @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km Crystal Valley · ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 6,
+   "label": "create-filled",
+   "f": "shots/360-on/006-create-create-filled.png",
+   "scr": "create",
+   "btns": [
+    {
+     "act": "avatar",
+     "id": "sand",
+     "cls": "cc-chip sw",
+     "t": "Sand",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "amber",
+     "cls": "cc-chip sw",
+     "t": "Amber",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "brown",
+     "cls": "cc-chip sw",
+     "t": "Brown",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "deep",
+     "cls": "cc-chip sw",
+     "t": "Deep",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "ebony",
+     "cls": "cc-chip sw",
+     "t": "Ebony",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "regular",
+     "cls": "cc-chip th",
+     "t": "Regular",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curvy",
+     "cls": "cc-chip th",
+     "t": "Curvy",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "crop",
+     "cls": "cc-chip th",
+     "t": "Crop",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "curls",
+     "cls": "cc-chip th",
+     "t": "Curls",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "fade",
+     "cls": "cc-chip th",
+     "t": "Fade",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "braids",
+     "cls": "cc-chip th",
+     "t": "Braids",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "hoodie",
+     "cls": "cc-chip th",
+     "t": "Hoodie",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "shirt",
+     "cls": "cc-chip th",
+     "t": "Shirt",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "jacket",
+     "cls": "cc-chip th",
+     "t": "Jacket",
+     "dis": false
+    },
+    {
+     "act": "avatar",
+     "id": "organt",
+     "cls": "cc-chip th",
+     "t": "031 ORGANT Organt",
+     "dis": false
+    },
+    {
+     "act": "begin",
+     "cls": "btn ts-start",
+     "t": "Walk onto campus",
+     "dis": false
+    }
+   ],
+   "over": [
+    "CLIPPED STRONG. \"Thandeka Mkhize-Ndlovu L\"",
+    "CLIPPED SPAN. \"Westview Residence\"",
+    "CLIPPED INPUT. \"\""
+   ],
+   "text": "‹ Back Who's arriving? Rules SKIN Sand Amber Brown Deep Ebony BODY Regular Curvy HAIR Crop Curls Fade Braids OUTFIT Hoodie Shirt Jacket 031 ORGANT Organt READY ✓ STUDENT CARD Thandeka Mkhize-Ndlovu L Westview Residence Medicine @handle NAME RESIDENCE Choose res O Block R Block S Block Dunstaple Heights · 2.4 km Santa Cruz Homii Residence · 12 km AKA Greenacres Residence · 12 km Millarosa · 12 km C",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 7,
+   "label": "after-begin",
+   "f": "shots/360-on/007-play-after-begin.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=514",
+    "OFFRIGHT SPAN.g-sun \"\" right=420",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=374",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:00 🏆 💬 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 8,
+   "label": "card",
+   "f": "shots/360-on/008-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=515",
+    "OFFRIGHT SPAN.g-sun \"\" right=421",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=376",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:00 🏆 💬 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 0,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 1,
+   "label": "open-cafeteria",
+   "scr": "play"
+  },
+  {
+   "n": 9,
+   "label": "sheet",
+   "f": "shots/360-on/009-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 500",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social30",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open sel",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "cafeteria_meal",
+     "cls": "g-act",
+     "t": "Cafeteria meal1 slot · 20 min 💰 -R35⚡ +5🍽 +40👥 ",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:00 🏆 💬 ⚙️ MONEY R1 500 ENERGY 100 FULLNESS 70 GRADES 50 SOCIAL 30 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 2,
+   "label": "do-cafeteria_meal",
+   "scr": "place"
+  },
+  {
+   "n": 10,
+   "label": "card",
+   "f": "shots/360-on/010-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 465",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social34",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:20 🏆 💬 ⚙️ MONEY R1 465 ENERGY 100 FULLNESS 100 GRADES 50 SOCIAL 34 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 4 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 3,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 4,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 11,
+   "label": "sheet",
+   "f": "shots/360-on/011-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 465",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social34",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_noodles",
+     "cls": "g-act",
+     "t": "Noodles in res1 slot · 20 min 💰 -R8🍽 +25👥 -2 Ch",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_skip",
+     "cls": "g-act",
+     "t": "Skip breakfastfree · 10 min ⚡ +5🍽 -15 Saves a slo",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_phone",
+     "cls": "g-act",
+     "t": "Check your phonefree · 10 min 👥 +5 Triggers the d",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:20 🏆 💬 ⚙️ MONEY R1 465 ENERGY 100 FULLNESS 100 GRADES 50 SOCIAL 34 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 4 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 5,
+   "label": "do-wake_noodles",
+   "scr": "place"
+  },
+  {
+   "n": 12,
+   "label": "card",
+   "f": "shots/360-on/012-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social32",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:40 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 100 GRADES 50 SOCIAL 32 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 6,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 7,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 13,
+   "label": "sheet",
+   "f": "shots/360-on/013-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social32",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_noodles",
+     "cls": "g-act",
+     "t": "Noodles in res1 slot · 20 min 💰 -R8🍽 +25👥 -2 Ch",
+     "dis": true
+    },
+    {
+     "act": "do",
+     "id": "wake_skip",
+     "cls": "g-act",
+     "t": "Skip breakfastfree · 10 min ⚡ +5🍽 -15 Saves a slo",
+     "dis": true
+    },
+    {
+     "act": "do",
+     "id": "wake_phone",
+     "cls": "g-act",
+     "t": "Check your phonefree · 10 min 👥 +5 Triggers the d",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:40 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 100 GRADES 50 SOCIAL 32 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 8,
+   "label": "do-wake_phone",
+   "scr": "place"
+  },
+  {
+   "n": 14,
+   "label": "card",
+   "f": "shots/360-on/014-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades50",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social37",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Next",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:50 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 100 GRADES 50 SOCIAL 37 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 9,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 10,
+   "label": "choice",
+   "scr": "play"
+  },
+  {
+   "n": 15,
+   "label": "card",
+   "f": "shots/360-on/015-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades48",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social39",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=471",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 07:50 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 100 GRADES 48 SOCIAL 39 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 11,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 12,
+   "label": "open-bus_station",
+   "scr": "play"
+  },
+  {
+   "n": 16,
+   "label": "sheet",
+   "f": "shots/360-on/016-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades48",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social39",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station open sel",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "go_walk",
+     "cls": "g-act",
+     "t": "Walk to campus1 slot · 40 min ⚡ -10🍽 -5 Free; 10%",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "go_bus",
+     "cls": "g-act",
+     "t": "Take the bus1 slot · 40 min 💰 -R12👥 +3 Costs mon",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 08:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 100 GRADES 48 SOCIAL 39 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:0",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 13,
+   "label": "do-go_walk",
+   "scr": "place"
+  },
+  {
+   "n": 17,
+   "label": "card",
+   "f": "shots/360-on/017-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades48",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social39",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad open",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences open",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 09:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 90 FULLNESS 95 GRADES 48 SOCIAL 39 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 2 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:00 BUS Off-camp",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 14,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 15,
+   "label": "open-quad",
+   "scr": "play"
+  },
+  {
+   "n": 18,
+   "label": "sheet",
+   "f": "shots/360-on/018-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades48",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social39",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad open sel",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences open",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "lecture_skip",
+     "cls": "g-act",
+     "t": "Skip and chill at the Quad1 slot · 60 min ⚡ +5🍽 -",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 09:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 90 FULLNESS 95 GRADES 48 SOCIAL 39 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 2 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:00 BUS Off-camp",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 16,
+   "label": "do-lecture_skip",
+   "scr": "place"
+  },
+  {
+   "n": 19,
+   "label": "card",
+   "f": "shots/360-on/019-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social47",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 15:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 95 FULLNESS 90 GRADES 42 SOCIAL 47 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria done today Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block done today R R Block done today S S Block done today + Other blocks done today BUS O",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 17,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 18,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 20,
+   "label": "sheet",
+   "f": "shots/360-on/020-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social47",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "call_home",
+     "cls": "g-act",
+     "t": "Call homefree · 10 min ⚡ +5👥 +6 20% chance of R20",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 15:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 95 FULLNESS 90 GRADES 42 SOCIAL 47 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria done today Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block done today R R Block done today S S Block done today + Other blocks done today BUS O",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 19,
+   "label": "do-call_home",
+   "scr": "place"
+  },
+  {
+   "n": 21,
+   "label": "card",
+   "f": "shots/360-on/021-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social53",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=370",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 21:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 90 GRADES 42 SOCIAL 53 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home Main Gate T You Night · 21:00 DONE Call home ⚡ +5 👥 +6 C",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 20,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 21,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 22,
+   "label": "sheet",
+   "f": "shots/360-on/022-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social53",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "sleep",
+     "cls": "g-act",
+     "t": "Sleep1 slot · 30 min ⚡ +60🍽 -20 Ends the day; nig",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=374",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 21:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 90 GRADES 42 SOCIAL 53 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home Main Gate T You Night · 21:00 🏠 Off-campus res (bus home",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 22,
+   "label": "do-sleep",
+   "scr": "place"
+  },
+  {
+   "n": 23,
+   "label": "card",
+   "f": "shots/360-on/023-summary-card.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social53",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 21:30 🏆 💬 ⚙️ MONEY R1 457 ENERGY 90 FULLNESS 70 GRADES 42 SOCIAL 53 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You DONE Sleep ⚡ -10 🍽 -20 🎲 A fi",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 23,
+   "label": "dismiss",
+   "scr": "summary"
+  },
+  {
+   "n": 24,
+   "label": "summary",
+   "f": "shots/360-on/024-summary-summary.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social53",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "share-day",
+     "cls": "g-go ghost",
+     "t": "📤 Share my day",
+     "dis": false
+    },
+    {
+     "act": "next",
+     "cls": "g-go",
+     "t": "Start day 2",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 1 Mon 21:30 🏆 💬 ⚙️ MONEY R1 457 ENERGY 90 FULLNESS 70 GRADES 42 SOCIAL 53 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You END OF DAY 1 Lights out You mad",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 24,
+   "label": "next-day",
+   "scr": "summary"
+  },
+  {
+   "step": 25,
+   "label": "open-cafeteria",
+   "scr": "play"
+  },
+  {
+   "n": 25,
+   "label": "sheet",
+   "f": "shots/360-on/025-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 457",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social53",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria open sel",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "cafeteria_meal",
+     "cls": "g-act",
+     "t": "Cafeteria meal1 slot · 20 min 💰 -R35⚡ +5🍽 +40👥 ",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=374",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:00 🏆 💬 ⚙️ MONEY R1 457 ENERGY 100 FULLNESS 70 GRADES 42 SOCIAL 53 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 5 of 5 slots The Quad Cafeteria Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 26,
+   "label": "do-cafeteria_meal",
+   "scr": "place"
+  },
+  {
+   "n": 26,
+   "label": "card",
+   "f": "shots/360-on/026-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 422",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social57",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:20 🏆 💬 ⚙️ MONEY R1 422 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 57 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 4 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 27,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 28,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 27,
+   "label": "sheet",
+   "f": "shots/360-on/027-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 422",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social57",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_noodles",
+     "cls": "g-act",
+     "t": "Noodles in res1 slot · 20 min 💰 -R8🍽 +25👥 -2 Ch",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_skip",
+     "cls": "g-act",
+     "t": "Skip breakfastfree · 10 min ⚡ +5🍽 -15 Saves a slo",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_phone",
+     "cls": "g-act",
+     "t": "Check your phonefree · 10 min 👥 +5 Triggers the d",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:20 🏆 💬 ⚙️ MONEY R1 422 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 57 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 4 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 29,
+   "label": "do-wake_noodles",
+   "scr": "place"
+  },
+  {
+   "n": 28,
+   "label": "card",
+   "f": "shots/360-on/028-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social55",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:40 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 55 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 30,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 31,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 29,
+   "label": "sheet",
+   "f": "shots/360-on/029-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social55",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "wake_noodles",
+     "cls": "g-act",
+     "t": "Noodles in res1 slot · 20 min 💰 -R8🍽 +25👥 -2 Ch",
+     "dis": true
+    },
+    {
+     "act": "do",
+     "id": "wake_skip",
+     "cls": "g-act",
+     "t": "Skip breakfastfree · 10 min ⚡ +5🍽 -15 Saves a slo",
+     "dis": true
+    },
+    {
+     "act": "do",
+     "id": "wake_phone",
+     "cls": "g-act",
+     "t": "Check your phonefree · 10 min 👥 +5 Triggers the d",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:40 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 55 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 32,
+   "label": "do-wake_phone",
+   "scr": "place"
+  },
+  {
+   "n": 30,
+   "label": "card",
+   "f": "shots/360-on/030-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social60",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Next",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:50 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 60 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 33,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 34,
+   "label": "choice",
+   "scr": "play"
+  },
+  {
+   "n": 31,
+   "label": "card",
+   "f": "shots/360-on/031-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social56",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station opens 08:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=471",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 07:50 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 56 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria done today Bus station opens 08:00 Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + ",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 35,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 36,
+   "label": "open-bus_station",
+   "scr": "play"
+  },
+  {
+   "n": 32,
+   "label": "sheet",
+   "f": "shots/360-on/032-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social56",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station open sel",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci opens 09:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "go_walk",
+     "cls": "g-act",
+     "t": "Walk to campus1 slot · 40 min ⚡ -10🍽 -5 Free; 10%",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "go_bus",
+     "cls": "g-act",
+     "t": "Take the bus1 slot · 40 min 💰 -R12👥 +3 Costs mon",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 08:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 100 GRADES 42 SOCIAL 56 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 3 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci opens 09:00 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:0",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 37,
+   "label": "do-go_walk",
+   "scr": "place"
+  },
+  {
+   "n": 33,
+   "label": "card",
+   "f": "shots/360-on/033-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social56",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad open",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences open",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 09:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 90 FULLNESS 95 GRADES 42 SOCIAL 56 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 2 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:00 BUS Off-camp",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 38,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 39,
+   "label": "open-quad",
+   "scr": "play"
+  },
+  {
+   "n": 34,
+   "label": "sheet",
+   "f": "shots/360-on/034-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades42",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social56",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad open sel",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences open",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "lecture_skip",
+     "cls": "g-act",
+     "t": "Skip and chill at the Quad1 slot · 60 min ⚡ +5🍽 -",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      op\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 09:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 90 FULLNESS 95 GRADES 42 SOCIAL 56 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 2 of 5 slots The Quad Cafeteria Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block opens 15:00 R R Block opens 15:00 S S Block opens 15:00 + Other blocks opens 15:00 BUS Off-camp",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 40,
+   "label": "do-lecture_skip",
+   "scr": "place"
+  },
+  {
+   "n": 35,
+   "label": "card",
+   "f": "shots/360-on/035-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social64",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 15:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 95 FULLNESS 90 GRADES 36 SOCIAL 64 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria done today Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block done today R R Block done today S S Block done today + Other blocks done today BUS O",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 41,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 42,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 36,
+   "label": "sheet",
+   "f": "shots/360-on/036-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy95",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social64",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library opens 15:00",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "call_home",
+     "cls": "g-act",
+     "t": "Call homefree · 10 min ⚡ +5👥 +6 20% chance of R20",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 15:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 95 FULLNESS 90 GRADES 36 SOCIAL 64 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria done today Bus station Sports Centre opens 15:00 Library opens 15:00 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block done today R R Block done today S S Block done today + Other blocks done today BUS O",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 43,
+   "label": "do-call_home",
+   "scr": "place"
+  },
+  {
+   "n": 37,
+   "label": "card",
+   "f": "shots/360-on/037-play-card.png",
+   "scr": "play",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=473",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=369",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 90 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home Main Gate T You Night · 21:00 DONE Call home ⚡ +5 👥 +6 C",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 44,
+   "label": "dismiss",
+   "scr": "play"
+  },
+  {
+   "step": 45,
+   "label": "open-off_campus",
+   "scr": "play"
+  },
+  {
+   "n": 38,
+   "label": "sheet",
+   "f": "shots/360-on/038-place-sheet.png",
+   "scr": "place",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness90",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus open mine sel",
+     "t": "BUS Off-campus res · home",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "close-sheet",
+     "cls": "g-x",
+     "t": "×",
+     "dis": false
+    },
+    {
+     "act": "do",
+     "id": "sleep",
+     "cls": "g-act",
+     "t": "Sleep1 slot · 30 min ⚡ +60🍽 -20 Ends the day; nig",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus open mine sel \"BUS\n      Off-campus res · home\" right=368",
+    "OFFRIGHT SPAN.g-halo \"\" right=373",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:00 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 90 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 1 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home Main Gate T You Night · 21:00 🏠 Off-campus res (bus home",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 46,
+   "label": "do-sleep",
+   "scr": "place"
+  },
+  {
+   "n": 39,
+   "label": "card",
+   "f": "shots/360-on/039-summary-card.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-scrim soft",
+     "t": ""
+    },
+    {
+     "act": "dismiss",
+     "cls": "g-go block",
+     "t": "Continue",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:30 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 70 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You Night · 21:00 DONE Sleep 🍽 -2",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "step": 47,
+   "label": "dismiss",
+   "scr": "summary"
+  },
+  {
+   "n": 40,
+   "label": "summary",
+   "f": "shots/360-on/040-summary-summary.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "share-day",
+     "cls": "g-go ghost",
+     "t": "📤 Share my day",
+     "dis": false
+    },
+    {
+     "act": "next",
+     "cls": "g-go",
+     "t": "Start day 3",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=478",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:30 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 70 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You END OF DAY 2 Lights out You ma",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "n": 41,
+   "label": "loop-end",
+   "f": "shots/360-on/041-summary-loop-end.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "share-day",
+     "cls": "g-go ghost",
+     "t": "📤 Share my day",
+     "dis": false
+    },
+    {
+     "act": "next",
+     "cls": "g-go",
+     "t": "Start day 3",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=480",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:30 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 70 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You END OF DAY 2 Lights out You ma",
+   "blank": false,
+   "errs": 0
+  },
+  {
+   "navfail": "milestones",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "profile",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "board",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "chat",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "share",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "save",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "privacy",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "navfail": "world",
+   "e": "locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-act=gear]').first()\n    - locator reso"
+  },
+  {
+   "n": 42,
+   "label": "final",
+   "f": "shots/360-on/042-summary-final.png",
+   "scr": "summary",
+   "btns": [
+    {
+     "act": "gear",
+     "cls": "g-gear",
+     "t": "⚙️",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "MoneyR1 414",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Energy100",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Fullness70",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Grades36",
+     "dis": false
+    },
+    {
+     "act": "stat",
+     "cls": "g-stat",
+     "t": "Social70",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "quad",
+     "cls": "g-pin g-b-quad public",
+     "t": "The Quad",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "cafeteria",
+     "cls": "g-pin g-b-cafeteria dim",
+     "t": "Cafeteria",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "bus_station",
+     "cls": "g-pin g-b-bus_station dim",
+     "t": "Bus station",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "sports_centre",
+     "cls": "g-pin g-b-sports_centre dim",
+     "t": "Sports Centre",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "library",
+     "cls": "g-pin g-b-library dim",
+     "t": "Library",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "smig",
+     "cls": "g-pin g-b-smig dim",
+     "t": "💼 SMIG",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "health_sciences",
+     "cls": "g-pin g-b-health_sciences dim",
+     "t": "⚕️ Health Sci",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "science",
+     "cls": "g-pin g-b-science dim",
+     "t": "🔬 Science",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "law",
+     "cls": "g-pin g-b-law dim",
+     "t": "⚖️ Law",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "engineering",
+     "cls": "g-pin g-b-engineering dim",
+     "t": "⚙️ Engineering",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_o",
+     "cls": "g-pin g-b-res_o dim",
+     "t": "O O Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_r",
+     "cls": "g-pin g-b-res_r dim",
+     "t": "R R Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_s",
+     "cls": "g-pin g-b-res_s dim",
+     "t": "S S Block",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "res_other",
+     "cls": "g-pin g-b-res_other dim",
+     "t": "+ Other blocks",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "off_campus",
+     "cls": "g-pin g-b-off_campus dim mine",
+     "t": "BUS Off-campus res · home done today",
+     "dis": false
+    },
+    {
+     "act": "place-open",
+     "id": "gate",
+     "cls": "g-pin g-b-gate dim",
+     "t": "Main Gate",
+     "dis": false
+    },
+    {
+     "act": "share-day",
+     "cls": "g-go ghost",
+     "t": "📤 Share my day",
+     "dis": false
+    },
+    {
+     "act": "next",
+     "cls": "g-go",
+     "t": "Start day 3",
+     "dis": false
+    }
+   ],
+   "over": [
+    "OFFRIGHT SPAN.g-cloud c2 \"\" right=424",
+    "OFFRIGHT SPAN.g-sun \"\" right=415",
+    "OFFRIGHT BUTTON.g-pin g-b-off_campus dim mine \"BUS\n      Off-campus res · home\n      do\" right=368",
+    "OFFRIGHT SPAN.g-name \"Off-campus res · home\" right=368"
+   ],
+   "text": "Day 2 Tue 21:30 🏆 💬 ⚙️ MONEY R1 414 ENERGY 100 FULLNESS 70 GRADES 36 SOCIAL 70 Wake 07:00 Go 08:00 Lecture 09:00 Social 13:00 Free 15:00 Night 21:00 0 of 5 slots The Quad Cafeteria Bus station Sports Centre Library 💼 SMIG ⚕️ Health Sci 🔬 Science ⚖️ Law ⚙️ Engineering O O Block R R Block S S Block + Other blocks BUS Off-campus res · home done today Main Gate T You END OF DAY 2 Lights out You ma",
+   "blank": false,
+   "errs": 1
+  }
+ ]
+}
