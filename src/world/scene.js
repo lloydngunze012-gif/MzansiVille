@@ -43,6 +43,82 @@ let tourIndex = 0
 let pendingAction = null
 let snapTo = null
 let gateDay = ''
+let guide = null
+let guideFrom = null
+
+// Day-1 arrival: a glowing ground route from the player to the Business Hall door, plus a pulsing marker.
+function lectureDoor() {
+  const hall = campus?.layout.buildings.find((building) => building.id === 'smig')
+  return hall ? doorPoint(hall) : null
+}
+
+function clearGuide() {
+  if (guide) scene.remove(guide)
+  guide = null
+  guideFrom = null
+  if (host) host.dataset.route = '0'
+}
+
+function buildGuide() {
+  const door = lectureDoor()
+  if (!door || !player) return clearGuide()
+  if (guide) scene.remove(guide)
+  guide = new THREE.Group()
+  guide.name = 'lecture-route'
+  const path = findPath(campus.grid, nearestOpen(campus.grid, player.position), nearestOpen(campus.grid, door))
+  const pts = [{ x: player.position.x, z: player.position.z }, ...path, door]
+  const dotGeo = new THREE.CircleGeometry(0.32, 16)
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.9 })
+  let next = 0.8
+  let walked = 0
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1]
+    const b = pts[i]
+    const len = Math.hypot(b.x - a.x, b.z - a.z)
+    for (; next < walked + len; next += 1.4) {
+      const t = next - walked
+      const dot = new THREE.Mesh(dotGeo, dotMat)
+      dot.rotation.x = -Math.PI / 2
+      dot.position.set(a.x + ((b.x - a.x) * t) / len, 0.06, a.z + ((b.z - a.z) * t) / len)
+      dot.userData.k = guide.children.length
+      guide.add(dot)
+    }
+    walked += len
+  }
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.3, 32), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.85, side: THREE.DoubleSide }))
+  ring.rotation.x = -Math.PI / 2
+  ring.position.set(door.x, 0.08, door.z)
+  ring.name = 'lecture-marker'
+  guide.add(ring)
+  scene.add(guide)
+  guideFrom = { x: player.position.x, z: player.position.z }
+  host.dataset.route = '1'
+}
+
+function lectureArrive() {
+  if (!currentRun?.lectureRoute) return false
+  currentRun.lectureRoute = false
+  currentRun.lectureCard = true
+  clearGuide()
+  route = []
+  routeGoal = null
+  arrive = null
+  window.dispatchEvent(new CustomEvent('mzansi-lecture-arrive'))
+  return true
+}
+
+function updateGuide() {
+  if (!currentRun?.lectureRoute || !player || !campus) { if (guide) clearGuide(); return }
+  const door = lectureDoor()
+  if (door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
+  if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide()
+  for (const item of guide.children) {
+    if (item.name === 'lecture-marker') item.scale.setScalar(1 + Math.sin(clock * 4) * 0.22)
+    else item.material.opacity = 0.9
+  }
+  const ring = guide.getObjectByName('lecture-marker')
+  if (ring) ring.material.opacity = 0.6 + Math.sin(clock * 4) * 0.3
+}
 let speed = WALK
 const raycaster = new THREE.Raycaster()
 const screenPoint = new THREE.Vector3()
@@ -167,6 +243,8 @@ function ensureRenderer() {
   window.addEventListener('mzansi-cam', (event) => rig?.setMode(event.detail))
   window.addEventListener('mzansi-help', () => { if (visible) showTour(true) })
   window.addEventListener('mzansi-act', (event) => beginAction(event.detail))
+  // Used by tests and the map: walk to a building's door and enter it.
+  window.addEventListener('mzansi-walk-to', (event) => { if (visible) approach(event.detail) })
 }
 
 function resize() {
@@ -239,6 +317,7 @@ function approach(id) {
 }
 
 function openPlace(id) {
+  if (id === 'smig' && lectureArrive()) return
   const next = `#/place/${id}`
   if (location.hash !== next) location.hash = next
 }
@@ -384,6 +463,7 @@ function respawn(district, run) {
   route = []
   routeGoal = null
   arrive = null
+  clearGuide()
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'
 }
@@ -494,6 +574,7 @@ function tick(now) {
       const glow = beacon.getObjectByName('beacon')
       if (glow?.visible) glow.scale.setScalar(1 + Math.sin(clock * 5) * 0.18)
     }
+    updateGuide()
     promptDoor()
     const floater = host.querySelector('.floater')
     if (floater && !floater.hidden) pin(floater, player.position.x, 2.4, player.position.z)
