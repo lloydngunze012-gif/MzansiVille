@@ -151,7 +151,7 @@ function gearMenu(run) {
   return `<div class="g-scrim" data-act="gear"></div>
   <aside class="g-menu" role="dialog" aria-label="Menu">
     <h3>Menu</h3>
-    <button type="button" data-act="sound">Sound: <b>${soundOn() ? 'On' : 'Off'}</b></button>
+    <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>
     <button type="button" data-act="nav" data-go="board">Leaderboard</button>
