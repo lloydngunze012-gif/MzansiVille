@@ -1,4 +1,4 @@
-import { avatarSvg, hairs, outfits, skins } from '../avatar.js'
+import { avatarSvg, bodies, hairs, outfits, skins } from '../avatar.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
 import { actionState, actionsAt, createRun } from '../engine/sim.js'
@@ -379,37 +379,30 @@ function create(state) {
     return `<optgroup label="${label}">${rows.map((row) =>
       `<option value="${esc(row.name)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)}${row.distanceKm ? ` · ${row.distanceKm} km` : ''}</option>`).join('')}</optgroup>`
   }).join('')
-  const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? '' : ' thumbs'}">${items.map((item) =>
-    `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${draft.avatar[key] === item.id}">${
+  const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? ' sk' : ' thumbs'}">${items.map((item) =>
+    `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${(draft.avatar[key] || (key === 'body' ? 'regular' : '')) === item.id}">${
       item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
-        : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 44)}</span><b>${esc(item.label)}</b>`
+        : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 40)}</span><b>${esc(item.label)}</b>`
     }</button>`).join('')}</div></fieldset>`
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
   return `<main class="screen cc" data-screen="create">
-    <header class="cc-top"><a class="cc-back" href="#/">‹ Back</a><h1>Who's arriving?</h1><a class="cc-back" href="#/rules">Rules</a></header>
+    <i class="cc-backdrop" aria-hidden="true"></i>
+    <header class="cc-top"><a class="cc-back" href="#/">‹ Back</a><h1 class="cc-logo">Who's arriving?</h1><a class="cc-back" href="#/rules">Rules</a></header>
+    <i class="cc-strip" aria-hidden="true"></i>
     <div class="cc-body">
       <div class="cc-opts">
         ${picker('Skin', skins, 'skin')}
+        ${picker('Body', bodies, 'body')}
         ${picker('Hair', hairs, 'hair')}
         ${picker('Outfit', outfits, 'outfit')}
       </div>
       <aside class="cc-preview">
         <div class="cc-stage">
-          <svg class="cc-bg" viewBox="0 0 150 260" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-            <rect width="150" height="260" fill="#ffc37a"/><circle cx="112" cy="92" r="36" fill="#ffd08a" opacity=".6"/><circle cx="112" cy="96" r="20" fill="#ff8a3d"/>
-            <g class="cc-bird" fill="none" stroke="#5a3a5e" stroke-width="1.6" stroke-linecap="round"><path d="M28 50q4-4 8 0q4-4 8 0"/><path d="M50 64q3-3 6 0q3-3 6 0"/></g>
-            <path d="M14 112Q42 44 72 112" fill="none" stroke="#fff4e4" stroke-width="3"/>
-            <rect y="108" width="150" height="20" fill="#1d7fb8"/><rect y="128" width="150" height="132" fill="#5cb85c"/>
-            <ellipse cx="75" cy="160" rx="70" ry="16" fill="#7fd07f" stroke="#f3e2c2" stroke-width="4"/><text x="75" y="163" class="cc-quad" text-anchor="middle">THE QUAD</text>
-            <ellipse cx="75" cy="248" rx="64" ry="12" fill="#4aa34f"/>
-            <path d="M44 166V130" stroke="#5a3a5e" stroke-width="2"/><path class="cc-flag" d="M45 131h16l-4 5 4 5H45z" fill="#7b3fe4"/>
-            <path d="M98 176l1.5-50h3l1.5 50z" fill="#8a5a3a"/><path d="M99 164h4M99 152h4M99.5 140h3" stroke="#5a3820" stroke-width="1.2"/>
-            <g transform="translate(101 126) scale(.75)"><g class="ts-palm" fill="#1f6b45"><path d="M0 0q-12-12-24-4q12-2 24 4z"/><path d="M0 0q12-12 24-4q-12-2-24 4z"/><path d="M0 0q-4-14-16-18q10 6 16 18z" fill="#2e8b57"/><path d="M0 0q4-14 16-18q-10 6-16 18z" fill="#2e8b57"/><path d="M0 0q-14-2-22 8q10-8 22-8z" fill="#2e8b57"/><path d="M0 0q14-2 22 8q-10-8-22-8z"/></g></g>
-          </svg>
+          <i class="cc-bg" aria-hidden="true"></i><svg class="cc-gem" viewBox="0 0 24 30" aria-hidden="true"><path d="M12 0l10 11-10 19L2 11z" fill="#8b4dff"/><path d="M12 0l4 11-4 19-4-19z" fill="#b48cff"/><path d="M2 11h20" stroke="#5b23c9" stroke-width="1"/></svg>
           <span class="cc-ready${todo ? '' : ' ok'}">${todo ? `${todo} to go` : 'Ready ✓'}</span>
           <div class="cc-bob">${avatarSvg(draft.avatar, code, 118)}</div>
         </div>
-        <div class="cc-id"><div class="cc-id-top"><small>Student card</small><i class="cc-crest">CV</i></div>
+        <div class="cc-id"><div class="cc-id-top"><small>Student card</small><svg class="cc-crest" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#5b23c9" stroke="#f0c400" stroke-width="2"/><path d="M6 15l1-7 3 3 2-4 2 4 3-3 1 7z" fill="#f0c400"/></svg></div>
           <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong>${esc(draft.name.trim() || 'Your name')}</strong>
           <span>${esc(draft.residence || 'Res: choose')}</span><span>${esc(draft.course || 'Course: choose')}</span></div></div>
           <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
