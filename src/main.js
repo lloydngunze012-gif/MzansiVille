@@ -320,6 +320,10 @@ function phaseNotice() {
 }
 
 // Skip phases where nothing on the map can be done, so the day never stalls.
+function seenMapHint() {
+  try { localStorage.setItem('mzansiville.mapHint', '1') } catch { /* private mode */ }
+}
+
 function autoAdvance() {
   const district = districtNow()
   const run = save.run
@@ -373,7 +377,8 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
-  if (act === 'place-open') { blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
+  if (act === 'hint-ok') { seenMapHint(); paint(); return true }
+  if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
   if (act === 'close-sheet') { go('play'); return true }
   if (act === 'to-night') {
     while (save.run.mode === 'play' && save.run.phase !== 'night') advancePhase(district, save.run)
