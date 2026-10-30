@@ -132,13 +132,23 @@ function reconstruct(came, current, cols) {
   return out
 }
 
-function sees(grid, from, to) {
-  const dist = Math.hypot(to.x - from.x, to.z - from.z)
-  const steps = Math.max(1, Math.ceil(dist / 0.45))
+export function segmentClear(grid, from, to, radius = 0.4) {
+  const dx = to.x - from.x
+  const dz = to.z - from.z
+  const dist = Math.hypot(dx, dz)
+  const steps = Math.max(1, Math.ceil(dist / 0.35))
+  const len = dist || 1
+  const offsets = [
+    [0, 0],
+    [(-dz / len) * radius, (dx / len) * radius],
+    [(dz / len) * radius, (-dx / len) * radius],
+  ]
   for (let i = 1; i < steps; i += 1) {
     const t = i / steps
-    const cell = cellOf(from.x + (to.x - from.x) * t, from.z + (to.z - from.z) * t)
-    if (!walkable(grid, cell.c, cell.r)) return false
+    for (const [ox, oz] of offsets) {
+      const cell = cellOf(from.x + dx * t + ox, from.z + dz * t + oz)
+      if (!walkable(grid, cell.c, cell.r)) return false
+    }
   }
   return true
 }
@@ -149,7 +159,7 @@ function smoothPath(grid, points) {
   let anchor = 0
   while (anchor < points.length - 1) {
     let next = points.length - 1
-    while (next > anchor + 1 && !sees(grid, points[anchor], points[next])) next -= 1
+    while (next > anchor + 1 && !segmentClear(grid, points[anchor], points[next])) next -= 1
     out.push(points[next])
     anchor = next
   }
@@ -159,4 +169,27 @@ function smoothPath(grid, points) {
 export function pointBlocked(grid, x, z) {
   const cell = cellOf(x, z)
   return !walkable(grid, cell.c, cell.r)
+}
+
+export function followStep(grid, position, route, step) {
+  if (!route.length) return { position, route, done: true, blocked: false }
+  const next = route[0]
+  const dx = next.x - position.x
+  const dz = next.z - position.z
+  const dist = Math.hypot(dx, dz)
+  if (dist <= step) {
+    const landed = pointBlocked(grid, next.x, next.z) ? position : { x: next.x, z: next.z }
+    const rest = route.slice(1)
+    return { position: landed, route: rest, done: rest.length === 0, blocked: false }
+  }
+  const nx = position.x + (dx / dist) * step
+  const nz = position.z + (dz / dist) * step
+  if (!pointBlocked(grid, nx, nz)) {
+    return { position: { x: nx, z: nz }, route, done: false, blocked: false }
+  }
+  let slid = position
+  if (!pointBlocked(grid, nx, position.z)) slid = { x: nx, z: position.z }
+  else if (!pointBlocked(grid, position.x, nz)) slid = { x: position.x, z: nz }
+  const after = Math.hypot(next.x - slid.x, next.z - slid.z)
+  return { position: slid, route, done: false, blocked: after > dist - 0.001 }
 }

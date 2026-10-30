@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.js'
 import { balancedScore } from '../src/engine/board.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
-import { buildGrid, findPath, nearestOpen } from '../src/world/nav.js'
+import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
   actionState,
   actionsAt,
@@ -349,14 +349,83 @@ check('walk or bus, and skipping lecture', () => {
 check('campus paths go around buildings', () => {
   const layout = buildingLayout(district)
   const grid = buildGrid(layout.obstacles)
+  const quad = layout.buildings.find((building) => building.id === 'quad')
   const home = layout.buildings.find((building) => building.id === 'res_o')
-  const start = nearestOpen(grid, doorPoint(home))
-  for (const id of ['quad', 'library']) {
-    const goal = nearestOpen(grid, doorPoint(layout.buildings.find((building) => building.id === id)))
-    const path = findPath(grid, start, goal)
-    assert.ok(path.length > 1, id)
-    for (const step of path) assert.equal(grid.blocked[step.r * grid.cols + step.c], 0)
+  const walk = (from, to) => {
+    let route = findPath(grid, nearestOpen(grid, from), nearestOpen(grid, to))
+    assert.ok(route.length > 1)
+    let position = { x: route[0].x, z: route[0].z }
+    route = route.slice(1)
+    let travelled = 0
+    let stuck = 0
+    for (let i = 0; i < 5000 && route.length; i += 1) {
+      const before = position
+      const step = followStep(grid, position, route, 0.35)
+      if (step.blocked) {
+        stuck += 1
+        assert.ok(stuck < 8)
+        route = findPath(grid, nearestOpen(grid, position), nearestOpen(grid, to))
+        if (route.length) route = route.slice(1)
+        continue
+      }
+      stuck = 0
+      travelled += Math.hypot(step.position.x - before.x, step.position.z - before.z)
+      position = step.position
+      route = step.route
+      assert.equal(pointBlocked(grid, position.x, position.z), false)
+    }
+    assert.equal(route.length, 0)
+    assert.ok(Math.hypot(position.x - to.x, position.z - to.z) < 3)
+    return travelled
   }
+  const around = walk(
+    { x: quad.x, z: quad.maxZ + 4 },
+    { x: quad.x, z: quad.minZ - 4 },
+  )
+  assert.ok(around > 8, `around ${around}`)
+  const across = walk(doorPoint(home), doorPoint(quad))
+  assert.ok(across > 20, `across ${across}`)
+})
+
+check('a campus day changes the same stats as the action list', () => {
+  const run = createRun(district, {
+    name: 'Aya',
+    residence: 'O Block',
+    course: 'Accounting',
+    avatar: { skin: 'amber', hair: 'crop', outfit: 'hoodie' },
+  })
+  assert.equal(homePlaceId(district, run.character.residence), 'res_o')
+  assert.equal(coursePlaceId(district, run.character.course), 'smig')
+  const rng = () => 0.99
+  const morning = actionsAt(district, run, 'res_o').map((action) => action.id)
+  assert.ok(morning.includes('wake_phone'))
+  assert.equal(applyAction(district, run, 'wake_phone', rng).ok, true)
+  advancePhase(district, run, rng)
+  assert.ok(actionsAt(district, run, 'bus_station').some((action) => action.id === 'go_walk'))
+  assert.equal(applyAction(district, run, 'go_walk', rng).ok, true)
+  advancePhase(district, run, rng)
+  assert.ok(actionsAt(district, run, 'smig').some((action) => action.id === 'lecture_attend'))
+  assert.equal(applyAction(district, run, 'lecture_attend', rng).ok, true)
+  advancePhase(district, run, rng)
+  assert.ok(actionsAt(district, run, 'quad').some((action) => action.id === 'quad_friends'))
+  assert.equal(applyAction(district, run, 'quad_friends', rng).ok, true)
+  assert.ok(actionsAt(district, run, 'cafeteria').some((action) => action.id === 'cafeteria_meal'))
+  assert.equal(applyAction(district, run, 'cafeteria_meal', rng).ok, true)
+  advancePhase(district, run, rng)
+  advancePhase(district, run, rng)
+  assert.equal(run.phase, 'night')
+  assert.ok(actionsAt(district, run, 'res_o').some((action) => action.id === 'sleep'))
+  assert.equal(applyAction(district, run, 'sleep', rng).ok, true)
+  assert.equal(run.mode, 'summary')
+  assert.equal(run.summary.slept, true)
+  assert.equal(run.stats.money, 1460)
+  assert.equal(run.stats.energy, 80)
+  assert.equal(run.stats.hunger, 75)
+  assert.equal(run.stats.grades, 58)
+  assert.equal(run.stats.social, 53)
+  beginNextDay(district, run, new Date())
+  assert.equal(run.stats.energy, 100)
+  assert.equal(run.phase, 'wake')
 })
 
 console.log(`${passed} checks passed`)
