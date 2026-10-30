@@ -31,6 +31,7 @@ import {
 } from './net.js'
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
+import { loop as soundLoop, setMuted, unlock as unlockSound } from './audio.js'
 
 let shareMilestone = null
 let shareBlob = null
@@ -229,6 +230,9 @@ function syncWorld(viewState) {
   const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket
   document.body.dataset.world = on || morningOn ? '1' : '0'
+  // Music plays in the morning and on campus; the crowd only on campus.
+  soundLoop('music_campus', on || morningOn)
+  soundLoop('crowd', on)
   if (!on) {
     worldPromise?.then((mod) => {
       if (ticket === worldTicket) mod.setVisible(false)
@@ -364,6 +368,8 @@ function prewarmAudio() {
 }
 window.addEventListener('mzansi-lecture-arrive', () => { persist(); paint() })
 window.addEventListener('pointerup', prewarmAudio, { once: true, passive: true })
+// Every tap re-unlocks: iOS suspends the audio context when the tab is hidden.
+window.addEventListener('pointerdown', unlockSound, { passive: true })
 
 function blipNow(freq) {
   try {
@@ -464,6 +470,7 @@ function gameAct(act, button) {
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
+    setMuted(!soundOn())
     blip(880)
     paint()
     return true
@@ -682,6 +689,7 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'sound' && route().name === 'settings') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
+    setMuted(!soundOn())
     paint()
     return
   }

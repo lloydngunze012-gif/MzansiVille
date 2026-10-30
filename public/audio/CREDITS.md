@@ -2,7 +2,7 @@
 
 Every file in this folder is [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). Attribution is not required. Names, titles, and source pages are recorded anyway so Game Dev can check the licence later.
 
-Files were re-encoded to Ogg Vorbis and, where noted, trimmed or joined. The licence of the source was not changed.
+Files were re-encoded to Ogg Vorbis and, where noted, trimmed or joined. Each `.ogg` also has an `.m4a` (AAC 96 kbps) copy made from it for Safari. The licence of the source was not changed.
 
 | File | Title | Author | Source | Licence |
 | --- | --- | --- | --- | --- |

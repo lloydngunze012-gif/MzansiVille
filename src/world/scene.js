@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
+import { loop as soundLoop } from '../audio.js'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createCampus, fitLabels, markDoors } from './campus.js'
@@ -566,6 +567,7 @@ function tick(now) {
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }
     clock += dt
+    soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
     rig.apply(camera, player.position, dt, campus.buildings)
     camera.updateMatrixWorld()
@@ -605,6 +607,7 @@ function start() {
 function stop() {
   cancelAnimationFrame(frame)
   frame = 0
+  soundLoop('footsteps', false)
   input?.clearKeys()
 }
 

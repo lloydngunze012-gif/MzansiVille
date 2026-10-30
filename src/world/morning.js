@@ -1,6 +1,7 @@
 // Day 1 morning slice: wake in the O Block room, noodles at the kettle, walk to the
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
+import { loop as soundLoop, sfx } from '../audio.js'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 
@@ -556,6 +557,7 @@ function tick(now) {
     idle += Math.min(real, 1)
     if (idle > 1.5) { idle = 0; opts.run.minutes += 1; opts.onUpdate() } // dawdling costs time
   }
+  soundLoop('footsteps', walking.player && player?.visible)
   for (const [who, key] of [[player, 'player'], [roommate, 'roommate']]) {
     if (who && who.userData.pose === 'stand') poseAvatar(who, walking[key], clock)
   }
@@ -697,6 +699,7 @@ async function play() {
     if (pick === 0) {
       setStep('tuckshop')
       await walkTo(player, 2.3, 1.2)
+      sfx('door')
       await tween(0.6, (k) => { door.rotation.y = -k * 1.4 })
       await walkTo(player, 3.6, 1.2)
       await walk(player, [[6.5, 1.2]])
@@ -726,6 +729,7 @@ async function play() {
     face(player, 0.9, -2.55)
     setStep('noodles')
     kettle.getObjectByName('led').material.color.set(0xff5533)
+    soundLoop('kettle', true)
     steamGroup.visible = true
     steamGroup.position.set(1.15, 1.45, -2.55)
     // the cup appears on the counter
@@ -744,6 +748,7 @@ async function play() {
     await tween(0.4, (k) => { kettle.rotation.z = -0.7 * (1 - k); kettle.position.x = 1.0 - k * 0.15; kettle.position.y = 1.11 - k * 0.15 })
     await addMinutes(6, 1.0)
     kettle.getObjectByName('led').material.color.set(0x552222)
+    soundLoop('kettle', false)
     cup.visible = false
     lookAtKettle(false)
     await eat()
@@ -759,6 +764,7 @@ async function play() {
   await Promise.all([tween(1.2, (k) => { player.rotation.y = Math.PI * 4 * k }), addMinutes(15, 1.2)])
   bubble('')
   await walkTo(player, 2.3, 1.2)
+  sfx('door')
   await tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })
   camOffset.set(0, 6, 7)
   await walkTo(player, 3.7, 1.2)
@@ -793,6 +799,7 @@ async function play() {
   const waitMin = next - run.minutes
   // clock runs forward while the bus drives in
   setStep('bus-arriving')
+  soundLoop('bus_engine', true)
   await Promise.all([
     (async () => { const from = run.minutes; await tween(Math.max(1.2, Math.min(4, waitMin * 0.15)), (k) => { const m = Math.round(from + waitMin * k); if (m !== run.minutes) { run.minutes = m; showSign(); opts.onUpdate() } }, (x) => x) })(),
     (async () => { bus.position.x = -40; camTarget.set(8, 0.8, 6); await wait(Math.max(0, Math.min(4, waitMin * 0.15) - 2.4)); stopFollow(player); follow(bus, [-4, 5, 10]); await tween(2.4, (k) => { bus.position.x = -40 + 54 * (1 - (1 - k) * (1 - k)) }, (x) => x) })(),
@@ -825,6 +832,7 @@ async function play() {
   await tween(0.5, (k) => { busDoor.position.x = 2.4 - k * 0.95 })
   // 6. step off at the gate
   setStep('arrive')
+  soundLoop('bus_engine', false)
   player.position.set(bus.position.x + 1.5, 0, 6.2)
   player.visible = true
   stopFollow(bus)
@@ -928,6 +936,7 @@ export function startMorning(options) {
 
 export function stopMorning() {
   running = false
+  for (const name of ['footsteps', 'kettle', 'bus_engine']) soundLoop(name, false)
   tasks.forEach((t) => t.resolve())
   tasks = []
   tapHandler = null

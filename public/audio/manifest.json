@@ -1,5 +1,5 @@
 {
-  "note": "Not read by the game yet. Paths are served from public/ as /audio/<file>. loop true means the clip is meant to repeat.",
+  "note": "Reference only: src/audio.js plays these by name. Each sound also has an .m4a (AAC) copy for browsers without Ogg Vorbis, mainly older iPhones.",
   "sounds": {
     "kettle": { "file": "/audio/kettle.ogg", "loop": true },
     "door": { "file": "/audio/door.ogg", "loop": false },
