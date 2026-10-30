@@ -1,0 +1,1708 @@
+{
+  "note": "Skeleton only. The game does not read this file. Effects are design targets in the existing stat names. lines are empty for Content Writer. existing true means the row already ships in activities.csv; do not retune those numbers.",
+  "actions": [
+    {
+      "id": "lecture_attend",
+      "place_id": "smig",
+      "phase": "lecture",
+      "label": "Attend lecture",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": -10,
+        "grades": 8,
+        "social": 2,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lecture_back",
+      "place_id": "smig",
+      "phase": "lecture",
+      "label": "Sit at the back",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": -5,
+        "grades": 2,
+        "social": 5,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "smig_notes",
+      "place_id": "smig",
+      "phase": "lecture",
+      "label": "Share notes with the row",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 2,
+        "social": 4,
+        "energy": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "smig_tutorial",
+      "place_id": "smig",
+      "phase": "leisure",
+      "label": "Stay for the tutorial",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 4,
+        "energy": -8,
+        "hunger": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "smig_society",
+      "place_id": "smig",
+      "phase": "leisure",
+      "label": "Business society table",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -10,
+        "energy": -6,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "hs_cold_call",
+      "place_id": "health_sciences",
+      "phase": "lecture",
+      "label": "Answer the cold call",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 4,
+        "energy": -6,
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "hs_skills",
+      "place_id": "health_sciences",
+      "phase": "leisure",
+      "label": "Skills-lab hour",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 5,
+        "energy": -12
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "hs_debrief",
+      "place_id": "health_sciences",
+      "phase": "leisure",
+      "label": "Walk a friend through the practical",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 2,
+        "social": 4,
+        "energy": -6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sci_demo",
+      "place_id": "science",
+      "phase": "lecture",
+      "label": "Help with the demo",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 6,
+        "energy": -8,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sci_writeup",
+      "place_id": "science",
+      "phase": "leisure",
+      "label": "Finish the lab sheet",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 6,
+        "energy": -10,
+        "hunger": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sci_society",
+      "place_id": "science",
+      "phase": "leisure",
+      "label": "Science society",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -5,
+        "energy": -6,
+        "social": 5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "law_moot",
+      "place_id": "law",
+      "phase": "lecture",
+      "label": "Take the moot point",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 3,
+        "energy": -6,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "law_read",
+      "place_id": "law",
+      "phase": "leisure",
+      "label": "Read the case in the back row",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 5,
+        "energy": -8,
+        "social": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "law_chambers",
+      "place_id": "law",
+      "phase": "leisure",
+      "label": "Walk a friend through the facts",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 2,
+        "social": 4,
+        "energy": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "eng_phone",
+      "place_id": "engineering",
+      "phase": "lecture",
+      "label": "Phone buzzes under the desk",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "pocket": {
+          "grades": 2,
+          "energy": -2
+        },
+        "look": {
+          "social": 3,
+          "grades": -2
+        }
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result_a": "",
+        "result_b": ""
+      },
+      "choice": true
+    },
+    {
+      "id": "eng_problem",
+      "place_id": "engineering",
+      "phase": "leisure",
+      "label": "Problem set in the workshop",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 6,
+        "energy": -10
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "eng_club",
+      "place_id": "engineering",
+      "phase": "leisure",
+      "label": "Build-club hour",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -15,
+        "energy": -10,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_card",
+      "place_id": "gate",
+      "phase": "wake",
+      "label": "Show your student card",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2,
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_wait",
+      "place_id": "gate",
+      "phase": "wake",
+      "label": "Wait for a res friend",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_stream",
+      "place_id": "gate",
+      "phase": "transit",
+      "label": "Join the stream onto campus",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_directions",
+      "place_id": "gate",
+      "phase": "transit",
+      "label": "Ask which way to your hall",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 2,
+        "energy": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_late",
+      "place_id": "gate",
+      "phase": "lecture",
+      "label": "Explain why you are late",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -6,
+        "grades": -2,
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_point",
+      "place_id": "gate",
+      "phase": "lecture",
+      "label": "Guard points you up the path",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_visitor",
+      "place_id": "gate",
+      "phase": "social",
+      "label": "Meet someone from town",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -10,
+        "energy": -4,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_flyer",
+      "place_id": "gate",
+      "phase": "social",
+      "label": "Take a club flyer",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_club",
+      "place_id": "gate",
+      "phase": "leisure",
+      "label": "Stop for the club table",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 4,
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_town",
+      "place_id": "gate",
+      "phase": "leisure",
+      "label": "Walk out for air",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -20,
+        "energy": -8,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_security",
+      "place_id": "gate",
+      "phase": "night",
+      "label": "Chat with night security",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -3,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "gate_sign_in",
+      "place_id": "gate",
+      "phase": "night",
+      "label": "Sign in late",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "social": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_board",
+      "place_id": "quad",
+      "phase": "wake",
+      "label": "Read the noticeboard",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_coffee",
+      "place_id": "quad",
+      "phase": "wake",
+      "label": "Morning tea at the vendor",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -10,
+        "hunger": 15,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_cut",
+      "place_id": "quad",
+      "phase": "transit",
+      "label": "Cut across to class",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_lost",
+      "place_id": "quad",
+      "phase": "transit",
+      "label": "Point a lost first-year",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 4,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lecture_skip",
+      "place_id": "quad",
+      "phase": "lecture",
+      "label": "Skip and chill",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "grades": -6,
+        "social": 8,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_between",
+      "place_id": "quad",
+      "phase": "lecture",
+      "label": "Ten minutes on the grass",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_friends",
+      "place_id": "quad",
+      "phase": "social",
+      "label": "Meet friends",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -5,
+        "energy": -5,
+        "social": 12,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_vendor",
+      "place_id": "quad",
+      "phase": "social",
+      "label": "Buy from the vendors",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -15,
+        "social": 3,
+        "hunger": 20
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_campaign",
+      "place_id": "quad",
+      "phase": "social",
+      "label": "Listen to an SRC pitch",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "job_shift",
+      "place_id": "quad",
+      "phase": "leisure",
+      "label": "Work a shift",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": 120,
+        "energy": -20,
+        "social": 2,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_music",
+      "place_id": "quad",
+      "phase": "leisure",
+      "label": "Someone's speaker",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -6,
+        "social": 5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "quad_late",
+      "place_id": "quad",
+      "phase": "night",
+      "label": "The quad after dark",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -8,
+        "hunger": -4,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "cafeteria_meal",
+      "place_id": "cafeteria",
+      "phase": "food",
+      "label": "Cafeteria meal",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -35,
+        "energy": 5,
+        "social": 4,
+        "hunger": 40
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "caf_queue",
+      "place_id": "cafeteria",
+      "phase": "wake",
+      "label": "Stand in the breakfast queue",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -3,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "caf_grab",
+      "place_id": "cafeteria",
+      "phase": "transit",
+      "label": "Grab something for the walk",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -20,
+        "hunger": 20,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "caf_between",
+      "place_id": "cafeteria",
+      "phase": "lecture",
+      "label": "Eat between classes",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -15,
+        "hunger": 15,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "caf_table",
+      "place_id": "cafeteria",
+      "phase": "social",
+      "label": "Sit with a table",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -25,
+        "hunger": 10,
+        "energy": -4,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lib_drop",
+      "place_id": "library",
+      "phase": "transit",
+      "label": "Leave your bag and breathe",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lib_between",
+      "place_id": "library",
+      "phase": "lecture",
+      "label": "Twenty pages between classes",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 3,
+        "energy": -4,
+        "social": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lib_group",
+      "place_id": "library",
+      "phase": "social",
+      "label": "Group table",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 3,
+        "energy": -6,
+        "social": 4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "library_study",
+      "place_id": "library",
+      "phase": "leisure",
+      "label": "Study",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": -15,
+        "grades": 10,
+        "social": -3,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lib_printer",
+      "place_id": "library",
+      "phase": "leisure",
+      "label": "Print the tutorial",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -5,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "lib_night",
+      "place_id": "library",
+      "phase": "night",
+      "label": "Night section",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 6,
+        "energy": -12,
+        "social": -2,
+        "hunger": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sport_stretch",
+      "place_id": "sports_centre",
+      "phase": "wake",
+      "label": "Stretch on the court",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": 4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sport_pass",
+      "place_id": "sports_centre",
+      "phase": "transit",
+      "label": "Cut through on the way in",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sport_gap",
+      "place_id": "sports_centre",
+      "phase": "lecture",
+      "label": "A gap-hour lap",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -6,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sport_pickup",
+      "place_id": "sports_centre",
+      "phase": "social",
+      "label": "Pickup game",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -10,
+        "social": 6,
+        "hunger": -6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sports_gym",
+      "place_id": "sports_centre",
+      "phase": "leisure",
+      "label": "Gym or sport",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -10,
+        "energy": -15,
+        "social": 6,
+        "hunger": -10
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sport_watch",
+      "place_id": "sports_centre",
+      "phase": "leisure",
+      "label": "Watch from the stand",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -3,
+        "social": 4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "bus_early",
+      "place_id": "bus_station",
+      "phase": "wake",
+      "label": "Join the early queue",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2,
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "go_walk",
+      "place_id": "bus_station",
+      "phase": "transit",
+      "label": "Walk to campus",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": -10,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "go_bus",
+      "place_id": "bus_station",
+      "phase": "transit",
+      "label": "Take the bus",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -12,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "bus_timetable",
+      "place_id": "bus_station",
+      "phase": "transit",
+      "label": "Read the timetable",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -1,
+        "social": 1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "bus_back",
+      "place_id": "bus_station",
+      "phase": "lecture",
+      "label": "A bus back for a forgotten book",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "grades": -2,
+        "money": -12
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "bus_town",
+      "place_id": "bus_station",
+      "phase": "social",
+      "label": "Ride into town",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -15,
+        "energy": -6,
+        "social": 4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "bus_last",
+      "place_id": "bus_station",
+      "phase": "night",
+      "label": "Last bus",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -12,
+        "energy": -4,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "wake_noodles",
+      "place_id": "res_o",
+      "phase": "wake",
+      "label": "Noodles",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -8,
+        "social": -2,
+        "hunger": 25
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "wake_skip",
+      "place_id": "res_o",
+      "phase": "wake",
+      "label": "Skip breakfast",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "hunger": -15
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "wake_phone",
+      "place_id": "res_o",
+      "phase": "wake",
+      "label": "Check your phone",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "social": 5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_o_lock",
+      "place_id": "res_o",
+      "phase": "transit",
+      "label": "Lock up and go",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_o_notes",
+      "place_id": "res_o",
+      "phase": "lecture",
+      "label": "Run back for notes",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 1,
+        "energy": -6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_o_corridor",
+      "place_id": "res_o",
+      "phase": "social",
+      "label": "Corridor conversation",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 4,
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_o_cook",
+      "place_id": "res_o",
+      "phase": "leisure",
+      "label": "Cook in the kitchen",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -10,
+        "hunger": 15,
+        "energy": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "sleep",
+      "place_id": "res_o",
+      "phase": "night",
+      "label": "Sleep",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "hunger": -20
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_o_late_chat",
+      "place_id": "res_o",
+      "phase": "night",
+      "label": "Talk through the wall",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_r_breakfast",
+      "place_id": "res_r",
+      "phase": "wake",
+      "label": "Quiet breakfast",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -5,
+        "hunger": 10,
+        "energy": 4,
+        "social": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_r_out",
+      "place_id": "res_r",
+      "phase": "transit",
+      "label": "Leave without waking the corridor",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_r_reading",
+      "place_id": "res_r",
+      "phase": "lecture",
+      "label": "Read on the bed between classes",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 3,
+        "energy": -4,
+        "social": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_r_tea",
+      "place_id": "res_r",
+      "phase": "social",
+      "label": "Tea with one person",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "hunger": 5,
+        "social": 3,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_party",
+      "place_id": "res_r",
+      "phase": "leisure",
+      "label": "Res party",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "money": -20,
+        "energy": -25,
+        "grades": -4,
+        "social": 15,
+        "hunger": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_r_lights",
+      "place_id": "res_r",
+      "phase": "night",
+      "label": "Lights-out corridor",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": 2,
+        "social": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_s_fridge",
+      "place_id": "res_s",
+      "phase": "wake",
+      "label": "Something from the shared fridge",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -4,
+        "hunger": 12,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_s_out",
+      "place_id": "res_s",
+      "phase": "transit",
+      "label": "Walk out with the courtyard",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_s_ball",
+      "place_id": "res_s",
+      "phase": "lecture",
+      "label": "Five minutes with the ball",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_s_stoep",
+      "place_id": "res_s",
+      "phase": "social",
+      "label": "Sit on the stoep",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 5,
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "call_home",
+      "place_id": "res_s",
+      "phase": "leisure",
+      "label": "Call home",
+      "existing": true,
+      "needs_lines": false,
+      "effects": {
+        "energy": 5,
+        "social": 6
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_s_kitchen",
+      "place_id": "res_s",
+      "phase": "night",
+      "label": "Late kitchen",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "hunger": 8,
+        "energy": -3,
+        "social": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_other_kettle",
+      "place_id": "res_other",
+      "phase": "wake",
+      "label": "Kettle at the end of the passage",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -6,
+        "hunger": 12,
+        "energy": 2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_other_out",
+      "place_id": "res_other",
+      "phase": "transit",
+      "label": "Find the right stair and go",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_other_quiet",
+      "place_id": "res_other",
+      "phase": "lecture",
+      "label": "Empty room, one chapter",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "grades": 3,
+        "energy": -5
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_other_floor",
+      "place_id": "res_other",
+      "phase": "social",
+      "label": "Your floor, someone new",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 4,
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "res_other_wash",
+      "place_id": "res_other",
+      "phase": "night",
+      "label": "Late laundry chat",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "social": 2,
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_pack",
+      "place_id": "off_campus",
+      "phase": "wake",
+      "label": "Pack the bag by the door",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -2
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_stop",
+      "place_id": "off_campus",
+      "phase": "transit",
+      "label": "Walk to the bus from home",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -4
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_return",
+      "place_id": "off_campus",
+      "phase": "lecture",
+      "label": "You forgot the textbook",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -8,
+        "grades": -1,
+        "money": -12
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_supper",
+      "place_id": "off_campus",
+      "phase": "social",
+      "label": "Supper before the ride back",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "money": -25,
+        "hunger": 20,
+        "social": 3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_couch",
+      "place_id": "off_campus",
+      "phase": "leisure",
+      "label": "An hour on the couch",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": 6,
+        "social": -2,
+        "grades": -1
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    },
+    {
+      "id": "off_late",
+      "place_id": "off_campus",
+      "phase": "night",
+      "label": "Key in the gate",
+      "existing": false,
+      "needs_lines": true,
+      "effects": {
+        "energy": -3
+      },
+      "lines": {
+        "caption": "",
+        "twist": "",
+        "result": ""
+      }
+    }
+  ]
+}
