@@ -226,5 +226,30 @@
     "A chair squeaks like a small protest.",
     "Chalk dust drifts in the light.",
     "A cough echoes. Somebody sniggers."
-  ]
+  ],
+  "sipho": {
+    "note": "Sipho replaces Zanele in the lecture for a male student. Same keys as zanele_lines and the zanele seat.",
+    "seat": {
+      "label": "Next to Sipho",
+      "line": "Sipho clears his bag off a seat and nods like it was always yours.",
+      "zanele": {
+        "who": "zanele",
+        "text": "Saved you a spot. Charged you nothing. You’re welcome."
+      }
+    },
+    "seat_other": {
+      "front": "Front row? Bra. Brave. I’ll wave from the back.",
+      "back": "Back corner. Smart. Nobody sees you yawn there."
+    },
+    "lines": {
+      "seat": "Sit, sit. Only forty minutes of suffering left.",
+      "seat_late": "You were so slow I nearly reported you missing.",
+      "moment": "Did you see that? Tell me you saw that.",
+      "good": "Okay, genius. Don’t let it go to your head.",
+      "neutral": "Fine. We survive. That’s the vibe.",
+      "bad": "Hayi, that was bold. Wrong, but bold.",
+      "end": "Kota at the tuck shop? I owe you noodles.",
+      "end_alone": "Send me a voice note from the back. Full report."
+    }
+  }
 }

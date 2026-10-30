@@ -79,6 +79,10 @@
         {
           "label": "🚫 Skip breakfast",
           "note": "−10 Fullness · −5 Energy · no time"
+        },
+        {
+          "label": "🚶 Walk to the bus hungry",
+          "note": "−15 Fullness · out the door now"
         }
       ]
     },
@@ -159,6 +163,9 @@
         "title": "You made it… just",
         "line": "You slip in after it started. −2 Grades."
       }
+    },
+    "hungry": {
+      "bubble": "No breakfast, no problem. Probably. Bus, here I come."
     }
   },
   "late_variants": {
@@ -190,5 +197,19 @@
     "Somebody laughs two rooms away.",
     "Your bag bounces against your back.",
     "A taxi hoots like it has an opinion."
-  ]
+  ],
+  "sipho": {
+    "name": "Sipho",
+    "role": "Roommate in O Block for a male student. Your bestie from day one.",
+    "look": "Blue varsity jacket over a vest, one sock on, phone already at 12%.",
+    "intro": "That is Sipho. He has a plan for everything except mornings.",
+    "note": "Sipho has his own lines. Keys mirror the Zanele ones they replace (path in the morning code -> Sipho line).",
+    "lines": {
+      "zanele.wave": "Ayy, roomie! I’m Sipho 👊 Your alarm is about to scream.",
+      "steps.wake.zanele": "Snoozed {n} times, bra. I was keeping score.",
+      "late_variants.snoozed_too_long.zanele": "I tried, my guy. You fought the alarm and lost. Go!",
+      "steps.roommate.bubble": "Eish, sorry! Last packet 😅 I’ll sort you out at lunch.",
+      "steps.roommate.bare": "The shelf is empty. Sipho is holding the last packet like a trophy."
+    }
+  }
 }

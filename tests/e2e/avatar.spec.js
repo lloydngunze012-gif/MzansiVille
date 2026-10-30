@@ -43,3 +43,18 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   await expect(page.locator('#lecture3d')).toHaveAttribute('data-look', /female-d/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#lecture3d').getAttribute('data-look'))).toEqual(look)
 })
+
+// Two students on the same base model keep their own colours (clones used to share geometry).
+test('same model, different looks: colours do not leak between students', async ({ page }) => {
+  await page.goto('/?morning=0#/')
+  const result = await page.evaluate(async () => {
+    const A = await import('/src/world/avatar3d.js')
+    const a = A.createAvatar({ model: 'female-b', skin: 'sand', topColor: '#00ff00' })
+    const b = A.createAvatar({ model: 'female-b', skin: 'ebony', topColor: '#ff0000' })
+    const ready = (g) => new Promise((r) => (g.userData.rigged ? r() : g.addEventListener('rigged', r)))
+    await Promise.all([ready(a), ready(b)])
+    const colours = (g) => { let geo; g.traverse((n) => { if (n.name === 'body-mesh') geo = n.geometry }); return geo }
+    return colours(a) !== colours(b) && colours(a).attributes.color !== colours(b).attributes.color
+  })
+  expect(result).toBe(true)
+})

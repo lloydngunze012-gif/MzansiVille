@@ -71,6 +71,17 @@ function words(text) {
     .replace(/\bherself\b/g, 'himself').replace(/\bher\b/g, 'him')
 }
 const WHO = { lecturer: 'Lecturer', student: 'Student', narrator: '', player: 'You' }
+// Sipho's own lecture lines (day1_lecture.json "sipho"), Zanele's otherwise.
+function roomieLine(when) {
+  if (male && LINES.sipho?.lines?.[when]) return { who: 'zanele', text: LINES.sipho.lines[when] }
+  return LINES.zanele_lines.find((l) => l.when === when)
+}
+function seatFor(option) {
+  if (!male || !LINES.sipho) return option
+  if (option.id === 'zanele') return { ...option, ...LINES.sipho.seat }
+  const other = LINES.sipho.seat_other?.[option.id]
+  return other ? { ...option, zanele: { who: 'zanele', text: other } } : option
+}
 function nameOf(who) {
   if (who === 'zanele') return roomie
   return WHO[who] ?? ''
@@ -361,7 +372,7 @@ async function play() {
 
   // 2. find a seat
   setStep('seat')
-  const options = LINES.find_seat.options
+  const options = LINES.find_seat.options.map(seatFor)
   const pick = await choose(LINES.find_seat.prompt, options.map((o) => ({
     label: o.label,
     note: late && !o.available_late ? 'Taken' : o.note,
@@ -406,7 +417,7 @@ async function play() {
   floatDelta(outcome.deltas)
   if (outcome.tone === 'good') gesture(player, 'emote-yes')
   else if (outcome.tone === 'bad') gesture(player, 'emote-no')
-  const reaction = LINES.zanele_lines.find((l) => l.when === outcome.tone)
+  const reaction = roomieLine(outcome.tone)
   if (seat.id === 'zanele' && reaction) say(reaction)
   else say(null)
   await tapNext(uiq(seat.id === 'zanele' && reaction ? '.lc-say' : '.lc-caption'))
@@ -429,7 +440,7 @@ async function play() {
     walk(student, [[sx, student.position.y, sz + 0.6], [AISLE_X, student.position.y, sz + 0.6], [AISLE_X, 0, 9.5 + i * 0.1]], 2 + i * 0.2)
   }
   await tapNext(uiq('.lc-say'))
-  const end = seat.id === 'zanele' ? LINES.zanele_lines.find((l) => l.when === 'end') : LINES.zanele_lines.find((l) => l.when === 'end_alone')
+  const end = roomieLine(seat.id === 'zanele' ? 'end' : 'end_alone')
   say(end)
   await tapNext(uiq('.lc-say'))
 
