@@ -12,7 +12,7 @@ export function formatClock(mins) {
 
 export function formatMoney(n) {
   const sign = n < 0 ? '-' : ''
-  const body = String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  const body = String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')
   return `${sign}R${body}`
 }
 

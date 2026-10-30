@@ -301,14 +301,26 @@ as $$
     and p.state is not null;
 $$;
 
-create or replace function public.admin_reports()
-returns setof public.reports
+drop function if exists public.admin_reports();
+create function public.admin_reports()
+returns table (
+  id uuid,
+  reporter_id uuid,
+  message_id uuid,
+  reported_user_id uuid,
+  reason text,
+  status text,
+  created_at timestamptz,
+  display_name text
+)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select r.* from public.reports r
+  select r.id, r.reporter_id, r.message_id, r.reported_user_id, r.reason, r.status, r.created_at, p.display_name
+  from public.reports r
+  left join public.profiles p on p.id = r.reported_user_id
   where public.is_admin()
     and r.status = 'open'
   order by r.created_at desc;
@@ -462,6 +474,14 @@ drop policy if exists "delete own blocks" on public.blocks;
 create policy "delete own blocks" on public.blocks
   for delete to authenticated
   using (blocker_id = auth.uid());
+
+create or replace view public.profile_public
+with (security_invoker = false) as
+  select id, display_name, residence, avatar, district_id
+  from public.profiles
+  where not suspended;
+
+grant select on public.profile_public to anon, authenticated;
 
 drop policy if exists "file report" on public.reports;
 create policy "file report" on public.reports
