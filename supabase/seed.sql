@@ -26,7 +26,7 @@ insert into public.district_activities
   (district_id, id, phase, place_id, name, money, energy, grades, social, hunger, time_slots, risk_or_twist) values
 ('campusville', 'wake_noodles', 'morning', 'res_o', 'Noodles in res', -8, 0, 0, -2, 25, 1, 'Cheap and sad; small chance roommate steals your last packet'),
 ('campusville', 'wake_skip', 'morning', 'res_o', 'Skip breakfast', 0, 5, 0, 0, -15, 0, 'Saves a slot; hunger bites by afternoon'),
-('campusville', 'wake_phone', 'morning', 'res_o', 'Check your phone', 0, 0, 0, 5, 0, 0, 'Triggers the day''s event early (student funding, group chat drama, a bursary email)'),
+('campusville', 'wake_phone', 'morning', 'res_o', 'Check your phone', 0, 0, 0, 5, 0, 0, 'Triggers the day''s event early (a late NSFAS allowance, group chat drama, a bursary email)'),
 ('campusville', 'go_walk', 'transit', 'bus_station', 'Walk to campus', 0, -10, 0, 0, -5, 1, 'Free; 10% chance of rain (energy -10 more)'),
 ('campusville', 'go_bus', 'transit', 'bus_station', 'Take the bus', -12, 0, 0, 3, 0, 1, 'Costs money; 15% chance the bus is late and you miss the first lecture'),
 ('campusville', 'lecture_attend', 'lecture', 'smig', 'Attend lecture', 0, -10, 8, 2, -5, 1, 'Grades up; surprise test event can double the gain or punish skipping'),
@@ -76,7 +76,7 @@ insert into public.district_residences (district_id, name, type, distance_km, no
 ('campusville', 'Off campus (other)', 'other', null, 'A room the list does not name. No res bonus until it has its own story.');
 
 insert into public.district_events (district_id, id, title, body, choices) values
-('campusville', 'nsfas_delayed', 'Student funding is late', 'Your allowance has not landed. The group chat is already loud about it.', '[{"label":"Wait it out","deltas":{"social":-2},"result":"You stretch yesterday''s bread."},{"label":"Borrow R50","deltas":{"money":50,"social":-4},"result":"A friend sends it, with a voice note."}]'::jsonb),
+('campusville', 'nsfas_delayed', 'NSFAS allowance is late', 'Your NSFAS allowance has not landed. The res group chat is one long sigh.', '[{"label":"Wait it out","deltas":{"social":-2},"result":"You stretch yesterday''s bread."},{"label":"Borrow R50","deltas":{"money":50,"social":-4},"result":"A friend sends it, with a voice note."}]'::jsonb),
 ('campusville', 'load_shedding', 'Load shedding', 'The lights go. Your res is suddenly a dark corridor and a row of phone torches.', '[{"label":"Study by phone torch","deltas":{"energy":-8,"grades":3},"result":"You get through half a chapter."},{"label":"Sit outside with everyone","deltas":{"social":6,"grades":-2},"result":"Someone has a speaker. Someone has a story."}]'::jsonb),
 ('campusville', 'surprise_test', 'Lecturer surprise test', 'The lecturer smiles in that specific way. Notes closed.', '[{"label":"Write what you know","deltas":{"grades":4,"energy":-6},"result":"Not pretty, but you filled the page."},{"label":"Peek once","deltas":{"grades":-6,"social":-3},"result":"They saw. The whole row went quiet."}]'::jsonb),
 ('campusville', 'derby_day', 'Derby Day', 'Sunday. Gold or Black. The campus is loud either way.', '[{"label":"Gold","deltas":{"social":10},"result":"Gold. The quad answers back."},{"label":"Black","deltas":{"social":10},"result":"Black. Somebody lends you a scarf."}]'::jsonb);
