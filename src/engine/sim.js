@@ -111,7 +111,17 @@ function applyStats(run, deltas) {
   if (deltas.grades) stats.grades = clamp(stats.grades + deltas.grades, 0, 100)
   if (deltas.social) stats.social = clamp(stats.social + deltas.social, 0, 100)
   if (deltas.hunger) stats.hunger = clamp(stats.hunger + deltas.hunger, 0, 100)
-  run.noodlesOnly = stats.money < 0
+  const broke = stats.money < 0
+  if (broke && !run.noodlesOnly) {
+    enqueue(run, {
+      id: `broke-${run.day}-${run.minutes}`,
+      kind: 'consequence',
+      tone: 'broke',
+      title: 'Broke',
+      text: 'Your balance is below R0. It is noodles only until a shift or an allowance pays you back up.',
+    })
+  }
+  run.noodlesOnly = broke
 }
 
 function socialBoost(district, run, social) {
@@ -149,6 +159,15 @@ function markBehind(district, run, cards) {
   run.fallingBehind = district.meta.day.fallingBehindDays
   run.studyClears = 0
   run.status = 'Falling behind'
+  if (!run.examWeek) {
+    cards.push({
+      id: `behind-${run.day}`,
+      kind: 'consequence',
+      tone: 'behind',
+      title: 'Falling behind',
+      text: `Your prep is too thin. Grade gains are halved for ${district.meta.day.fallingBehindDays} days. Attend and study to catch up, and do not fall behind in exam week.`,
+    })
+  }
   if (run.examWeek) {
     run.excluded = true
     run.excludeText = 'Falling behind in exam week.'
@@ -238,6 +257,8 @@ function rollSpot(district, run, rng) {
   let chance = table.defaultWeekday
   if ((district.meta.calendar.weekend || []).includes(name)) chance = table.weekend
   else if (table[name] != null) chance = table[name]
+  // Fix 1 (pass 2): no spot tests before a new student has had a chance to prep.
+  if (run.day < (district.meta.calendar.spotGraceDays || 0)) chance = 0
   run.spotTest = rng() < chance
   run.spotResolved = false
   if (run.spotTest) {
@@ -356,6 +377,7 @@ function applyMorning(district, run) {
   if (!night) return
   const rules = district.meta.day
   let energy = run.stats.energy
+  run.sleptHungry = Boolean(night.slept && night.hungry)
   if (night.slept && night.hungry) {
     energy = rules.hungrySleepEnergy
     run.morningNote = rules.hungrySleepMessage
@@ -406,6 +428,14 @@ function resetDay(district, run) {
 
 function openDay(district, run) {
   run.examWeek = isExamWeek(district.meta, run.day)
+  const unlock = (district.meta.milestones || []).find((item) => item.announce && item.day === run.day)
+  if (unlock) enqueue(run, { id: `unlock-${unlock.id}`, kind: 'milestone', title: unlock.title, text: unlock.text })
+  if (run.examWeek && !isExamWeek(district.meta, run.day - 1)) {
+    enqueue(run, { id: `examweek-${run.day}`, kind: 'milestone', title: 'Exam week', text: 'Study counts double. The exam is at the Sports Centre on the last day. Do not fall behind now.' })
+  }
+  if (run.sleptHungry) {
+    enqueue(run, { id: `hungry-${run.day}`, kind: 'consequence', tone: 'hungry', title: 'You slept hungry', text: `You went to bed under ${district.meta.day.hungrySleepBelow} fullness, so you only woke on ${district.meta.day.hungrySleepEnergy} energy. Eat before you sleep tonight.` })
+  }
   run.dailyEventId = dailyEventId(district, run)
   bestieCard(district, run)
   if (run.day >= district.meta.day.savePromptDay && !run.userId && !run.saveSnooze) run.promptSave = true

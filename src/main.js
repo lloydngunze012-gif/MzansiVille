@@ -223,7 +223,7 @@ function captureForm() {
 }
 
 function needsRun(name) {
-  return ['play', 'world', 'place', 'summary', 'locked', 'over', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
+  return ['play', 'world', 'place', 'summary', 'locked', 'over', 'milestones', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
 }
 
 function arm() {
