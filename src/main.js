@@ -33,6 +33,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { emptyDraft, localBoardRow, shotState, view } from './ui/render.js'
 import { anyEnabled, hereOf, layoutOf, soundOn, ui } from './ui/game.js'
+import { MORNING, MORNING_FLOW, morningStep } from './ui/morning.js'
 import { homePlaceId } from './engine/model.js'
 
 const KEY = 'mzansiville.v1'
@@ -508,6 +509,91 @@ app.addEventListener('change', (event) => {
   }
 })
 
+let morningBusy = false
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+function dropFreshCards(run, before) {
+  const ids = new Set(before)
+  run.queue = run.queue.filter((card) => ids.has(card.id) || card.choices)
+}
+// Day 1 morning is a scene, not a stat button. The existing actions still apply.
+async function runMorning(district) {
+  if (morningBusy || !save.run) return
+  const run = save.run
+  const spec = MORNING_FLOW[morningStep(run)]
+  if (!spec) return
+  morningBusy = true
+  const button = app.querySelector('.m-go')
+  if (button) button.disabled = true
+  const anchors = spec.scene === 'room' ? MORNING.room.anchors : MORNING.stop.anchors
+  const you = app.querySelector('.m-you')
+  if (you && spec.to && anchors[spec.to]) {
+    you.classList.add('walking')
+    you.style.left = `${anchors[spec.to][0]}%`
+    you.style.top = `${anchors[spec.to][1]}%`
+  }
+  try {
+    if (spec.effect === 'noodles') {
+      const twist = district.activities.find((item) => item.id === 'wake_noodles')?.twistDef
+      const roll = Math.random()
+      const stolen = Boolean(twist?.p != null && roll < twist.p)
+      app.querySelector('.m-steam')?.classList.add('on')
+      if (stolen) {
+        const mate = app.querySelector('.m-mate')
+        const shelf = MORNING.room.anchors.noodle_shelf
+        if (mate && shelf) {
+          mate.style.left = `${shelf[0]}%`
+          mate.style.top = `${shelf[1]}%`
+          if (!mate.querySelector('.m-bubble')) mate.insertAdjacentHTML('beforeend', '<b class="m-bubble">Last packet. Sorry.</b>')
+        }
+        app.querySelector('.m-shelf')?.classList.add('empty')
+      }
+      await wait(1100)
+      if (!run.doneToday.includes('wake_noodles')) {
+        const before = run.queue.map((card) => card.id)
+        const result = applyAction(district, run, 'wake_noodles', () => (stolen ? 0 : 0.99))
+        if (!result.ok) { ui.notice = result.error; return }
+        dropFreshCards(run, before)
+        run.morningPacket = stolen ? 'stolen' : 'ok'
+      }
+    } else if (spec.effect === 'leave') {
+      await wait(950)
+      if (run.phase === 'wake') advancePhase(district, run, () => 0.99)
+    } else if (spec.effect === 'bus') {
+      const bus = app.querySelector('.m-bus')
+      bus?.classList.remove('hold')
+      bus?.classList.add('in')
+      await wait(1150)
+    } else if (spec.effect === 'ride') {
+      const bus = app.querySelector('.m-bus')
+      bus?.classList.remove('in')
+      bus?.classList.add('off')
+      await wait(1150)
+      if (run.phase === 'wake') advancePhase(district, run, () => 0.99)
+      if (!run.doneToday.includes('go_bus')) {
+        const before = run.queue.map((card) => card.id)
+        const result = applyAction(district, run, 'go_bus', () => 0.99)
+        if (!result.ok) { ui.notice = result.error; return }
+        dropFreshCards(run, before)
+      }
+      run.at = 'gate'
+    } else if (spec.effect === 'arrive') {
+      run.morningDone = true
+      run.morningStep = 'done'
+      run.at = 'gate'
+      return
+    } else {
+      await wait(950)
+    }
+    run.morningStep = spec.next
+  } finally {
+    morningBusy = false
+    persist()
+    paint()
+  }
+}
+
 app.addEventListener('click', async (event) => {
   if (new URLSearchParams(location.search).get('shot')) return
   const place = event.target.closest('[data-place]')
@@ -519,6 +605,10 @@ app.addEventListener('click', async (event) => {
 
   if (place && !act) {
     go(`place/${place.dataset.place}`)
+    return
+  }
+  if (act === 'morning') {
+    void runMorning(district)
     return
   }
   if (act === 'start') {

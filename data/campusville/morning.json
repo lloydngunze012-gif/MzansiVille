@@ -1,0 +1,29 @@
+{
+  "goal": "Get to your 9:00 lecture on time.",
+  "homePlace": "res_o",
+  "residence": "O Block",
+  "room": {
+    "id": "o_block_room",
+    "anchors": {
+      "bed": [26, 76],
+      "kettle": [70, 64],
+      "noodle_shelf": [76, 40],
+      "roommate": [46, 60],
+      "door": [24, 30]
+    },
+    "path": ["bed", "kettle", "door"]
+  },
+  "stop": {
+    "id": "main_bus_stop",
+    "anchors": {
+      "arrive": [18, 80],
+      "bench": [36, 66],
+      "sign": [54, 42],
+      "waiting": [34, 52],
+      "bus_lane": [60, 76],
+      "bus_stop": [48, 74],
+      "campus": [50, 70]
+    },
+    "path": ["arrive", "waiting", "bus_stop", "campus"]
+  }
+}
