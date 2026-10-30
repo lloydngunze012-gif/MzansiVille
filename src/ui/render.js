@@ -6,7 +6,7 @@ import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
 import { boardScreen, lobbyScreen } from './social.js'
-import { gameOverScreen, hud, mapHome, milestonesScreen, withHud } from './game.js'
+import { gameOverScreen, hud, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -638,6 +638,7 @@ export function view(state) {
     ])
   }
   if (screen === 'create') return create(state)
+  if (screen === 'morning' && state.run) return morningScreen(state)
   if (screen === 'world' || screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')
   if (screen === 'place' || screen === 'closed') return mapHome(state, state.placeId)
   if (screen === 'refill' || screen === 'locked') return locked(state)

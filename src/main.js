@@ -166,10 +166,60 @@ function worldWanted(viewState) {
 let worldPromise = null
 let worldTicket = 0
 
+let morningPromise = null
+
+function morningWanted(run) {
+  if (!run || run.mode !== 'play' || run.phase !== 'wake') return false
+  const q = new URLSearchParams(location.search)
+  if (q.get('shot') || q.get('morning') === '0' || !hasGL()) return false
+  if (q.get('morning') === '1') return true
+  return run.day === 1 && !run.morningDone
+}
+
+function morningSnapshot(run) {
+  if (!run.morningStart) run.morningStart = { stats: { ...run.stats }, minutes: run.minutes }
+  else { run.stats = { ...run.morningStart.stats }; run.minutes = run.morningStart.minutes }
+}
+
+function endMorning(skip, result) {
+  const run = save.run
+  if (!run) return
+  if (skip && run.morningStart) { run.stats = { ...run.morningStart.stats }; run.minutes = run.morningStart.minutes }
+  run.morningDone = true
+  delete run.morningStart
+  morningPromise?.then((mod) => mod.stopMorning())
+  if (!skip) {
+    const district = districtNow()
+    for (let i = 0; i < 3 && run.phase !== 'lecture'; i++) advancePhase(district, run)
+    run.minutes = Math.max(run.minutes, result?.arrived || 0)
+    run.at = 'gate'
+  }
+  ui.gear = false
+  persist()
+  go('play')
+}
+
+function syncMorning(viewState) {
+  const on = viewState?.screen === 'morning' && Boolean(viewState.run)
+  if (!on) { morningPromise?.then((mod) => mod.stopMorning()); return false }
+  if (!morningPromise) morningPromise = import('./world/morning.js')
+  morningPromise.then((mod) => {
+    if (route().name !== 'morning') return
+    mod.startMorning({
+      run: save.run,
+      forceRoommate: new URLSearchParams(location.search).get('roommate') === '1',
+      onUpdate() { persist(); paint() },
+      onDone(result) { endMorning(false, result) },
+    })
+  }).catch((error) => console.error(error))
+  return true
+}
+
 function syncWorld(viewState) {
-  const on = worldWanted(viewState)
+  const morningOn = syncMorning(viewState)
+  const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket
-  document.body.dataset.world = on ? '1' : '0'
+  document.body.dataset.world = on || morningOn ? '1' : '0'
   if (!on) {
     worldPromise?.then((mod) => {
       if (ticket === worldTicket) mod.setVisible(false)
@@ -188,6 +238,16 @@ function syncWorld(viewState) {
 function paint() {
   const shot = new URLSearchParams(location.search).get('shot')
   if (!shot) rememberMorning(save.run)
+  if (!shot && route().name === 'play' && morningWanted(save.run)) {
+    morningSnapshot(save.run)
+    location.hash = '#/morning'
+    return
+  }
+  if (!shot && route().name === 'morning' && !morningWanted(save.run)) {
+    location.hash = '#/play'
+    return
+  }
+  if (!shot && route().name === 'morning' && save.run && !save.run.morningStart) morningSnapshot(save.run)
   if (!shot && save.run?.mode === 'play' && route().name === 'summary') {
     location.hash = '#/play'
     return
@@ -254,7 +314,7 @@ function captureForm() {
 }
 
 function needsRun(name) {
-  return ['play', 'world', 'place', 'summary', 'locked', 'over', 'milestones', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
+  return ['play', 'morning', 'world', 'place', 'summary', 'locked', 'over', 'milestones', 'profile', 'share', 'shop', 'chat', 'board'].includes(name)
 }
 
 function arm() {
@@ -387,6 +447,7 @@ function gameAct(act, button) {
     gameAct.t = setTimeout(() => { if (ui.tip) { ui.tip = ''; paint() } }, 5000)
     return true
   }
+  if (act === 'skip-morning') { endMorning(true); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
