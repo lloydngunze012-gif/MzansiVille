@@ -110,6 +110,9 @@ function recolour(model, look) {
     let shoeDone = false
     const next = list.map((m) => {
       const name = m.name || ''
+      // Shoes for everyone: where an outfit shows bare feet (sandals, flip-flops,
+      // pumps), that part becomes the shoe's upper, a shade darker than the shoe.
+      if (part === 'feet' && /^skin/i.test(name)) return shared('upper', () => mat(new THREE.Color(look.shoes).multiplyScalar(0.72)))
       if (/^skin/i.test(name)) return shared(`skin${name}`, () => mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)))
       if (part === 'head') {
         if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x1c120c))
@@ -122,7 +125,7 @@ function recolour(model, look) {
         if (look.skirt) return shared('skirt', () => mat(look.skirt))
         return shared('bottom', () => mat(look.bottom))
       }
-      if (part === 'feet' && !shoeDone) { shoeDone = true; return shared('shoes', () => mat(look.shoes)) }
+      if (part === 'feet' && !shoeDone && !/^white$/i.test(name)) { shoeDone = true; return shared('shoes', () => mat(look.shoes)) }
       return shared(`own${m.uuid}`, () => m.clone())
     })
     node.material = Array.isArray(node.material) ? next : next[0]
@@ -578,6 +581,16 @@ function inScene(node) {
   for (let n = node; n; n = n.parent) { if (!n.visible) return false; if (n.isScene) return true }
   return false
 }
+// Any skin showing on the feet (no shoes)?
+function bareFeet(group) {
+  const skin = new THREE.Color(group.userData.look?.skin || '#000')
+  let bare = false
+  group.traverse((node) => {
+    if (!node.isMesh || node.userData.part !== 'feet') return
+    for (const m of [].concat(node.material)) if (/^skin/i.test(m.name) || m.color?.equals(skin)) bare = true
+  })
+  return bare
+}
 export function measureBody(group) {
   const data = group.userData
   group.updateMatrixWorld(true)
@@ -596,6 +609,7 @@ export function measureBody(group) {
     hips: hips ? +hips.y.toFixed(3) : null,
     ground: +ground.toFixed(3),
     standIn: group.children.some((c) => c.userData.standIn && c.visible),
+    bareFeet: bareFeet(group),
   }
 }
 if (typeof window !== 'undefined') {

@@ -604,6 +604,19 @@ window.mzansiRoute = () => {
   const path = findPath(campus.grid, nearestOpen(campus.grid, player.position), nearestOpen(campus.grid, door))
   return { player: { x: player.position.x, z: player.position.z }, path: [...path, door] }
 }
+// Tests (shoes check): a row of people beside the player, one per look.
+let lineup = []
+window.mzansiLineup = (looks) => {
+  for (const a of lineup) { a.userData.disposed = true; scene.remove(a) }
+  lineup = looks.map((look, i) => {
+    const a = createAvatar(look)
+    a.userData.personId = `lineup${i}`
+    a.position.set(player.position.x + (i - (looks.length - 1) / 2) * 0.75, 0, player.position.z + 3)
+    scene.add(a)
+    return a
+  })
+  return Promise.all(lineup.map((a) => a.userData.ready)).then(() => lineup.length)
+}
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
 window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
 window.mzansiPersonOnScreen = (id) => {
@@ -1457,6 +1470,7 @@ function tick(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
+    for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
     if (!acting && !talk) crowd?.pushOut(player.position)
