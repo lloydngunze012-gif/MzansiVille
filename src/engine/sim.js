@@ -5,6 +5,7 @@ import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals
 import { FUNDING_MONEY } from '../story.js'
 import { identityCard, identityFromAction } from './identity.js'
 import { endOfDay } from './dayend.js'
+import { rollMoment } from './moments.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -710,6 +711,10 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   run.queue = cards.concat(run.queue.filter((card) => !cards.some((item) => item.id === card.id)))
   if (run.excluded || action.tags.includes('sleep') || run.slotsLeft <= 0) {
     endDay(district, run, { slept: action.tags.includes('sleep') })
+  } else if (!run.noMoments) {
+    // A surprise, now and then (always one by the third thing you do in a day).
+    const done = (run.slotsTotal || 5) - (run.slotsLeft || 0)
+    rollMoment(run, rng, done >= 3 && !(run.momentsToday?.day === run.day && run.momentsToday.n))
   }
   return { ok: true }
 }

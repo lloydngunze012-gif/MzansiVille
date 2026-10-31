@@ -38,6 +38,7 @@ import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
 import { newCrush } from './crush.js'
 import { addIdentity, identityCard } from './engine/identity.js'
+import { chooseMoment } from './engine/moments.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -80,7 +81,11 @@ function districtNow() {
   return withEventEdits(districtById(id), edits)
 }
 
+// Random moments interrupt with a full-screen choice; automated tests that are not
+// about them turn them off (?moments=1 turns them back on).
+const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.search).get('moments') !== '1'
 function persist() {
+  if (save.run) save.run.noMoments = NO_MOMENTS
   localStorage.setItem(KEY, JSON.stringify(save))
 }
 
@@ -588,6 +593,16 @@ function gameAct(act, button) {
       blip(res.tone === 'bad' ? 330 : 880)
       persist()
     }
+    paint()
+    return true
+  }
+  if (act === 'moment' && save.run?.queue?.[0]?.kind === 'moment') {
+    const picked = chooseMoment(save.run, save.run.queue[0].momentId, Number(button.dataset.i))
+    if (picked?.titled && picked.titled.level !== 'new') save.run.queue.push(identityCard(save.run, picked.titled))
+    const done = checkGoals(save.run)
+    if (done.length) flash(`\u{1F3AF} Goal done: ${goalText(save.run, done[0])}`)
+    blip(880)
+    persist()
     paint()
     return true
   }

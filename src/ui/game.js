@@ -8,6 +8,7 @@ import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import { identityTitle } from '../engine/identity.js'
 import { comeBackReasons } from '../engine/dayend.js'
+import { MOMENTS } from '../engine/moments.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -284,6 +285,7 @@ function resultCard(state) {
   if (card.kind === 'consequence' || card.kind === 'over') return consequenceCard(card)
   if (card.kind === 'milestone') return milestoneCard(state, card)
   if (card.kind === 'goals') return goalsCardHtml(run)
+  if (card.kind === 'moment') return momentCardHtml(run, card)
   if (card.choices || card.kind === 'shop') return `<div class="g-card-wrap">${cardHtml(card, state)}</div>`
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
   const label = { identity: '\u2728 Who you\u2019re becoming', goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
@@ -297,6 +299,21 @@ function resultCard(state) {
     ${twist ? `<p class="g-twistline">\u{1F3B2} ${esc(twist.text)}</p>` : ''}
     <button type="button" class="g-go block" data-act="dismiss"${twist ? ' data-pair="1"' : ''}>${q.length > (twist ? 2 : 1) ? 'Next' : 'Continue'}</button>
   </aside>`
+}
+
+// A random moment: something happens, and you choose.
+function momentCardHtml(run, card) {
+  const moment = MOMENTS.find((m) => m.id === card.momentId)
+  const buttons = card.choices.map((label, i) => `<button type="button" class="g-choice" data-act="moment" data-i="${i}"><strong>${esc(label)}</strong><span class="g-act-fx">${effectChips(moment?.choices[i]?.deltas || {})}</span></button>`).join('')
+  return `<section class="g-full g-event g-moment" role="dialog" aria-label="${esc(card.title)}" data-screen-card="moment" data-moment="${esc(card.momentId)}">
+    <div class="g-full-in">
+      <p class="g-kind">Meanwhile \u00b7 Day ${run.day}</p>
+      <div class="g-emblem">${card.icon || '\u2728'}</div>
+      <h2>${esc(card.title)}</h2>
+      <p class="g-lede">${esc(card.text)}</p>
+      <div class="g-choices">${buttons}</div>
+    </div>
+  </section>`
 }
 
 // Today's three goals (must, story, dream) and the year dream underneath.

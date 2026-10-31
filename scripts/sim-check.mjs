@@ -11,6 +11,7 @@ import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
 import { crushChat, crushReply } from '../src/engine/crush-arc.js'
 import { addIdentity, identityFromAction, identityTitle } from '../src/engine/identity.js'
 import { cliffhanger } from '../src/engine/dayend.js'
+import { MOMENTS, chooseMoment, momentCard, rollMoment } from '../src/engine/moments.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -179,6 +180,40 @@ check('day summary: goals done and missed, then a cliffhanger text that opens to
   const nsfas = createRun(district, { ...character, funding: 'nsfas' })
   nsfas.day = 2
   assert.equal(cliffhanger(nsfas).from, 'NSFAS')
+})
+
+check('random moments: ten of them, each a choice, two a day at most, once a week', () => {
+  assert.equal(MOMENTS.length, 10)
+  for (const m of MOMENTS) assert.ok(m.choices.length >= 2 && m.choices.length <= 3, m.id)
+  const run = createRun(district, { ...character, past: 'clown', path: 'creative' })
+  run.day = 2
+  run.phase = 'social'
+  let seq = 0
+  const rng = () => [0.1, 0.0, 0.1, 0.5, 0.1, 0.9][seq++ % 6]
+  const a = rollMoment(run, rng)
+  const b = rollMoment(run, rng)
+  assert.ok(a, 'first moment')
+  assert.equal(b, null, 'not while one is waiting')
+  chooseMoment(run, a.momentId, 0)
+  assert.equal(run.queue[0].kind, 'result')
+  run.queue = []
+  const c = rollMoment(run, rng, true)
+  assert.ok(c && c.momentId !== a.momentId)
+  run.queue = []
+  assert.equal(rollMoment(run, rng, true), null, 'two a day at most')
+  // Moments read your story: the old school friend remembers the class clown.
+  const old = momentCard(run, MOMENTS.find((m) => m.id === 'old_school'))
+  assert.match(old.text, /class clown/)
+  const before = run.identity?.creative || 0
+  run.queue = [old]
+  chooseMoment(run, 'old_school', 0)
+  assert.ok(run.identity.creative > before) // "Not anymore." pushes the path you chose
+  // A cancelled lecture resolves the lecture.
+  const lec = createRun(district, character)
+  lec.day = 3
+  lec.phase = 'lecture'
+  chooseMoment(lec, 'lecture_cancelled', 1)
+  assert.equal(lec.lectureResolved, true)
 })
 
 check('home and course places', () => {

@@ -170,3 +170,25 @@ test('day summary: goals, who you are becoming, the people, and a text on the ph
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/7-day-summary.png` })
 })
+
+test('a random moment: something happens, you choose, it shows what happened', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    save.run.day = 2
+    save.run.character.past = 'clown'
+    save.run.queue = [{ id: 'moment-old_school-2', kind: 'moment', momentId: 'old_school', title: 'Someone from your old school', icon: '\u{1F3EB}', text: '"No ways! Weren\u2019t you the class clown in matric?" Someone who knew the old you.', choices: ['\u2728 "Not anymore."', '\u{1F917} Catch up properly', '\u{1F575}\uFE0F Avoid them'] }]
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&moments=1#/play')
+  const card = page.locator('[data-screen-card="moment"]')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await expect(card.locator('.g-choice')).toHaveCount(3)
+  await page.screenshot({ path: `${OUT}/8-moment.png` })
+  await card.locator('.g-choice').nth(1).tap()
+  await expect(page.locator('.g-result')).toContainText('Old jokes, new campus')
+  await page.screenshot({ path: `${OUT}/8-moment-result.png` })
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.moments.old_school.choice).toBe(1)
+})
