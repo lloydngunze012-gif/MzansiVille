@@ -269,6 +269,18 @@ check('the week: day themes, and the Friday test mark comes from the choices you
   assert.equal(fri.goals.list[0].id, 'test')
 })
 
+check('your course decides your lecture venue; your own venue has no sit-in', () => {
+  const law = createRun(district, { ...character, course: 'Law' })
+  law.phase = 'lecture'
+  assert.ok(actionsAt(district, law, 'law').some((a) => a.id === 'lecture_attend'))
+  assert.ok(!actionsAt(district, law, 'smig').some((a) => a.id === 'lecture_attend'))
+  assert.ok(!actionsAt(district, law, 'law').some((a) => a.id === 'law_sitin'))
+  assert.ok(actionsAt(district, law, 'smig').some((a) => a.id === 'smig_sitin'))
+  const cs = createRun(district, { ...character, course: 'Computer Science' })
+  cs.phase = 'lecture'
+  assert.ok(actionsAt(district, cs, 'science').some((a) => a.id === 'lecture_attend'))
+})
+
 check('home and course places', () => {
   assert.equal(homePlaceId(district, 'O Block'), 'res_o')
   assert.equal(homePlaceId(district, 'Gapwood Residence'), 'off_campus')

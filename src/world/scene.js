@@ -18,6 +18,7 @@ import { bindCampusInput } from './interact.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
 import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
+import { venueFor } from '../venues.js'
 
 const WALK = 6.2
 const host = document.getElementById('world')
@@ -59,9 +60,12 @@ let gateDay = ''
 let guide = null
 let guideFrom = null
 
-// Day-1 arrival: a glowing ground route from the player to the SMIG door, plus a pulsing marker.
+// Day-1 arrival: a glowing ground route from the player to your lecture venue's door, plus a pulsing marker.
+function lectureVenue() {
+  return venueFor(currentRun).id
+}
 function lectureDoor() {
-  const hall = campus?.layout.buildings.find((building) => building.id === 'smig')
+  const hall = campus?.layout.buildings.find((building) => building.id === lectureVenue())
   return hall ? doorPoint(hall) : null
 }
 
@@ -342,7 +346,7 @@ function approach(id) {
 }
 
 function openPlace(id) {
-  if (id === 'smig' && lectureArrive()) return
+  if (id === lectureVenue() && lectureArrive()) return
   const next = `#/place/${id}`
   if (location.hash !== next) location.hash = next
 }
@@ -533,6 +537,7 @@ window.mzansiScreenOf = (x, z, y = 0) => {
   const rect = renderer.domElement.getBoundingClientRect()
   return { x: rect.left + (p.x * 0.5 + 0.5) * rect.width, y: rect.top + (-p.y * 0.5 + 0.5) * rect.height, behind: p.z > 1 }
 }
+window.mzansiDoorOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? doorPoint(b) : null }
 window.mzansiRoute = () => {
   const door = lectureDoor()
   if (!door || !player || !campus) return null
@@ -1078,7 +1083,7 @@ function tryStep(dx, dz) {
 
 // The place you are heading for keeps its name tag at any distance.
 function destination() {
-  if (currentRun?.lectureRoute) return 'smig'
+  if (currentRun?.lectureRoute) return lectureVenue()
   if (!routeGoal || !campus) return ''
   const hit = campus.layout.buildings.find((b) => Math.hypot(routeGoal.x - b.x, routeGoal.z - (b.maxZ + 5)) < 4)
   return hit?.id || ''

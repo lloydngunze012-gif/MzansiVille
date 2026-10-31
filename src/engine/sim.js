@@ -8,6 +8,7 @@ import { endOfDay } from './dayend.js'
 import { rollMoment } from './moments.js'
 import { beatCard, dueBeat } from './arcs.js'
 import { fridayCard, fridayTest } from './friday.js'
+import { VENUES, venueIdFor } from '../venues.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -68,8 +69,9 @@ function placeMatches(district, run, action, placeId) {
 }
 
 export function actionsAt(district, run, placeId) {
+  const ownSitIn = VENUES[venueIdFor(run.character?.course)]?.sitin
   return district.activities.filter(
-    (action) => action.phases.includes(run.phase) && placeMatches(district, run, action, placeId),
+    (action) => action.id !== ownSitIn && action.phases.includes(run.phase) && placeMatches(district, run, action, placeId),
   )
 }
 

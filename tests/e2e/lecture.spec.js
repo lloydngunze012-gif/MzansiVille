@@ -7,13 +7,14 @@ test.describe.configure({ mode: 'serial' })
 const OUT = process.env.LECTURE_SHOTS || 'test-results/lecture'
 
 // A new student, moved straight to the start of the 9:00 lecture.
-async function atLecture(page, minutes, extra = '') {
+async function atLecture(page, minutes, extra = '', course = null) {
   await page.goto('/?morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?morning=0#/new')
   await page.locator('#name').fill('Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
+  if (course) await page.locator('#course').selectOption(course)
+  else await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
   await page.locator('[data-step="story"] [data-act="begin"]').tap()
   await page.waitForURL(/#\/play/)
@@ -80,4 +81,27 @@ test('lecture: late, so the front row is taken', async ({ page }) => {
   await expect(host).toHaveAttribute('data-step', 'seat', { timeout: 30000 })
   await expect(page.locator('[data-lc="choice"]').first()).toBeDisabled()
   await expect(page.locator('[data-lc="choice"]').first()).toContainText('Taken')
+})
+
+test('your course decides your lecture: a Law student goes to Law, with Prof Naidoo', async ({ page }) => {
+  test.setTimeout(120000)
+  fs.mkdirSync(OUT, { recursive: true })
+  await atLecture(page, 8 * 60 + 45, '', 'Law')
+  const host = page.locator('#lecture3d')
+  await expect(host).toHaveAttribute('data-step', /walk-in|seat/, { timeout: 30000 })
+  await expect(host).toHaveAttribute('data-venue', 'law')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/law_walk_in.png` })
+  await expect(host).toHaveAttribute('data-lecturer', 'Prof Naidoo')
+  await page.screenshot({ path: `${OUT}/law_lecturer.png` })
+  // On campus, the route and the chip point to Law, not SMIG.
+  await page.goto('/?morning=0&campus=1#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await expect(page.locator('.g-now')).toContainText('Lecture at Law')
+  await expect(page.locator('.g-route')).toContainText('Your lecture is at Law')
+  const end = await page.evaluate(() => { const r = window.mzansiRoute(); return r.path[r.path.length - 1] })
+  const law = await page.evaluate(() => window.mzansiDoorOf?.('law'))
+  if (law) expect(Math.hypot(end.x - law.x, end.z - law.z)).toBeLessThan(1)
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/law_route.png` })
 })
