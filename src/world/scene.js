@@ -572,6 +572,10 @@ window.mzansiScreenOf = (x, z, y = 0) => {
   const rect = renderer.domElement.getBoundingClientRect()
   return { x: rect.left + (p.x * 0.5 + 0.5) * rect.width, y: rect.top + (-p.y * 0.5 + 0.5) * rect.height, behind: p.z > 1 }
 }
+// Tests: aim the camera anywhere (look-tests of bodies, seats and queues), and where someone is.
+window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null }
+window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
+window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
 window.mzansiDoorOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? doorPoint(b) : null }
 window.mzansiRoute = () => {
   const door = lectureDoor()
@@ -972,6 +976,8 @@ function beginAction(detail) {
 }
 
 function startBar(detail) {
+  // Standing and doing it (a gesture), not walking on the spot.
+  if (player) gesture(player, 'interact-right')
   actionLeft = 1.2
   actionCommit = detail.commit
   const bar = host.querySelector('.act-bar')
@@ -1232,7 +1238,6 @@ function tick(now) {
       actionLeft -= dt
       const bar = host.querySelector('.act-bar span')
       if (bar) bar.style.width = `${Math.min(100, (1.2 - Math.max(actionLeft, 0)) / 1.2 * 100)}%`
-      walking = true
       if (actionLeft <= 0) {
         host.querySelector('.act-bar').hidden = true
         const commit = actionCommit

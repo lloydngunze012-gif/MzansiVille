@@ -382,11 +382,15 @@ export function poseAvatar(group, walking, time) {
   const dt = Math.min(0.1, Math.max(0, time - (data.lastTime ?? time)))
   data.lastTime = time
   if (!data.rigged) {
+    // The stand-in bobs around where it was put (a seat, the floor), never resetting
+    // the height, so seated people are still on their seats when the model loads.
+    if (data.baseY === undefined) data.baseY = group.position.y
     const bob = walking ? Math.abs(Math.sin(time * 10)) * 0.06 : 0
-    group.position.y = data.pose === 'lie' ? group.position.y : bob
+    if (data.pose !== 'lie') group.position.y = data.baseY + bob
     group.rotation.z = walking ? Math.sin(time * 10) * 0.04 : 0
     return
   }
+  if (data.baseY !== undefined) { if (data.pose !== 'lie') group.position.y = data.baseY; group.rotation.z = 0; data.baseY = undefined }
   const onGround = data.pose === 'sit' && group.position.y < 0.2
   if (!data.gesturing?.isRunning()) {
     if (data.pose === 'sit' || data.pose === 'lie') play(group, 'idle')

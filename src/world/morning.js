@@ -766,11 +766,19 @@ async function play() {
   clockShow(false)
   walkTo(roommate, ANCHORS.roommate[0], ANCHORS.roommate[1], 1.6).then(() => face(roommate, ANCHORS.bed[0], ANCHORS.bed[1]))
   await talk(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
-  // sit up, then swing out of bed
-  await tween(0.8, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k); player.position.y = 0.62 + k * 0.1 })
-  await tween(0.7, (k) => { player.position.x = -2.1 + k * 0.85; player.position.y = 0.72 * (1 - k); player.rotation.y = k * Math.PI / 2 })
-  player.position.y = 0
+  // Sit up on the edge of the bed (legs over the side), stretch, then stand up.
+  await tween(0.5, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k * 0.5); player.position.y = 0.62 + k * 0.08 })
+  player.rotation.set(0, Math.PI / 2, 0)
+  player.position.set(-1.62, 0.56, -1.4)
+  player.userData.pose = 'sit'
+  host.dataset.wakeup = 'sit'
+  await wait(0.6)
+  wave(player, 1.0) // the morning stretch
+  await wait(1.0)
+  // Stand: up off the mattress and a step away from the bed.
   player.userData.pose = 'stand'
+  await tween(0.45, (k) => { player.position.y = 0.56 * (1 - k); player.position.x = -1.62 + k * 0.42 })
+  player.position.y = 0
   bubble('')
   await addMinutes(2, 0.5)
   endFrame()
@@ -934,7 +942,9 @@ async function play() {
     signNode.hidden = true
     if (lateBus) await talk(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
     await talk('Oh. Someone’s here already.', player)
+    // Two people talking face each other.
     face(crushAv, player.position.x, player.position.z)
+    face(player, crushAv.position.x, crushAv.position.z)
     await talk('Delayed. Again. This bus has never once been on time.', crushAv)
     setStep('meet')
     const meetFlag = q.get('meet')
