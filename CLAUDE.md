@@ -35,6 +35,23 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# MAIN DIRECTION: docs/design/player-experience-spec.md
+The player experience spec is the main direction for the game. Every scene follows its section 6: choices not chores, people not menus, show don't count, every day ends on a cliffhanger, every day changes the player, the ten-second test. Build order is its section 7.
+
+# CURRENT LIST (owner, 31 Oct, after the Quaternius characters). Push after each item, no stops, look-test each at 412x915 from the player's camera.
+1. CHARACTERS WEAR REAL CLOTHES. The new characters look like mannequins: the "hoodie" is just colour painted on a muscular body, and they're barefoot. Use character models with actual modelled clothing (hoodies, shirts, jackets, dresses, skirts, shweshwe, the Organt 031 tee), shoes, and real hairstyles, e.g. Quaternius modular character packs (CC0). Vary body shapes: not everyone gets the same athletic build. Compare with docs/benchmark/lagoslife/02 and 07. Also fix the T-pose when lying in bed.
+2. SITTING: people sit ON benches and chairs, not inside them. Fix seat height and position for every sit animation (Quad benches, lecture seats, cafeteria tables, bed).
+3. CREATOR ON PHONE: the 3D preview spans the full width at the top; the student card goes below it. No empty space.
+4. NAME TAGS: smaller, and scaled down when close in Eye view. Never bigger than the person's head.
+5. The floating yellow "!": explain it (tapping shows what it means) or remove it.
+6. LECTURE MUST NEVER BE SKIPPED: Map > SMIG > "Attend lecture" just changes stats and jumps the clock. Any way of attending the day-1 lecture (walking in, the map, the place sheet) must open the 3D lecture scene. After it, remove "Your lecture is at SMIG".
+7. TAPPING: ground taps walk; only a direct tap on a person starts a conversation. Add a test that walks from the gate to SMIG by tapping the path and enters the lecture.
+8. CAMERA: conversations and morning shots frame people fully, head to feet. No giant blurry heads (the kettle shot), no cropped characters (the bed shot).
+9. MORNING CHORES: replace "Head out", "Walk to the bus stop" and "Get on the bus" with one choice: Skip to campus / Walk to the bus. Make the bus stop the crush meet-cute (spec section 5, 4:30).
+10. THEN FOLLOW THE SPEC, section 7, in order: a. goal ladder, b. creator part 2, c. crush arc days 1-5, d. identity paths and card title, e. day summary and cliffhanger text, f. 10 random daily moments, g. the other arcs, h. days 1-5 each with a goal, Friday test payoff.
+
+---
+
 # CURRENT LIST (owner, 31 Oct): do NOT stop for review. Push after each item.
 Every item must pass a look-test on a phone-sized screen (412x915): screenshot it from the player's camera and check it's clearly visible.
 
