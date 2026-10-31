@@ -2,6 +2,7 @@
 // Each scene plays out in front of the place, or cuts inside to a small room
 // (rooms.js) through the opening door. The camera frames the moment up close.
 import * as THREE from 'three'
+import { CHAIR_SEAT } from './furniture.js'
 
 // action id -> [scene, options]. Every action in activities.csv is listed (a check
 // in scripts/sim-check.mjs keeps it that way).
@@ -149,7 +150,7 @@ export function createScenes(api) {
     await api.wait(0.2)
     await api.unfade()
   }
-  const sitOn = (seat) => { api.teleport(seat.x, seat.z, seat.rot); api.pose('sit', seat.y || 0.46) }
+  const sitOn = (seat) => { api.teleport(seat.x, seat.z, seat.rot); api.pose('sit', seat.y || CHAIR_SEAT) }
 
   // A small counter with a vendor and two people waiting, in front of a place.
   function tempStall(place, kind) {
@@ -267,12 +268,12 @@ export function createScenes(api) {
     async eatTogether(place, opt) {
       const s = side(place, -4, 0.5)
       api.prop('/models/props/table.glb', s.x, s.z, { s: 2.3, rot: Math.PI / 2 })
-      api.prop('/models/props/chair.glb', s.x - 0.95, s.z, { rot: Math.PI / 2 })
-      const a = api.npc(opt.who[0], s.x + 0.95, s.z, -Math.PI / 2, { pose: 'sit', y: 0.46 })
-      api.prop('/models/props/chair.glb', s.x + 0.95, s.z, { rot: -Math.PI / 2 })
+      api.chair(s.x - 0.95, s.z, Math.PI / 2)
+      const a = api.npc(opt.who[0], s.x + 0.95, s.z, -Math.PI / 2, { pose: 'sit', y: CHAIR_SEAT })
+      api.chair(s.x + 0.95, s.z, -Math.PI / 2)
       api.frame(s)
       await api.walkTo(s.x - 1.8, s.z + 0.5)
-      sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: 0.46 })
+      sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
       api.hold(holdable('food'))
       const lines = [['Can I sit here?', 'you'], ['Sure! Everyone squeezes in.', 'friend'], ['The caf is so full today.', 'you']]
       for (const [i, [text, who]] of lines.entries()) { api.progress((i + 1) / 4); api.say(text, who); api.gestureOf(who === 'you' ? null : a, 'emote-yes'); if (who === 'you') api.gesture('interact-right'); await api.wait(1.3) }

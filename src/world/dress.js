@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import STORY from '../../data/campusville/place_story.json'
 import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { lookForPerson } from './cast.js'
+import { CHAIR_SEAT, makeChair } from './furniture.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
@@ -30,7 +31,7 @@ function loadProp(name) {
 }
 
 // Seat heights at the scales used below (a seated avatar's origin goes here).
-const SEAT = { bench: 0.5, chair: 0.46 }
+export const SEAT = { bench: 0.45, chair: 0.46 }
 
 const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra })
 
@@ -105,6 +106,23 @@ export function dressPlaces(layout) {
       holder.add(model)
     }).catch(() => {})
     return holder
+  }
+
+  // A park bench with a known seat (0.45 m high, 0.45 m deep), so people sit on it:
+  // wooden slats on dark steel legs, a backrest behind. It faces local +z.
+  function bench(x, z, rot) {
+    const g = new THREE.Group()
+    g.position.set(x, 0, z)
+    g.rotation.y = rot
+    group.add(g)
+    const wood = mat(0xa0703c)
+    const steel = mat(0x2b2b30)
+    for (let i = 0; i < 3; i++) box(g, 1.5, 0.05, 0.13, wood, 0, SEAT.bench - 0.025, -0.15 + i * 0.15)
+    for (let i = 0; i < 2; i++) box(g, 1.5, 0.12, 0.04, wood, 0, 0.62 + i * 0.16, -0.25).rotation.x = -0.15
+    for (const sx of [-0.66, 0.66]) {
+      box(g, 0.06, SEAT.bench - 0.05, 0.4, steel, sx, (SEAT.bench - 0.05) / 2, 0)
+      box(g, 0.06, 0.42, 0.06, steel, sx, 0.62, -0.25)
+    }
   }
 
   function block(x, z, w, d) {
@@ -213,7 +231,7 @@ export function dressPlaces(layout) {
       const x = cx + Math.cos(a) * r
       const z = cz + Math.sin(a) * r
       const rot = facing(x, z, cx, cz)
-      prop('bench', x, z, { rot, s: 2.8 })
+      bench(x, z, rot)
       benches.push({ x, z, rot })
       const tx = cx + Math.cos(a) * (r + 2.2)
       const tz = cz + Math.sin(a) * (r + 2.2)
@@ -371,9 +389,13 @@ export function dressPlaces(layout) {
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
     for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
       prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
-      prop('chair', tx - 0.95, cz + dz, { s: 2.2, rot: Math.PI / 2, y: 0.08 })
-      prop('chair', tx + 0.95, cz + dz, { s: 2.2, rot: -Math.PI / 2, y: 0.08 })
-      person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + SEAT.chair })
+      for (const [cx2, r] of [[tx - 0.95, Math.PI / 2], [tx + 0.95, -Math.PI / 2]]) {
+        const c = makeChair()
+        c.position.set(cx2, 0.08, cz + dz)
+        c.rotation.y = r
+        group.add(c)
+      }
+      person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
       block(tx, cz + dz, 2.6, 1.4)
     }
     prop('pottedPlant', tx - 1.9, cz - 3, { s: 2.4 })

@@ -14,7 +14,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   const stage = page.locator('.cc-stage')
   await expect(stage).toHaveClass(/cc-has3d/, { timeout: 20000 })
   const look = JSON.parse(await stage.getAttribute('data-look'))
-  expect(look).toMatchObject({ body: 'superhero_female', hairMesh: 'hair_long', skin: '#2c1b12', top: '#e8497a', skirt: '#e8497a', curvy: true })
+  expect(look).toMatchObject({ gender: 'female', outfitFile: 'dress', headFile: 'long', skin: '#2c1b12', top: '#e8497a', dress: true, curvy: true })
   await page.screenshot({ path: 'test-results/avatar-1-creator.png' })
 
   await page.locator('#name').fill('Naledi')
@@ -25,12 +25,12 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   expect(saved).toMatchObject({ gender: 'female', skin: 'ebony', hair: 'braids', outfit: 'dress', body: 'curvy' })
 
   // Morning
-  await expect(page.locator('#morning3d')).toHaveAttribute('data-look', /superhero_female/, { timeout: 30000 })
+  await expect(page.locator('#morning3d')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#morning3d').getAttribute('data-look'))).toEqual(look)
 
   // Campus (a reload without the forced morning)
   await page.goto('/?morning=0#/play')
-  await expect(page.locator('#world')).toHaveAttribute('data-look', /superhero_female/, { timeout: 30000 })
+  await expect(page.locator('#world')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#world').getAttribute('data-look'))).toEqual(look)
 
   // Lecture
@@ -40,7 +40,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
   await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
-  await expect(page.locator('#lecture3d')).toHaveAttribute('data-look', /superhero_female/, { timeout: 30000 })
+  await expect(page.locator('#lecture3d')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#lecture3d').getAttribute('data-look'))).toEqual(look)
 })
 
@@ -53,8 +53,8 @@ test('same model, different looks: colours do not leak between students', async 
     const b = A.createAvatar({ model: 'female-b', skin: 'ebony', topColor: '#ff0000' })
     const ready = (g) => new Promise((r) => (g.userData.rigged ? r() : g.addEventListener('rigged', r)))
     await Promise.all([ready(a), ready(b)])
-    const colours = (g) => { let geo; g.traverse((n) => { if (n.isSkinnedMesh && /Superhero/.test(n.name)) geo = n.geometry }); return geo }
-    return colours(a) !== colours(b) && colours(a).attributes.color !== colours(b).attributes.color
+    const colours = (g) => { let geo; g.traverse((n) => { if (n.isSkinnedMesh && !geo) geo = n.material }); return geo }
+    return colours(a) !== colours(b)
   })
   expect(result).toBe(true)
 })
