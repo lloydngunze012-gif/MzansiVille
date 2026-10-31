@@ -570,7 +570,7 @@ function eatFood(sit) {
   const id = ui.talk.id
   const b = ui.talk.bought
   const menu = MENUS[id]
-  talkScene('talk_eat', 'here', { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name }, () => {
+  talkScene('talk_eat', menu.place, { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name }, () => {
     applyFx(save.run, b.fx)
     spendMinutes(sit ? 25 : 5)
     save.run.at = menu.place

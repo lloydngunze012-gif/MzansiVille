@@ -504,7 +504,9 @@ function overShoulder(from, to) {
       shotRay.far = dir.length() - 0.35
       return shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !isPart(hit.object))
     }))
-    if (!blocked) { best = pos; break }
+    // Never inside a building (rays cast from inside a wall don't see it).
+    const inside = campus.layout.buildings.some((b) => pos.x > b.minX - 0.6 && pos.x < b.minX + b.w + 0.6 && pos.z > b.minZ - 0.6 && pos.z < b.minZ + b.d + 0.6 && pos.y < (b.h || 12) + 1)
+    if (!blocked && !inside) { best = pos; break }
     if (!best) best = pos
   }
   // Aim at them, then tilt the view down so they sit about 30% from the top of the
@@ -581,6 +583,7 @@ window.mzansiScreenOf = (x, z, y = 0) => {
 // Tests: aim the camera anywhere (look-tests of bodies, seats and queues), and where someone is.
 window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null }
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
+window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
 window.mzansiDoorOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? doorPoint(b) : null }
 window.mzansiRoute = () => {

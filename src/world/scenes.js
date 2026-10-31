@@ -397,18 +397,31 @@ export function createScenes(api) {
       api.progress(0.3)
       await api.wait(0.6)
       if (opt.eat) {
-        const p = P()
-        const s = { x: p.x - 2.6, z: p.z + 1.8 }
-        api.prop('/models/props/table.glb', s.x, s.z, { s: 2.3, rot: Math.PI / 2 })
-        api.chair(s.x - 0.95, s.z, Math.PI / 2)
-        api.frame(s)
-        await api.walkTo(s.x - 1.8, s.z + 0.5)
-        sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
-        api.say(`Sitting down with my ${opt.food}.`)
-        await steps(3, 1.1, () => api.gesture('interact-right'))
-        api.say('Mmm. Worth every rand.')
-        await api.wait(0.8)
-        api.pose('stand')
+        // A free table: the cafeteria terrace, else a free bench (food on your lap).
+        const t = place.id !== 'quad' && api.dressing.freeTables?.[0]
+        const bench = !t && api.freeSeat()
+        const seat = t ? t.seat : bench
+        if (seat) {
+          api.frame(t ? t.table : seat)
+          // A table chair is reached from behind it (the table is in front); a bench from the front.
+          const side = t ? -1 : 1
+          await api.walkTo(seat.x + side * Math.sin(seat.rot) * 0.9, seat.z + side * Math.cos(seat.rot) * 0.9)
+          sitOn(seat)
+          let plate = null
+          if (t) {
+            // The food goes on the table in front of you.
+            api.hold(null)
+            plate = api.box(0.34, 0.03, 0.34, 0xffffff, t.table.x, t.table.y, t.table.z)
+            api.box(0.24, 0.12, 0.2, 0xd08a3a, t.table.x, t.table.y + 0.07, t.table.z)
+          }
+          api.say(`Sitting down with my ${opt.food}.`)
+          await steps(4, 1.0, () => api.gesture('interact-right'))
+          api.say('Mmm. Worth every rand.')
+          await api.wait(0.8)
+          void plate
+          api.pose('stand')
+          await api.walkTo(seat.x + side * Math.sin(seat.rot) * 1.1, seat.z + side * Math.cos(seat.rot) * 1.1)
+        }
       } else {
         const p = P()
         const away = { x: p.x + 4, z: p.z + 3 }
