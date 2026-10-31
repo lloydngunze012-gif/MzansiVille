@@ -41,7 +41,7 @@ async function signature(page) {
     return JSON.stringify({
       hash: location.hash,
       app: app ? app.innerHTML.length + ':' + (app.querySelector('[data-screen]')?.dataset.screen || '') + ':' + (app.querySelector('[role="dialog"]')?.getAttribute('aria-label') || '') : '',
-      world: w ? [w.dataset.going, w.dataset.talking, w.dataset.activity, w.dataset.walk].join('|') : '',
+      world: w ? [w.dataset.going, w.dataset.talking, w.dataset.activity, w.dataset.walk, w.dataset.walkAway, w.dataset.companion].join('|') : '',
       overlay: !!document.querySelector('.map-overlay:not([hidden])'),
       stats: localStorage.getItem('mzansiville.v1')?.length,
       pressed: [...document.querySelectorAll('[aria-pressed="true"]')].map((b) => b.textContent.trim()).join(','),
@@ -84,6 +84,14 @@ async function tapByKey(page, key) {
   }, key)
 }
 
+async function talkSetup(p, id, a) {
+  await freshPlayer(p)
+  await p.goto(`/?fast=1&morning=0&spawn=quad&a=${a}#/play`)
+  await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await p.evaluate((who) => window.mzansiTalkTo(who), id)
+  await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 })
+}
+
 const SCREENS = [
   { name: 'Cover', setup: async (p) => { await p.goto('/?fast=1#/'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1#/') } },
   { name: 'Creator: look', setup: async (p) => { await p.goto('/?fast=1&morning=0#/new'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1&morning=0#/new') } },
@@ -94,6 +102,9 @@ const SCREENS = [
   { name: 'Place sheet: Cafeteria', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=4#/place/cafeteria'); await p.waitForTimeout(1500) } },
   { name: 'Talk: a student', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&spawn=quad&a=5#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('naledi')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
   { name: 'Talk: Mam’ Gugu', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&spawn=quad&a=6#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('mam_gugu')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
+  { name: 'Talk: after a reply', setup: async (p) => { await talkSetup(p, 'naledi', 12); await p.locator('.g-talk-reply').nth(1).tap(); await expect(p.locator('.g-talk')).toHaveAttribute('data-phase', 'answer') } },
+  { name: 'Talk: a goodbye reply', setup: async (p) => { await talkSetup(p, 'naledi', 13); await p.locator('.g-talk-reply').nth(2).tap(); await expect(p.locator('.g-talk')).toHaveAttribute('data-phase', 'answer') } },
+  { name: 'Talk: numbers swapped', setup: async (p) => { await talkSetup(p, 'naledi', 14); await p.locator('[data-kind="swap"]').tap(); await expect(p.locator('.g-talk')).toHaveAttribute('data-phase', 'swapped') } },
   { name: 'Goals card', setup: async (p) => { await freshPlayer(p, { goals: { day: 1, list: [{ id: 'lecture1', kind: 'must', done: true }, { id: 'crushName', kind: 'story', done: false }, { id: 'study1', kind: 'dream', done: false }] } }); await p.goto('/?fast=1&morning=0&a=7#/play'); await p.locator('[data-act="goals"]').tap() } },
   { name: 'You (student card)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=8#/profile') } },
   { name: 'Leaderboards', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=9#/board') } },
