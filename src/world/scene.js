@@ -7,6 +7,7 @@ import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { lookForPerson, nameOf } from './cast.js'
 import { buildRoom } from './rooms.js'
+import { makeChair } from './furniture.js'
 import { loadModel } from './models.js'
 import { createCameraRig } from './camera.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
@@ -582,7 +583,7 @@ function updateTags() {
 // the activity out before the result lands. The bar is only a small timer.
 let acting = false
 let activities = null
-const BENCH_Y = 0.5
+const BENCH_Y = 0.45
 function activityApi() {
   const bar = () => host.querySelector('.act-bar')
   const sayNode = () => host.querySelector('.act-say')
@@ -705,6 +706,13 @@ function activityApi() {
       tempGroup.add(holder)
       loadModel(url).then((src) => { const m = src.clone(true); m.scale.setScalar(s); holder.add(m) }).catch(() => {})
       return holder
+    },
+    chair: (x, z, rot = 0) => {
+      const c = makeChair()
+      c.position.set(x, 0, z)
+      c.rotation.y = rot
+      tempGroup.add(c)
+      return c
     },
     box: (w, h, d, color, x, y, z, extra = {}) => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra }))

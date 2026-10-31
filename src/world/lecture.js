@@ -299,7 +299,8 @@ function lights(level) {
 }
 
 function seatPos(r, s) {
-  return [seatX(s), rowY(r) + 0.12, rowZ(r)]
+  // On the bench (its top is 0.56 above the row's step).
+  return [seatX(s), rowY(r) + 0.56, rowZ(r)]
 }
 
 function place(avatar, r, s) {

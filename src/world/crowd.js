@@ -10,7 +10,7 @@ import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './n
 const WALKERS = 9
 const SITTERS = 4
 // Seat height of a Kenney bench at the scale dress.js uses.
-const BENCH_Y = 0.5
+const BENCH_Y = 0.45
 
 const pick = (list) => list[Math.floor(Math.random() * list.length)]
 // Personal space: nobody stands closer than this to anyone else (metres).
