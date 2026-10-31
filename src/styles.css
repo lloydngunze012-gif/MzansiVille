@@ -851,7 +851,7 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
    the options below. The whole student (head to feet) fits the stage. */
 @media (max-width: 600px) {
   .cc-body { grid-template-columns: 1fr; }
-  .cc-preview { order: -1; display: grid; grid-template-columns: 1fr 44%; gap: 8px; align-items: stretch; }
-  .cc-stage { min-height: 0; height: min(46vh, 380px); }
-  .cc-id { align-self: end; }
+  .cc-preview { order: -1; display: flex; flex-direction: column; gap: 8px; }
+  .cc-stage { flex: none; width: 100%; min-height: 0; height: min(52vh, 440px); }
+  .cc-id { width: 100%; box-sizing: border-box; }
 }
