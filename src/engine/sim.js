@@ -4,6 +4,7 @@ import { coursePlaceId, homePlaceId, pickBestie } from './model.js'
 import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals.js'
 import { FUNDING_MONEY } from '../story.js'
 import { identityCard, identityFromAction } from './identity.js'
+import { endOfDay } from './dayend.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -369,6 +370,7 @@ export function endDay(district, run, opts = {}) {
     slept: Boolean(run.pendingNight?.slept),
     hungry: Boolean(run.pendingNight?.hungry),
     stats: { ...run.stats },
+    ...endOfDay(run),
   }
   run.inProgress = false
   run.mode = run.excluded ? 'over' : 'summary'
@@ -538,8 +540,11 @@ export function beginNextDay(district, run, now = new Date()) {
   if (run.mode === 'over') return run
   run.mode = 'play'
   openDay(district, run)
-  // Three goals for the new day, shown first.
+  // Three goals for the new day, shown first, with last night's text.
   startGoals(run)
+  const unread = (run.inbox || []).filter((m) => !m.read)
+  if (unread.length) run.goals.text = unread[unread.length - 1]
+  for (const m of unread) m.read = true
   run.queue.unshift(goalsCard(run))
   return run
 }
