@@ -17,6 +17,7 @@ async function newGame(page, gender = 'female') {
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
@@ -34,7 +35,9 @@ async function tapPerson(page, id) {
   const onScreen = !at.behind && at.x > 20 && at.x < 392 && at.y > 300 && at.y < 780 && hit.startsWith('CANVAS')
   // Off screen (a player would swing the camera round first): start the chat directly.
   if (onScreen) await page.mouse.click(at.x, at.y)
-  else await page.evaluate((who) => window.mzansiTalkTo(who), id)
+  // The camera can still be swinging when the tap lands: if it missed them, start the chat directly.
+  await page.waitForTimeout(400)
+  if (!onScreen || !(await page.evaluate(() => document.getElementById('world').dataset.talking))) await page.evaluate((who) => window.mzansiTalkTo(who), id)
   await page.waitForTimeout(3000)
   console.log('after', await page.evaluate(() => JSON.stringify({ talking: document.getElementById('world').dataset.talking, hash: location.hash, talk: !!document.querySelector('.g-talk') })))
 }

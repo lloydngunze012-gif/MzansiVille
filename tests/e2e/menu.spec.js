@@ -14,6 +14,7 @@ async function newGame(page) {
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
   await page.waitForURL(/#\/play/)
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
     await page.locator('.g-result [data-act]').first().tap()

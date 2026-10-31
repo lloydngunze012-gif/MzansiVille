@@ -24,6 +24,7 @@ async function newGame(page, query, gender = 'female') {
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
 }
 
 const OUT = process.env.MORNING_SHOTS || 'test-results/morning'
@@ -59,6 +60,14 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  // Part 2: your story. The Hustler path sets the dream; interest picks who waits at the bus stop.
+  await expect(page.locator('main[data-step="story"]').last()).toBeVisible()
+  await page.locator('[data-act="story"][data-k="funding"][data-id="bursary"]').tap()
+  await page.locator('[data-act="story"][data-k="path"][data-id="hustler"]').tap()
+  await page.locator('[data-act="story"][data-k="interest"][data-id="girls"]').tap()
+  await expect(page.locator('[data-k="dream"][data-id="hustle"]')).toHaveAttribute('aria-pressed', 'true')
+  await shot('0b_story')
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
 
   await expect(page).toHaveURL(/#\/morning/)
   await expect(page.locator('.g-goal')).toContainText('Get to your 9:00 lecture on time.')
@@ -142,7 +151,8 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.phase).toBe('lecture')
   expect(run.morningDone).toBe(true)
-  expect(run.crush).toMatchObject({ met: 'bus', opener: 'bus', nameKnown: true, sat: true })
+  expect(run.crush).toMatchObject({ id: 'amahle', met: 'bus', opener: 'bus', nameKnown: true, sat: true })
+  expect(run.character).toMatchObject({ funding: 'bursary', path: 'hustler', dream: 'hustle', interest: 'girls' })
   expect(run.at).toBe('gate')
   // The clock keeps the arrival time, and Zanele (met in the room) is the bestie with no repeat card.
   const hhmm = `${String(Math.floor(run.minutes / 60)).padStart(2, '0')}:${String(run.minutes % 60).padStart(2, '0')}`
@@ -166,7 +176,8 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await expect(page.locator('.g-goals')).toBeVisible({ timeout: 20000 })
   await expect(page.locator('.g-goal-list li')).toHaveCount(3)
   await expect(page.locator('.g-goal-list li').first()).toContainText('9:00 lecture')
-  await expect(page.locator('.g-dream')).toContainText('Year dream')
+  await expect(page.locator('.g-dream')).toContainText('R5,000')
+  await expect(page.locator('.g-goal-list li.dream')).toContainText('Earn your first R50')
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {

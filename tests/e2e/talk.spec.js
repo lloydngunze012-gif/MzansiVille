@@ -10,6 +10,7 @@ test('morning lines wait for a tap', async ({ page }) => {
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
   const bubble = page.locator('.mm-bubble')
   await expect(bubble).toHaveClass(/tap/, { timeout: 30000 })
   const first = await bubble.textContent()

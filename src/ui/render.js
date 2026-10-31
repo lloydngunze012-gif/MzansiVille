@@ -8,6 +8,7 @@ import { authEnabled } from '../net.js'
 import { boardScreen, lobbyScreen } from './social.js'
 import { gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
+import { STORY_OPTS, storyWithDefaults } from '../story.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -30,6 +31,8 @@ export function emptyDraft() {
     course: '',
     handle: '',
     avatar: { gender: 'female', skin: 'amber', hair: 'crop', outfit: 'hoodie' },
+    story: {},
+    step: 'look',
     email: '',
     notice: '',
     error: '',
@@ -391,17 +394,21 @@ function create(state) {
   const genderPick = `<fieldset class="cc-group"><legend>Gender</legend><div class="cc-chips thumbs">${genders.map((item) =>
     `<button class="cc-chip th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" aria-pressed="${genderOf(draft.avatar) === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '\u2640' : '\u2642'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></fieldset>`
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length
-  return `<main class="screen cc" data-screen="create">
+  const storyStep = draft.step === 'story' && !draft.edit
+  const story = storyWithDefaults(draft.story)
+  const storyHtml = STORY_OPTS.map(([key, label, items]) => `<fieldset class="cc-group cc-story"><legend>${esc(label)}</legend><div class="cc-picks">${items.map(([id, text, note]) =>
+    `<button class="cc-pick" type="button" data-act="story" data-k="${key}" data-id="${id}" aria-pressed="${story[key] === id}"><b>${esc(text)}</b>${note ? `<small>${esc(note)}</small>` : ''}</button>`).join('')}</div></fieldset>`).join('')
+  return `<main class="screen cc${storyStep ? ' cc-step2' : ''}" data-screen="create" data-step="${storyStep ? 'story' : 'look'}">
     <i class="cc-backdrop" aria-hidden="true"></i>
-    <header class="cc-top"><a class="cc-back" href="#/">‹ Back</a><h1 class="cc-logo">Who's arriving?</h1><a class="cc-back" href="#/rules">Rules</a></header>
+    <header class="cc-top">${storyStep ? '<button class="cc-back" type="button" data-act="story-back">‹ Look</button>' : '<a class="cc-back" href="#/">‹ Back</a>'}<h1 class="cc-logo">${storyStep ? 'Your story' : "Who's arriving?"}</h1><a class="cc-back" href="#/rules">Rules</a></header>
     <i class="cc-strip" aria-hidden="true"></i>
     <div class="cc-body">
       <div class="cc-opts">
-        ${genderPick}
+        ${storyStep ? `<p class="cc-lede">First year is a fresh start. Nobody here knows who you were.</p>${storyHtml}` : `${genderPick}
         ${picker('Skin', skins, 'skin')}
         ${picker('Body', bodies, 'body')}
         ${picker('Hair', hairs, 'hair')}
-        ${picker('Outfit', outfits, 'outfit')}
+        ${picker('Outfit', outfits, 'outfit')}`}
       </div>
       <aside class="cc-preview">
         <div class="cc-stage">
@@ -416,7 +423,7 @@ function create(state) {
           <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
       </aside>
     </div>
-    <div class="cc-fields">
+    <div class="cc-fields"${storyStep ? ' hidden' : ''}>
       <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Your name"></label>
       <label class="cc-field">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
       <label class="cc-field">Course<select id="course"><option value="">Choose course</option>${district.courses.map((course) =>
@@ -424,7 +431,7 @@ function create(state) {
       <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
     </div>
     ${draft.error ? `<p class="error cc-err">${esc(draft.error)}</p>` : ''}
-    <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">${draft.edit ? 'Save changes' : 'Walk onto campus'}</button></div>
+    <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">${draft.edit ? 'Save changes' : storyStep ? 'Walk onto campus' : 'Next: your story \u203a'}</button></div>
   </main>`
 }
 
