@@ -847,6 +847,12 @@ function activityApi() {
     // The person coming along with you (startCompanion), if anyone.
     companion: () => companion?.avatar || null,
     seatCompanion: (seat) => seatCompanion(seat),
+    // Wait until whoever came with you has walked to their seat and sat down.
+    companionSettled: () => new Promise((resolve) => {
+      const start = performance.now()
+      const check = () => (!companion?.settling || performance.now() - start > 20000 ? resolve() : setTimeout(check, 100))
+      check()
+    }),
     hideCompanion: (hidden) => {
       if (!companion) return
       companion.avatar.visible = !hidden
@@ -881,6 +887,7 @@ function activityApi() {
     glide: async (x, z, pace = 1.6) => {
       const inside = (p) => room && p.x > room.bounds.minX && p.x < room.bounds.maxX && p.z > room.bounds.minZ && p.z < room.bounds.maxZ
       const pts = inside(player.position) && inside({ x, z }) ? boxPath(room.blocks, room.bounds, player.position, { x, z }) : [{ x, z }]
+      snapTo = null
       for (const p of pts) await new Promise((resolve) => { scriptMove = { x: p.x, z: p.z, pace, resolve } })
     },
     // Walk up to a seat (beside it if a table is in front), then settle into it.
@@ -896,6 +903,9 @@ function activityApi() {
         if (inRoom) await api.glide(spot.x, spot.z)
         else await api.walkTo(spot.x, spot.z, WALK)
       }
+      // (the last walk's pull onto its exact end point would hold you back from the seat)
+      snapTo = null
+      route = []
       await new Promise((resolve) => { scriptMove = { x: seat.x, z: seat.z, pace: 0.9, resolve } })
     },
     teleport: (x, z, rot) => {
@@ -1042,7 +1052,7 @@ function startCompanion(id) {
   if (!avatar || !player) return null
   const walker = crowd?.people.find((p) => p.avatar === avatar)
   if (walker) walker.talking = false
-  companion = { avatar, walker, home: { x: avatar.position.x, y: avatar.position.y, z: avatar.position.z, rot: avatar.rotation.y, pose: avatar.userData.pose }, trail: [{ x: player.position.x, z: player.position.z }], seat: null }
+  companion = { avatar, walker, home: { x: avatar.position.x, y: avatar.position.y, z: avatar.position.z, rot: avatar.rotation.y, pose: avatar.userData.pose === 'talk' ? 'stand' : avatar.userData.pose }, trail: [{ x: player.position.x, z: player.position.z }], seat: null }
   avatar.userData.following = true
   avatar.userData.pose = 'stand'
   avatar.position.y = 0
@@ -1053,79 +1063,170 @@ function startCompanion(id) {
 function stopCompanion() {
   if (!companion) return
   const { avatar, walker, home } = companion
-  avatar.userData.following = false
   avatar.visible = true
   if (walker && !walker.sitting) {
     // A walker carries on from where they are.
+    avatar.userData.following = false
     walker.route = []
     walker.wait = 1.5
     avatar.userData.pose = 'stand'
   } else {
-    // Someone with a spot of their own (a seat, a stall) goes back to it.
-    avatar.position.set(home.x, home.y, home.z)
-    avatar.rotation.y = home.rot
-    avatar.userData.pose = home.pose
+    // Someone with a spot of their own (a seat, a stall) walks back to it.
+    avatar.userData.pose = 'stand'
+    avatar.position.y = 0
+    returners.push({ avatar, home, route: null })
   }
   companion = null
   delete host.dataset.companion
 }
-// Put them on a seat (beside you at a table), or back on their feet next to you.
+// Put them on a seat (beside you at a table): they walk to it and sit down. No seat:
+// they get up where they are and fall in beside you.
 function seatCompanion(seat) {
   if (!companion) return
   const a = companion.avatar
   companion.seat = seat
   if (seat) {
-    a.position.set(seat.x, seat.y || 0, seat.z)
-    a.rotation.y = seat.rot
-    a.userData.pose = seat.pose || 'sit'
+    // Up to the chair from an open side (behind it at a table), then into it.
+    const f = { x: Math.sin(seat.rot), z: Math.cos(seat.rot) }
+    const r = { x: Math.cos(seat.rot), z: -Math.sin(seat.rot) }
+    // (a table's footprint takes in its chairs, so only rule out spots right inside it)
+    const spots = [[0, 0.6], [-0.6, 0], [0.6, 0], [0, -0.65]].map(([u, v]) => ({ x: seat.x + r.x * u + f.x * v, z: seat.z + r.z * u + f.z * v })).filter((p) => !hitsSolid(p.x, p.z, -0.15))
+    spots.sort((p, q) => Math.hypot(p.x - a.position.x, p.z - a.position.z) - Math.hypot(q.x - a.position.x, q.z - a.position.z))
+    companion.settling = { ...seat, pose: seat.pose || 'sit', via: spots[0] || null }
     return
   }
+  companion.settling = null
   a.userData.pose = 'stand'
   a.position.y = 0
-  a.position.x = player.position.x - Math.sin(player.rotation.y) * 1.2
-  a.position.z = player.position.z - Math.cos(player.rotation.y) * 1.2
   companion.trail = [{ x: player.position.x, z: player.position.z }]
 }
+
+// Walking people (a friend beside you, someone heading back to their seat) keep to
+// the open ground: the route grid for long ways, real outlines for each step.
+function stepAvatar(a, tx, tz, pace, dt, free = false) {
+  const dx = tx - a.position.x
+  const dz = tz - a.position.z
+  const d = Math.hypot(dx, dz)
+  if (d < 1e-4) return 0
+  const step = Math.min(d, pace * dt)
+  const nx = a.position.x + (dx / d) * step
+  const nz = a.position.z + (dz / d) * step
+  if (free || !hitsSolid(nx, nz) || hitsSolid(a.position.x, a.position.z)) { a.position.x = nx; a.position.z = nz } // (inside an outline, just up from a chair: walk out)
+  else if (!hitsSolid(nx, a.position.z)) a.position.x = nx
+  else if (!hitsSolid(a.position.x, nz)) a.position.z = nz
+  a.rotation.y = Math.atan2(dx, dz)
+  return d
+}
+// Is there a building, table or counter between two points (sampled every 0.3 m)?
+function lineBlocked(p, q) {
+  const d = Math.hypot(q.x - p.x, q.z - p.z)
+  const n = Math.ceil(d / 0.3)
+  for (let i = 1; i <= n; i++) if (hitsSolid(p.x + ((q.x - p.x) * i) / n, p.z + ((q.z - p.z) * i) / n)) return true
+  return false
+}
+const returners = []
+function returnersTick(dt) {
+  for (let i = returners.length - 1; i >= 0; i--) {
+    const r = returners[i]
+    const a = r.avatar
+    if (a.userData.disposed || !campus) { returners.splice(i, 1); continue }
+    a.userData.following = true // (the crowd leaves them to us until they're back)
+    if (Math.hypot(r.home.x - a.position.x, r.home.z - a.position.z) > 1.2) {
+      if (!r.route) {
+        const from = nearestOpen(campus.grid, a.position)
+        r.route = from ? findPath(campus.grid, from, nearestOpen(campus.grid, r.home)) : []
+      }
+      if (!r.route.length) r.route = [{ x: r.home.x, z: r.home.z }]
+      const next = r.route[0]
+      if (stepAvatar(a, next.x, next.z, 1.3, dt) < 0.15) r.route.shift()
+      poseAvatar(a, true, clock)
+      continue
+    }
+    // The last step straight onto the spot, then sit (or stand) as before.
+    if (stepAvatar(a, r.home.x, r.home.z, 0.9, dt) > 0.05) { poseAvatar(a, true, clock); continue }
+    a.position.set(r.home.x, r.home.y, r.home.z)
+    a.rotation.y = r.home.rot
+    a.userData.pose = r.home.pose
+    a.userData.following = false
+    poseAvatar(a, false, clock)
+    returners.splice(i, 1)
+  }
+}
 function companionTick(dt) {
+  returnersTick(dt)
   if (!companion) return
   const a = companion.avatar
-  if (companion.seat || !a.visible) { poseAvatar(a, false, clock); return }
+  if (!a.visible) { poseAvatar(a, false, clock); return }
+  // Walking to the seat they were given, then sitting down.
+  const st = companion.settling
+  if (st) {
+    if (st.via) {
+      if (stepAvatar(a, st.via.x, st.via.z, 2, dt, true) > 0.1) { poseAvatar(a, true, clock); return }
+      st.via = null
+    }
+    if (stepAvatar(a, st.x, st.z, 0.9, dt, true) > 0.05) { poseAvatar(a, true, clock); return }
+    a.position.set(st.x, st.y || 0, st.z)
+    a.rotation.y = st.rot
+    a.userData.pose = st.pose
+    companion.settling = null
+  }
+  if (companion.seat) { poseAvatar(a, false, clock); return }
   const trail = companion.trail
   const last = trail[trail.length - 1]
   if (Math.hypot(player.position.x - last.x, player.position.z - last.z) > 0.3) {
     trail.push({ x: player.position.x, z: player.position.z })
     if (trail.length > 300) trail.shift()
   }
-  // The point on your trail about 1.4 m behind you.
-  let gap = 1.4
-  let from = { x: player.position.x, z: player.position.z }
-  let target = from
-  for (let i = trail.length - 1; i >= 0; i--) {
-    const p = trail[i]
-    const d = Math.hypot(p.x - from.x, p.z - from.z)
-    if (d >= gap) { target = { x: from.x + ((p.x - from.x) * gap) / d, z: from.z + ((p.z - from.z) * gap) / d }; break }
-    gap -= d
-    from = p
-    target = p
+  // Beside you: level with you, a shoulder's width to the side they're already on.
+  // Where that's blocked (a doorway, a narrow path), they drop in behind on your trail.
+  const fx = Math.sin(player.rotation.y)
+  const fz = Math.cos(player.rotation.y)
+  if (companion.side === undefined) companion.side = (a.position.x - player.position.x) * fz - (a.position.z - player.position.z) * fx > 0 ? 1 : -1
+  // (aimed a moment ahead while you walk, so they keep level instead of trailing)
+  const lead = walking ? Math.max(speed, WALK) * 0.3 : 0
+  let target = { x: player.position.x + fz * 0.85 * companion.side + fx * lead, z: player.position.z - fx * 0.85 * companion.side + fz * lead }
+  if (hitsSolid(target.x, target.z)) {
+    let gap = 1.2
+    let from = { x: player.position.x, z: player.position.z }
+    target = from
+    for (let i = trail.length - 1; i >= 0; i--) {
+      const p = trail[i]
+      const d = Math.hypot(p.x - from.x, p.z - from.z)
+      if (d >= gap) { target = { x: from.x + ((p.x - from.x) * gap) / d, z: from.z + ((p.z - from.z) * gap) / d }; break }
+      gap -= d
+      from = p
+      target = p
+    }
   }
-  const dx = target.x - a.position.x
-  const dz = target.z - a.position.z
-  const d = Math.hypot(dx, dz)
-  // Left behind (you went through a door, the scene moved you): catch up.
-  if (d > 9) { a.position.x = target.x; a.position.z = target.z }
-  const walking = d > 0.12 && d <= 9
-  if (walking) {
-    const step = Math.min(d, Math.max(speed * 1.15, 3) * dt)
-    a.position.x += (dx / d) * step
-    a.position.z += (dz / d) * step
-    a.rotation.y = Math.atan2(dx, dz)
+  const d = Math.hypot(target.x - a.position.x, target.z - a.position.z)
+  // Left far behind (a scene moved you somewhere else): catch up out of sight.
+  if (d > 25) { a.position.x = target.x; a.position.z = target.z }
+  const moving = d > 0.15 && d <= 25
+  if (moving) {
+    // Keep pace with you, a little quicker to close a gap, easing in as they arrive.
+    // Something in the way (a counter, a table): take the route grid round it.
+    const pace = Math.min(Math.max(speed, WALK) * 1.5, 0.8 + d * 2.2)
+    if (lineBlocked(a.position, target)) {
+      companion.reroute = (companion.reroute || 0) - dt
+      if (!companion.route?.length || companion.reroute <= 0) {
+        const from = nearestOpen(campus.grid, a.position)
+        companion.route = from ? findPath(campus.grid, from, nearestOpen(campus.grid, target)) : []
+        companion.reroute = 1
+      }
+      const next = companion.route[0]
+      if (next) { if (stepAvatar(a, next.x, next.z, Math.max(pace, 1.4), dt) < 0.3) companion.route.shift() } else stepAvatar(a, target.x, target.z, pace, dt)
+    } else {
+      companion.route = null
+      stepAvatar(a, target.x, target.z, pace, dt)
+    }
+    if (d < 0.6 && walking) a.rotation.y = player.rotation.y // stride along with you
   } else if (Math.hypot(player.position.x - a.position.x, player.position.z - a.position.z) < 3) {
-    a.rotation.y = Math.atan2(player.position.x - a.position.x, player.position.z - a.position.z)
+    a.rotation.y = walking ? player.rotation.y : Math.atan2(player.position.x - a.position.x, player.position.z - a.position.z)
   }
-  poseAvatar(a, walking, clock)
+  poseAvatar(a, moving, clock)
 }
 window.addEventListener('mzansi-companion', (event) => { if (event.detail?.id) startCompanion(event.detail.id); else stopCompanion() })
-window.mzansiCompanion = () => companion && { id: companion.avatar.userData.personId, x: +companion.avatar.position.x.toFixed(2), z: +companion.avatar.position.z.toFixed(2), pose: companion.avatar.userData.pose, visible: companion.avatar.visible }
+window.mzansiCompanion = () => companion && { id: companion.avatar.userData.personId, x: +companion.avatar.position.x.toFixed(2), z: +companion.avatar.position.z.toFixed(2), pose: companion.avatar.userData.pose, visible: companion.avatar.visible, settling: companion.settling && { x: +companion.settling.x.toFixed(2), z: +companion.settling.z.toFixed(2), via: companion.settling.via }, seat: Boolean(companion.seat) }
 
 function sceneTick(dt) {
   if (!tempGroup.parent) scene.add(tempGroup)
@@ -1372,9 +1473,9 @@ function promptDoor() {
 // (a body's half-width away), sliding along them; never through. (The route grid is
 // coarser: it would stop you a metre or two short, like an invisible wall.)
 const BODY = 0.3
-function hitsSolid(x, z) {
+function hitsSolid(x, z, r = BODY) {
   const solids = campus.layout.obstacles.concat(campus.dressing?.obstacles || [])
-  if (solids.some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)) return true
+  if (solids.some((b) => x > b.minX - r && x < b.maxX + r && z > b.minZ - r && z < b.maxZ + r)) return true
   const cell = cellOf(x, z)
   return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
 }

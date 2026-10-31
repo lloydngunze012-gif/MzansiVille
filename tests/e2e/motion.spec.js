@@ -1,6 +1,9 @@
 // Motion sprint finish line (M1-M7) at 412x915 and normal speed: bodies measured
 // from their skinned vertices (window.mzansiBodies), plus a video of each journey
 // and screenshots in docs/sprints/motion/ for the owner to watch.
+// Run with one worker: the checks time real motion, and a starved headless browser
+// renders too few frames for walkers to move.
+// npx playwright test tests/e2e/motion.spec.js --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 
@@ -28,7 +31,10 @@ async function campus(page, spawn, extra = '') {
   })
   await page.goto(`/?morning=0&spawn=${spawn}${extra}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
-  await page.waitForTimeout(3000)
+  // Everyone's model loaded (the count stops growing) and the player is there.
+  let n = -1
+  await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m === n && m > 0; n = m; return done }, { timeout: 60000, intervals: [1500] }).toBe(true)
+  await page.waitForTimeout(1500)
 }
 
 // Keep the journey's video next to its screenshots.
@@ -88,7 +94,7 @@ async function sideOf(page, body, name, scene = 'campus') {
   return view
 }
 
-const playerBody = (page) => page.evaluate(() => window.mzansiBodies('campus').find((b) => b.id === 'player'))
+const playerBody = (page) => page.evaluate(() => window.mzansiBodies('campus', 'player')[0])
 
 function expectSeated(b, what) {
   console.log(what, JSON.stringify({ id: b.id, seat: b.y, seatGap: b.seatGap, footGap: b.footGap, sole: b.sole, fit: b.fit, clip: b.walking, hips: b.hips }))
@@ -103,7 +109,7 @@ test('M2a sit on a Quad bench (Sit with them)', async ({ page }) => {
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 30000 })
   await card.locator('[data-kind="sit"]').tap()
-  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
+  await expect.poll(async () => { const r = await page.evaluate(() => [window.mzansiPlayerPose(), window.mzansiPlayerPos(), document.getElementById('world').dataset.activity, document.getElementById('world').dataset.activityStep]); if (process.env.DEBUG_M2) console.log('m2a', JSON.stringify(r)); return r[0] }, { timeout: 60000, intervals: [1000] }).toBe('sit')
   await page.waitForTimeout(800)
   expectSeated(await playerBody(page), 'player on a Quad bench')
   await page.screenshot({ path: `${OUT}/M2-quad-bench.png` })
@@ -374,4 +380,150 @@ test('M4c a bed in res: you walk round the furniture to the bed, never through',
   expect(path.length, 'walked to the bed').toBeGreaterThan(5)
   expect(worst, 'never inside furniture').toBeLessThan(-0.1)
   await saveVideo(page, 'M4-bed')
+})
+
+test('M5 eat together: your friend walks beside you, sits properly, walks back', async ({ page }) => {
+  await campus(page, 'quad', '&a=51')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  const home = await page.evaluate(() => window.mzansiPersonPos('x12'))
+  await card.locator('[data-kind="eat"]').tap()
+  await expect(page.locator('#world')).toHaveAttribute('data-companion', 'x12')
+  // On the way: level with you (not a step behind), a shoulder's width to the side.
+  const beside = []
+  let shot = false
+  for (let i = 0; i < 60; i++) {
+    const [me, rot, f, pose] = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiPlayerRot(), window.mzansiCompanion(), window.mzansiPlayerPose()])
+    if (!f || pose === 'sit' || (await page.locator('.g-talk').isVisible())) break
+    const dx = f.x - me.x
+    const dz = f.z - me.z
+    const ahead = dx * Math.sin(rot) + dz * Math.cos(rot)
+    const side = Math.abs(dx * Math.cos(rot) - dz * Math.sin(rot))
+    const moving = await page.evaluate(() => window.mzansiBodies('campus').find((b) => b.id === 'player')?.clip === 'Walk')
+    if (moving) beside.push({ ahead: +ahead.toFixed(2), side: +side.toFixed(2) })
+    if (moving && !shot && i > 4) { await page.screenshot({ path: `${OUT}/M5-1-beside.png` }); shot = true }
+    await page.waitForTimeout(250)
+  }
+  const level = beside.filter((b) => Math.abs(b.ahead) < 0.7 && b.side > 0.4 && b.side < 1.4).length
+  console.log('beside', beside.length, 'level', level, JSON.stringify(beside.slice(0, 12)))
+  expect(beside.length, 'walked together').toBeGreaterThan(4)
+  expect(level / beside.length, 'beside you most of the way').toBeGreaterThan(0.6)
+  // In the line, order, then both sit at one table.
+  await expect(card).toBeVisible({ timeout: 120000 })
+  await expect(card).toHaveAttribute('data-phase', 'menu')
+  await card.locator('[data-item="pap"]').tap()
+  await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
+  await expect.poll(async () => { const c = await page.evaluate(() => window.mzansiCompanion()); if (process.env.DEBUG_M5) console.log('friend', JSON.stringify(c)); return c?.pose }, { timeout: 120000, intervals: [300] }).toBe('sit')
+  await page.waitForTimeout(600)
+  await page.screenshot({ path: `${OUT}/M5-2-seated.png` })
+  const c = await page.evaluate(() => window.mzansiCompanion())
+  const friend = (await bodies(page)).filter((b) => b.id === 'x12').sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z))[0]
+  expectSeated(friend, 'friend seated at the table')
+  // Afterwards they walk back to their spot: no jumps.
+  await expect(page.locator('#world')).toHaveAttribute('data-activity-step', 'done', { timeout: 90000 })
+  let prev = await page.evaluate(() => window.mzansiPersonPos('x12'))
+  let jump = 0
+  let walked = 0
+  for (let i = 0; i < 120; i++) {
+    await page.waitForTimeout(150)
+    const p = await page.evaluate(() => window.mzansiPersonPos('x12'))
+    const d = Math.hypot(p.x - prev.x, p.z - prev.z)
+    jump = Math.max(jump, d)
+    walked += d
+    prev = p
+    if (i === 12) await page.screenshot({ path: `${OUT}/M5-3-walking-back.png` })
+    if (Math.hypot(p.x - home.x, p.z - home.z) < 0.1) break
+  }
+  console.log('walk back', JSON.stringify({ home, now: prev, walked, jump }))
+  expect(jump, 'no jumps on the way back').toBeLessThan(1)
+  expect(walked, 'walked back').toBeGreaterThan(2)
+  await saveVideo(page, 'M5-eat-together')
+})
+
+test('M7 a crowded Quad for 30 s: nobody frozen, nobody through anyone', async ({ page }) => {
+  await campus(page, 'quad', '&a=71')
+  await page.screenshot({ path: `${OUT}/M7-1.png` })
+  const samples = []
+  for (let i = 0; i < 60; i++) {
+    samples.push(await page.evaluate(() => [performance.now(), window.mzansiBodies('campus')]))
+    if (i === 30) await page.screenshot({ path: `${OUT}/M7-2.png` })
+    await page.waitForTimeout(400)
+  }
+  await page.screenshot({ path: `${OUT}/M7-3.png` })
+  const problems = { frozen: new Set(), slideIdle: [], walkInPlace: [], overlap: [] }
+  const [, first] = samples[0]
+  const [, last] = samples[samples.length - 1]
+  // Nobody frozen: everyone's animation clock keeps running.
+  for (const b of first) {
+    const end = last.find((x) => x.id === b.id && Math.abs(x.x - b.x) + Math.abs(x.z - b.z) < 60)
+    if (end && end.t === b.t && end.lastPosed === b.lastPosed) problems.frozen.add(b.id)
+  }
+  for (let s = 1; s < samples.length; s++) {
+    const [t0, a] = samples[s - 1]
+    const [t1, bs] = samples[s]
+    for (const b of bs) {
+      const prev = a.find((x) => x.id === b.id)
+      if (!prev || b.pose === 'sit' || b.pose === 'lie') continue
+      const v = Math.hypot(b.x - prev.x, b.z - prev.z) / ((t1 - t0) / 1000)
+      // Moving but not walking (sliding); walking but going nowhere (stuck mid-stride).
+      if (v > 0.6 && !/Walk|Run/.test(b.clip) && v < 20) problems.slideIdle.push(`${b.id}@${s}:${v.toFixed(1)}`)
+      if (/Walk|Run/.test(b.clip) && v < 0.05 && /Walk|Run/.test(prev.clip)) problems.walkInPlace.push(`${b.id}@${s}`)
+    }
+    // Nobody inside anybody (people standing or walking, under 0.45 m apart).
+    const up = bs.filter((b) => b.pose !== 'sit' && b.pose !== 'lie')
+    for (let i = 0; i < up.length; i++) for (let j = i + 1; j < up.length; j++) {
+      const d = Math.hypot(up[i].x - up[j].x, up[i].z - up[j].z)
+      if (d < 0.45) problems.overlap.push(`${up[i].id}+${up[j].id}@${s}:${d.toFixed(2)}`)
+    }
+  }
+  console.log('M7', JSON.stringify({ people: first.length, frozen: [...problems.frozen], slideIdle: problems.slideIdle.slice(0, 10), walkInPlace: problems.walkInPlace.slice(0, 10), overlap: problems.overlap.slice(0, 10) }))
+  expect([...problems.frozen], 'nobody frozen').toEqual([])
+  expect(problems.slideIdle.length, 'nobody slides along standing still').toBeLessThan(3)
+  expect(problems.walkInPlace.length, 'nobody walks on the spot').toBeLessThan(3)
+  expect(problems.overlap, 'nobody walks through anyone').toEqual([])
+  await saveVideo(page, 'M7-crowded-quad')
+})
+
+test('M1 walk across the Quad for 20 s: feet on the ground, no sliding, smooth turns', async ({ page }) => {
+  await campus(page, 'quad', '&a=11')
+  const me = await page.evaluate(() => window.mzansiPlayerPos())
+  // A zig-zag of taps across the Quad, so there are turns.
+  const legs = [[6, 4], [-5, 7], [-7, -3], [4, -6], [6, 3]].map(([dx, dz]) => ({ x: me.x + dx, z: me.z + dz }))
+  const samples = []
+  const start = Date.now()
+  let leg = 0
+  let shots = 0
+  while (Date.now() - start < 22000) {
+    const pose = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0])
+    samples.push([performance.now ? Date.now() : 0, pose])
+    const pos = await page.evaluate(() => window.mzansiPlayerPos())
+    const target = legs[leg % legs.length]
+    if (samples.length === 1 || Math.hypot(pos.x - target.x, pos.z - target.z) < 0.8 || (samples.length % 25 === 0 && pose.clip === 'Idle')) {
+      if (samples.length > 1) leg++
+      const t = legs[leg % legs.length]
+      const at = await page.evaluate((p) => window.mzansiScreenOf(p.x, p.z), t)
+      if (at && !at.behind && at.x > 10 && at.x < 400 && at.y > 290 && at.y < 800) await page.mouse.click(at.x, at.y)
+      else await page.evaluate((p) => window.mzansiSteer(0, 0) || null, t)
+    }
+    if (shots < 4 && samples.length % 40 === 20) await page.screenshot({ path: `${OUT}/M1-${++shots}.png` })
+    await page.waitForTimeout(50)
+  }
+  const walking = samples.filter(([, b]) => /Walk|Run/.test(b.clip))
+  const soles = samples.map(([, b]) => b.sole)
+  const sliding = walking.filter(([, b]) => b.rate > 0.6 && b.rate < 1.9 && Math.abs(b.rate * b.natural - b.speed) / Math.max(0.3, b.speed) > 0.25)
+  let worstTurn = 0
+  for (let i = 1; i < samples.length; i++) {
+    const d = Math.abs(Math.atan2(Math.sin(samples[i][1].yaw - samples[i - 1][1].yaw), Math.cos(samples[i][1].yaw - samples[i - 1][1].yaw)))
+    const dt = (samples[i][0] - samples[i - 1][0]) / 1000
+    worstTurn = Math.max(worstTurn, d / Math.max(dt, 0.05))
+  }
+  console.log('M1 low', JSON.stringify(samples.filter(([, b]) => b.sole < -0.02).map(([, b]) => [b.clip, b.rate, b.speed, b.sole, b.t])))
+  console.log('M1', JSON.stringify({ samples: samples.length, walking: walking.length, soleMin: Math.min(...soles), soleMax: Math.max(...soles), sliding: sliding.length, worstTurnRadPerS: +worstTurn.toFixed(2), examples: walking.slice(0, 5).map(([, b]) => [b.speed, b.rate, b.natural]) }))
+  expect(walking.length, 'walked for much of the 20 s').toBeGreaterThan(samples.length * 0.35)
+  expect(Math.min(...soles), 'feet never sink').toBeGreaterThan(-CM)
+  expect(Math.max(...soles), 'feet never float').toBeLessThan(CM)
+  expect(sliding.length / walking.length, 'steps match the ground speed').toBeLessThan(0.1)
+  expect(worstTurn, 'turns are smooth (no snapping round)').toBeLessThan(12)
+  await saveVideo(page, 'M1-quad-walk')
 })

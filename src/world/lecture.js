@@ -414,7 +414,7 @@ async function playMoment(moment, mySeat) {
     const sleeper = students.find((s) => s.userData.seat?.startsWith(`${Math.max(0, pr - 1)}:`)) || students[0]
     const p = sleeper.position
     setShot(null, { pos: [p.x + 1.4, p.y + 2.4, p.z + 3], look: [p.x, p.y + 1, p.z] })
-    await tween(1.4, (k) => { sleeper.rotation.x = k * 0.5 })
+    await tween(1.4, (k) => { sleeper.userData.slump = k * 0.6 }) // head down on the desk, hips still on the bench
   } else if (moment.id === 'pen') {
     const near = students.find((s) => s.userData.seat === `${pr}:${ps + 1}`) || students.find((s) => s.userData.seat === `${pr}:${ps - 1}`) || students[0]
     gesture(near, 'interact-left')

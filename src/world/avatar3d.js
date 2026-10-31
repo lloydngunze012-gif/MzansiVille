@@ -229,6 +229,41 @@ function soleOf(model, feet) {
   feet?.forEach((f) => { if (f.w) f.multiplyScalar(1 / f.w) })
   return min
 }
+// The bottom of each shoe as a few points fixed to its foot bone (the lowest
+// vertices, standing): read every frame, they say exactly where the soles are,
+// whatever the clip or blend, so the body can stand on them.
+function solePoints(model, bones) {
+  const feet = ['FootL', 'FootR'].map((n) => bones[n]).filter(Boolean)
+  if (!feet.length) return []
+  const all = []
+  model.traverse((node) => {
+    if (!node.isSkinnedMesh || node.userData.part !== 'feet') return
+    for (let i = 0; i < node.geometry.attributes.position.count; i++) {
+      node.getVertexPosition(i, gaitVtx)
+      all.push(node.localToWorld(gaitVtx.clone()))
+    }
+  })
+  all.sort((a, b) => a.y - b.y)
+  const lowest = all.filter((v) => v.y < all[0].y + 0.04)
+  // Heel to toe on each foot: spread the picks along the foot's length.
+  lowest.sort((a, b) => a.z - b.z)
+  const picks = lowest.filter((_, i) => i % Math.max(1, Math.floor(lowest.length / 24)) === 0)
+  const inv = new THREE.Matrix4()
+  return picks.map((v) => {
+    const foot = feet.reduce((best, f) => (worldOf(f).distanceTo(v) < worldOf(best).distanceTo(v) ? f : best))
+    return [foot, v.clone().applyMatrix4(inv.copy(foot.matrixWorld).invert())]
+  })
+}
+const soleAt = new THREE.Vector3()
+function soleNow(data) {
+  let min = Infinity
+  for (const [foot, local] of data.soles) {
+    const y = soleAt.copy(local).applyMatrix4(foot.matrixWorld).y
+    if (y < min) min = y
+  }
+  return min
+}
+
 // Put each foot back at the end of its shin (see footInShin in attachModel).
 function carryFeet(model, bones, footInShin) {
   model.updateMatrixWorld(true)
@@ -316,7 +351,7 @@ async function attachModel(group, look) {
   model.name = 'rig'
   const bones = {}
   // (three.js drops the dots from bone names: UpperLeg.L loads as UpperLegL.)
-  for (const name of ['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR', 'Hips']) {
+  for (const name of ['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR', 'Hips', 'Abdomen']) {
     const bone = model.getObjectByName(name)
     if (bone) bones[name] = bone
   }
@@ -336,6 +371,7 @@ async function attachModel(group, look) {
   }
   // How high the ankle bone is above the sole, standing (sitting puts feet flat).
   const footRest = bones.FootL ? worldOf(bones.FootL).y - soleOf(model) : undefined
+  const soles = solePoints(model, bones)
   const gaitKey = `${g}:${look.outfitFile}`
   gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
   if (look.organt) addOrgantMark(model)
@@ -349,7 +385,7 @@ async function attachModel(group, look) {
   group.userData.fade = 0
   fadeIn(group, 0)
   group.add(model)
-  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, rest })
+  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, soles, rest })
   live.add(group)
   group.dispatchEvent({ type: 'rigged' })
 }
@@ -628,7 +664,7 @@ export function poseAvatar(group, walking, time) {
   const moving = walking && data.speed > 0.25
   const fast = data.speed > RUN_FROM
   if (!data.gesturing?.isRunning()) {
-    if (settled) play(group, 'idle')
+    if (settled) play(group, 'idle', 0.1) // (quickly: a walk's bob must not linger on the seat)
     else if (data.pose === 'talk') play(group, 'talk')
     else if (data.pose === 'run') play(group, moving ? 'sprint' : 'idle')
     else if (data.pose === 'dance') play(group, 'dance')
@@ -652,9 +688,18 @@ export function poseAvatar(group, walking, time) {
   model.position.set(0, 0, 0)
   model.rotation.y = settled ? 0 : wrap(data.yaw - group.rotation.y)
   if (data.pose !== 'sit' && data.pose !== 'lie') carryFeet(model, data.bones, data.footInShin)
-  if (!settled) model.position.y = liftOf(data)
+  // Standing on the soles: the lowest sole point rests on the ground (the group's y).
+  if (!settled && data.soles?.length) {
+    const sole = soleNow(data)
+    if (Number.isFinite(sole)) model.position.y = group.getWorldPosition(seatAt).y - sole
+  } else if (!settled) model.position.y = liftOf(data)
   if (data.pose === 'sit') sitPose(group, onGround)
   if (data.pose === 'lie') liePose(group, model)
+  // Slumping forward (dozing at a desk): bend at the waist, hips stay on the seat.
+  if (data.slump && data.bones.Abdomen) {
+    sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
+    turnWorld(data.bones.Abdomen, sideways, data.slump)
+  }
   // Dancing: the wave with a bounce and a sway on the beat (112 BPM, like the groove).
   if (data.pose === 'dance') {
     const beat = (time * 112) / 60
@@ -709,6 +754,10 @@ export function measureBody(group) {
     pose: data.pose || 'stand',
     clip: data.current,
     rate: +(data.actions?.[data.current]?.timeScale ?? 0).toFixed(2),
+    t: +(data.actions?.[data.current]?.time ?? 0).toFixed(3),
+    natural: +(data.gait?.[data.current]?.speed ?? 0).toFixed(2),
+    yaw: +(data.yaw ?? group.rotation.y).toFixed(3),
+    lastPosed: data.lastTime,
     speed: +(data.speed || 0).toFixed(2),
     x: +group.position.x.toFixed(2), y: +group.position.y.toFixed(3), z: +group.position.z.toFixed(2),
     sole: +lowest(group, (n) => n.userData.part === 'feet').toFixed(3),
@@ -733,8 +782,9 @@ export function measureBody(group) {
 }
 if (typeof window !== 'undefined') {
   window.mzansiGait = () => Object.fromEntries(Object.entries(gaits).map(([k, g]) => [k, Object.fromEntries(Object.entries(g).map(([c, v]) => [c, { speed: +v.speed.toFixed(2), maxLift: +Math.max(...v.lift).toFixed(3),   minLift: +Math.min(...v.lift).toFixed(3) }]))]))
-  window.mzansiBodies = (where) => {
+  window.mzansiBodies = (where, id) => {
     for (const g of live) if (g.userData.disposed) live.delete(g)
-    return [...live].filter((g) => sceneOf(g) && (!where || sceneOf(g).name === where)).map((g) => ({ ...measureBody(g), scene: sceneOf(g).name }))
+    const idOf = (g) => (g.userData.isPlayer ? 'player' : g.userData.personId || 'extra')
+    return [...live].filter((g) => sceneOf(g) && (!where || sceneOf(g).name === where) && (!id || idOf(g) === id)).map((g) => ({ ...measureBody(g), scene: sceneOf(g).name }))
   }
 }

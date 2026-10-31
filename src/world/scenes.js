@@ -437,6 +437,7 @@ export function createScenes(api) {
             api.box(0.24, 0.12, 0.2, 0xd08a3a, t.table.x, t.table.y + 0.07, t.table.z)
           }
           if (friend) {
+            await api.companionSettled()
             const lines = [[`Sitting down with my ${opt.food}.`, 'you'], ['Eish, I needed this.', opt.name], ['Same. Lectures make you hungry.', 'you'], ['Next time I choose the spot.', opt.name]]
             for (const [i, [text, who]] of lines.entries()) {
               api.progress(0.3 + (i + 1) * 0.15)
