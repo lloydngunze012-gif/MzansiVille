@@ -161,7 +161,12 @@ export function createScenes(api) {
     await api.unfade()
   }
   // Room seats stand on the room's floor (y 0), however high the seat (a bed edge, a couch).
-  const sitOn = (seat) => { api.teleport(seat.x, seat.z, seat.rot); api.pose('sit', seat.y || CHAIR_SEAT, 0) }
+  // People walk up to their seat (around the furniture) rather than appear on it.
+  const sitOn = async (seat) => {
+    await api.walkToSeat(seat)
+    api.teleport(seat.x, seat.z, seat.rot)
+    api.pose('sit', seat.y || CHAIR_SEAT, 0)
+  }
 
   // A small counter with a vendor and two people waiting, in front of a place.
   function tempStall(place, kind) {
@@ -287,7 +292,7 @@ export function createScenes(api) {
       api.chair(s.x + 0.95, s.z, -Math.PI / 2)
       api.frame(s)
       await api.walkTo(s.x - 1.8, s.z + 0.5)
-      sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
+      await sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
       api.hold(holdable('food'))
       const lines = [['Can I sit here?', 'you'], ['Sure! Everyone squeezes in.', 'friend'], ['The caf is so full today.', 'you']]
       for (const [i, [text, who]] of lines.entries()) { api.progress((i + 1) / 4); api.say(text, who); api.gestureOf(who === 'you' ? null : a, 'emote-yes'); if (who === 'you') api.gesture('interact-right'); await api.wait(1.3) }
@@ -298,7 +303,7 @@ export function createScenes(api) {
     async sitRead(place, opt) {
       const room = await goInside(place, opt.room || 'bedroom')
       const seat = room.anchors.sit || room.anchors.desk
-      sitOn(seat)
+      await sitOn(seat)
       api.frame(seat)
       const book = holdable('book')
       api.hold(book)
@@ -311,7 +316,7 @@ export function createScenes(api) {
     async sitRelax(place, opt) {
       if (opt.room) {
         const room = await goInside(place, opt.room)
-        sitOn(room.anchors.desk || room.anchors.sit)
+        await sitOn(room.anchors.desk || room.anchors.sit)
         api.frame(room.anchors.look)
         api.say(opt.lines[0])
         await steps(3, 1.1)
@@ -334,7 +339,7 @@ export function createScenes(api) {
     async study(place, opt) {
       const room = await goInside(place, opt.room)
       const seat = opt.room === 'lab' ? room.anchors[opt.laptop ? 'laptop' : 'bench'] : room.anchors.desk
-      if (opt.room === 'lab') { api.teleport(seat.x, seat.z, seat.rot) } else sitOn(seat)
+      if (opt.room === 'lab') { api.teleport(seat.x, seat.z, seat.rot) } else await sitOn(seat)
       api.frame(seat)
       api.hold(holdable(opt.laptop ? 'paper' : 'book'))
       api.say(opt.night ? 'Just me, the lamp and chapter three.' : opt.room === 'lab' ? 'Measure twice. Write it down.' : 'Twenty pages. Starting... now.')
@@ -350,7 +355,7 @@ export function createScenes(api) {
       const others = [room.anchors.desk2 || room.anchors.bench2, room.anchors.desk3].filter(Boolean)
       const who = [...(opt.who ? [opt.who] : []), 'priya', 'noah', 'x4']
       const people = others.map((s, i) => api.npc(who[i], s.x, s.z, s.rot, { pose: room.kind === 'library' ? 'sit' : 'stand', y: s.y || 0 }))
-      if (room.kind === 'library') sitOn(seat)
+      if (room.kind === 'library') await sitOn(seat)
       else api.teleport(seat.x, seat.z, seat.rot)
       api.frame(room.anchors.look)
       api.hold(holdable(opt.props === 'cards' ? 'paper' : 'book'))
@@ -411,7 +416,7 @@ export function createScenes(api) {
           // A table chair is reached from behind it (the table is in front); a bench from the front.
           const side = t ? -1 : 1
           await api.walkTo(seat.x + side * Math.sin(seat.rot) * 0.9, seat.z + side * Math.cos(seat.rot) * 0.9)
-          sitOn(seat)
+          await sitOn(seat)
           // Eating together: your friend takes the other chair at the same table
           // (whoever sat there steps away for now), or the other half of the bench.
           const friend = opt.with && api.companion()
@@ -503,7 +508,7 @@ export function createScenes(api) {
       // From the front of the bench, a little above: both of you, head to feet.
       api.shot([s.x + 0.9, 1.9, s.z + 3.6], [s.x, 0.75, s.z])
       await api.walkTo(s.x - 0.45, s.z + 0.9)
-      sitOn({ x: s.x - 0.45, z: s.z, rot: 0, y: 0.45 })
+      await sitOn({ x: s.x - 0.45, z: s.z, rot: 0, y: 0.45 })
       const lines = [['So where are you from?', 'you'], [opt.line1 || 'Born and raised here. You?', opt.name || 'friend'], ['Same energy, different town.', 'you'], [opt.line2 || 'Ha! We should do this again.', opt.name || 'friend']]
       for (const [i, [text, who]] of lines.entries()) {
         api.progress((i + 1) / 5)
@@ -537,7 +542,7 @@ export function createScenes(api) {
       room.anchors.seats.forEach((s, i) => { if (i !== 5 && i !== 11 && i % 3 !== 1) api.npc(`x${i % 12}`, s.x, s.z, s.rot, { pose: 'sit', y: s.y }) })
       const seat = opt.back ? room.anchors.backSeat : room.anchors.seat
       await api.glide(seat.x, seat.z + 0.6)
-      sitOn(seat)
+      await sitOn(seat)
       api.frame(room.anchors.board)
       if (opt.exam) {
         api.hold(holdable('paper'))
@@ -736,7 +741,7 @@ export function createScenes(api) {
       api.say(line)
       await steps(3, 1.1, (i) => api.gesture(i % 2 ? 'interact-left' : 'interact-right'))
       api.hold(holdable(opt.what === 'tea' || opt.what === 'kettle' ? 'cup' : 'food'))
-      sitOn(a.sit)
+      await sitOn(a.sit)
       api.frame(a.table)
       if (friend) { api.say('This is the best part of the day.', 'friend'); api.gestureOf(friend, 'emote-yes') }
       await api.wait(1.2)
@@ -761,7 +766,7 @@ export function createScenes(api) {
 
     async phone(place, opt) {
       const room = await goInside(place, 'bedroom')
-      sitOn(room.anchors.sit)
+      await sitOn(room.anchors.sit)
       api.frame(room.anchors.sit)
       const phone = holdable('phone')
       api.hold(phone)
@@ -833,7 +838,7 @@ export function createScenes(api) {
 
     async couch(place) {
       const room = await goInside(place, 'lounge')
-      sitOn(room.anchors.sit)
+      await sitOn(room.anchors.sit)
       api.frame(room.anchors.look)
       api.say('One episode. Okay, two.')
       await steps(3, 1.3)

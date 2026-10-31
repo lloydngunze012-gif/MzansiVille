@@ -17,7 +17,7 @@ import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
-import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
+import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { SPEED, ms } from '../speed.js'
 
@@ -48,6 +48,7 @@ let routeGoal = null
 let arrive = null
 let stuck = 0
 let steering = null
+let forcedSteer = null // tests: hold the stick in one direction (mzansiSteer)
 let walking = false
 let clock = 0
 let frames = 0
@@ -619,6 +620,13 @@ window.mzansiLineup = (looks) => {
   })
   return Promise.all(lineup.map((a) => a.userData.ready)).then(() => lineup.length)
 }
+// Tests (collisions): hold the stick, and every box nobody may walk into.
+window.mzansiSteer = (x, z) => { forcedSteer = x || z ? { x, z } : null }
+window.mzansiObstacles = () => ({
+  buildings: campus?.layout.obstacles || [],
+  props: campus?.dressing?.obstacles || [],
+  room: room ? room.blocks : [],
+})
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
 window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
 window.mzansiPersonOnScreen = (id) => {
@@ -750,7 +758,7 @@ function activityApi() {
     }
     step()
   })
-  return {
+  const api = {
     get player() { return player },
     get dressing() { return campus.dressing },
     spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
@@ -869,7 +877,27 @@ function activityApi() {
       })
     },
     shot: (from, at) => { activityFocus = null; closeShot = { pos: new THREE.Vector3(...from), look: new THREE.Vector3(...at) } },
-    glide: (x, z, pace = 2.4) => new Promise((resolve) => { scriptMove = { x, z, pace, resolve } }),
+    // A short walk; inside a room it goes around the furniture (boxPath).
+    glide: async (x, z, pace = 1.6) => {
+      const inside = (p) => room && p.x > room.bounds.minX && p.x < room.bounds.maxX && p.z > room.bounds.minZ && p.z < room.bounds.maxZ
+      const pts = inside(player.position) && inside({ x, z }) ? boxPath(room.blocks, room.bounds, player.position, { x, z }) : [{ x, z }]
+      for (const p of pts) await new Promise((resolve) => { scriptMove = { x: p.x, z: p.z, pace, resolve } })
+    },
+    // Walk up to a seat (beside it if a table is in front), then settle into it.
+    walkToSeat: async (seat) => {
+      const f = { x: Math.sin(seat.rot), z: Math.cos(seat.rot) }
+      const r = { x: Math.cos(seat.rot), z: -Math.sin(seat.rot) }
+      const inRoom = room && seat.x > room.bounds.minX && seat.x < room.bounds.maxX && seat.z > room.bounds.minZ && seat.z < room.bounds.maxZ
+      const open = (p) => (inRoom ? !boxBlocked(room.blocks, p.x, p.z, 0.2) : !pointBlocked(campus.grid, p.x, p.z))
+      const spots = [[0, 0.6], [-0.6, 0], [0.6, 0], [0, -0.65]].map(([a, b]) => ({ x: seat.x + r.x * a + f.x * b, z: seat.z + r.z * a + f.z * b })).filter(open)
+      spots.sort((p, q) => Math.hypot(p.x - player.position.x, p.z - player.position.z) - Math.hypot(q.x - player.position.x, q.z - player.position.z))
+      const spot = spots[0]
+      if (spot && Math.hypot(spot.x - player.position.x, spot.z - player.position.z) > 0.3) {
+        if (inRoom) await api.glide(spot.x, spot.z)
+        else await api.walkTo(spot.x, spot.z, WALK)
+      }
+      await new Promise((resolve) => { scriptMove = { x: seat.x, z: seat.z, pace: 0.9, resolve } })
+    },
     teleport: (x, z, rot) => {
       route = []
       arrive = null
@@ -967,6 +995,7 @@ function activityApi() {
       host.querySelector('.scene-fade').hidden = true
     },
   }
+  return api
 }
 
 // Temporary people, props and rooms made by a scene, removed when it ends.
@@ -1339,16 +1368,26 @@ function promptDoor() {
   pin(node, near.building.x, 2.6, near.building.maxZ + 0.4, 28)
 }
 
+// Walking with the stick: up to the real outline of buildings, tables and stalls
+// (a body's half-width away), sliding along them; never through. (The route grid is
+// coarser: it would stop you a metre or two short, like an invisible wall.)
+const BODY = 0.3
+function hitsSolid(x, z) {
+  const solids = campus.layout.obstacles.concat(campus.dressing?.obstacles || [])
+  if (solids.some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)) return true
+  const cell = cellOf(x, z)
+  return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
+}
 function tryStep(dx, dz) {
   const x = player.position.x + dx
   const z = player.position.z + dz
-  if (!pointBlocked(campus.grid, x, z)) {
+  if (!hitsSolid(x, z)) {
     player.position.x = x
     player.position.z = z
     return
   }
-  if (!pointBlocked(campus.grid, x, player.position.z)) player.position.x = x
-  else if (!pointBlocked(campus.grid, player.position.x, z)) player.position.z = z
+  if (!hitsSolid(x, player.position.z)) player.position.x = x
+  else if (!hitsSolid(player.position.x, z)) player.position.z = z
 }
 
 // The place you are heading for keeps its name tag at any distance.
@@ -1453,6 +1492,7 @@ function tick(now) {
   tick.last = now
   steering = null
   if (actionLeft <= 0) input.stick()
+  if (forcedSteer && actionLeft <= 0) steering = forcedSteer
   walking = false
   if (player && campus) {
     if (actionLeft > 0) {

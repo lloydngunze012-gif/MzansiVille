@@ -193,3 +193,46 @@ export function followStep(grid, position, route, step) {
   const after = Math.hypot(next.x - slid.x, next.z - slid.z)
   return { position: slid, route, done: false, blocked: after > dist - 0.001 }
 }
+
+// A* on a fine grid inside a room, around furniture footprints (blocks, padded by
+// a body's half-width); the goal itself may be on furniture (a seat). Returns the
+// corner points to walk through, ending at the goal.
+export function boxPath(blocks, bounds, from, to, { cell = 0.2, pad = 0.25 } = {}) {
+  const free = (x, z) => x > bounds.minX && x < bounds.maxX && z > bounds.minZ && z < bounds.maxZ &&
+    !blocks.some((b) => x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad)
+  const key = (i, j) => `${i},${j}`
+  const ci = (v) => Math.round(v / cell)
+  const [si, sj, gi, gj] = [ci(from.x), ci(from.z), ci(to.x), ci(to.z)]
+  const open = [[si, sj]]
+  const g = new Map([[key(si, sj), 0]])
+  const came = new Map()
+  const h = (i, j) => Math.hypot(i - gi, j - gj)
+  let guard = 0
+  while (open.length && guard++ < 6000) {
+    open.sort((a, b) => (g.get(key(...a)) + h(...a)) - (g.get(key(...b)) + h(...b)))
+    const [i, j] = open.shift()
+    if (i === gi && j === gj) {
+      const cells = []
+      for (let k = key(i, j); k; k = came.get(k)) cells.unshift(k.split(',').map(Number))
+      // Keep only the corners (on whole cells, so straight runs compare exactly), end on the goal.
+      const corners = cells.filter((p, n) => n > 0 && n < cells.length - 1 && (cells[n + 1][0] - p[0]) * (p[1] - cells[n - 1][1]) !== (cells[n + 1][1] - p[1]) * (p[0] - cells[n - 1][0]))
+      return [...corners.map(([a, b]) => ({ x: a * cell, z: b * cell })), { x: to.x, z: to.z }]
+    }
+    for (const [di, dj] of DIRS) {
+      const [ni, nj] = [i + di, j + dj]
+      const goal = ni === gi && nj === gj
+      const ok = free(ni * cell, nj * cell) && !(di && dj && (!free(ni * cell, j * cell) || !free(i * cell, nj * cell)))
+      // (someone just up from a chair starts inside the padding: let them step out,
+      // as long as they don't step into the furniture itself)
+      const stepOut = !free(i * cell, j * cell) && !boxBlocked(blocks, ni * cell, nj * cell, 0.05)
+      if (!goal && !ok && !stepOut) continue
+      const cost = g.get(key(i, j)) + Math.hypot(di, dj)
+      if (cost < (g.get(key(ni, nj)) ?? Infinity)) { g.set(key(ni, nj), cost); came.set(key(ni, nj), key(i, j)); open.push([ni, nj]) }
+    }
+  }
+  return [{ x: to.x, z: to.z }]
+}
+
+export function boxBlocked(blocks, x, z, pad = 0) {
+  return blocks.some((b) => x > b.minX - pad && x < b.maxX + pad && z > b.minZ - pad && z < b.maxZ + pad)
+}
