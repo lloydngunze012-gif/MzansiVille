@@ -35,6 +35,20 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# CURRENT LIST (owner + player test, 31 Oct). Look-test each at 412x915, push after each, don't stop for review.
+The rule: every tap must lead to a visible, sensible result, and every option must make sense for why it exists. If a tap does nothing, that's a bug.
+1. COURSE DECIDES YOUR LECTURES. Each course has a home venue: Law -> Law; Accounting, Information Systems, Management, Marketing -> SMIG; Computer Science, Science -> Science; Engineering -> Engineering; Medicine, Nursing -> Health Sci. The day goal, the route, the "Lecture in 15 min" chip and the glowing marker point only to the player's venue. Each venue has its own lecture scene and lecturer. Other venues stay open as an optional "sit in".
+2. MAP = GO THERE. Tapping a place on the map closes the map, returns to the 3D view, and the character automatically walks there. On arrival the place sheet opens. A Skip button can jump straight there (time passes).
+3. CONVERSATIONS LEAD TO ACTIONS. Talking is a doorway to doing:
+   - Auntie Pinky / Mam' Gugu: ordering in conversation ("Bunny chow please" -> "Quarter or half?") offers the real items with prices. Picking one pays from your money, she hands it over (visible), then: "Sit and eat?" -> walk to a table, sit, eat. Or "Take it to go."
+   - Lecturer: "Can I ask about chapter one?" -> a short consultation that raises grades.
+   - Students: replies can lead to "Sit with them", "Study together", "Swap numbers" (adds them to the phone).
+   Every chat ends with either an action or a clear goodbye, never a dead end.
+4. BODIES ON THE WORLD: feet on the ground (no sinking), hips on the seat (no sinking into cafeteria chairs or benches), no one frozen mid-stride: standing people play idle, walking people walk. In the meet-cute the two characters face each other while talking. Fix the wake-up so getting out of bed looks natural, not like a zombie.
+5. QUEUES ARE LINES: one straight line facing the counter, evenly spaced. The front person is served and leaves, everyone shuffles forward, and the player joins at the back.
+6. CREATOR ICONS: render the outfit, hair and body icons from the actual 3D models so they match the game, and frame them so no head is cut off.
+7. UX AUDIT: play a full day as a new player on a phone. List every button and tap target, what it does, and whether the result makes sense. Fix every dead end. Include the list in your report.
+
 # MAIN DIRECTION: docs/design/player-experience-spec.md
 The player experience spec is the main direction for the game. Every scene follows its section 6: choices not chores, people not menus, show don't count, every day ends on a cliffhanger, every day changes the player, the ten-second test. Build order is its section 7.
 
