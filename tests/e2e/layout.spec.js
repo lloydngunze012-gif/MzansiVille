@@ -22,6 +22,14 @@ test('cover and creator on a phone', async ({ page }) => {
   await page.evaluate(() => window.scrollTo(0, 0))
   await page.waitForTimeout(1800)
   await page.screenshot({ path: `${OUT}/3-creator-dress.png` })
+  // The outfit, hair and body icons are pictures of the 3D models (not drawings).
+  await expect(page.locator('.cc-chip[data-part="outfit"][data-thumb="3d"]').first()).toBeVisible({ timeout: 40000 })
+  await expect.poll(async () => page.locator('.cc-chip[data-thumb="3d"]').count(), { timeout: 60000 }).toBeGreaterThanOrEqual(8)
+  await page.locator('[data-part="hair"]').first().scrollIntoViewIfNeeded()
+  await page.waitForTimeout(500)
+  await page.screenshot({ path: `${OUT}/4-creator-icons.png` })
+  await page.locator('[data-part="outfit"]').first().scrollIntoViewIfNeeded()
+  await page.screenshot({ path: `${OUT}/5-creator-outfit-icons.png` })
 })
 
 // Item 5: the new characters, side by side (outfits, genders, sitting, walking).
