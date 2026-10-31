@@ -885,7 +885,7 @@ async function play() {
   const delay = lateBus ? BUS_DELAY : MEET_DELAY
   if (route === 1) {
     // Skip: the shower, the walk and the ride pass in one fade; the clock still runs.
-    setStep('skip')
+    setStep('skip-ride')
     await fadeOut('\u{1F6BF} Shower · \u{1F68C} bus · Westville…')
     const ride = busAfter(run.minutes + 15 + 8, delay)
     await addMinutes(ride.next + RIDE - run.minutes, 1.6)
