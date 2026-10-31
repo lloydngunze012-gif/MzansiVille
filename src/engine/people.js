@@ -4,6 +4,7 @@
 import DATA from '../../data/campusville/people.json'
 import { CRUSHES } from '../crush.js'
 import { crushChat, crushReply } from './crush-arc.js'
+import { identityTitle } from './identity.js'
 
 export function personInfo(id) {
   if (DATA.people[id]) return { id, ...DATA.people[id] }
@@ -44,6 +45,11 @@ export function chatFor(run, id) {
   let line = chat.line
   if (mem.chats === 1) line = mem.mood < 0 ? chat.cold : chat.warm
   if (chat.lines) line = chat.lines[(mem.chats - 2) % chat.lines.length]
+  // People react to who you're becoming: strangers have heard of you.
+  const title = identityTitle(run)
+  if (title.level !== 'new' && mem.chats === 0 && info.archetype) {
+    line = `${title.level === 'known' ? `Hey, it's ${title.path.name}!` : `Aren't you the one people call ${title.path.name}?`} ${line}`
+  }
   return {
     id,
     name: info.name,

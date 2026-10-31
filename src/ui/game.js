@@ -6,6 +6,7 @@ import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
+import { identityTitle } from '../engine/identity.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -284,7 +285,7 @@ function resultCard(state) {
   if (card.kind === 'goals') return goalsCardHtml(run)
   if (card.choices || card.kind === 'shop') return `<div class="g-card-wrap">${cardHtml(card, state)}</div>`
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
-  const label = { goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
+  const label = { identity: '\u2728 Who you\u2019re becoming', goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
   const fx = card.kind === 'result' && ui.delta && card.id.startsWith('result-') ? effectChips(ui.delta, 'big') : ''
   const body = fx ? '' : `<p>${esc(String(card.text || '').replaceAll('Hunger', 'Fullness'))}</p>`
   return `<div class="g-scrim soft" data-act="dismiss"></div>
@@ -307,6 +308,7 @@ function goalsCardHtml(run) {
     <p class="g-kind">Day ${run.day} \u00b7 Today's goals</p>
     <h2>${list.every((g) => g.done) && list.length ? 'All done today' : 'Three things today'}</h2>
     <ol class="g-goal-list">${list.map((g) => `<li class="${g.kind}${g.done ? ' done' : ''}"><span class="g-gk">${GOAL_KIND[g.kind]}</span><span>${esc(goalText(run, g))}</span><b>${g.done ? '\u2713' : ''}</b></li>`).join('')}</ol>
+    <p class="g-title">${esc(identityTitle(run).text)}</p>
     <p class="g-dream"><span>${dream.icon} Year dream: <b>${esc(dream.label)}</b></span><i><em style="width:${Math.max(3, pct)}%"></em></i><small>${pct}%</small></p>
     <button type="button" class="g-go block" data-act="dismiss">Let's go</button>
   </aside>`

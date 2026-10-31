@@ -3,6 +3,7 @@ import { formatDelta, hashString, toMinutes, weekdayName, fillTemplate } from '.
 import { coursePlaceId, homePlaceId, pickBestie } from './model.js'
 import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals.js'
 import { FUNDING_MONEY } from '../story.js'
+import { identityCard, identityFromAction } from './identity.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -697,6 +698,8 @@ export function applyAction(district, run, actionId, rng = Math.random) {
     if (hungrySleep) run.lastEventLine = district.meta.day.hungrySleepMessage
   }
 
+  const titled = identityFromAction(run, action, deltas)
+  if (titled && titled.level !== 'new') cards.push(identityCard(run, titled))
   for (const goal of checkGoals(run)) cards.push({ id: `goal-${goal.id}-${run.day}`, kind: 'goal', title: 'Goal done', text: goalText(run, goal) })
   rememberStat(run)
   run.queue = cards.concat(run.queue.filter((card) => !cards.some((item) => item.id === card.id)))

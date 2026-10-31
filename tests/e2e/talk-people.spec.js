@@ -125,3 +125,17 @@ test('the one from the bus is at the Quad: their tag is ? until you ask their na
   await card.locator('[data-act="talk-bye"]').tap()
   expect(errors).toEqual([])
 })
+
+test('student card: the title shows who you are becoming, with the five paths', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    save.run.identity = { scholar: 2, socialite: 3, hustler: 9, leader: 0, creative: 1 }
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&card=1#/profile') // a new query string reloads, so the seeded save is read
+  await expect(page.locator('.id-title')).toHaveText(/Becoming: The Hustler/)
+  await expect(page.locator('.id-row')).toHaveCount(5)
+  await page.screenshot({ path: `${OUT}/6-student-card.png`, fullPage: true })
+})

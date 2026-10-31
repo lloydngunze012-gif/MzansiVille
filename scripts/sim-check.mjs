@@ -9,6 +9,7 @@ import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
 import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
 import { crushChat, crushReply } from '../src/engine/crush-arc.js'
+import { addIdentity, identityFromAction, identityTitle } from '../src/engine/identity.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -142,6 +143,20 @@ check('crush arc: a beat a day at the Quad; replies set what later days remember
   crushReply(run, 0)
   assert.equal(run.crush.asked, 'yes')
   assert.deepEqual(Object.keys(run.crush.beats), ['1', '2', '3', '5'])
+})
+
+check('identity: New kid, then Becoming, then Known as, from what you do', () => {
+  const run = createRun(district, { ...character, path: 'hustler' })
+  assert.equal(identityTitle(run).text, 'New kid')
+  const job = district.activities.find((a) => a.id === 'job_shift')
+  identityFromAction(run, job, { money: 120 })
+  const becoming = identityFromAction(run, job, { money: 120 })
+  assert.equal(becoming?.text, 'Becoming: The Hustler')
+  for (let i = 0; i < 7; i++) identityFromAction(run, job, { money: 120 })
+  assert.equal(identityTitle(run).text, 'Known as: The Hustler')
+  // A different life catches up: the title follows what you do, not what you said.
+  for (let i = 0; i < 12; i++) addIdentity(run, { scholar: 2 })
+  assert.equal(identityTitle(run).path.id, 'scholar')
 })
 
 check('home and course places', () => {

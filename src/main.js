@@ -37,6 +37,7 @@ import { replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
 import { newCrush } from './crush.js'
+import { addIdentity, identityCard } from './engine/identity.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -579,6 +580,8 @@ function gameAct(act, button) {
     const res = replyTo(save.run, ui.talk.id, index)
     if (res) {
       ui.talk = { ...ui.talk, res, said }
+      const titled = addIdentity(save.run, ['bongani', 'lindiwe', 'ruan'].includes(ui.talk.id) ? { leader: 1 } : res.closeDelta > 0 ? { socialite: 1 } : {})
+      if (titled && titled.level !== 'new') save.run.queue.push(identityCard(save.run, titled))
       const done = checkGoals(save.run)
       if (done.length) { flash(`\u{1F3AF} Goal done: ${goalText(save.run, done[0])}`); blip(1320) }
       window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: res.tone } }))
