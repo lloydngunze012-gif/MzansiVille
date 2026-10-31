@@ -5,6 +5,7 @@ import { chatFor } from '../engine/people.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
+import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -280,9 +281,10 @@ function resultCard(state) {
   if (card.kind === 'event' && card.choices) return eventCard(state, card)
   if (card.kind === 'consequence' || card.kind === 'over') return consequenceCard(card)
   if (card.kind === 'milestone') return milestoneCard(state, card)
+  if (card.kind === 'goals') return goalsCardHtml(run)
   if (card.choices || card.kind === 'shop') return `<div class="g-card-wrap">${cardHtml(card, state)}</div>`
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
-  const label = { result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
+  const label = { goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
   const fx = card.kind === 'result' && ui.delta && card.id.startsWith('result-') ? effectChips(ui.delta, 'big') : ''
   const body = fx ? '' : `<p>${esc(String(card.text || '').replaceAll('Hunger', 'Fullness'))}</p>`
   return `<div class="g-scrim soft" data-act="dismiss"></div>
@@ -293,6 +295,30 @@ function resultCard(state) {
     ${twist ? `<p class="g-twistline">\u{1F3B2} ${esc(twist.text)}</p>` : ''}
     <button type="button" class="g-go block" data-act="dismiss"${twist ? ' data-pair="1"' : ''}>${q.length > (twist ? 2 : 1) ? 'Next' : 'Continue'}</button>
   </aside>`
+}
+
+// Today's three goals (must, story, dream) and the year dream underneath.
+function goalsCardHtml(run) {
+  const list = run.goals?.list || []
+  const dream = dreamOf(run)
+  const pct = Math.round(dreamProgress(run) * 100)
+  return `<div class="g-scrim"></div>
+  <aside class="g-result g-goals" role="dialog" aria-label="Today's goals" data-goals="${list.length}">
+    <p class="g-kind">Day ${run.day} \u00b7 Today's goals</p>
+    <h2>${list.every((g) => g.done) && list.length ? 'All done today' : 'Three things today'}</h2>
+    <ol class="g-goal-list">${list.map((g) => `<li class="${g.kind}${g.done ? ' done' : ''}"><span class="g-gk">${GOAL_KIND[g.kind]}</span><span>${esc(goalText(run, g))}</span><b>${g.done ? '\u2713' : ''}</b></li>`).join('')}</ol>
+    <p class="g-dream"><span>${dream.icon} Year dream: <b>${esc(dream.label)}</b></span><i><em style="width:${Math.max(3, pct)}%"></em></i><small>${pct}%</small></p>
+    <button type="button" class="g-go block" data-act="dismiss">Let's go</button>
+  </aside>`
+}
+
+// The "right now" chip (top left) and the day-goal count beside it.
+function nowRow(run) {
+  const now = rightNow(run)
+  const list = run.goals?.day === run.day ? run.goals.list : []
+  if (!now && !list.length) return ''
+  const done = list.filter((g) => g.done).length
+  return `<div class="g-nowrow">${now ? `<p class="g-now ${now.tone}" role="status" data-now>${now.icon} ${esc(now.text)}</p>` : ''}${list.length ? `<button type="button" class="g-goalsbtn${done === list.length ? ' win' : ''}" data-act="goals" aria-label="Today's goals">\u{1F3AF} ${done}/${list.length}</button>` : ''}</div>`
 }
 
 function summaryCard(state) {
@@ -355,6 +381,7 @@ export function mapHome(state, openPlace = '') {
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
   return `<main class="screen g-screen${world ? ' g-3d' : ''}" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">
     ${hud(district, run)}
+    ${run.mode === 'play' ? nowRow(run) : ''}
     ${viewBar(world)}
     ${world ? '<section class="g-map g-world-gap" aria-label="3D campus"></section>' : `<section class="g-map" aria-label="Campus map">
       ${groundHtml()}

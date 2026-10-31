@@ -34,6 +34,7 @@ import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
 import { roommateOf } from './avatar.js'
 import { replyTo } from './engine/people.js'
+import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -207,6 +208,9 @@ function endMorning(skip, result) {
     run.at = 'gate'
     run.lectureRoute = true
   }
+  // Arrival: today's goals slide in.
+  startGoals(run)
+  run.queue = [goalsCard(run), ...run.queue.filter((card) => card.kind !== 'goals')]
   ui.gear = false
   persist()
   go('play')
@@ -572,10 +576,17 @@ function gameAct(act, button) {
     const res = replyTo(save.run, ui.talk.id, index)
     if (res) {
       ui.talk = { ...ui.talk, res, said }
+      const done = checkGoals(save.run)
+      if (done.length) { flash(`\u{1F3AF} Goal done: ${goalText(save.run, done[0])}`); blip(1320) }
       window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: res.tone } }))
       blip(res.tone === 'bad' ? 330 : 880)
       persist()
     }
+    paint()
+    return true
+  }
+  if (act === 'goals' && save.run?.goals) {
+    save.run.queue = [goalsCard(save.run), ...save.run.queue.filter((card) => card.kind !== 'goals')]
     paint()
     return true
   }

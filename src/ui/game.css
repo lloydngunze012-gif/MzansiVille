@@ -450,3 +450,23 @@ body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 .g-talk .g-fx.down{background:#ffe3dd}
 .g-talk-up{margin:0 0 8px;padding:8px 10px;border-radius:12px;background:#fff1c2;font:800 13px system-ui}
 .g-talk .g-go.ghost{background:#fff;color:#22143b;border:2px solid #22143b33;box-shadow:none}
+
+/* Goal ladder: the "right now" chip, the goal count, the day goal card */
+.g-nowrow{position:relative;z-index:5;display:flex;gap:6px;margin:6px 10px 0;align-items:stretch;pointer-events:none}
+.g-now{flex:1;margin:0;padding:7px 12px;border-radius:999px;background:#22143be6;color:#fff6e6;font:700 13px system-ui;border:1px solid #f0c40066;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 10px #0006}
+.g-now.urgent{border-color:#ff7a59;color:#ffd9cc}
+.g-now.win{border-color:#47d18c;color:#d6ffe8}
+.g-goalsbtn{flex:none;pointer-events:auto;min-height:34px;padding:0 12px;border-radius:999px;border:1px solid #f0c400;background:#f0c400;color:#22143b;font:800 13px system-ui;box-shadow:0 3px 10px #0006}
+.g-goalsbtn.win{background:#47d18c;border-color:#47d18c}
+.g-goals h2{margin-bottom:6px}
+.g-goal-list{list-style:none;margin:6px 0 10px;padding:0;display:grid;gap:6px}
+.g-goal-list li{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:12px;background:#2a18460f;font-weight:700}
+.g-goal-list li span:nth-child(2){flex:1}
+.g-goal-list li b{color:#1f9d55;font-size:18px}
+.g-goal-list li.done span:nth-child(2){text-decoration:line-through;opacity:.6}
+.g-gk{flex:none;min-width:46px;text-align:center;padding:2px 6px;border-radius:999px;font:800 11px system-ui;text-transform:uppercase;letter-spacing:.04em;color:#fff}
+.must .g-gk{background:#d9534f}.story .g-gk{background:#7b3fe4}.dream .g-gk{background:#1d7fb8}
+.g-dream{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;margin:0 0 10px;font-size:13px}
+.g-dream i{grid-column:1;display:block;height:8px;border-radius:999px;background:#2a18461f;overflow:hidden}
+.g-dream i em{display:block;height:100%;background:linear-gradient(90deg,#f0c400,#ff8a4c)}
+.g-dream small{grid-column:2;grid-row:2;font-weight:800}

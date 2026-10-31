@@ -7,6 +7,7 @@ import { authEnabled } from '../net.js'
 
 import { boardScreen, lobbyScreen } from './social.js'
 import { gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
+import { dreamOf, dreamProgress } from '../engine/goals.js'
 
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -450,6 +451,7 @@ function profile(state) {
     </div>
     <p style="margin:12px 0">${esc(run.lastStatLine)}</p>
     <p class="fine">Bestie: ${esc(run.bestieName)} from ${esc(run.character.residence)}</p>
+    <section class="dream-card" aria-label="Year dream"><p>${dreamOf(run).icon} Year dream: <b>${esc(dreamOf(run).label)}</b></p><div class="dream-bar"><i style="width:${Math.max(3, Math.round(dreamProgress(run) * 100))}%"></i></div><small>${Math.round(dreamProgress(run) * 100)}% of the way</small></section>
     ${card}
     <div class="stack" style="margin-top:12px">
       <button class="btn primary block" type="button" data-act="nav" data-go="share">Share card</button>

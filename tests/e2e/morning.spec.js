@@ -162,6 +162,11 @@ test('day 1 morning: room to campus', async ({ page }) => {
   }
   expect(nearest).toBeGreaterThan(0.7)
   await page.waitForTimeout(1500)
+  // Arrival: today's three goals slide in (must, story, dream) with the year dream.
+  await expect(page.locator('.g-goals')).toBeVisible({ timeout: 20000 })
+  await expect(page.locator('.g-goal-list li')).toHaveCount(3)
+  await expect(page.locator('.g-goal-list li').first()).toContainText('9:00 lecture')
+  await expect(page.locator('.g-dream')).toContainText('Year dream')
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
@@ -169,6 +174,10 @@ test('day 1 morning: room to campus', async ({ page }) => {
     await page.waitForTimeout(300)
   }
   await expect(page.locator('.g-route')).toContainText('Your lecture is at SMIG')
+  // Goal ladder: the right-now chip points at the lecture; the goal count opens today's card again.
+  await expect(page.locator('.g-now')).toContainText('Lecture at SMIG')
+  await expect(page.locator('.g-goalsbtn')).toContainText('0/3')
+  await shot('10b_now_chip')
   // Home keeps the save: Continue appears.
   await page.locator('.g-home').first().tap()
   await expect(page.locator('[data-act="continue"]')).toBeVisible()
