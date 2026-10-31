@@ -190,6 +190,8 @@ export function createScenes(api) {
       if (place.id === 'cafeteria' && api.dressing.queue?.caf?.people) {
         // The caf queue: everyone ahead is served, steps aside, the line moves up.
         const c = api.dressing.queue.caf
+        c.busy = true
+        while (c.cycling) await api.wait(0.3)
         const home = c.people.map((p) => ({ p, x: p.position.x, z: p.position.z, r: p.rotation.y }))
         restore = () => home.forEach(({ p, x, z, r }) => { p.position.set(x, 0, z); p.rotation.y = r })
         const line = c.people.slice()
@@ -246,6 +248,7 @@ export function createScenes(api) {
       }
       api.hold(null)
       if (restore) restore()
+      if (api.dressing.queue?.caf) api.dressing.queue.caf.busy = false
     },
 
     // Sit somewhere (steps, grass, fountain edge) and eat.

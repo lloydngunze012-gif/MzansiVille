@@ -52,6 +52,8 @@ export function createActivities(api) {
     async queueFood() {
       const q = api.dressing.queue?.stall
       if (!q) return scripts.stand()
+      q.busy = true // the line waits for you (no one leaves while you join)
+      while (q.cycling) await api.wait(0.3)
       const end = q.slot(q.people.length)
       api.frame(q.front)
       await api.walkTo(end.x, end.z)
