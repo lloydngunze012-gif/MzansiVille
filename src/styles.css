@@ -542,7 +542,9 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
   color: #1c1915;
   font-weight: 700;
 }
-.map-canvas { position: relative; flex: 1; min-height: 0; }
+.map-canvas { position: relative; margin: auto; width: auto; height: auto; max-width: 100%; max-height: 100%; flex: 0 1 auto; min-height: 0; }
+@media (orientation: portrait) { .map-canvas { width: 100%; } }
+@media (orientation: landscape) { .map-canvas { height: 100%; } }
 .map-svg { width: 100%; height: 100%; display: block; border-radius: 12px; }
 .map-pin {
   position: absolute;
@@ -870,3 +872,8 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .id-title{margin:2px 0 4px;display:inline-block;padding:3px 10px;border-radius:999px;background:#f0c400;color:#22143b;font-weight:800;font-size:13px}
 .id-title[data-title="new"]{background:#ffffff22;color:#fff6e6}
 .id-card .id-row{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin:4px 0;font-size:13px}
+/* Walking to a place from the map: skip the walk (time passes) */
+.go-skip{position:absolute;z-index:6;right:12px;bottom:calc(120px + env(safe-area-inset-bottom));min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #f0c400;background:#22143be6;color:#fff6e6;font:800 14px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
+.go-skip[hidden]{display:none}
+/* Map labels read on any background, and stay small */
+.map-pin .lbl { color: #fff; font: 800 10px/1.1 system-ui; text-shadow: 0 1px 2px #000, 0 0 4px #000; max-width: 76px; text-align: center; white-space: normal; }
