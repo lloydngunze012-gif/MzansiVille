@@ -49,6 +49,7 @@ Every promise and every button must lead to something happening. Judge only THAT
 3. Every button and tap target leads to a sensible result. Re-run the UX audit and fix any dead end.
 FINISH LINE (412x915, taps only): A1 "Walk away" ends the chat and the player moves off. A2 Talk to a student -> "Let's get something to eat" -> both walk to the cafeteria, queue, buy, sit together and eat. A3 Talk to a student -> "Let's study" -> both go to the library and study. A4 "Swap numbers" -> the contact appears in your phone. A5 Tap Auntie Pinky -> back of the line -> front -> order -> pay -> sit and eat. A6 The full list of conversation replies and what each does. A7 UX audit: zero dead ends.
 Save normal-speed screenshots for A1-A5 in docs/sprints/actions/ plus report.md, and push.
+Status: the Actions sprint is DONE and pushed. Report: docs/sprints/actions/report.md (A6 list: replies.md, A7 audit: ux-audit.md). Wait for the owner's next focus; don't start one. Someone coming along with you: startCompanion in src/world/scene.js; reply acts in people.json (act field) and crush-arc.js.
 
 # START HERE (handoff for a new session, 31 Oct 2026)
 State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.
