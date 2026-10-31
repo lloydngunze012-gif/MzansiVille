@@ -81,6 +81,9 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await expect(host).toHaveAttribute('data-rolled', '07:10', { timeout: 20000 })
   await shot('1_room_wake')
 
+  await expect(host).toHaveAttribute('data-wakeup', 'sit', { timeout: 60000 })
+  await page.waitForTimeout(500)
+  await shot('1b_sit_up')
   await atStep('kettle')
   const bed = await pos()
   expect(bed[0]).toBeGreaterThan(-1.6) // got out of bed
