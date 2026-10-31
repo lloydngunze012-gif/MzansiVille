@@ -51,6 +51,18 @@ FINISH LINE (412x915, taps only): A1 "Walk away" ends the chat and the player mo
 Save normal-speed screenshots for A1-A5 in docs/sprints/actions/ plus report.md, and push.
 Status: the Actions sprint is DONE and pushed. Report: docs/sprints/actions/report.md (A6 list: replies.md, A7 audit: ux-audit.md). Wait for the owner's next focus; don't start one. Someone coming along with you: startCompanion in src/world/scene.js; reply acts in people.json (act field) and crush-arc.js.
 
+# CURRENT SPRINT: MOTION (owner, 31 Oct). Only motion. Finish, push, then STOP and report. Out-of-focus problems go to docs/backlog.md.
+GOAL: every body moves, stands, sits and lies like a real person, the player and all NPCs, in every scene.
+1. FEET on top of the ground, never in it; walk/run animation speed matches movement speed (no sliding); smooth turns, no snapping.
+2. SHOES on every outfit, player and NPCs.
+3. SITTING: hips on the seat, feet on the floor, back to the backrest; never inside a chair, bench or table (Quad benches, caf chairs, terrace tables, lecture benches, library, res desk chairs).
+4. LYING on top of the mattress; natural into and out of bed (no zombie arms, no T-pose).
+5. COLLISIONS: nobody walks through walls, doors, beds, tables, chairs, counters or other people.
+6. NOBODY FROZEN: standing plays idle, walking walks.
+7. From the backlog: a friend walks beside you; walks back after an activity; never show the blocky stand-in while a model loads.
+TESTS: automatic checks (foot vs ground, hip vs seat, body vs mattress, no overlaps) + normal-speed Playwright videos per journey.
+FINISH LINE (412x915, normal speed): M1 Quad walk 20 s; M2 sit on Quad bench, caf chair, lecture bench, library chair; M3 bed, sleep, get up; M4 walk into wall, bed, table; M5 eat together (beside you, sits, walks back); M6 every outfit has shoes; M7 crowded Quad 30 s. Save screenshots + videos in docs/sprints/motion/ with report.md, push, STOP.
+
 # START HERE (handoff for a new session, 31 Oct 2026)
 State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.
 Every list below is finished (newest first): Sprint 1 completion, speed rules, owner + player test (items 1-7), the Quaternius list (items 1-10, spec section 7 a-h), and the earlier plans. Only the "ON HOLD" item (off-campus residence names) and the "Still open" notes in the sprint report remain.
