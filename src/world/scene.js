@@ -405,7 +405,13 @@ function follow(dt) {
 // Everyone tappable: the crowd, the places' own people (vendor, campaigners...).
 function everyone() {
   if (!campus) return []
-  return (crowd?.people.map((p) => p.avatar) || []).concat(campus.dressing?.statics || [])
+  // Both possible crushes are built at the Quad; only yours is there.
+  const crushId = currentRun?.crush?.id
+  return (crowd?.people.map((p) => p.avatar) || []).concat((campus.dressing?.statics || []).filter((a) => {
+    if (!a.userData.crush) return true
+    a.visible = a.userData.personId === crushId
+    return a.visible
+  }))
 }
 
 // A close camera shot (talking, activities) overrides the follow camera.
@@ -561,9 +567,18 @@ window.addEventListener('mzansi-talk-end', () => {
 
 // Name tags over the people near you (so you can see who to tap).
 const TAG_NEAR = 10
+function crushTagName(avatar) {
+  return currentRun?.crush?.nameKnown ? currentRun.crush.name : '?'
+}
 function nameTag(avatar) {
+  // The crush's tag is "?" until you learn their name.
+  if (avatar.userData.crush && avatar.userData.tag && avatar.userData.tagName !== crushTagName(avatar)) {
+    avatar.remove(avatar.userData.tag)
+    avatar.userData.tag = undefined
+  }
   if (avatar.userData.tag !== undefined) return avatar.userData.tag
-  const name = nameOf(avatar.userData.personId)
+  const name = avatar.userData.crush ? crushTagName(avatar) : nameOf(avatar.userData.personId)
+  avatar.userData.tagName = name
   if (!name) { avatar.userData.tag = null; return null }
   const canvas = document.createElement('canvas')
   canvas.width = 256

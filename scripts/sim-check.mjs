@@ -8,6 +8,7 @@ import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.j
 import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
 import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
+import { crushChat, crushReply } from '../src/engine/crush-arc.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -119,6 +120,28 @@ check('goal ladder: three day goals (must, story, dream), a right-now nudge, the
     assert.equal(next.queue[0].kind, 'goals')
     assert.equal(next.goals.list[0].id, 'lecture')
   }
+})
+
+check('crush arc: a beat a day at the Quad; replies set what later days remember', () => {
+  const run = createRun(district, { ...character, interest: 'girls' })
+  run.crush = { id: 'amahle', name: 'Amahle', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: true }
+  run.lectureResolved = true
+  assert.match(rightNow(run).text, /from the bus is at the Quad/)
+  const d1 = crushChat(run)
+  crushReply(run, 0)
+  assert.equal(run.crush.nameKnown, true)
+  assert.notEqual(crushChat(run).line, d1.line) // today's beat is done: a different line
+  run.day = 2
+  assert.match(crushChat(run).line, /bus seat/) // you sat next to her: she has your earphones
+  crushReply(run, 0)
+  run.day = 3
+  crushReply(run, 0)
+  assert.equal(run.crush.studyDate, true)
+  run.day = 5
+  assert.ok(run.crush.closeness >= 10)
+  crushReply(run, 0)
+  assert.equal(run.crush.asked, 'yes')
+  assert.deepEqual(Object.keys(run.crush.beats), ['1', '2', '3', '5'])
 })
 
 check('home and course places', () => {
