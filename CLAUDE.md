@@ -35,6 +35,16 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# SPRINT 1 COMPLETION (owner, after the player test). Finish these, then STOP (no Sprint 2).
+Confirmed working by the owner: course venues, map walking, the Law lecture, Pinky's order flow, creator icons, bus-stop facing.
+1. QUEUE THEN ORDER: no ordering from Auntie Pinky or Mam' Gugu without queueing. Tapping her (or "Food queue") walks you to the back of the line; the line moves; at the front her order card opens automatically. Tapping her from outside the line: "Back of the line, baby!" and you join it. Merge "Stand in the breakfast queue" into this flow.
+2. SIT AND EAT, VISIBLY: after "Sit and eat", walk to a free table, sit (hips on the seat, feet on the floor), the food appears on the table, eat for a few seconds, then stand. "Take it to go": walk off eating.
+3. REMAINING VERBS, each visible and working: STUDY (library desk or grass, book open), WORK (the shift shows the job), HANG OUT (Sit with them: both sit and chat; Study together; Swap numbers -> phone), SLEEP (lie in bed at night, wake next morning naturally), lecturer consultation (+Grades).
+4. LECTURE SEATS: other students in the lecture hall sit in the benches, not standing between them.
+5. WALK TIME: if a walk across campus takes more than 15 s on a phone, speed up the walk or make "Skip there" the default for long trips.
+FINISH LINE (412x915, taps only, NORMAL speed screenshots): J1 Law student gate -> Law lecture. J2 Map -> Cafeteria, sheet on arrival. J3 Tap Pinky -> back of the line -> line moves -> front -> bunny chow -> pay -> Sit and eat -> table -> eat -> stand. J4 Quad: talk to a student -> Sit with them -> both on a bench chatting. J5 Library: study at a desk. J6 Night in res: bed, sleep, wake next morning. J7 Job shift visibly worked.
+Save 3-4 normal-speed screenshots per journey in docs/sprints/sprint1/ (J1-1.png...) plus report.md, push, then STOP and report.
+
 # SPEED RULES (owner, from now on)
 1. Tests run with ?fast=1: animations, walks and timers run 10x faster (src/speed.js). Use it for all e2e tests and audits.
 2. After each fix, run only the tests that touch what changed. Run the full suite once, at the end of the sprint.
