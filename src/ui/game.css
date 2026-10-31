@@ -372,6 +372,7 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 .mm-kind{margin:0;font:800 12px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#b07d00}
 .mm-times{display:flex;gap:10px}.mm-times span{flex:1;padding:8px;border-radius:12px;background:#2a18460f;text-align:center}
 .mm-card .mm-go{width:100%;margin-top:6px;animation:none}
+.mm-card .mm-hook{margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:#7b3fe41a;font-weight:700}
 .g-goal{position:relative;z-index:5;margin:6px 10px 0;padding:8px 12px;border-radius:14px;background:#22143be6;color:#fff6e6;font:700 14px system-ui;border:1px solid #f0c40066;display:flex;justify-content:space-between;gap:8px;pointer-events:auto}
 .g-goal b{color:#f0c400;white-space:nowrap}
 .g-goal.late b{color:#ff8a7a}
