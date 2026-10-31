@@ -50,6 +50,8 @@ The player experience spec is the main direction for the game. Every scene follo
 9. MORNING CHORES: replace "Head out", "Walk to the bus stop" and "Get on the bus" with one choice: Skip to campus / Walk to the bus. Make the bus stop the crush meet-cute (spec section 5, 4:30).
 10. THEN FOLLOW THE SPEC, section 7, in order: a. goal ladder, b. creator part 2, c. crush arc days 1-5, d. identity paths and card title, e. day summary and cliffhanger text, f. 10 random daily moments, g. the other arcs, h. days 1-5 each with a goal, Friday test payoff.
 
+Status: items 1-10 done and pushed (up to b373434). Where things live: src/engine/goals.js (day goals, right-now chip, year dream), src/story.js (creator part 2), src/crush.js + src/engine/crush-arc.js (crush), src/engine/identity.js (paths, titles), src/engine/dayend.js (summary, cliffhanger texts, run.inbox), src/engine/moments.js (10 random moments), src/engine/arcs.js (roommate, rival, money, lecturer, SRC, home beats), src/engine/friday.js (day themes, week goal, Friday test). Random moments and story beats are off under automation (navigator.webdriver) unless the URL has ?moments=1.
+
 ---
 
 # CURRENT LIST (owner, 31 Oct): do NOT stop for review. Push after each item.
