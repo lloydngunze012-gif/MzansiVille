@@ -562,8 +562,9 @@ function nameTag(avatar) {
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
-  sprite.scale.set(1.6, 0.4, 1)
-  sprite.position.y = 2.05
+  // 18 cm tall: always smaller than a head (about 25 cm), at any distance.
+  sprite.scale.set(0.72, 0.18, 1)
+  sprite.position.y = 1.98
   sprite.name = 'name-tag'
   sprite.raycast = () => {}
   avatar.add(sprite)
@@ -573,7 +574,8 @@ function nameTag(avatar) {
 function updateTags() {
   for (const avatar of everyone()) {
     const d = Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
-    const want = d < TAG_NEAR && !acting && !talk
+    // In Eye view, someone right in front of you needs no label over their face.
+    const want = d < TAG_NEAR && !acting && !talk && !(rig.mode === 'eye' && d < 2.2)
     const tag = want ? nameTag(avatar) : avatar.userData.tag
     if (tag) tag.visible = want
   }

@@ -283,7 +283,9 @@ export function markDoors(buildings, ids) {
     const beacon = group.getObjectByName('beacon')
     const badge = group.getObjectByName('badge')
     if (beacon) beacon.visible = on
-    if (badge) badge.visible = on
+    // The glowing marker at the door says "something to do here"; the floating "!"
+    // said the same thing without explaining itself, so it stays hidden.
+    if (badge) badge.visible = false
   }
 }
 

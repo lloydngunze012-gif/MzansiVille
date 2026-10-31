@@ -83,3 +83,11 @@ for (const [cam, hour] of [['sims', 12], ['eye', 12], ['sims', 21]]) {
     await page.screenshot({ path: `${OUT}/look-outside-${cam}-${hour}.png` })
   })
 }
+
+test('look: eye view among people at the Quad', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?shot=cam-eye&spawn=quad&facing=0.9&hour=12')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await page.waitForTimeout(5000)
+  await page.screenshot({ path: `${OUT}/look-quad-eye.png` })
+})
