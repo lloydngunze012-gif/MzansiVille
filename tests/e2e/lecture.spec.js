@@ -55,7 +55,7 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await page.screenshot({ path: `${OUT}/3b_cold_call.png` })
   await expect(page.locator('[data-lc="choice"]')).toHaveCount(2)
   await page.locator('[data-lc="choice"]').first().tap()
-  await atStep('result')
+  await expect(host).toHaveAttribute('data-step', /result|done/, { timeout: 30000 }) // fast mode can pass the result
   await expect(host).toHaveAttribute('data-tone', /good|neutral|bad/)
   await page.screenshot({ path: `${OUT}/4_result.png` })
 
