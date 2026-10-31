@@ -1290,9 +1290,17 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'next') {
     beginNextDay(district, save.run, new Date())
-    save.run.at = homePlaceId(district, save.run.character.residence)
+    const home = homePlaceId(district, save.run.character.residence)
+    save.run.at = home
     ui.delta = null
     finishTurn()
+    // You wake up in your room, not on the path outside; today's goals come after.
+    if (save.run.mode === 'play' && document.body.dataset.world === '1') {
+      const held = save.run.queue.filter((card) => card.kind === 'goals')
+      save.run.queue = save.run.queue.filter((card) => card.kind !== 'goals')
+      paint()
+      setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-act', { detail: { placeId: home, actionId: 'talk_wake', commit() { save.run.queue = [...held, ...save.run.queue]; persist(); paint() } } })), 600)
+    }
     return
   }
   if (act === 'restart') {
