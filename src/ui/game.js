@@ -7,6 +7,7 @@ import { ART, LAYOUT, groundHtml } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import { identityTitle } from '../engine/identity.js'
+import { comeBackReasons } from '../engine/dayend.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -308,6 +309,7 @@ function goalsCardHtml(run) {
     <p class="g-kind">Day ${run.day} \u00b7 Today's goals</p>
     <h2>${list.every((g) => g.done) && list.length ? 'All done today' : 'Three things today'}</h2>
     <ol class="g-goal-list">${list.map((g) => `<li class="${g.kind}${g.done ? ' done' : ''}"><span class="g-gk">${GOAL_KIND[g.kind]}</span><span>${esc(goalText(run, g))}</span><b>${g.done ? '\u2713' : ''}</b></li>`).join('')}</ol>
+    ${run.goals?.text ? `<p class="g-lasttext">\u{1F4AC} <b>${esc(run.goals.text.from)}:</b> ${esc(run.goals.text.text)}</p>` : ''}
     <p class="g-title">${esc(identityTitle(run).text)}</p>
     <p class="g-dream"><span>${dream.icon} Year dream: <b>${esc(dream.label)}</b></span><i><em style="width:${Math.max(3, pct)}%"></em></i><small>${pct}%</small></p>
     <button type="button" class="g-go block" data-act="dismiss">Let's go</button>
@@ -329,12 +331,24 @@ function summaryCard(state) {
   const line = s.hungry ? 'You slept hungry. Tomorrow starts a little tired.'
     : s.slept ? 'You made it to bed. Energy refills overnight.'
       : 'You never slept. Tomorrow starts 30 energy down.'
+  const review = s.review || { done: [], missed: [] }
+  const c = run.crush
+  const people = [
+    run.bestieName ? [run.bestieName, run.people?.[run.bestieName.toLowerCase()]?.close || 0] : null,
+    c?.met ? [c.nameKnown ? c.name : 'The one from the bus', Math.min(100, (c.closeness || 0) * 4)] : null,
+  ].filter(Boolean)
+  const reasons = comeBackReasons(run)
   return `<div class="g-scrim"></div>
   <aside class="g-result g-summary" role="dialog" data-screen-card="summary">
     <p class="g-kind">End of day ${s.day || run.day}</p>
     <h2>${s.slept ? 'Lights out' : "That's the day"}</h2>
+    ${review.done.length || review.missed.length ? `<ul class="g-review">${review.done.map((t) => `<li class="ok">\u2705 ${esc(t)}</li>`).join('')}${review.missed.map((m) => `<li class="miss">\u274C ${esc(m.text)}${m.then ? `<small>${esc(m.then)}</small>` : ''}</li>`).join('')}</ul>` : ''}
+    ${review.title && review.title.level !== 'new' ? `<p class="g-shift">\u2728 People are starting to see you as: <b>${esc(review.title.path.name)}</b></p>` : `<p class="g-shift">\u2728 Still the new kid. Tomorrow you choose again.</p>`}
+    ${people.length ? `<div class="g-ppl">${people.map(([name, close]) => `<span>${esc(name)}<i><em style="width:${Math.max(4, close)}%"></em></i></span>`).join('')}</div>` : ''}
     <p>${esc(line)}</p>
     <ul class="g-delta">${summaryRows(state.morning, run.stats)}</ul>
+    ${s.text ? `<div class="g-phone" data-cliff><p class="g-phone-top">\u{1F4F1} New message</p><p class="g-phone-from">${esc(s.text.from)}</p><p class="g-phone-msg">${esc(s.text.text)}</p></div>` : ''}
+    ${reasons.length ? `<p class="g-reasons">Day ${(s.day || run.day) + 1} starts when you're ready: ${reasons.map(esc).join(' \u00b7 ')}</p>` : ''}
     <div class="g-two"><button type="button" class="g-go ghost" data-act="share-day">\u{1F4E4} Share my day</button><button type="button" class="g-go" data-act="next">Start day ${(s.day || run.day) + 1}</button></div>
   </aside>`
 }

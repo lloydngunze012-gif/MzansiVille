@@ -139,3 +139,34 @@ test('student card: the title shows who you are becoming, with the five paths', 
   await expect(page.locator('.id-row')).toHaveCount(5)
   await page.screenshot({ path: `${OUT}/6-student-card.png`, fullPage: true })
 })
+
+test('day summary: goals, who you are becoming, the people, and a text on the phone', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    const text = { from: 'Unknown number', text: 'Hey, it’s the one from the bus \u{1F44B} You left your earphones on the seat.' }
+    Object.assign(save.run, {
+      mode: 'summary',
+      earned: 120,
+      bestieName: 'Zanele',
+      people: { zanele: { chats: 2, close: 18 } },
+      crush: { id: 'amahle', name: 'Amahle', met: 'bus', nameKnown: false, closeness: 5, sat: true },
+      inbox: [{ ...text, day: 1, read: false }],
+      summary: {
+        day: 1, slept: true, stats: save.run.stats, text,
+        review: { done: ['Get to your 9:00 lecture', 'Earn your first R50'], missed: [{ text: 'Find out the name of the one from the bus', then: 'They’re still a mystery.' }], title: { level: 'becoming', path: { name: 'The Hustler' } } },
+      },
+    })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&sum=1#/summary')
+  const card = page.locator('[data-screen-card="summary"]')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await expect(card.locator('.g-review li')).toHaveCount(3)
+  await expect(card.locator('.g-shift')).toContainText('The Hustler')
+  await expect(card.locator('[data-cliff]')).toContainText('earphones')
+  await expect(card.locator('.g-reasons')).toContainText('1 unanswered text')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/7-day-summary.png` })
+})

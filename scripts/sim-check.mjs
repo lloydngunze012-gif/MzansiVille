@@ -10,6 +10,7 @@ import { balancedScore } from '../src/engine/board.js'
 import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
 import { crushChat, crushReply } from '../src/engine/crush-arc.js'
 import { addIdentity, identityFromAction, identityTitle } from '../src/engine/identity.js'
+import { cliffhanger } from '../src/engine/dayend.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -157,6 +158,27 @@ check('identity: New kid, then Becoming, then Known as, from what you do', () =>
   // A different life catches up: the title follows what you do, not what you said.
   for (let i = 0; i < 12; i++) addIdentity(run, { scholar: 2 })
   assert.equal(identityTitle(run).path.id, 'scholar')
+})
+
+check('day summary: goals done and missed, then a cliffhanger text that opens tomorrow', () => {
+  const run = createRun(district, character)
+  run.crush = { id: 'amahle', name: 'Amahle', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'bus', sat: true }
+  startGoals(run)
+  endDay(district, run, { slept: true })
+  assert.equal(run.mode, 'summary')
+  assert.equal(run.summary.review.done.length + run.summary.review.missed.length, 3)
+  assert.match(run.summary.text.text, /earphones/)
+  assert.equal(run.summary.text.from, 'Unknown number')
+  assert.equal(run.inbox.length, 1)
+  beginNextDay(district, run, new Date(Date.now() + 864e5))
+  if (run.mode === 'play') {
+    assert.match(run.goals.text.text, /earphones/) // last night's text on today's goal card
+    assert.equal(run.inbox[0].read, true)
+  }
+  // Other stories send other texts.
+  const nsfas = createRun(district, { ...character, funding: 'nsfas' })
+  nsfas.day = 2
+  assert.equal(cliffhanger(nsfas).from, 'NSFAS')
 })
 
 check('home and course places', () => {

@@ -471,3 +471,21 @@ body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 .g-dream i em{display:block;height:100%;background:linear-gradient(90deg,#f0c400,#ff8a4c)}
 .g-dream small{grid-column:2;grid-row:2;font-weight:800}
 .g-title{margin:0 0 6px;font-weight:800;color:#7b3fe4}
+
+/* Day summary: goals, the identity shift, people, and the cliffhanger text */
+.g-summary{max-height:calc(100vh - 40px);overflow-y:auto}
+.g-review{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px;font-weight:700;font-size:14px}
+.g-review small{display:block;font-weight:500;opacity:.75;margin-left:22px}
+.g-shift{margin:6px 0;padding:8px 10px;border-radius:12px;background:#7b3fe41a;font-weight:700}
+.g-ppl{display:grid;gap:4px;margin:6px 0;font-size:13px;font-weight:700}
+.g-ppl span{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;align-items:center}
+.g-ppl i{display:block;height:8px;border-radius:999px;background:#2a18461f;overflow:hidden}
+.g-ppl em{display:block;height:100%;background:linear-gradient(90deg,#e8497a,#ff8a4c)}
+.g-phone{margin:10px 0;padding:10px 12px;border-radius:16px;background:#1c1915;color:#fff;box-shadow:0 6px 20px #0006;animation:g-phone-in .6s cubic-bezier(.2,1.4,.4,1) .4s both}
+.g-phone-top{margin:0;font:700 11px system-ui;opacity:.7;text-transform:uppercase;letter-spacing:.06em}
+.g-phone-from{margin:2px 0;font-weight:800;color:#47d18c}
+.g-phone-msg{margin:0;padding:8px 10px;border-radius:12px 12px 12px 4px;background:#2b2b30;font-weight:600}
+.g-reasons{margin:6px 0;font-size:13px;font-weight:700;color:#7b3fe4}
+@keyframes g-phone-in{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
+.g-lasttext{margin:0 0 8px;padding:8px 10px;border-radius:12px;background:#1c1915;color:#fff;font-size:13px}
+.g-lasttext b{color:#47d18c}
