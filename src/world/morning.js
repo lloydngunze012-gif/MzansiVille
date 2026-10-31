@@ -63,7 +63,7 @@ function forGender(text) {
 }
 const ON_TIME_BY = 9 * 60
 const LECTURE = 9 * 60
-const SPEED = 2.4
+const SPEED = 1.8
 
 let cup, halo, kettleLight, fade
 let host, renderer, scene, camera, player, roommate, crushAv, kettle, steamGroup, bowl, packet, door, bus, busDoor, marker, sign

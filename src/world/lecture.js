@@ -11,7 +11,7 @@ import { lookForPerson } from './cast.js'
 import { SPEED as FAST, ms } from '../speed.js'
 
 const LECTURE = 9 * 60
-const SPEED = 2.6
+const SPEED = 1.8
 const ROWS = 4
 const SEATS = 6
 const SEAT_GAP = 1.2

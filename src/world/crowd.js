@@ -43,7 +43,7 @@ export function createCrowd(scene, campus, opts = {}) {
     const from = i < 3 && gate ? gate : pick(doors)
     avatar.position.set(from.point.x + (Math.random() - 0.5) * 3, 0, from.point.z + (Math.random() - 0.5) * 3)
     group.add(avatar)
-    people.push({ avatar, from, route: [], wait: i < 3 ? 0.2 + i * 0.6 : Math.random() * 3, speed: 2 + Math.random() * 1.2, clock: Math.random() * 10 })
+    people.push({ avatar, from, route: [], wait: i < 3 ? 0.2 + i * 0.6 : Math.random() * 3, speed: 1 + Math.random() * 0.5, clock: Math.random() * 10 })
   }
 
   // Sitters on the Quad's benches (dress.js), plus one on the stage step.
