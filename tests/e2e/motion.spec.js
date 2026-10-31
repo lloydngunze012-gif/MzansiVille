@@ -262,3 +262,116 @@ test('M3b day 1 morning: on the mattress, then a natural get-up', async ({ page 
   await page.screenshot({ path: `${OUT}/M3b-3-up.png` })
   await saveVideo(page, 'M3b-morning')
 })
+
+// How far a point is inside a box (positive = inside, by that many metres from the nearest edge).
+const depthIn = (p, b) => Math.min(p.x - b.minX, b.maxX - p.x, p.z - b.minZ, b.maxZ - p.z)
+// Sample the player (and anyone else) for a while; return the worst overlap with any box.
+// untilStill: stop early once the player has stood still for that many seconds
+// (the headless browser renders slowly, so game time runs slower than the clock).
+async function watchBoxes(page, seconds, boxesOf, who = () => window.mzansiPlayerPos(), untilStill = 0) {
+  let worst = { depth: -Infinity }
+  const end = Date.now() + seconds * 1000
+  let last = null
+  let stillSince = Date.now()
+  while (Date.now() < end) {
+    const [p, boxes] = await page.evaluate(([w, bo]) => [eval(w)(), eval(bo)(window.mzansiObstacles())], [who.toString(), boxesOf.toString()])
+    for (const pos of [].concat(p || [])) for (const b of boxes) { const d = depthIn(pos, b); if (d > worst.depth) worst = { depth: d, pos, box: b } }
+    const me = [].concat(p)[0]
+    if (!last || Math.hypot(me.x - last.x, me.z - last.z) > 0.03) { last = me; stillSince = Date.now() }
+    if (untilStill && Date.now() - stillSince > untilStill * 1000) break
+    await page.waitForTimeout(100)
+  }
+  return worst
+}
+
+test('M4a walk into a wall: you stop at it, never through', async ({ page }) => {
+  await campus(page, 'smig', '&a=41')
+  const [me, walls] = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiObstacles().buildings])
+  const wall = walls.sort((a, b) => depthIn(me, b) - depthIn(me, a))[0] // the nearest outline
+  const c = { x: (wall.minX + wall.maxX) / 2, z: (wall.minZ + wall.maxZ) / 2 }
+  const len = Math.hypot(c.x - me.x, c.z - me.z)
+  await page.evaluate(([x, z]) => window.mzansiSteer(x, z), [(c.x - me.x) / len, (c.z - me.z) / len])
+  const worst = await watchBoxes(page, 30, (o) => o.buildings, undefined, 2)
+  await page.screenshot({ path: `${OUT}/M4-wall.png` })
+  await page.evaluate(() => window.mzansiSteer(0, 0))
+  const after = await page.evaluate(() => window.mzansiPlayerPos())
+  console.log('wall', JSON.stringify({ from: me, to: after, worst: worst.depth, wall, near: (await page.evaluate(() => window.mzansiPeople())).filter((p) => Math.hypot(p.x - after.x, p.z - after.z) < 3), props: (await page.evaluate(() => window.mzansiObstacles().props)).filter((b) => depthIn(after, b) > -3) }))
+  expect(Math.hypot(after.x - me.x, after.z - me.z), 'walked up to the wall').toBeGreaterThan(1)
+  expect(worst.depth, 'never inside a building').toBeLessThan(-0.2)
+  expect(worst.depth, 'right up to the wall, no invisible wall').toBeGreaterThan(-0.6)
+  await saveVideo(page, 'M4-wall')
+})
+
+test('M4b walk into a table: around it or stop, never through', async ({ page }) => {
+  await campus(page, 'cafeteria', '&a=42')
+  const [me, props, people] = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiObstacles().props, window.mzansiPeople()])
+  // A table nobody is sitting at (people at a table keep you a step away, rightly).
+  const busy = (b) => people.filter((p) => depthIn(p, b) > -0.3).length
+  const table = props.filter((b) => b.maxX - b.minX > 1 && b.maxX - b.minX < 3 && b.maxZ - b.minZ > 0.9).sort((a, b) => busy(a) - busy(b) || depthIn(me, b) - depthIn(me, a))[0]
+  const c = { x: (table.minX + table.maxX) / 2, z: (table.minZ + table.maxZ) / 2 }
+  // Push straight at it with the stick until you stop.
+  const len = Math.hypot(c.x - me.x, c.z - me.z)
+  await page.evaluate(([x, z]) => window.mzansiSteer(x, z), [(c.x - me.x) / len, (c.z - me.z) / len])
+  const push = await watchBoxes(page, 45, (o) => o.props, undefined, 2)
+  await page.screenshot({ path: `${OUT}/M4-table.png` })
+  await page.evaluate(() => window.mzansiSteer(0, 0))
+  // Then tap the far side: the walk goes round it.
+  const now = await page.evaluate(() => window.mzansiPlayerPos())
+  const far = { x: 2 * c.x - now.x, z: 2 * c.z - now.z }
+  const at = await page.evaluate((p) => window.mzansiScreenOf(p.x, p.z), far)
+  let round = { depth: -Infinity }
+  if (at && !at.behind && at.x > 10 && at.x < 400 && at.y > 300 && at.y < 780) {
+    await page.mouse.click(at.x, at.y)
+    round = await watchBoxes(page, 30, (o) => o.props, undefined, 2)
+    await page.screenshot({ path: `${OUT}/M4-table-round.png` })
+  }
+  const end = await page.evaluate(() => window.mzansiPlayerPos())
+  console.log('table', JSON.stringify({ me, now, end, table, push: push.depth, round: round.depth, near: (await page.evaluate(() => [...window.mzansiObstacles().props, ...window.mzansiObstacles().buildings])).filter((b) => depthIn(now, b) > -0.8) }))
+  expect(push.depth, 'pushing into it: never inside').toBeLessThan(-0.15)
+  // Right up to it, unless someone sitting there keeps you a step away.
+  const byPerson = (await page.evaluate(() => window.mzansiPeople())).some((p) => Math.hypot(p.x - now.x, p.z - now.z) < 1.1)
+  if (!byPerson) expect(push.depth, 'pushing into it: right up to it').toBeGreaterThan(-0.6)
+  expect(round.depth, 'walking round: never inside a table').toBeLessThan(-0.15)
+  await saveVideo(page, 'M4-table')
+})
+
+test('M4c a bed in res: you walk round the furniture to the bed, never through', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.locator('#name').fill('Thandeka')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await page.waitForURL(/#\/play/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { morningDone: true, queue: [], phase: 'night', minutes: 22 * 60, lectureResolved: true, eventSeen: true, dailyEventId: null })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+    localStorage.setItem('mzansiville.mapHint', '1')
+  })
+  await page.goto('/?morning=0&m=4#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await page.waitForTimeout(1500)
+  await page.locator('.g-cta [data-act="place-open"]').tap()
+  await page.locator('[data-act="do"][data-id="sleep"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiObstacles().room.length), { timeout: 30000 }).toBeGreaterThan(3)
+  // Until you sit on the bed's edge: never inside the beds, desk, chair or walls
+  // (the last half-metre onto the edge itself excepted).
+  const path = []
+  while ((await page.evaluate(() => window.mzansiPlayerPose())) !== 'sit' && path.length < 400) {
+    path.push(await page.evaluate(() => window.mzansiPlayerPos()))
+    await page.waitForTimeout(80)
+  }
+  await page.screenshot({ path: `${OUT}/M4-bed.png` })
+  const blocks = await page.evaluate(() => window.mzansiObstacles().room)
+  const edge = path[path.length - 1]
+  let worst = -Infinity
+  for (const p of path) if (Math.hypot(p.x - edge.x, p.z - edge.z) > 0.7) for (const b of blocks) worst = Math.max(worst, depthIn(p, b))
+  console.log('bed', JSON.stringify({ steps: path.length, from: path[0], edge, worst }))
+  expect(path.length, 'walked to the bed').toBeGreaterThan(5)
+  expect(worst, 'never inside furniture').toBeLessThan(-0.1)
+  await saveVideo(page, 'M4-bed')
+})

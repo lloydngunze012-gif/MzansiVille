@@ -17,7 +17,12 @@ export function buildRoom(kind) {
   group.name = 'room'
   group.position.set(ROOM.x, 0, ROOM.z)
   const at = (x, z) => ({ x: ROOM.x + x, z: ROOM.z + z })
+  // Footprints people walk around (room-local x/z boxes): anything from the floor
+  // up to waist height, walls included. Chairs too; a path may still end on one.
+  const blocks = []
+  const block = (x, z, w, d) => blocks.push({ minX: ROOM.x + x - w / 2, maxX: ROOM.x + x + w / 2, minZ: ROOM.z + z - d / 2, maxZ: ROOM.z + z + d / 2 })
   const box = (w, h, d, color, x, y, z, extra) => {
+    if (y - h / 2 < 1.2 && y + h / 2 > 0.15) block(x, z, w, d)
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(color, extra))
     m.position.set(x, y, z)
     m.castShadow = true
@@ -26,6 +31,7 @@ export function buildRoom(kind) {
     return m
   }
   const chair = (x, z, rot = 0) => {
+    block(x, z, 0.46, 0.46)
     const c = makeChair()
     c.position.set(x, 0, z)
     c.rotation.y = rot
@@ -36,6 +42,7 @@ export function buildRoom(kind) {
     holder.position.set(x, y, z)
     holder.rotation.y = rot
     group.add(holder)
+    block(x, z, 0.8, 0.7)
     loadModel(`/models/${kit}/${name}.glb`).then((src) => { const m = src.clone(true); m.scale.setScalar(s); holder.add(m) }).catch(() => {})
     return holder
   }
@@ -154,5 +161,6 @@ export function buildRoom(kind) {
     anchors.skeleton = { ...at(3.6, -1.6), rot: Math.PI }
     anchors.look = at(-1, -2.8)
   }
-  return { group, kind, anchors, at }
+  const bounds = { minX: ROOM.x - W / 2 + 0.1, maxX: ROOM.x + W / 2 + 1.5, minZ: ROOM.z - D / 2 + 0.1, maxZ: ROOM.z + D / 2 + 1.5 }
+  return { group, kind, anchors, at, blocks, bounds }
 }
