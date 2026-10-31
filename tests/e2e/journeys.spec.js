@@ -83,6 +83,9 @@ test('J1: a Law student from the gate follows the route to Law and walks into th
   await shot(page, 'J1-1')
   for (let taps = 0; taps < 60; taps++) {
     if (/#\/lecture/.test(page.url())) break
+    // A tap that lands on someone walking by opens a chat: walk away and carry on, like a player.
+    const leave = page.locator('.g-talk [data-act="talk-bye"]').last()
+    if (await leave.isVisible().catch(() => false)) { await leave.tap(); await page.waitForTimeout(800) }
     const target = await page.evaluate(() => {
       const r = window.mzansiRoute()
       if (!r) return null
@@ -130,7 +133,7 @@ test('J2: Map, tap the Cafeteria: the map closes, you walk there, the sheet open
 test('J4: at the Quad, talk to a student, "Sit with them": both sit on a bench and chat', async ({ page }) => {
   await student(page)
   await world(page, 'spawn=quad&j=4')
-  await tapPerson(page, 'naledi')
+  await tapPerson(page, 'x12') // a student hanging out by the benches
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 30000 })
   await page.waitForTimeout(1200)
