@@ -6,6 +6,7 @@ import { genderOf, roommateOf } from '../avatar.js'
 import { createAvatar, gesture, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 import { CRUSHES, newCrush } from '../crush.js'
+import { addIdentity } from '../engine/identity.js'
 
 const WAKE = 7 * 60
 const BUS_FIRST = 8 * 60 + 20
@@ -944,6 +945,7 @@ async function play() {
     ])
     crushData.met = 'bus'
     crushData.opener = ['funny', 'bus', 'headphones'][Math.max(0, opener)]
+    addIdentity(run, { funny: { creative: 1, socialite: 1 }, bus: { socialite: 1 }, headphones: { creative: 1 } }[crushData.opener])
     host.dataset.opener = crushData.opener
     if (crushData.opener === 'funny') {
       await talk('At this rate we’ll graduate at this bus stop.', player)

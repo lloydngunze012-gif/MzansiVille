@@ -8,6 +8,7 @@ import { authEnabled } from '../net.js'
 import { boardScreen, lobbyScreen } from './social.js'
 import { gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
+import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
 import { STORY_OPTS, storyWithDefaults } from '../story.js'
 
 export function esc(value) {
@@ -451,6 +452,7 @@ function profile(state) {
       ${avatarSvg(run.character.avatar, district.meta.dialCode, 96)}
       <div>
         <h1>${esc(run.character.name)}</h1>
+        <p class="id-title" data-title="${identityTitle(run).level}">${identityTitle(run).path ? identityTitle(run).path.icon + ' ' : ''}${esc(identityTitle(run).text)}</p>
         <p class="fine">${esc(run.character.residence)} · ${esc(run.character.course)}</p>
         <p class="fine">${run.character.handle ? `@${esc(run.character.handle)}` : 'No handle yet'} · Day ${run.day}</p>
         <p>${badges}</p>
@@ -458,6 +460,7 @@ function profile(state) {
     </div>
     <p style="margin:12px 0">${esc(run.lastStatLine)}</p>
     <p class="fine">Bestie: ${esc(run.bestieName)} from ${esc(run.character.residence)}</p>
+    <section class="dream-card id-card" aria-label="Who you're becoming"><p>Who you're becoming</p>${Object.values(PATHS).map((p) => `<div class="id-row"><span>${p.icon} ${esc(p.name.replace('The ', ''))}</span><div class="dream-bar"><i style="width:${Math.min(100, Math.round(identityPoints(run)[p.id] / 20 * 100))}%"></i></div></div>`).join('')}<small>${Math.round(identityProgress(run) * 100)}% of the way to "Known as"</small></section>
     <section class="dream-card" aria-label="Year dream"><p>${dreamOf(run).icon} Year dream: <b>${esc(dreamOf(run).label)}</b></p><div class="dream-bar"><i style="width:${Math.max(3, Math.round(dreamProgress(run) * 100))}%"></i></div><small>${Math.round(dreamProgress(run) * 100)}% of the way</small></section>
     ${card}
     <div class="stack" style="margin-top:12px">
