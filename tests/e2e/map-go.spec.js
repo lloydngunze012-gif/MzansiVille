@@ -40,13 +40,8 @@ test('2D map: tap the cafeteria, back in 3D you walk there and its sheet opens',
   await expect(page.locator('.go-skip')).toBeVisible()
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `${OUT}/2-walking.png` })
-  // Walking: closer to the cafeteria door every moment (the headless browser walks slowly, so then skip the rest).
-  const gap = async () => page.evaluate(() => { const p = window.mzansiRoute().player; const d = window.mzansiDoorOf('cafeteria'); return Math.hypot(p.x - d.x, p.z - d.z) })
-  const g0 = await gap()
-  await page.waitForTimeout(3000)
-  expect(await gap()).toBeLessThan(g0 - 1)
-  await page.locator('.go-skip').tap()
-  await expect(page).toHaveURL(/#\/place\/cafeteria/, { timeout: 15000 })
+  // With ?fast=1 the walk is quick: you arrive and the sheet opens by itself.
+  await expect(page).toHaveURL(/#\/place\/cafeteria/, { timeout: 30000 })
   await expect(page.locator('.go-skip')).toBeHidden()
   await page.waitForTimeout(800)
   await page.screenshot({ path: `${OUT}/3-arrived.png` })
