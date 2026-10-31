@@ -3,7 +3,7 @@
 import * as THREE from 'three'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf, roommateOf } from '../avatar.js'
-import { createAvatar, gesture, markStandIn, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 import { CRUSHES, newCrush } from '../crush.js'
 import { addIdentity } from '../engine/identity.js'
@@ -725,9 +725,9 @@ async function play() {
   const autoSnooze = q.has('snooze') ? Math.max(0, Math.min(SNOOZE_MAX, Number(q.get('snooze')) || 0)) : -1
   // 1. wake in bed
   setStep('wake')
-  player.userData.pose = 'lie'
-  player.position.set(-2.1, 0.62, -1.1)
-  player.rotation.set(-Math.PI / 2, 0, 0)
+  // On your back on the mattress (top 0.56 m), head on the pillow (-z).
+  layDown(player, 0)
+  player.position.set(-2.1, 0.56, -1.75)
   // The roommate stands at the foot of your bed, so one shot holds you both, head to feet.
   roommate.position.set(-0.85, 0, 0.15)
   face(roommate, ANCHORS.bed[0], ANCHORS.bed[1])
@@ -769,9 +769,15 @@ async function play() {
   walkTo(roommate, ANCHORS.roommate[0], ANCHORS.roommate[1], 1.6).then(() => face(roommate, ANCHORS.bed[0], ANCHORS.bed[1]))
   await talk(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
   // Sit up on the edge of the bed (legs over the side), stretch, then stand up.
-  await tween(0.5, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k * 0.5); player.position.y = 0.62 + k * 0.08 })
+  // (sit up and swing the legs over the side in one movement: no snap)
+  await tween(1.1, (k) => {
+    const e = k * k * (3 - 2 * k)
+    layDown(player, (Math.PI / 2) * e, 1 - e)
+    player.position.set(-2.1 + 0.48 * e, 0.56, -1.75 + 0.35 * e)
+  })
   player.rotation.set(0, Math.PI / 2, 0)
   player.position.set(-1.62, 0.56, -1.4)
+  player.userData.seatFloor = 0
   player.userData.pose = 'sit'
   host.dataset.wakeup = 'sit'
   await wait(0.6)
@@ -779,6 +785,8 @@ async function play() {
   await wait(1.0)
   // Stand: up off the mattress and a step away from the bed.
   player.userData.pose = 'stand'
+  player.userData.seatFloor = undefined
+  player.userData.recline = 1
   await tween(0.45, (k) => { player.position.y = 0.56 * (1 - k); player.position.x = -1.62 + k * 0.42 })
   player.position.y = 0
   bubble('')

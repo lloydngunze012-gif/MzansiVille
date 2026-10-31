@@ -160,7 +160,8 @@ export function createScenes(api) {
     await api.wait(0.2)
     await api.unfade()
   }
-  const sitOn = (seat) => { api.teleport(seat.x, seat.z, seat.rot); api.pose('sit', seat.y || CHAIR_SEAT) }
+  // Room seats stand on the room's floor (y 0), however high the seat (a bed edge, a couch).
+  const sitOn = (seat) => { api.teleport(seat.x, seat.z, seat.rot); api.pose('sit', seat.y || CHAIR_SEAT, 0) }
 
   // A small counter with a vendor and two people waiting, in front of a place.
   function tempStall(place, kind) {
@@ -781,11 +782,10 @@ export function createScenes(api) {
     async sleep(place) {
       const room = await goInside(place, 'bedroom')
       const bed = room.anchors.bed
-      await api.glide(bed.x + 1, bed.z)
-      api.teleport(bed.x, bed.z, bed.rot)
-      api.pose('lie')
-      api.player.position.y = bed.lieY
+      const edge = room.anchors.sit
+      await api.glide(edge.x + 0.7, edge.z)
       api.frame(bed)
+      await api.lieDown(bed, edge)
       api.say('Goodnight, campus.')
       await api.wait(1.2)
       api.say('Zzz\u2026')
@@ -809,7 +809,7 @@ export function createScenes(api) {
       await api.unfade()
       api.say('Morning already?')
       await api.wait(1.4)
-      sitOn(room.anchors.sit)
+      await api.getUp(bed, room.anchors.sit)
       api.progress(0.4)
       await api.wait(0.8)
       api.gesture('interact-right') // the stretch
@@ -824,10 +824,8 @@ export function createScenes(api) {
     async sleepTalk(place) {
       const room = await goInside(place, 'bedroom')
       const bed = room.anchors.bed
-      api.teleport(bed.x, bed.z, bed.rot)
-      api.pose('lie')
-      api.player.position.y = bed.lieY
       api.frame(bed)
+      await api.lieDown(bed, room.anchors.sit)
       for (const [i, [t, who]] of [['Are you awake?', 'you'], ['(through the wall) Unfortunately.', 'Neighbour'], ['Same. Goodnight, wall.', 'you']].entries()) { api.progress((i + 1) / 4); api.say(t, who); await api.wait(1.4) }
       api.pose('stand')
       await goOutside(place)

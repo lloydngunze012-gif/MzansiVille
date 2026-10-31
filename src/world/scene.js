@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, gesture, lookOf, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, layDown, lookOf, poseAvatar } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { lookForPerson, nameOf } from './cast.js'
@@ -730,9 +730,26 @@ function activityApi() {
   let held = null
   const standUp = () => {
     player.userData.pose = 'stand'
+    player.userData.recline = 1
+    player.userData.seatFloor = undefined
     player.rotation.x = 0
     player.position.y = 0
   }
+  // Getting into and out of bed: sit on the edge, then swing the legs up and lie
+  // back (and the reverse), instead of snapping between poses.
+  const ease = (k) => k * k * (3 - 2 * k)
+  const turnTo = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k
+  const recline = (from, to, seconds, up) => new Promise((resolve) => {
+    const start = performance.now()
+    const step = () => {
+      const k = Math.min(1, ((performance.now() - start) / 1000) * SPEED / seconds)
+      const r = up ? 1 - ease(k) : ease(k)
+      layDown(player, turnTo(from.rot, to.rot, ease(k)), r)
+      player.position.set(from.x + (to.x - from.x) * ease(k), from.y + (to.y - from.y) * ease(k), from.z + (to.z - from.z) * ease(k))
+      if (k < 1) requestAnimationFrame(step); else resolve()
+    }
+    step()
+  })
   return {
     get player() { return player },
     get dressing() { return campus.dressing },
@@ -751,11 +768,29 @@ function activityApi() {
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
     gesture: (name) => gesture(player, name),
     gestureOf: (avatar, name) => avatar && gesture(avatar, name),
-    pose: (p, y = 0) => {
+    pose: (p, y = 0, floor) => {
       standUp()
       player.userData.pose = p
-      if (p === 'sit') player.position.y = y
-      if (p === 'lie') { player.rotation.x = -Math.PI / 2; player.position.y = 0.02 }
+      if (p === 'sit') { player.position.y = y; player.userData.seatFloor = floor }
+      if (p === 'lie') { layDown(player, player.rotation.y); player.position.y = 0.02 }
+    },
+    // bed: { x, z, lieY, rot (0 = head towards -z) }; edge: the seat on its side { x, z, y, rot }.
+    lieDown: async (bed, edge) => {
+      standUp()
+      player.position.set(edge.x, edge.y, edge.z)
+      player.rotation.y = edge.rot
+      player.userData.pose = 'sit'
+      player.userData.seatFloor = 0
+      await new Promise((resolve) => setTimeout(resolve, ms(600)))
+      await recline({ ...edge }, { x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, 1.1, false)
+    },
+    getUp: async (bed, edge) => {
+      await recline({ x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, { ...edge }, 1.1, true)
+      standUp()
+      player.position.set(edge.x, edge.y, edge.z)
+      player.rotation.y = edge.rot
+      player.userData.pose = 'sit'
+      player.userData.seatFloor = 0
     },
     sitAt: (seat) => {
       player.position.set(seat.x, seat.y, seat.z)

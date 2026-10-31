@@ -64,8 +64,9 @@ export function buildRoom(kind) {
       chair(3.2, -2.7, Math.PI)
       box(0.45, 0.6, 0.45, 0x3a3020, 3.8, 1.2, -3.5, { emissive: 0xffd28a, emissiveIntensity: 0.6 })
       box(2, 1.1, 0.05, 0x7b3fe4, -1.4, 2.1, -D / 2 + 0.12)
-      anchors.bed = { ...at(-3.6, -2.7), rot: Math.PI / 2, y: 0.6, lieY: 0.64 }
-      anchors.sit = { ...at(-3.05, -2.2), rot: Math.PI / 2, y: 0.55 }
+      // The mattress top is 0.63 m; lying, the head is towards the pillow (-z, rot 0).
+      anchors.bed = { ...at(-3.6, -2.6), rot: 0, y: 0.6, lieY: 0.63 }
+      anchors.sit = { ...at(-3.12, -2.3), rot: Math.PI / 2, y: 0.63 }
       anchors.desk = { ...at(3.2, -2.7), rot: Math.PI, y: CHAIR_SEAT }
       anchors.bag = at(1.8, 1.2)
       box(0.5, 0.5, 0.3, 0x2b3a55, 1.8, 0.25, 1.2)

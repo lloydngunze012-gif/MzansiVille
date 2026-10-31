@@ -358,6 +358,7 @@ export function createAvatar(avatar = {}) {
   const look = lookOf(avatar)
   const group = new THREE.Group()
   group.name = 'player'
+  group.rotation.order = 'YXZ' // a person lying down keeps their yaw (see layDown)
 
   // Stand-in until the GLB arrives (and the fallback if it never does).
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.9, 4, 8), new THREE.MeshStandardMaterial({ color: look.top, roughness: 0.8 }))
@@ -487,7 +488,7 @@ function fitSeat(group, model, seatY, onGround) {
   const pose = () => { restore(); model.position.set(0, fit.y, fit.z); bendLegs(group, model, fit.thigh, fit.knee, onGround) }
   const isCloth = (n) => n.userData.part === 'legs' || n.userData.part === 'body'
   const isFeet = (n) => n.userData.part === 'feet'
-  const floor = seatY < SIT.low ? 0 : seatY - SIT.seatHeight
+  const floor = group.userData.seatFloor ?? (seatY < SIT.low ? 0 : seatY - SIT.seatHeight)
   const legs = !onGround && bones.FootL && bones.LowerLegL && bones.UpperLegL
   pose()
   // The back against the backrest: the rearmost point of the lower back.
@@ -538,12 +539,45 @@ function sitPose(group, onGround) {
   const data = group.userData
   const model = group.getObjectByName('rig')
   const seatY = +group.getWorldPosition(seatAt).y.toFixed(3)
-  if (data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround }
+  if (data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround || data.sitFit.floor !== data.seatFloor) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround, floor: data.seatFloor }
   const fit = data.sitFit
   model.position.y = fit.y
   model.position.z = fit.z
   restLegs(group)
   bendLegs(group, model, fit.thigh, fit.knee, onGround)
+}
+
+// Lying: the caller tips the group onto its back (rotation.x = -PI/2*recline, see
+// layDown) with its origin at the middle of the mattress top. The hips sit on the
+// origin, the body lies flat, and it is lifted until its lowest point rests on the
+// mattress (measured once per bed). userData.recline (0..1) blends from sitting on
+// the edge (knees bent) to lying flat, for getting into and out of bed.
+const upLocal = new THREE.Vector3()
+const groupQ = new THREE.Quaternion()
+function liePose(group, model) {
+  const data = group.userData
+  const r = data.recline ?? 1
+  model.position.set(0, -(data.hipHeight || 0.9), 0)
+  restLegs(group)
+  bendLegs(group, model, SIT.thigh * (1 - r), SIT.knee * (1 - r), false)
+  upLocal.set(0, 1, 0).applyQuaternion(group.getWorldQuaternion(groupQ).invert())
+  const bed = +group.getWorldPosition(seatAt).y.toFixed(3)
+  if (r >= 1 && data.lieFit?.bed !== bed) {
+    model.updateMatrixWorld(true)
+    const low = lowest(group, () => true)
+    data.lieFit = { bed, lift: Number.isFinite(low) ? bed - low : 0 }
+  }
+  model.position.addScaledVector(upLocal, (data.lieFit?.lift ?? 0.12) * r)
+}
+
+// Tips a person onto their back along headYaw (0 = head towards -z), or part-way
+// (recline < 1) while getting in or out of bed.
+export function layDown(group, headYaw, recline = 1) {
+  group.rotation.order = 'YXZ'
+  group.rotation.y = headYaw
+  group.rotation.x = -Math.PI / 2 * recline
+  group.userData.pose = 'lie'
+  group.userData.recline = recline
 }
 
 // How the body follows the ground: the clips' lift (see calibrate), blended by weight.
@@ -617,11 +651,10 @@ export function poseAvatar(group, walking, time) {
   else data.yaw += wrap(group.rotation.y - data.yaw) * Math.min(1, dt * TURN)
   model.position.set(0, 0, 0)
   model.rotation.y = settled ? 0 : wrap(data.yaw - group.rotation.y)
-  if (data.pose !== 'sit') carryFeet(model, data.bones, data.footInShin)
+  if (data.pose !== 'sit' && data.pose !== 'lie') carryFeet(model, data.bones, data.footInShin)
   if (!settled) model.position.y = liftOf(data)
   if (data.pose === 'sit') sitPose(group, onGround)
-  // Lying (the caller tips the group onto its back): lift so the back rests on top.
-  if (data.pose === 'lie') model.position.z = 0.12
+  if (data.pose === 'lie') liePose(group, model)
   // Dancing: the wave with a bounce and a sway on the beat (112 BPM, like the groove).
   if (data.pose === 'dance') {
     const beat = (time * 112) / 60
@@ -637,7 +670,7 @@ export function poseAvatar(group, walking, time) {
 const live = new Set()
 const vtx = new THREE.Vector3()
 // near: only vertices within that horizontal distance of a point (the seat of the trousers).
-function lowest(group, test, near = null, radius = 0.14) {
+function lowest(group, test, near = null, radius = 0.1) {
   let min = Infinity
   group.traverse((node) => {
     if (!node.isSkinnedMesh || !node.visible || !test(node)) return
@@ -690,10 +723,12 @@ export function measureBody(group) {
   if (out.pose === 'sit' && out.seatOfPants !== null) {
     const seat = group.getWorldPosition(new THREE.Vector3()).y
     out.seatGap = +(out.seatOfPants - seat).toFixed(3)
-    out.footGap = +(out.sole - (seat < SIT.low ? 0 : seat - SIT.seatHeight)).toFixed(3)
+    out.footGap = +(out.sole - (data.seatFloor ?? (seat < SIT.low ? 0 : seat - SIT.seatHeight))).toFixed(3)
     out.fit = data.sitFit && { thigh: +data.sitFit.thigh.toFixed(2), knee: +data.sitFit.knee.toFixed(2), y: +data.sitFit.y.toFixed(3), z: +data.sitFit.z.toFixed(3), seatY: data.sitFit.seatY, onGround: data.sitFit.onGround }
     out.walking = data.current
   }
+  // Lying: the body's lowest point vs the mattress top (the origin).
+  if (out.pose === 'lie') out.bedGap = +(out.low - group.getWorldPosition(new THREE.Vector3()).y).toFixed(3)
   return out
 }
 if (typeof window !== 'undefined') {
