@@ -855,3 +855,7 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
   .cc-stage { flex: none; width: 100%; min-height: 0; height: min(52vh, 440px); }
   .cc-id { width: 100%; box-sizing: border-box; }
 }
+.dream-card{margin:12px 0;padding:12px;border-radius:14px;background:#ffffff14;border:1px solid #f0c40055}
+.dream-card p{margin:0 0 8px}
+.dream-bar{height:10px;border-radius:999px;background:#ffffff22;overflow:hidden}
+.dream-bar i{display:block;height:100%;background:linear-gradient(90deg,#f0c400,#ff8a4c)}

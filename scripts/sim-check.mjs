@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.js'
 import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
+import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -89,6 +90,35 @@ check('every action in activities.csv plays a visible scene (no blank progress b
   for (const m of scenesSrc.matchAll(/^\s{2}(\w+): \['(\w+)'/gm)) assert.ok(names.has(m[2]), `${m[1]} uses missing scene ${m[2]}`)
   const missing = district.activities.filter((a) => !a.id.startsWith('organt') && !quad.has(a.id) && !mapped.has(a.id)).map((a) => a.id)
   assert.deepEqual(missing, [], `no scene for: ${missing.join(', ')}`)
+})
+
+check('goal ladder: three day goals (must, story, dream), a right-now nudge, the dream bar', () => {
+  const run = createRun(district, { ...character, dream: 'hustle' })
+  run.crush = { met: 'bus', nameKnown: false, name: 'Amahle', closeness: 0 }
+  startGoals(run)
+  assert.deepEqual(run.goals.list.map((g) => g.kind), ['must', 'story', 'dream'])
+  assert.deepEqual(run.goals.list.map((g) => g.id), ['lecture1', 'crushName', 'earn50'])
+  assert.ok(rightNow(run).text.length > 4)
+  // A shift pays: the dream goal (earn R50) ticks off with a goal card, and the dream bar moves.
+  const job = district.activities.find((a) => a.id === 'job_shift')
+  for (let i = 0; i < 6 && actionState(district, run, job).disabled; i++) advancePhase(district, run)
+  const before = dreamProgress(run)
+  const res = applyAction(district, run, 'job_shift')
+  if (res.ok) {
+    assert.ok(run.goals.list.find((g) => g.id === 'earn50').done)
+    assert.ok(run.queue.some((card) => card.kind === 'goal'))
+    assert.ok(dreamProgress(run) > before)
+  }
+  // Next day: new goals, the card first.
+  const next = createRun(district, character)
+  startGoals(next)
+  endDay(district, next, { slept: true })
+  beginNextDay(district, next, new Date(Date.now() + 864e5))
+  if (next.mode === 'play') {
+    assert.equal(next.goals.day, next.day)
+    assert.equal(next.queue[0].kind, 'goals')
+    assert.equal(next.goals.list[0].id, 'lecture')
+  }
 })
 
 check('home and course places', () => {

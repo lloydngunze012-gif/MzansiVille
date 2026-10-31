@@ -1,6 +1,7 @@
 import { balancedScore } from './board.js'
 import { formatDelta, hashString, toMinutes, weekdayName, fillTemplate } from './format.js'
 import { coursePlaceId, homePlaceId, pickBestie } from './model.js'
+import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -452,6 +453,8 @@ export function createRun(district, character, now = new Date()) {
       avatar: { ...character.avatar },
       handle: (character.handle || '').replace(/^@/, ''),
       districtId: meta.id,
+      // Creator part 2: your story (funding, hometown, who you were, who you want to be, the dream, interest).
+      ...Object.fromEntries(['funding', 'hometown', 'past', 'path', 'dream', 'interest'].filter((k) => character[k]).map((k) => [k, character[k]])),
     },
     stats: { ...meta.start },
     energyCap: 100,
@@ -533,6 +536,9 @@ export function beginNextDay(district, run, now = new Date()) {
   if (run.mode === 'over') return run
   run.mode = 'play'
   openDay(district, run)
+  // Three goals for the new day, shown first.
+  startGoals(run)
+  run.queue.unshift(goalsCard(run))
   return run
 }
 
@@ -590,6 +596,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   if (action.tags.includes('sleep')) deltas.energy = 0
   const hungrySleep = action.tags.includes('sleep') && run.stats.hunger < district.meta.day.hungrySleepBelow
   applyStats(run, deltas)
+  trackToday(run, action, deltas)
   spendTime(district, run, action)
 
   cards.unshift({ id: `result-${action.id}-${run.day}`, kind: 'result', title: action.name, text: formatDelta(deltas) })
@@ -689,6 +696,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
     if (hungrySleep) run.lastEventLine = district.meta.day.hungrySleepMessage
   }
 
+  for (const goal of checkGoals(run)) cards.push({ id: `goal-${goal.id}-${run.day}`, kind: 'goal', title: 'Goal done', text: goalText(run, goal) })
   rememberStat(run)
   run.queue = cards.concat(run.queue.filter((card) => !cards.some((item) => item.id === card.id)))
   if (run.excluded || action.tags.includes('sleep') || run.slotsLeft <= 0) {
