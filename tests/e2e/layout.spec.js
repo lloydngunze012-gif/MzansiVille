@@ -7,12 +7,12 @@ test.use({ viewport: { width: 412, height: 915 } })
 
 test('cover and creator on a phone', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/#/')
+  await page.goto('/?fast=1#/')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/#/')
+  await page.goto('/?fast=1#/')
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `${OUT}/1-cover.png` })
-  await page.goto('/#/new')
+  await page.goto('/?fast=1#/new')
   for (const [part, id] of [['gender', 'female'], ['outfit', 'organt'], ['hair', 'braids']]) await page.locator(`[data-part="${part}"][data-id="${id}"]`).tap()
   await expect(page.locator('.cc-stage')).toHaveClass(/cc-has3d/, { timeout: 20000 })
   await page.evaluate(() => window.scrollTo(0, 0))
@@ -35,7 +35,7 @@ test('cover and creator on a phone', async ({ page }) => {
 // Item 5: the new characters, side by side (outfits, genders, sitting, walking).
 test('character line-up', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/?morning=0#/')
+  await page.goto('/?fast=1&morning=0#/')
   await page.evaluate(async () => {
     const THREE = await import('/node_modules/.vite/deps/three.js')
     const A = await import('/src/world/avatar3d.js')
@@ -80,7 +80,7 @@ test('character line-up', async ({ page }) => {
 // Sitting and lying, from the side: on the seat, not in it.
 test('poses: sit on a bench, a chair, the ground; lie on a bed', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/?morning=0#/')
+  await page.goto('/?fast=1&morning=0#/')
   await page.evaluate(async () => {
     const THREE = await import('/node_modules/.vite/deps/three.js')
     const A = await import('/src/world/avatar3d.js')
@@ -129,7 +129,7 @@ test('poses: sit on a bench, a chair, the ground; lie on a bed', async ({ page }
 
 test('sit at any facing', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/?morning=0#/')
+  await page.goto('/?fast=1&morning=0#/')
   await page.evaluate(async () => {
     const THREE = await import('/node_modules/.vite/deps/three.js')
     const A = await import('/src/world/avatar3d.js')

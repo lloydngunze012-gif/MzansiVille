@@ -8,9 +8,9 @@ test.use({ viewport: { width: 412, height: 915 } })
 test.describe.configure({ mode: 'serial', timeout: 150000 })
 
 async function campus(page, spawn) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandeka')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
@@ -23,7 +23,7 @@ async function campus(page, spawn) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   })
-  await page.goto(`/?morning=0&spawn=${spawn}#/play`)
+  await page.goto(`/?fast=1&morning=0&spawn=${spawn}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(2500)
 }

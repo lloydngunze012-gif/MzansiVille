@@ -8,6 +8,7 @@ import { sfx, loop as soundLoop } from '../audio.js'
 import { createAvatar, CROWD_MODELS, gesture, poseAvatar } from './avatar3d.js'
 import { venueFor } from '../venues.js'
 import { lookForPerson } from './cast.js'
+import { SPEED as FAST, ms } from '../speed.js'
 
 const LECTURE = 9 * 60
 const SPEED = 2.6
@@ -211,7 +212,7 @@ function floatDelta(delta) {
   node.innerHTML = html
   node.hidden = false
   node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop')
-  setTimeout(() => { node.hidden = true }, 1800)
+  setTimeout(() => { node.hidden = true }, ms(1800))
 }
 
 // Lines stay until the player taps anywhere that is not a button (?talk=auto: tests).
@@ -226,7 +227,7 @@ function tapNext(node) {
       done()
     }
     const since = performance.now()
-    if (AUTO_TALK) { setTimeout(done, 700); return }
+    if (AUTO_TALK) { setTimeout(done, 700); return } // real time, even with ?fast=1, so lines can be read in screenshots
     window.addEventListener('pointerup', onTap, true)
   })
 }
@@ -564,7 +565,7 @@ async function play() {
 
 function tick(now) {
   frame = requestAnimationFrame(tick)
-  const dt = Math.min(0.05, (now - (last || now)) / 1000)
+  const dt = Math.min(0.05, (now - (last || now)) / 1000) * FAST
   last = now
   clock += dt
   tasks = tasks.filter((t) => { if (t.update(dt)) { t.resolve(); return false } return true })

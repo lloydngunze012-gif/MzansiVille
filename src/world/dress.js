@@ -8,6 +8,7 @@ import STORY from '../../data/campusville/place_story.json'
 import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { lookForPerson } from './cast.js'
 import { CHAIR_SEAT, makeChair } from './furniture.js'
+import { ms } from '../speed.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
@@ -271,7 +272,7 @@ export function dressPlaces(layout) {
       person('amir', slot(1).x, slot(1).z, stall.rotation.y + Math.PI),
     ]
     const aside = []
-    const pause = (ms) => new Promise((r) => setTimeout(r, ms))
+    const pause = (t) => new Promise((r) => setTimeout(r, ms(t)))
     queue.stall = {
       front,
       slot,
@@ -298,10 +299,10 @@ export function dressPlaces(layout) {
             const p = aside.shift()
             waiting.push(p)
             const s = slot(waiting.length - 1)
-            moveAvatar(p, s.x, s.z).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
+            moveAvatar(p, s.x, ms(s.z)).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
           }
           queue.stall.busy = false
-        }, 6000)
+        }, ms(6000))
       },
     }
     const sl = new THREE.PointLight(0xffcf8a, 0, 7, 1.6)
@@ -453,11 +454,11 @@ export function dressPlaces(layout) {
     const served = line.shift()
     gesture(server, 'interact-right')
     gesture(served, 'pick-up')
-    await new Promise((r) => setTimeout(r, 900))
+    await new Promise((r) => setTimeout(r, ms(900)))
     await Promise.all([moveAvatar(served, q.aside.x, q.aside.z, 1.4), ...line.map((p, i) => moveAvatar(p, q.slot(i).x, q.slot(i).z, 1.2))])
     line.forEach((p) => { p.rotation.y = q.face })
     gesture(served, 'emote-yes')
-    await new Promise((r) => setTimeout(r, 4000))
+    await new Promise((r) => setTimeout(r, ms(4000)))
     if (!q.busy) {
       const s = q.slot(line.length)
       await moveAvatar(served, s.x, s.z, 1.4)

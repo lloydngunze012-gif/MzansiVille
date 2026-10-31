@@ -7,9 +7,9 @@ const OUT = 'test-results/activities'
 test.describe.configure({ mode: 'serial', timeout: 150000 })
 
 async function atQuad(page) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
@@ -22,7 +22,7 @@ async function atQuad(page) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   })
-  await page.goto('/?morning=0&spawn=quad#/place/quad')
+  await page.goto('/?fast=1&morning=0&spawn=quad#/place/quad')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(3000)
 }

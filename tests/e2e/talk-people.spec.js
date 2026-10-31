@@ -9,9 +9,9 @@ test.use({ viewport: { width: 412, height: 915 } })
 test.describe.configure({ mode: 'serial', timeout: 150000 })
 
 async function newGame(page, gender = 'female') {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator(`[data-part="gender"][data-id="${gender}"]`).tap()
   await page.locator('#name').fill('Thandeka')
   await page.locator('#residence').selectOption({ index: 1 })
@@ -74,7 +74,7 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await newGame(page)
-  await page.goto('/?morning=0&spawn=quad#/play')
+  await page.goto('/?fast=1&morning=0&spawn=quad#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(3000)
   await page.screenshot({ path: `${OUT}/0-quad-tags.png` })
@@ -104,7 +104,7 @@ test('the one from the bus is at the Quad: their tag is ? until you ask their na
     save.run.lectureResolved = true
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&spawn=quad#/play')
+  await page.goto('/?fast=1&morning=0&spawn=quad#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   // Only your crush is at the Quad (Kabelo is not).
   await expect.poll(async () => page.evaluate(() => Boolean(window.mzansiPersonOnScreen?.('amahle'))), { timeout: 20000 }).toBe(true)
@@ -134,7 +134,7 @@ test('student card: the title shows who you are becoming, with the five paths', 
     save.run.identity = { scholar: 2, socialite: 3, hustler: 9, leader: 0, creative: 1 }
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&card=1#/profile') // a new query string reloads, so the seeded save is read
+  await page.goto('/?fast=1&morning=0&card=1#/profile') // a new query string reloads, so the seeded save is read
   await expect(page.locator('.id-title')).toHaveText(/Becoming: The Hustler/)
   await expect(page.locator('.id-row')).toHaveCount(5)
   await page.screenshot({ path: `${OUT}/6-student-card.png`, fullPage: true })
@@ -160,7 +160,7 @@ test('day summary: goals, who you are becoming, the people, and a text on the ph
     })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&sum=1#/summary')
+  await page.goto('/?fast=1&morning=0&sum=1#/summary')
   const card = page.locator('[data-screen-card="summary"]')
   await expect(card).toBeVisible({ timeout: 20000 })
   await expect(card.locator('.g-review li')).toHaveCount(3)
@@ -181,7 +181,7 @@ test('a random moment: something happens, you choose, it shows what happened', a
     save.run.queue = [{ id: 'moment-old_school-2', kind: 'moment', momentId: 'old_school', title: 'Someone from your old school', icon: '\u{1F3EB}', text: '"No ways! Weren\u2019t you the class clown in matric?" Someone who knew the old you.', choices: ['\u2728 "Not anymore."', '\u{1F917} Catch up properly', '\u{1F575}\uFE0F Avoid them'] }]
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&moments=1#/play')
+  await page.goto('/?fast=1&morning=0&moments=1#/play')
   const card = page.locator('[data-screen-card="moment"]')
   await expect(card).toBeVisible({ timeout: 20000 })
   await expect(card.locator('.g-choice')).toHaveCount(3)
@@ -201,7 +201,7 @@ test('a storyline beat: the roommate asks to borrow R100, and remembers', async 
     Object.assign(save.run, { day: 3, phase: 'leisure', minutes: 15 * 60, bestieName: 'Zanele', queue: [] })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&moments=1#/play')
+  await page.goto('/?fast=1&morning=0&moments=1#/play')
   // Skipping ahead to the evening brings the day's storyline beat.
   const skip = page.locator('[data-act="phase"]')
   await skip.tap()
@@ -223,7 +223,7 @@ test('Friday test: the mark, and the choices that paid off', async ({ page }) =>
     Object.assign(save.run, { day: 5, bestieName: 'Zanele', queue: [{ id: 'friday-test-5', kind: 'test', title: '78%. Distinction!', text: '', test }] })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&fri=1#/play')
+  await page.goto('/?fast=1&morning=0&fri=1#/play')
   const card = page.locator('[data-screen-card="test"]')
   await expect(card).toBeVisible({ timeout: 20000 })
   await expect(card.locator('.g-mark')).toContainText('78')
@@ -236,7 +236,7 @@ test('Friday test: the mark, and the choices that paid off', async ({ page }) =>
 test('talking leads to doing: order a bunny chow, pick a size, pay, sit and eat', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   await newGame(page)
-  await page.goto('/?morning=0&spawn=cafeteria#/play')
+  await page.goto('/?fast=1&morning=0&spawn=cafeteria#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats)
   await page.evaluate(() => window.mzansiTalkTo('auntie_pinky'))
@@ -266,7 +266,7 @@ test('talking leads to doing: order a bunny chow, pick a size, pay, sit and eat'
 test('talking leads to doing: a lecturer consultation and swapping numbers', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   await newGame(page)
-  await page.goto('/?morning=0&spawn=quad&c=1#/play')
+  await page.goto('/?fast=1&morning=0&spawn=quad&c=1#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   const g0 = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.grades)
   await page.evaluate(() => window.mzansiTalkTo('dr_moodley'))
@@ -292,6 +292,6 @@ test('talking leads to doing: a lecturer consultation and swapping numbers', asy
   await expect(page.locator('#world')).toHaveAttribute('data-activity-step', 'done', { timeout: 30000 })
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.contacts.map((c) => c.id)).toContain('naledi')
-  await page.goto('/?morning=0&c=2#/profile')
+  await page.goto('/?fast=1&morning=0&c=2#/profile')
   await expect(page.locator('.phone-list')).toContainText('Naledi')
 })
