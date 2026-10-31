@@ -16,9 +16,9 @@ async function expectBubbleClear(page) {
 }
 
 async function newGame(page, query, gender = 'female') {
-  await page.goto(`/${query}#/new`)
+  await page.goto(`/${query}&fast=1#/new`)
   await page.evaluate(() => localStorage.clear())
-  await page.goto(`/${query}#/new`)
+  await page.goto(`/${query}&fast=1#/new`)
   await page.locator(`[data-part="gender"][data-id="${gender}"]`).tap()
   await page.locator('#name').fill(gender === 'male' ? 'Lethabo' : 'Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
@@ -43,9 +43,9 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
 
   // Home screen first: no save yet, so no Continue.
-  await page.goto('/?roommate=1&latebus=0&snooze=1&talk=auto#/')
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=1&talk=auto#/')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?roommate=1&latebus=0&snooze=1&talk=auto#/')
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=1&talk=auto#/')
   await expect(page.locator('[data-act="start"]')).toBeVisible()
   await expect(page.locator('[data-act="continue"]')).toHaveCount(0)
   await expect(page.locator('[data-act="edit-char"]')).toHaveCount(0)
@@ -120,7 +120,8 @@ test('day 1 morning: room to campus', async ({ page }) => {
   // The bus stop: the meet-cute. Someone is waiting; the bus is late.
   await atStep('stop')
   const stop = await pos()
-  expect(stop[0] - yard[0]).toBeGreaterThan(5)
+  expect(stop[0]).toBeGreaterThan(10) // out of the room (x < 3) and down the road to the stop
+  void yard
   await expect(page.locator('.mm-sign')).toContainText('Delayed')
   await shot('6_bus_stop')
   await atStep('meet')

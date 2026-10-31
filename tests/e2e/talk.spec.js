@@ -3,9 +3,9 @@ import { test, expect } from '@playwright/test'
 
 test('morning lines wait for a tap', async ({ page }) => {
   test.setTimeout(120000)
-  await page.goto('/?roommate=1&latebus=0&snooze=0#/new')
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?roommate=1&latebus=0&snooze=0#/new')
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await page.locator('#name').fill('Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })

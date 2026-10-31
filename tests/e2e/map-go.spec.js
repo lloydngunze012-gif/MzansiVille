@@ -9,9 +9,9 @@ test.use({ viewport: { width: 412, height: 915 } })
 test.describe.configure({ mode: 'serial', timeout: 150000 })
 
 async function newGame(page) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandeka')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
@@ -29,7 +29,7 @@ async function newGame(page) {
 test('2D map: tap the cafeteria, back in 3D you walk there and its sheet opens', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   await newGame(page)
-  await page.goto('/?morning=0&m=1#/play')
+  await page.goto('/?fast=1&morning=0&m=1#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.locator('[data-act="view"][data-mode="map"]').tap()
   const pin = page.locator('.g-map [data-act="place-open"][data-id="cafeteria"]')
@@ -54,7 +54,7 @@ test('2D map: tap the cafeteria, back in 3D you walk there and its sheet opens',
 
 test('in-world map: tap the library, then Skip there: the clock moves and the sheet opens', async ({ page }) => {
   await newGame(page)
-  await page.goto('/?morning=0&m=2#/play')
+  await page.goto('/?fast=1&morning=0&m=2#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.evaluate(() => window.dispatchEvent(new Event('mzansi-open-map')))
   const pin = page.locator('.map-pin[data-place="library"]')

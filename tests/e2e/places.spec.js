@@ -7,9 +7,9 @@ const OUT = 'test-results/places'
 test.describe.configure({ mode: 'serial', timeout: 120000 })
 
 async function newGame(page) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
@@ -30,14 +30,14 @@ for (const [place, hour] of [['quad', 12], ['quad', 21], ['cafeteria', 21], ['ca
     const errors = []
     page.on('pageerror', (e) => errors.push(String(e)))
     await newGame(page)
-    await page.goto(`/?morning=0&spawn=${place}&hour=${hour}#/play`)
+    await page.goto(`/?fast=1&morning=0&spawn=${place}&hour=${hour}#/play`)
     const world = page.locator('#world')
     await expect(world).toHaveAttribute('data-ready', '1', { timeout: 30000 })
     await expect(world).toHaveAttribute('data-night', hour > 18 ? '1.00' : '0.00', { timeout: 15000 })
     await page.waitForTimeout(3500) // props and people load
     await page.screenshot({ path: `${OUT}/${place}-${hour}.png` })
     // The place sheet: live flavour line, spots with a walk, action cards.
-    await page.goto(`/?morning=0&spawn=${place}&hour=${hour}#/place/${place}`)
+    await page.goto(`/?fast=1&morning=0&spawn=${place}&hour=${hour}#/place/${place}`)
     await expect(page.locator('.g-sheet2')).toBeVisible({ timeout: 15000 })
     await page.waitForTimeout(1500)
     await expect(page.locator('.g-flavour')).not.toBeEmpty()
@@ -56,7 +56,7 @@ for (const [place, hour] of [['quad', 12], ['quad', 21], ['cafeteria', 21], ['ca
 for (const [place, hour] of [['quad', 21], ['quad', 12], ['cafeteria', 21]]) {
   test(`top view of ${place} at ${hour}:00`, async ({ page }) => {
     fs.mkdirSync(OUT, { recursive: true })
-    await page.goto(`/?shot=cam-top&spawn=${place}&hour=${hour}`)
+    await page.goto(`/?fast=1&shot=cam-top&spawn=${place}&hour=${hour}`)
     await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
     await page.waitForTimeout(4000)
     await page.screenshot({ path: `${OUT}/top-${place}-${hour}.png` })
@@ -67,7 +67,7 @@ for (const [place, hour] of [['quad', 21], ['quad', 12], ['cafeteria', 21]]) {
 for (const [place, hour, cam] of [['gate', 12, 'sims'], ['library', 12, 'sims'], ['smig', 12, 'sims'], ['res_o', 12, 'sims'], ['sports_centre', 12, 'sims'], ['bus_station', 12, 'sims'], ['gate', 21, 'sims'], ['smig', 21, 'sims'], ['gate', 12, 'top']]) {
   test(`look: ${place} ${cam} at ${hour}:00`, async ({ page }) => {
     fs.mkdirSync(OUT, { recursive: true })
-    await page.goto(`/?shot=cam-${cam}&spawn=${place}&hour=${hour}`)
+    await page.goto(`/?fast=1&shot=cam-${cam}&spawn=${place}&hour=${hour}`)
     await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
     await page.waitForTimeout(5000)
     await page.screenshot({ path: `${OUT}/look-${place}-${cam}-${hour}.png` })
@@ -78,7 +78,7 @@ for (const [place, hour, cam] of [['gate', 12, 'sims'], ['library', 12, 'sims'],
 for (const [cam, hour] of [['sims', 12], ['eye', 12], ['sims', 21]]) {
   test(`look: outside the gate ${cam} at ${hour}:00`, async ({ page }) => {
     fs.mkdirSync(OUT, { recursive: true })
-    await page.goto(`/?shot=cam-${cam}&spawn=gate&facing=0&hour=${hour}`)
+    await page.goto(`/?fast=1&shot=cam-${cam}&spawn=gate&facing=0&hour=${hour}`)
     await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
     await page.waitForTimeout(6000)
     await page.screenshot({ path: `${OUT}/look-outside-${cam}-${hour}.png` })
@@ -87,7 +87,7 @@ for (const [cam, hour] of [['sims', 12], ['eye', 12], ['sims', 21]]) {
 
 test('look: eye view among people at the Quad', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/?shot=cam-eye&spawn=quad&facing=0.9&hour=12')
+  await page.goto('/?fast=1&shot=cam-eye&spawn=quad&facing=0.9&hour=12')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(5000)
   await page.screenshot({ path: `${OUT}/look-quad-eye.png` })

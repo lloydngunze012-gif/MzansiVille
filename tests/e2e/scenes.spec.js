@@ -24,9 +24,9 @@ const CASES = [
 ]
 
 async function setup(page, place, phase, minutes) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandeka')
   await page.locator('#residence').selectOption({ label: 'O Block' }).catch(() => page.locator('#residence').selectOption({ index: 1 }))
   await page.locator('#course').selectOption({ index: 1 })
@@ -39,7 +39,7 @@ async function setup(page, place, phase, minutes) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   }, [phase, minutes])
-  await page.goto(`/?morning=0&spawn=${place}&talk=auto#/place/${place}`)
+  await page.goto(`/?fast=1&morning=0&spawn=${place}&talk=auto#/place/${place}`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(2500)
 }

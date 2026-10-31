@@ -8,9 +8,9 @@ const OUT = process.env.LECTURE_SHOTS || 'test-results/lecture'
 
 // A new student, moved straight to the start of the 9:00 lecture.
 async function atLecture(page, minutes, extra = '', course = null) {
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=0#/new')
+  await page.goto('/?fast=1&morning=0#/new')
   await page.locator('#name').fill('Thandi')
   await page.locator('#residence').selectOption({ index: 1 })
   if (course) await page.locator('#course').selectOption(course)
@@ -24,7 +24,7 @@ async function atLecture(page, minutes, extra = '', course = null) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   }, minutes)
   // A new query string forces a full reload, so the edited save is read fresh.
-  await page.goto(`/?morning=0&lecture=1&talk=auto${extra}#/lecture`)
+  await page.goto(`/?fast=1&morning=0&lecture=1&talk=auto${extra}#/lecture`)
 }
 
 test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
@@ -47,7 +47,8 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await page.locator('[data-lc="choice"]').nth(2).tap()
   await expect(host).toHaveAttribute('data-seat', 'zanele')
 
-  await atStep('moment')
+  // (with ?fast=1 the moment can pass before the test looks: moment or the choice after it)
+  await expect(host).toHaveAttribute('data-step', /moment|choice/, { timeout: 30000 })
   await page.screenshot({ path: `${OUT}/3_moment.png` })
   await atStep('choice')
   await expect(host).toHaveAttribute('data-moment', 'cold_call')
@@ -69,7 +70,7 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await expect(page.locator('.g-route')).toHaveCount(0) // "Your lecture is at SMIG" is gone
   expect(run.stats.grades).toBeGreaterThan(before) // the normal +8 lecture gain applied
   // The lecture is over for today: the route sends you back to campus.
-  await page.goto('/?morning=0#/lecture')
+  await page.goto('/?fast=1&morning=0#/lecture')
   await expect(page).toHaveURL(/#\/play/)
   expect(errors).toEqual([])
 })
@@ -95,7 +96,7 @@ test('your course decides your lecture: a Law student goes to Law, with Prof Nai
   await expect(host).toHaveAttribute('data-lecturer', 'Prof Naidoo')
   await page.screenshot({ path: `${OUT}/law_lecturer.png` })
   // On campus, the route and the chip point to Law, not SMIG.
-  await page.goto('/?morning=0&campus=1#/play')
+  await page.goto('/?fast=1&morning=0&campus=1#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await expect(page.locator('.g-now')).toContainText('Lecture at Law')
   await expect(page.locator('.g-route')).toContainText('Your lecture is at Law')

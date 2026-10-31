@@ -7,6 +7,7 @@ import { createAvatar, gesture, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 import { CRUSHES, newCrush } from '../crush.js'
 import { addIdentity } from '../engine/identity.js'
+import { SPEED as FAST, ms } from '../speed.js'
 
 const WAKE = 7 * 60
 const BUS_FIRST = 8 * 60 + 20
@@ -194,7 +195,7 @@ function changeStats(delta) {
   node.innerHTML = parts.join(' ')
   node.hidden = false
   node.classList.remove('pop'); void node.offsetWidth; node.classList.add('pop')
-  setTimeout(() => { node.hidden = true }, 1800)
+  setTimeout(() => { node.hidden = true }, ms(1800))
   opts.onUpdate()
 }
 
@@ -263,7 +264,7 @@ function tapNext(node) {
       done()
     }
     const since = performance.now()
-    if (AUTO_TALK) { setTimeout(done, 700); return }
+    if (AUTO_TALK) { setTimeout(done, 700); return } // real time, even with ?fast=1, so lines can be read in screenshots
     window.addEventListener('pointerup', onTap, true)
   })
 }
@@ -604,7 +605,7 @@ function setStep(name) {
 function tick(now) {
   frame = requestAnimationFrame(tick)
   const real = (now - (last || now)) / 1000
-  const dt = Math.min(0.05, real)
+  const dt = Math.min(0.05, real) * FAST
   last = now
   clock += dt
   tasks = tasks.filter((t) => { if (t.update(dt)) { t.resolve(); return false } return true })

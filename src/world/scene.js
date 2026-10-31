@@ -19,6 +19,7 @@ import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
 import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
+import { SPEED, ms } from '../speed.js'
 
 const WALK = 6.2
 const host = document.getElementById('world')
@@ -559,9 +560,9 @@ function startTalk(avatar) {
   }
   if (Math.hypot(tx - player.position.x, tz - player.position.z) < 0.5) open()
   else {
-    walkTo(tx, tz, () => { snapTo = { x: tx, z: tz }; setTimeout(open, 250) })
+    walkTo(tx, tz, () => { snapTo = { x: tx, z: tz }; setTimeout(open, ms(250)) })
     if (!route.length) open()
-    setTimeout(() => { if (talk && !opened) { route = []; arrive = null; open() } }, 5000)
+    setTimeout(() => { if (talk && !opened) { route = []; arrive = null; open() } }, ms(5000))
   }
 }
 // Tests: where someone is on screen, so a test can tap them like a player would.
@@ -596,7 +597,7 @@ window.addEventListener('mzansi-talk-react', (event) => {
   if (!talk) return
   const tone = event.detail?.tone
   gesture(talk.avatar, tone === 'bad' ? 'emote-no' : 'emote-yes')
-  if (tone === 'good') setTimeout(() => player && gesture(player, 'emote-yes'), 500)
+  if (tone === 'good') setTimeout(() => player && gesture(player, 'emote-yes'), ms(500))
 })
 window.addEventListener('mzansi-talk-end', () => {
   if (!talk) return
@@ -681,14 +682,14 @@ function activityApi() {
     // Scene walks always finish: if the path is blocked, step into place after a while.
     walkTo: (x, z, pace = WALK) => new Promise((resolve) => {
       let done = false
-      const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, 250) }
+      const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, ms(250)) }
       walkTo(x, z, finish)
       speed = pace
       if (!route.length) finish()
       const far = Math.hypot(x - player.position.x, z - player.position.z)
-      setTimeout(() => { if (!done) { route = []; arrive = null; finish() } }, 1500 + (far / pace) * 1800)
+      setTimeout(() => { if (!done) { route = []; arrive = null; finish() } }, ms(1500 + (far / pace) * 1800))
     }),
-    wait: (s) => new Promise((resolve) => setTimeout(resolve, s * 1000)),
+    wait: (s) => new Promise((resolve) => setTimeout(resolve, ms(s * 1000))),
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
     gesture: (name) => gesture(player, name),
     gestureOf: (avatar, name) => avatar && gesture(avatar, name),
@@ -766,12 +767,12 @@ function activityApi() {
       node.querySelector('p').textContent = text
       node.hidden = false
       node.classList.remove('out')
-      setTimeout(resolve, text ? 900 : 350)
+      setTimeout(resolve, ms(text ? 900 : 350))
     }),
     unfade: () => new Promise((resolve) => {
       const node = host.querySelector('.scene-fade')
       node.classList.add('out')
-      setTimeout(() => { node.hidden = true; node.classList.remove('out'); resolve() }, 350)
+      setTimeout(() => { node.hidden = true; node.classList.remove('out'); resolve() }, ms(350))
     }),
     npc: (id, x, z, rot = 0, { pose = 'stand', y = 0 } = {}) => {
       const avatar = createAvatar(lookForPerson(id, temps.length + 3))
@@ -1004,7 +1005,7 @@ function showFloater(before, after) {
   node.classList.remove('pop')
   void node.offsetWidth
   node.classList.add('pop')
-  setTimeout(() => { node.hidden = true }, 1600)
+  setTimeout(() => { node.hidden = true }, ms(1600))
 }
 
 function rebuild(district, homeId) {
@@ -1228,7 +1229,7 @@ function quadSound() {
 
 function tick(now) {
   frame = requestAnimationFrame(tick)
-  const dt = Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)
+  const dt = (Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)) * SPEED
   tick.last = now
   steering = null
   if (actionLeft <= 0) input.stick()

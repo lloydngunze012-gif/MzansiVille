@@ -13,9 +13,9 @@ const SKIP = /^(Sign in|Sign out|Admin|This links to a real shop|Download|Share 
 let SAVE = null
 async function freshPlayer(page, extra = {}) {
   if (!SAVE) {
-    await page.goto('/?morning=0#/new')
+    await page.goto('/?fast=1&morning=0#/new')
     await page.evaluate(() => localStorage.clear())
-    await page.goto('/?morning=0#/new')
+    await page.goto('/?fast=1&morning=0#/new')
     await page.locator('#name').fill('Thandeka')
     await page.locator('#residence').selectOption({ index: 1 })
     await page.locator('#course').selectOption({ index: 1 })
@@ -24,7 +24,7 @@ async function freshPlayer(page, extra = {}) {
     await page.waitForURL(/#\/play/)
     SAVE = await page.evaluate(() => localStorage.getItem('mzansiville.v1'))
   }
-  await page.goto('/?morning=0&seed=1#/title')
+  await page.goto('/?fast=1&morning=0&seed=1#/title')
   await page.evaluate(([raw, x]) => {
     localStorage.clear()
     const save = JSON.parse(raw)
@@ -85,20 +85,20 @@ async function tapByKey(page, key) {
 }
 
 const SCREENS = [
-  { name: 'Cover', setup: async (p) => { await p.goto('/#/'); await p.evaluate(() => localStorage.clear()); await p.goto('/#/') } },
-  { name: 'Creator: look', setup: async (p) => { await p.goto('/?morning=0#/new'); await p.evaluate(() => localStorage.clear()); await p.goto('/?morning=0#/new') } },
-  { name: 'Creator: story', setup: async (p) => { await p.goto('/?morning=0#/'); await p.evaluate(() => localStorage.clear()); await p.goto(`/?morning=0&r=${Math.random()}#/new`); await p.locator('#name').fill('T'.repeat(3)); await p.locator('#residence').selectOption({ index: 1 }); await p.locator('#course').selectOption({ index: 1 }); await p.locator('[data-act="begin"]').tap() } },
-  { name: 'Campus (3D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=1#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }) } },
-  { name: 'Campus map (2D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=2#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.locator('[data-act="view"][data-mode="map"]').tap() } },
-  { name: 'Menu (gear)', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=3#/play'); await p.locator('[data-act="gear"]').first().tap() } },
-  { name: 'Place sheet: Cafeteria', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=4#/place/cafeteria'); await p.waitForTimeout(1500) } },
-  { name: 'Talk: a student', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&spawn=quad&a=5#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('naledi')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
-  { name: 'Talk: Mam’ Gugu', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&spawn=quad&a=6#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('mam_gugu')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
-  { name: 'Goals card', setup: async (p) => { await freshPlayer(p, { goals: { day: 1, list: [{ id: 'lecture1', kind: 'must', done: true }, { id: 'crushName', kind: 'story', done: false }, { id: 'study1', kind: 'dream', done: false }] } }); await p.goto('/?morning=0&a=7#/play'); await p.locator('[data-act="goals"]').tap() } },
-  { name: 'You (student card)', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=8#/profile') } },
-  { name: 'Leaderboards', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=9#/board') } },
-  { name: 'Campus lobby (chat)', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=10#/chat') } },
-  { name: 'Milestones', setup: async (p) => { await freshPlayer(p); await p.goto('/?morning=0&a=11#/milestones') } },
+  { name: 'Cover', setup: async (p) => { await p.goto('/?fast=1#/'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1#/') } },
+  { name: 'Creator: look', setup: async (p) => { await p.goto('/?fast=1&morning=0#/new'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1&morning=0#/new') } },
+  { name: 'Creator: story', setup: async (p) => { await p.goto('/?fast=1&morning=0#/'); await p.evaluate(() => localStorage.clear()); await p.goto(`/?fast=1&morning=0&r=${Math.random()}#/new`); await p.locator('#name').fill('T'.repeat(3)); await p.locator('#residence').selectOption({ index: 1 }); await p.locator('#course').selectOption({ index: 1 }); await p.locator('[data-act="begin"]').tap() } },
+  { name: 'Campus (3D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=1#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }) } },
+  { name: 'Campus map (2D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=2#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.locator('[data-act="view"][data-mode="map"]').tap() } },
+  { name: 'Menu (gear)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=3#/play'); await p.locator('[data-act="gear"]').first().tap() } },
+  { name: 'Place sheet: Cafeteria', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=4#/place/cafeteria'); await p.waitForTimeout(1500) } },
+  { name: 'Talk: a student', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&spawn=quad&a=5#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('naledi')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
+  { name: 'Talk: Mam’ Gugu', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&spawn=quad&a=6#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.evaluate(() => window.mzansiTalkTo('mam_gugu')); await expect(p.locator('.g-talk')).toBeVisible({ timeout: 20000 }) } },
+  { name: 'Goals card', setup: async (p) => { await freshPlayer(p, { goals: { day: 1, list: [{ id: 'lecture1', kind: 'must', done: true }, { id: 'crushName', kind: 'story', done: false }, { id: 'study1', kind: 'dream', done: false }] } }); await p.goto('/?fast=1&morning=0&a=7#/play'); await p.locator('[data-act="goals"]').tap() } },
+  { name: 'You (student card)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=8#/profile') } },
+  { name: 'Leaderboards', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=9#/board') } },
+  { name: 'Campus lobby (chat)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=10#/chat') } },
+  { name: 'Milestones', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=11#/milestones') } },
 ]
 
 for (const screen of SCREENS.filter((s) => !process.env.AUDIT || process.env.AUDIT.split(',').includes(s.name))) {

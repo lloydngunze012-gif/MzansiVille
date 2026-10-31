@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { genderOf, skins } from '../avatar.js'
+import { SPEED } from '../speed.js'
 
 // Students are Quaternius "Ultimate Modular Men / Women" (CC0, public/models/people2):
 // low-poly people with modelled clothes, shoes and hairstyles. Each student is an
@@ -379,7 +380,7 @@ function sitPose(group, onGround) {
 // (the caller tilts the group to lie down).
 export function poseAvatar(group, walking, time) {
   const data = group.userData
-  const dt = Math.min(0.1, Math.max(0, time - (data.lastTime ?? time)))
+  const dt = Math.min(0.1 * SPEED, Math.max(0, time - (data.lastTime ?? time)))
   data.lastTime = time
   if (!data.rigged) {
     // The stand-in bobs around where it was put (a seat, the floor), never resetting

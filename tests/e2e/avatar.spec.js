@@ -4,9 +4,9 @@ import { test, expect } from '@playwright/test'
 
 test('a dark-skinned female in a dress looks identical in every scene', async ({ page }) => {
   test.setTimeout(180000)
-  await page.goto('/?morning=1&roommate=0&latebus=0&snooze=0#/new')
+  await page.goto('/?fast=1&morning=1&roommate=0&latebus=0&snooze=0#/new')
   await page.evaluate(() => localStorage.clear())
-  await page.goto('/?morning=1&roommate=0&latebus=0&snooze=0#/new')
+  await page.goto('/?fast=1&morning=1&roommate=0&latebus=0&snooze=0#/new')
   for (const [part, id] of [['gender', 'female'], ['skin', 'ebony'], ['hair', 'braids'], ['outfit', 'dress'], ['body', 'curvy']]) {
     await page.locator(`[data-part="${part}"][data-id="${id}"]`).tap()
   }
@@ -30,7 +30,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   expect(JSON.parse(await page.locator('#morning3d').getAttribute('data-look'))).toEqual(look)
 
   // Campus (a reload without the forced morning)
-  await page.goto('/?morning=0#/play')
+  await page.goto('/?fast=1&morning=0#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#world').getAttribute('data-look'))).toEqual(look)
 
@@ -40,14 +40,14 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
     Object.assign(save.run, { phase: 'lecture', minutes: 525, queue: [], lectureResolved: false })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
-  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
+  await page.goto('/?fast=1&morning=0&lecture=1&talk=auto#/lecture')
   await expect(page.locator('#lecture3d')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 30000 })
   expect(JSON.parse(await page.locator('#lecture3d').getAttribute('data-look'))).toEqual(look)
 })
 
 // Two students on the same base model keep their own colours (clones used to share geometry).
 test('same model, different looks: colours do not leak between students', async ({ page }) => {
-  await page.goto('/?morning=0#/')
+  await page.goto('/?fast=1&morning=0#/')
   const result = await page.evaluate(async () => {
     const A = await import('/src/world/avatar3d.js')
     const a = A.createAvatar({ model: 'female-b', skin: 'sand', topColor: '#00ff00' })
