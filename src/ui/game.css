@@ -512,3 +512,11 @@ body:has(.g-full) .door-prompt{visibility:hidden}
 .g-talk-item b{color:#1f7a3a;font-size:15px}
 .g-talk-item .g-fxs,.g-talk-item small{grid-column:1/-1;font:600 11px system-ui;opacity:.8}
 .g-talk-item:disabled{opacity:.5}
+
+/* A tap on something already chosen bounces, so the tap is never silent */
+.g-pulse{animation:g-pulse .35s cubic-bezier(.2,1.8,.4,1)}
+@keyframes g-pulse{0%{transform:scale(1)}40%{transform:scale(.92)}100%{transform:scale(1)}}
+/* No unreachable buttons: the camera bar steps away while a sheet or a conversation is open */
+.g-screen:has(.g-sheet) .g-views,.g-screen:has(.g-talk) .g-views{display:none}
+.g-toast{position:fixed;z-index:300;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:10px 16px;border-radius:999px;background:#22143bf2;color:#fff6e6;font:700 14px system-ui;border:1px solid #f0c40088;box-shadow:0 6px 18px #0008;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
+.g-toast[hidden]{display:none}
