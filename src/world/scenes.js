@@ -224,7 +224,7 @@ export function createScenes(api) {
         await api.wait(0.8)
         await q.serveFront()
         const next = q.slot(i - 1)
-        await api.walkTo(next.x, next.z, 2.4)
+        await api.walkTo(next.x, next.z, 1.6)
         api.face(q.front.x, q.front.z - 2)
       }
       api.gestureOf(q.vendor, 'interact-right')
@@ -383,7 +383,7 @@ export function createScenes(api) {
         await api.wait(0.7)
         await q.serveFront()
         const next = q.slot(i - 1)
-        await api.walkTo(next.x, next.z, 2.4)
+        await api.walkTo(next.x, next.z, 1.6)
         api.face(q.front.x, q.front.z - 3)
       }
       api.say('My turn!')

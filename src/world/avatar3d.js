@@ -113,17 +113,17 @@ function recolour(model, look) {
       if (/^skin/i.test(name)) return shared(`skin${name}`, () => mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)))
       if (part === 'head') {
         if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x1c120c))
-        if (/earring|yellow|moustache/i.test(name)) return m
+        if (/earring|yellow|moustache/i.test(name)) return shared(`own${m.uuid}`, () => m.clone())
         return shared('hair', () => mat(look.hair))
       }
-      if (part === 'body') return look.outfitTop.includes(name) ? topMat() : m
+      if (part === 'body') return look.outfitTop.includes(name) ? topMat() : shared(`own${m.uuid}`, () => m.clone())
       if (part === 'legs') {
         if (look.dress) return topMat()
         if (look.skirt) return shared('skirt', () => mat(look.skirt))
         return shared('bottom', () => mat(look.bottom))
       }
       if (part === 'feet' && !shoeDone) { shoeDone = true; return shared('shoes', () => mat(look.shoes)) }
-      return m
+      return shared(`own${m.uuid}`, () => m.clone())
     })
     node.material = Array.isArray(node.material) ? next : next[0]
     node.castShadow = true
@@ -201,6 +201,80 @@ export function lookOf(avatar = {}) {
   }
 }
 
+// Gait calibration, once per outfit: for each clip, how far the lowest sole is off
+// the ground through the cycle (the walk and run clips dip the feet into the floor),
+// and how fast the planted foot slides back (the speed the clip was animated for).
+// poseAvatar lifts the body by the first and sets the clip rate from the second,
+// so feet rest on the ground and don't slide.
+const GAIT_SAMPLES = 40
+const gaits = {}
+const gaitVtx = new THREE.Vector3()
+// The lowest sole point, and the middle of each foot (left and right of the body).
+function soleOf(model, feet) {
+  let min = Infinity
+  feet?.forEach((f) => f.set(0, 0, 0, 0))
+  model.traverse((node) => {
+    if (!node.isSkinnedMesh || node.userData.part !== 'feet') return
+    const count = node.geometry.attributes.position.count
+    for (let i = 0; i < count; i++) {
+      node.getVertexPosition(i, gaitVtx)
+      node.localToWorld(gaitVtx)
+      if (gaitVtx.y < min) min = gaitVtx.y
+      if (feet) { const f = feet[gaitVtx.x < 0 ? 0 : 1]; f.x += gaitVtx.x; f.y += gaitVtx.y; f.z += gaitVtx.z; f.w += 1 }
+    }
+  })
+  feet?.forEach((f) => { if (f.w) f.multiplyScalar(1 / f.w) })
+  return min
+}
+// Put each foot back at the end of its shin (see footInShin in attachModel).
+function carryFeet(model, bones, footInShin) {
+  model.updateMatrixWorld(true)
+  for (const side of ['L', 'R']) {
+    const shin = bones[`LowerLeg${side}`]
+    const foot = bones[`Foot${side}`]
+    const local = footInShin?.[side]
+    if (!shin || !foot || !local) continue
+    const at = shin.localToWorld(local.clone())
+    foot.parent.worldToLocal(at)
+    foot.position.copy(at)
+  }
+  model.updateMatrixWorld(true)
+}
+
+function calibrate(model, animations, bones, footInShin) {
+  const saved = []
+  model.traverse((node) => { if (node.isBone) saved.push([node, node.position.clone(), node.quaternion.clone(), node.scale.clone()]) })
+  const mixer = new THREE.AnimationMixer(model)
+  const gait = {}
+  for (const clip of animations) {
+    const action = mixer.clipAction(clip).play()
+    const lift = new Float32Array(GAIT_SAMPLES + 1)
+    const prints = []
+    for (let i = 0; i <= GAIT_SAMPLES; i++) {
+      mixer.setTime((clip.duration * i) / GAIT_SAMPLES)
+      carryFeet(model, bones, footInShin)
+      const feet = [new THREE.Vector4(), new THREE.Vector4()]
+      lift[i] = -soleOf(model, feet)
+      prints.push(feet)
+    }
+    // The planted foot (the lower one) slides backwards at the walking speed.
+    const slides = []
+    const step = clip.duration / GAIT_SAMPLES
+    for (let i = 1; i <= GAIT_SAMPLES; i++) {
+      const low = prints[i][0].y <= prints[i][1].y ? 0 : 1
+      if ((prints[i - 1][0].y <= prints[i - 1][1].y ? 0 : 1) !== low) continue
+      slides.push(Math.hypot(prints[i][low].x - prints[i - 1][low].x, prints[i][low].z - prints[i - 1][low].z) / step)
+    }
+    slides.sort((a, b) => a - b)
+    gait[clip.name] = { lift, speed: slides.length ? slides[Math.floor(slides.length / 2)] : 0, duration: clip.duration }
+    action.stop()
+    mixer.uncacheAction(clip)
+  }
+  for (const [bone, p, q, sc] of saved) { bone.position.copy(p); bone.quaternion.copy(q); bone.scale.copy(sc) }
+  model.updateMatrixWorld(true)
+  return gait
+}
+
 async function attachModel(group, look) {
   const g = look.gender
   const [animGltf, outfitGltf, headGltf] = await Promise.all([
@@ -236,7 +310,6 @@ async function attachModel(group, look) {
   model.scale.x *= wide
   model.scale.z *= wide
   model.scale.y *= 1 + look.build * 0.03
-  if (look.organt) addOrgantMark(model)
   model.name = 'rig'
   const bones = {}
   // (three.js drops the dots from bone names: UpperLeg.L loads as UpperLegL.)
@@ -246,8 +319,9 @@ async function attachModel(group, look) {
   }
   model.updateMatrixWorld(true)
   const hipHeight = bones.Hips ? worldOf(bones.Hips).y : 0.9
-  // The feet are IK bones outside the leg chain: remember where each foot sits in
-  // its shin's space, so the sitting pose can carry the feet with the knees.
+  // The feet are IK bones outside the leg chain, and the clips only turn them: left
+  // alone they stay behind while the legs walk, and the shoes stretch ("melt").
+  // Remember where each foot sits in its shin's space; carryFeet puts it back there.
   // Rest pose of the bones the poses move: not every clip drives them, so they are
   // reset each frame before the clip plays (or the bends would pile up).
   const rest = Object.values(bones).map((bone) => [bone, bone.position.clone(), bone.quaternion.clone()])
@@ -257,12 +331,21 @@ async function attachModel(group, look) {
     const foot = bones[`Foot${side}`]
     if (shin && foot) footInShin[side] = shin.worldToLocal(worldOf(foot))
   }
+  const gaitKey = `${g}:${look.outfitFile}`
+  gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
+  if (look.organt) addOrgantMark(model)
   const mixer = new THREE.AnimationMixer(model)
   const actions = {}
   for (const clip of animGltf.animations) actions[clip.name] = mixer.clipAction(clip)
   for (const child of group.children) if (child.userData.standIn) child.visible = false
+  const materials = new Set()
+  model.traverse((node) => { if (node.isMesh) for (const m of [].concat(node.material)) materials.add(m) })
+  group.userData.materials = [...materials]
+  group.userData.fade = 0
+  fadeIn(group, 0)
   group.add(model)
-  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, headParts: heads, bones, hipHeight, footInShin, rest })
+  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, rest })
+  live.add(group)
   group.dispatchEvent({ type: 'rigged' })
 }
 
@@ -292,13 +375,33 @@ export function createAvatar(avatar = {}) {
   group.add(hit)
   group.userData.bob = body
   group.userData.look = look
-  group.userData.ready = attachModel(group, look).catch((error) => console.warn('character model', error))
+  // The stand-in stays hidden (the model fades in when it arrives); it shows only
+  // if the model never loads.
+  for (const child of group.children) if (child.userData.standIn) child.visible = false
+  group.userData.ready = attachModel(group, look).catch((error) => {
+    console.warn('character model', error)
+    for (const child of group.children) if (child.userData.standIn) child.visible = true
+  })
   return group
 }
 
+// A person appears by fading in (no pop, no blocky stand-in first).
+function fadeIn(group, dt) {
+  const data = group.userData
+  data.fade = Math.min(1, data.fade + dt / 0.4)
+  for (const m of data.materials) {
+    m.userData.base ||= { opacity: m.opacity, transparent: m.transparent }
+    m.transparent = data.fade < 1 || m.userData.base.transparent
+    m.opacity = m.userData.base.opacity * data.fade
+    m.needsUpdate = true
+  }
+}
+
 // Hide the stand-in parts that other code bolted on (Zanele's arms) once rigged.
+// (Hidden like the stand-in itself: shown only if the model never loads.)
 export function markStandIn(node) {
   node.userData.standIn = true
+  node.visible = false
 }
 
 function play(group, name, fade = 0.25) {
@@ -364,57 +467,138 @@ function sitPose(group, onGround) {
     if (low && !onGround) turnWorld(low, sideways, SIT.knee)
   }
   // Carry each foot to the end of its bent shin.
-  model.updateMatrixWorld(true)
-  for (const side of ['L', 'R']) {
-    const shin = bones[`LowerLeg${side}`]
-    const foot = bones[`Foot${side}`]
-    const local = group.userData.footInShin?.[side]
-    if (!shin || !foot || !local) continue
-    const at = shin.localToWorld(local.clone())
-    foot.parent.worldToLocal(at)
-    foot.position.copy(at)
-  }
+  carryFeet(model, bones, group.userData.footInShin)
 }
+
+// How the body follows the ground: the clips' lift (see calibrate), blended by weight.
+function liftOf(data) {
+  let lift = 0
+  let weight = 0
+  for (const [name, action] of Object.entries(data.actions)) {
+    const w = action.getEffectiveWeight()
+    const g = data.gait?.[name]
+    if (!g || w <= 0 || !action.isRunning()) continue
+    const f = ((action.time % g.duration) / g.duration) * GAIT_SAMPLES
+    const i = Math.floor(f)
+    lift += (g.lift[i] + (g.lift[Math.min(i + 1, GAIT_SAMPLES)] - g.lift[i]) * (f - i)) * w
+    weight += w
+  }
+  return weight > 0 ? lift / weight : 0
+}
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
+// Walks slower than this play the walk clip, faster ones the run (metres a second).
+const RUN_FROM = 2.3
+const TURN = 10 // how quickly the body turns to face where it's going (per second)
 
 // pose: 'stand' (idle or walk), 'sit', 'talk', 'run', 'dance' or 'lie'
 // (the caller tilts the group to lie down).
+// Callers set position and rotation.y; the body turns smoothly towards rotation.y,
+// and the walk or run clip plays at the speed the person is really moving.
 export function poseAvatar(group, walking, time) {
   const data = group.userData
   const dt = Math.min(0.1 * SPEED, Math.max(0, time - (data.lastTime ?? time)))
   data.lastTime = time
+  // Real ground speed, smoothed (teleports and seat placements don't count).
+  const last = data.lastPos
+  const moved = last ? Math.hypot(group.position.x - last.x, group.position.z - last.z) : 0
+  if (!last) data.lastPos = new THREE.Vector3()
+  data.lastPos.copy(group.position)
+  if (dt > 0) {
+    const now = moved > 2 ? data.speed || 0 : moved / dt
+    data.speed = (data.speed || 0) + (now - (data.speed || 0)) * Math.min(1, dt * 8)
+  }
   if (!data.rigged) {
-    // The stand-in bobs around where it was put (a seat, the floor), never resetting
-    // the height, so seated people are still on their seats when the model loads.
-    if (data.baseY === undefined) data.baseY = group.position.y
-    const bob = walking ? Math.abs(Math.sin(time * 10)) * 0.06 : 0
-    if (data.pose !== 'lie') group.position.y = data.baseY + bob
-    group.rotation.z = walking ? Math.sin(time * 10) * 0.04 : 0
+    // No blocky stand-in: the person fades in once the model arrives (see attachModel).
     return
   }
   if (data.baseY !== undefined) { if (data.pose !== 'lie') group.position.y = data.baseY; group.rotation.z = 0; data.baseY = undefined }
   const onGround = data.pose === 'sit' && group.position.y < 0.2
+  const settled = data.pose === 'sit' || data.pose === 'lie'
+  // Walking in place against a wall reads as sliding: stand still instead.
+  const moving = walking && data.speed > 0.25
+  const fast = data.speed > RUN_FROM
   if (!data.gesturing?.isRunning()) {
-    if (data.pose === 'sit' || data.pose === 'lie') play(group, 'idle')
+    if (settled) play(group, 'idle')
     else if (data.pose === 'talk') play(group, 'talk')
-    else if (data.pose === 'run') play(group, walking ? 'sprint' : 'idle')
+    else if (data.pose === 'run') play(group, moving ? 'sprint' : 'idle')
     else if (data.pose === 'dance') play(group, 'dance')
-    else play(group, walking ? 'walk' : 'idle')
+    else play(group, moving ? (fast ? 'sprint' : 'walk') : 'idle')
   }
   const idle = data.actions[CLIP.idle]
   if (idle) idle.timeScale = data.pose === 'lie' ? 0.25 : 1
+  // The feet keep pace with the ground: the clip rate follows the real speed.
+  for (const [name, most] of [[CLIP.walk, 2], [CLIP.sprint, 3.4]]) {
+    const action = data.actions[name]
+    const natural = data.gait?.[name]?.speed
+    if (action && natural > 0.2) action.timeScale = moving ? Math.min(most, Math.max(0.55, data.speed / natural)) : 1
+  }
   for (const [bone, p, q] of data.rest || []) { bone.position.copy(p); bone.quaternion.copy(q) }
   data.mixer.update(dt)
   const model = group.getObjectByName('rig')
   if (!model) return
+  // Turn smoothly: the body lags the facing a little instead of snapping.
+  if (settled || data.yaw === undefined) data.yaw = group.rotation.y
+  else data.yaw += wrap(group.rotation.y - data.yaw) * Math.min(1, dt * TURN)
   model.position.set(0, 0, 0)
-  model.rotation.y = 0
+  model.rotation.y = settled ? 0 : wrap(data.yaw - group.rotation.y)
+  if (data.pose !== 'sit') carryFeet(model, data.bones, data.footInShin)
+  if (!settled) model.position.y = liftOf(data)
   if (data.pose === 'sit') sitPose(group, onGround)
   // Lying (the caller tips the group onto its back): lift so the back rests on top.
   if (data.pose === 'lie') model.position.z = 0.12
   // Dancing: the wave with a bounce and a sway on the beat (112 BPM, like the groove).
   if (data.pose === 'dance') {
     const beat = (time * 112) / 60
-    model.position.y = Math.abs(Math.sin(beat * Math.PI)) * 0.1
-    model.rotation.y = Math.sin(beat * Math.PI / 2) * 0.4
+    model.position.y += Math.abs(Math.sin(beat * Math.PI)) * 0.1
+    model.rotation.y += Math.sin(beat * Math.PI / 2) * 0.4
   }
+  if (data.fade !== undefined && data.fade < 1) fadeIn(group, dt)
+}
+
+// Tests (motion checks): every rigged person in a live scene, measured from the
+// skinned vertices themselves: the lowest point of the shoes, the seat of the
+// trousers (lowest leg vertex near the hips) and the body's lowest point overall.
+const live = new Set()
+const vtx = new THREE.Vector3()
+function lowest(group, test) {
+  let min = Infinity
+  group.traverse((node) => {
+    if (!node.isSkinnedMesh || !node.visible || !test(node)) return
+    const count = node.geometry.attributes.position.count
+    const step = Math.max(1, Math.floor(count / 400))
+    for (let i = 0; i < count; i += step) {
+      node.getVertexPosition(i, vtx)
+      node.localToWorld(vtx)
+      if (vtx.y < min) min = vtx.y
+    }
+  })
+  return min
+}
+function inScene(node) {
+  for (let n = node; n; n = n.parent) { if (!n.visible) return false; if (n.isScene) return true }
+  return false
+}
+export function measureBody(group) {
+  const data = group.userData
+  group.updateMatrixWorld(true)
+  const hips = data.bones?.Hips ? worldOf(data.bones.Hips) : null
+  const ground = group.parent ? group.parent.localToWorld(new THREE.Vector3(group.position.x, data.pose === 'sit' ? 0 : group.position.y, group.position.z)).y : group.position.y
+  return {
+    id: data.personId || group.name,
+    pose: data.pose || 'stand',
+    clip: data.current,
+    rate: +(data.actions?.[data.current]?.timeScale ?? 0).toFixed(2),
+    speed: +(data.speed || 0).toFixed(2),
+    x: +group.position.x.toFixed(2), y: +group.position.y.toFixed(3), z: +group.position.z.toFixed(2),
+    sole: +lowest(group, (n) => n.userData.part === 'feet').toFixed(3),
+    low: +lowest(group, () => true).toFixed(3),
+    seatOfPants: hips ? +lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body').toFixed(3) : null,
+    hips: hips ? +hips.y.toFixed(3) : null,
+    ground: +ground.toFixed(3),
+    standIn: group.children.some((c) => c.userData.standIn && c.visible),
+  }
+}
+if (typeof window !== 'undefined') {
+  window.mzansiGait = () => Object.fromEntries(Object.entries(gaits).map(([k, g]) => [k, Object.fromEntries(Object.entries(g).map(([c, v]) => [c, { speed: +v.speed.toFixed(2), maxLift: +Math.max(...v.lift).toFixed(3),   minLift: +Math.min(...v.lift).toFixed(3) }]))]))
+  window.mzansiBodies = () => [...live].filter((g) => !g.userData.disposed && inScene(g)).map(measureBody)
 }

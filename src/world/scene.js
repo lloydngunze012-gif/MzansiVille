@@ -21,7 +21,9 @@ import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './n
 import { venueFor } from '../venues.js'
 import { SPEED, ms } from '../speed.js'
 
-const WALK = 6.2
+// A brisk walk (m/s); long trips jog, up to RUN_MAX (the run clip keeps up to there).
+const WALK = 2
+const RUN_MAX = 9
 const host = document.getElementById('world')
 
 let renderer
@@ -326,8 +328,8 @@ function walkTo(x, z, done) {
   if (route.length && Math.hypot(route[0].x - player.position.x, route[0].z - player.position.z) < 0.8) route.shift()
   arrive = done || null
   stuck = 0
-  // No walk takes more than about 12 s on a phone: long trips are a jog.
-  speed = Math.max(WALK, routeLength() / 12)
+  // No walk takes more than about 12 s on a phone: long trips are a jog (map Skip for the longest).
+  speed = Math.min(RUN_MAX, Math.max(WALK, routeLength() / 12))
   if (player.userData.pose === 'stand' || player.userData.pose === 'run') player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
   host.dataset.walkSeconds = (routeLength() / speed).toFixed(1)
 }
@@ -1135,7 +1137,7 @@ function beginAction(detail) {
         startBar(detail)
       })
       // Action walks are paced to land in about 2.5 s however far the door is.
-      speed = Math.max(WALK, routeLength() / 2.5)
+      speed = Math.min(RUN_MAX, Math.max(WALK, routeLength() / 2.5))
       return
     }
   }
