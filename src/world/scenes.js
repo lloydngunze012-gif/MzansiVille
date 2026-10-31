@@ -16,6 +16,7 @@ export const SCENE_OF = {
   lecture_attend: ['lecture', {}],
   talk_eat: ['orderEat', {}],
   talk_queue: ['queueOrder', {}],
+  talk_wake: ['wakeUp', {}],
   talk_sit: ['sitTogether', {}],
   talk_consult: ['consult', {}],
   talk_study: ['groupStudy', { room: 'library', props: 'books' }],
@@ -436,11 +437,20 @@ export function createScenes(api) {
     // Sit with someone you just talked to: a bench right here, a proper chat.
     async sitTogether(place, opt) {
       const p = P()
-      const s = { x: p.x - 1.6, z: p.z + 1.6 }
+      // A spot near you with open ground and a clear view from the front.
+      let s = { x: p.x - 1.6, z: p.z + 1.6 }
+      search: for (const r of [1.8, 3, 4.5]) {
+        for (let k = 0; k < 8; k++) {
+          const c = { x: p.x + Math.cos(k * Math.PI / 4) * r, z: p.z + Math.sin(k * Math.PI / 4) * r }
+          const ground = [[0, 0], [-0.9, 0], [0.9, 0], [0, 1.2], [0.9, 3.6]].every(([dx, dz]) => api.openAt(c.x + dx, c.z + dz))
+          if (ground && api.clearView([c.x + 0.9, 1.9, c.z + 3.6], [[c.x - 0.45, 1.1, c.z], [c.x + 0.45, 1.1, c.z]])) { s = c; break search }
+        }
+      }
       api.box(1.8, 0.08, 0.5, 0x9a6a40, s.x, 0.43, s.z)
       api.box(1.8, 0.4, 0.08, 0x9a6a40, s.x, 0.68, s.z - 0.25)
       const friend = api.npc(opt.who, s.x + 0.45, s.z, 0, { pose: 'sit', y: 0.45 })
-      api.frame(s)
+      // From the front of the bench, a little above: both of you, head to feet.
+      api.shot([s.x + 0.9, 1.9, s.z + 3.6], [s.x, 0.75, s.z])
       await api.walkTo(s.x - 0.45, s.z + 0.9)
       sitOn({ x: s.x - 0.45, z: s.z, rot: 0, y: 0.45 })
       const lines = [['So where are you from?', 'you'], [opt.line1 || 'Born and raised here. You?', opt.name || 'friend'], ['Same energy, different town.', 'you'], [opt.line2 || 'Ha! We should do this again.', opt.name || 'friend']]
@@ -717,6 +727,7 @@ export function createScenes(api) {
       await goOutside(place)
     },
 
+    // Into bed for the night: lights low, the night passes.
     async sleep(place) {
       const room = await goInside(place, 'bedroom')
       const bed = room.anchors.bed
@@ -725,9 +736,38 @@ export function createScenes(api) {
       api.pose('lie')
       api.player.position.y = bed.lieY
       api.frame(bed)
-      api.say('Zzz…')
+      api.say('Goodnight, campus.')
+      await api.wait(1.2)
+      api.say('Zzz\u2026')
       await steps(3, 1.2)
+      await api.fade()
       api.pose('stand')
+      api.clearTemps()
+      api.teleport(place.door.x, place.door.z, 0)
+    },
+
+    // The next morning: you wake in bed, sit up on the edge, stretch, stand, head out.
+    async wakeUp(place) {
+      await api.fade()
+      const room = api.room('bedroom')
+      const bed = room.anchors.bed
+      api.teleport(bed.x, bed.z, bed.rot)
+      api.pose('lie')
+      api.player.position.y = bed.lieY
+      api.frame(bed)
+      await api.wait(0.3)
+      await api.unfade()
+      api.say('Morning already?')
+      await api.wait(1.4)
+      sitOn(room.anchors.sit)
+      api.progress(0.4)
+      await api.wait(0.8)
+      api.gesture('interact-right') // the stretch
+      api.say('New day. Let\u2019s go.')
+      await api.wait(1.2)
+      api.pose('stand')
+      await api.glide(room.anchors.sit.x + 0.8, room.anchors.sit.z + 0.6)
+      api.progress(0.8)
       await goOutside(place)
     },
 

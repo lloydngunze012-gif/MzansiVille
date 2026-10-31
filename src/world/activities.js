@@ -208,11 +208,28 @@ export function createActivities(api) {
     },
 
     // A promo shift: hand out flyers by the stall.
+    // A promo shift: hand out flyers to students passing by, one by one.
     async flyers() {
       const s = quadSpot('stall')
-      await api.walkTo(s.x + 1.5, s.z + 1.5)
+      const at = { x: s.x + 1.5, z: s.z + 1.5 }
+      await api.walkTo(at.x, at.z)
+      api.frame(at)
       api.hold(holdable('flyer'))
-      for (let i = 0; i < 4; i++) { api.progress((i + 1) / 5); api.gesture(i % 2 ? 'interact-left' : 'interact-right'); await api.wait(1) }
+      api.say('Shift time. Flyers for the society expo!')
+      const passers = ['x5', 'x7', 'x11']
+      for (let i = 0; i < passers.length; i++) {
+        api.progress((i + 1) / (passers.length + 1))
+        const who = api.npc(passers[i], at.x + 3, at.z + 0.6, -Math.PI / 2)
+        await api.moveNpc?.(who, at.x + 0.9, at.z + 0.2, 1.6)
+        api.face(who.position.x, who.position.z)
+        api.gesture('interact-right')
+        api.gestureOf(who, 'pick-up')
+        api.say(['Expo on Friday, free snacks!', 'Take one, it\u2019s free!', 'Tell your friends!'][i])
+        await api.wait(1.1)
+        api.moveNpc?.(who, at.x - 4, at.z + 1.5, 1.4)
+      }
+      api.say('Stack done. That\u2019s a shift.')
+      await api.wait(0.8)
       api.hold(null)
     },
 

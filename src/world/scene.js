@@ -762,6 +762,20 @@ function activityApi() {
       return { id, b, x: b.x, z: b.z, door, front: { x: b.x, z: b.maxZ + 1.4 }, open: Boolean(b.open) }
     },
     frame: (target) => { activityFocus = target || null; focusTimer = 0 },
+    // A fixed shot (from, at): for scenes that know exactly where to look from.
+    // Is this ground free to stand on, and can a camera there see these points?
+    openAt: (x, z) => !pointBlocked(campus.grid, x, z),
+    clearView: (from, points) => {
+      const pos = new THREE.Vector3(...from)
+      if (campus.layout.buildings.some((b) => pos.x > b.minX - 0.6 && pos.x < b.minX + b.w + 0.6 && pos.z > b.minZ - 0.6 && pos.z < b.minZ + b.d + 0.6)) return false
+      return points.every(([x, y, z]) => {
+        const dir = new THREE.Vector3(x, y, z).sub(pos)
+        shotRay.set(pos, dir.clone().normalize())
+        shotRay.far = dir.length() - 0.3
+        return !shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !isPart(hit.object))
+      })
+    },
+    shot: (from, at) => { activityFocus = null; closeShot = { pos: new THREE.Vector3(...from), look: new THREE.Vector3(...at) } },
     glide: (x, z, pace = 2.4) => new Promise((resolve) => { scriptMove = { x, z, pace, resolve } }),
     teleport: (x, z, rot) => {
       route = []
@@ -1095,8 +1109,9 @@ function pinAbove(node, x, y, z) {
   const sx = (screenPoint.x * 0.5 + 0.5) * host.clientWidth
   const sy = (-screenPoint.y * 0.5 + 0.5) * host.clientHeight
   const half = node.offsetWidth / 2 + 8
-  const hud = document.querySelector('.g-hud')
-  const top = (hud ? hud.getBoundingClientRect().bottom : 120) + node.offsetHeight + 8
+  // Below the HUD and the chips under it (the right-now row, the goal line).
+  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].map((el) => el.getBoundingClientRect().bottom)
+  const top = (bars.length ? Math.max(...bars) : 120) + node.offsetHeight + 8
   node.style.left = `${Math.min(host.clientWidth - half, Math.max(half, sx))}px`
   node.style.top = `${Math.max(top, sy)}px`
 }
