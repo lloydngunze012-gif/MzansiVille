@@ -7,6 +7,7 @@ import { identityCard, identityFromAction } from './identity.js'
 import { endOfDay } from './dayend.js'
 import { rollMoment } from './moments.js'
 import { beatCard, dueBeat } from './arcs.js'
+import { fridayCard, fridayTest } from './friday.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -625,6 +626,8 @@ export function applyAction(district, run, actionId, rng = Math.random) {
       }
     }
     run.lectureResolved = true
+    // Friday: the lecture is the test. The first big payoff of the week.
+    if (run.day === 5 && !run.fridayTest) cards.push(fridayCard(run, fridayTest(run)))
     if (run.spotTest && !run.spotResolved) {
       const outcome = prepOutcome(district.meta, run.prep)
       let grades = outcome.grades

@@ -13,6 +13,7 @@ import { addIdentity, identityFromAction, identityTitle } from '../src/engine/id
 import { cliffhanger } from '../src/engine/dayend.js'
 import { MOMENTS, chooseMoment, momentCard, rollMoment } from '../src/engine/moments.js'
 import { BEATS } from '../src/engine/arcs.js'
+import { fridayTest } from '../src/engine/friday.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -240,6 +241,32 @@ check('storylines: roommate, rival, money, lecturer, SRC and home beats; two or 
   const nsfasDay = createRun(district, { ...character, funding: 'nsfas' })
   nsfasDay.day = 2
   assert.match(BEATS.find((b) => b.id === 'arc_money_2').text(nsfasDay), /NSFAS/)
+})
+
+check('the week: day themes, and the Friday test mark comes from the choices you made', () => {
+  const lazy = createRun(district, character)
+  lazy.day = 5
+  lazy.arcs = { lecturer: 'clash', noise: 'avoided' }
+  lazy.hangover = true
+  const worked = createRun(district, character)
+  worked.day = 5
+  worked.weekStudied = 3
+  worked.prep = 8
+  worked.arcs = { lecturer: 'impressed', rival: 'friend', owed: 100 }
+  worked.crush = { studyDate: true, nameKnown: true, name: 'Amahle' }
+  const money = worked.stats.money
+  const a = fridayTest(lazy)
+  const b = fridayTest(worked)
+  assert.ok(b.mark > a.mark + 20, `worked ${b.mark} vs lazy ${a.mark}`)
+  assert.ok(b.lines.some((l) => /volunteered/.test(l.text)))
+  assert.ok(a.lines.some((l) => /joke/.test(l.text) && l.n < 0))
+  assert.equal(worked.stats.money, money + 100) // the roommate paid back
+  assert.equal(fridayTest(worked), b) // only once
+  // On Friday the must goal is the test.
+  const fri = createRun(district, character)
+  fri.day = 5
+  startGoals(fri)
+  assert.equal(fri.goals.list[0].id, 'test')
 })
 
 check('home and course places', () => {

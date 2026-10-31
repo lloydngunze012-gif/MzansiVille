@@ -50,13 +50,14 @@ export function trackToday(run, action, deltas) {
     t.earned += deltas.money
     run.earned = (run.earned || 0) + deltas.money
   }
-  if (action.tags?.includes('study')) t.studied += 1
+  if (action.tags?.includes('study')) { t.studied += 1; run.weekStudied = (run.weekStudied || 0) + 1 }
 }
 
 const crushName = (run) => (run.crush?.nameKnown ? run.crush.name : 'the one from the bus')
 const GOALS = {
   lecture1: { text: () => 'Get to your 9:00 lecture', done: (run) => Boolean(run.attendedToday) },
   lecture: { text: () => 'Go to your lecture', done: (run) => Boolean(run.attendedToday) },
+  test: { text: () => 'Write the test at 9:00', done: (run) => Boolean(run.fridayTest) },
   crushName: { text: () => 'Find out the name of the one from the bus', done: (run) => Boolean(run.crush?.nameKnown) },
   meet2: { text: () => 'Talk to 2 new people', done: (run) => metCount(run) - today(run).met >= 2 },
   earn50: { text: (run) => (run.earned ? 'Earn R50 today' : 'Earn your first R50'), done: (run) => today(run).earned >= 50 },
@@ -74,7 +75,8 @@ export function goalText(run, goal) {
 // Three goals for the day, set by the schedule, the story and the dream.
 export function startGoals(run) {
   today(run)
-  const must = run.day === 1 ? 'lecture1' : 'lecture'
+  if (run.day > 1 && run.day % 7 === 1) run.weekStudied = 0 // a new week
+  const must = run.day === 1 ? 'lecture1' : run.day === 5 ? 'test' : 'lecture'
   let story = run.crush?.met && !run.crush.nameKnown ? 'crushName' : 'meet2'
   let dream = DREAM_GOAL[dreamOf(run).id]
   if (dream === story) dream = 'social10'
@@ -104,6 +106,9 @@ export function goalsLeft(run) {
 // One nudge for the HUD: the most urgent thing right now.
 export function rightNow(run) {
   const s = run.stats || {}
+  if (run.day === 5 && !run.fridayTest && ['wake', 'transit', 'lecture'].includes(run.phase)) {
+    return { icon: '\u{1F4DD}', text: 'Test today at 9:00. Go to your lecture venue', tone: 'urgent' }
+  }
   if (run.day === 1 && run.phase === 'lecture' && !run.lectureResolved) {
     const left = 9 * 60 - run.minutes
     return { icon: '\u{1F393}', text: left > 0 ? `Lecture at SMIG in ${left} min` : `Lecture started ${-left} min ago · SMIG`, tone: left <= 10 ? 'urgent' : '' }
