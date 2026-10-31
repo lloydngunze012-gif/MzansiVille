@@ -499,6 +499,9 @@ function startTalk(avatar) {
     if (!fixed) avatar.rotation.y = Math.atan2(player.position.x - avatar.position.x, player.position.z - avatar.position.z)
     closeShot = overShoulder(player.position, avatar.position)
     gesture(avatar, 'interact-right')
+    // Talking poses: they gesture as they speak (seated people talk seated).
+    talk.pose = avatar.userData.pose
+    if (avatar.userData.pose !== 'sit') avatar.userData.pose = 'talk'
     window.dispatchEvent(new CustomEvent('mzansi-talk', { detail: { id } }))
   }
   if (Math.hypot(tx - player.position.x, tz - player.position.z) < 0.5) open()
@@ -527,6 +530,7 @@ window.addEventListener('mzansi-talk-react', (event) => {
 window.addEventListener('mzansi-talk-end', () => {
   if (!talk) return
   if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
+  if (talk.pose !== undefined) talk.avatar.userData.pose = talk.pose
   // Back to the follow camera, swung round behind you so they stay in view.
   if (player) rig.turnBehind(player.rotation.y)
   talk = null
@@ -610,7 +614,7 @@ function activityApi() {
       standUp()
       player.userData.pose = p
       if (p === 'sit') player.position.y = y
-      if (p === 'lie') { player.rotation.x = -Math.PI / 2; player.position.y = 0.28 }
+      if (p === 'lie') { player.rotation.x = -Math.PI / 2; player.position.y = 0.02 }
     },
     sitAt: (seat) => {
       player.position.set(seat.x, seat.y, seat.z)
@@ -640,11 +644,14 @@ function activityApi() {
     hold: (mesh) => {
       if (held) held.removeFromParent()
       held = mesh
-      const hand = player.getObjectByName('arm-right')
+      const hand = player.getObjectByName('hand_r') || player.getObjectByName('arm-right')
       const rig = player.getObjectByName('rig')
       if (!mesh || !hand || !rig) return
-      mesh.scale.setScalar(1 / rig.scale.x)
-      mesh.position.set(-0.02, -0.16, 0.06)
+      // Held in the right hand, at world size whatever the bone's scale.
+      const s = new THREE.Vector3()
+      hand.getWorldScale(s)
+      mesh.scale.setScalar(1 / s.x)
+      mesh.position.set(0.06 / s.x, 0.04 / s.x, 0)
       hand.add(mesh)
     },
     groove: (level) => {
@@ -1206,8 +1213,7 @@ function tick(now) {
       closeLook.copy(player.position)
     }
     // Eye view looks out of the player's eyes: hide their own head and hair.
-    const head = player.getObjectByName('head-mesh')
-    if (head) head.visible = rig.mode !== 'eye'
+    for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye'
     camera.updateMatrixWorld()
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
     swingDoors(dt)

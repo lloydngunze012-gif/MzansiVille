@@ -641,7 +641,7 @@ export function createScenes(api) {
       await api.walkTo(s.x + 1.2, s.z)
       api.teleport(s.x, s.z, 0)
       api.pose('lie')
-      api.player.position.y = opt.on === 'beanbag' ? 0.6 : 0.28
+      api.player.position.y = opt.on === 'beanbag' ? 0.5 : 0.02
       api.say(opt.on === 'beanbag' ? 'The beanbag swallows you whole.' : 'The clouds look like exam papers.')
       await steps(3, 1.2)
       api.pose('stand')

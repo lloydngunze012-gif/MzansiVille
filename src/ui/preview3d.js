@@ -3,7 +3,7 @@
 // Loaded lazily so the menu bundle stays small; the SVG stays as the fallback.
 import * as THREE from 'three'
 import { BPM } from '../groove.js'
-import { createAvatar, gesture, lookOf, poseAvatar } from '../world/avatar3d.js'
+import { createAvatar, lookOf, poseAvatar } from '../world/avatar3d.js'
 
 let renderer = null
 let scene = null
@@ -30,7 +30,6 @@ function setup() {
   camera.lookAt(0, 0.8, 0)
 }
 
-const MOVES = ['emote-yes', 'interact-right', 'interact-left', 'pick-up']
 
 function tick(now) {
   frame = requestAnimationFrame(tick)
@@ -38,17 +37,12 @@ function tick(now) {
   last = now
   clock += dt
   if (avatar) {
-    // A two-step on the beat: bounce every beat, sway every two, a move every two bars.
+    // The dance clip, with a slow turn so you see the outfit from every side.
     const beat = (clock * BPM) / 60
-    avatar.position.y = Math.abs(Math.sin(beat * Math.PI)) * 0.12
-    avatar.rotation.y = Math.sin(beat * Math.PI / 2) * 0.45
-    avatar.rotation.z = Math.sin(beat * Math.PI) * 0.06
-    if (avatar.userData.rigged && beat >= nextMove) {
-      gesture(avatar, MOVES[Math.floor(beat / 8) % MOVES.length])
-      nextMove = Math.floor(beat / 8) * 8 + 8
-    }
+    avatar.userData.pose = 'dance'
+    avatar.rotation.y = Math.sin(beat * Math.PI / 8) * 0.6
     poseAvatar(avatar, false, clock)
-    avatar.position.y = Math.abs(Math.sin(beat * Math.PI)) * 0.12
+    void nextMove
   }
   const canvas = renderer.domElement
   const w = canvas.clientWidth
