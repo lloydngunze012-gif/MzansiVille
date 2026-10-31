@@ -501,8 +501,39 @@ window.addEventListener('mzansi-travel-skip', (event) => {
   persist()
   paint()
 })
+// Queue, then order: tapping a vendor (or her queue) walks you to the back of the
+// line; at the front, her order card opens by itself.
+function joinQueue(vendor, told) {
+  const menu = MENUS[vendor]
+  if (!menu || !save.run) return
+  window.mzansiVendorReady = null
+  if (document.body.dataset.world !== '1') { window.mzansiVendorReady = vendor; ui.talk = { id: vendor, menu: true }; paint(); return }
+  window.dispatchEvent(new CustomEvent('mzansi-act', { detail: {
+    placeId: menu.place,
+    actionId: 'talk_queue',
+    sceneOpt: { vendor, told, vendorName: personInfo(vendor)?.name },
+    commit() {
+      spendMinutes(menu.place === 'cafeteria' ? 8 : 4)
+      persist()
+      window.mzansiVendorReady = vendor
+      window.mzansiTalkTo?.(vendor)
+    },
+  } }))
+}
+window.addEventListener('mzansi-vendor-tap', (event) => {
+  toast('Back of the line, baby!')
+  joinQueue(event.detail.id, true)
+})
+
 window.addEventListener('mzansi-talk', (event) => {
   if (!save.run || !event.detail?.id) return
+  // At the front of the queue: straight to her menu.
+  if (MENUS[event.detail.id] && window.mzansiVendorReady === event.detail.id) {
+    ui.talk = { id: event.detail.id, menu: true }
+    blip(700)
+    paint()
+    return
+  }
   ui.talk = { id: event.detail.id }
   blip(700)
   paint()
@@ -603,6 +634,7 @@ function talkAct(kind) {
 
 function endTalk() {
   if (!ui.talk) return
+  if (MENUS[ui.talk.id]) window.mzansiVendorReady = null
   ui.talk = null
   window.dispatchEvent(new CustomEvent('mzansi-talk-end'))
 }
@@ -813,6 +845,8 @@ function gameAct(act, button) {
     // Walk to a spot in the place: the sheet closes so you watch yourself go.
     blip(600)
     go('play')
+    const queueOf = { 'cafeteria:queue': 'auntie_pinky', 'quad:stall': 'mam_gugu' }[`${button.dataset.place}:${button.dataset.spot}`]
+    if (queueOf) { setTimeout(() => joinQueue(queueOf, false), 300); return true }
     window.dispatchEvent(new CustomEvent('mzansi-walk-to', { detail: { place: button.dataset.place, spot: button.dataset.spot } }))
     return true
   }
@@ -1165,6 +1199,12 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (gameAct(act, button)) return
+  if (act === 'do' && button.dataset.id === 'caf_queue') {
+    // The breakfast queue is the queue: stand in it, then order at the front.
+    go('play')
+    setTimeout(() => joinQueue('auntie_pinky', false), 300)
+    return
+  }
   if (act === 'do' && LECTURE_ACTIONS.has(button.dataset.id) && lectureWanted(save.run)) {
     // Attending the day-1 lecture from a sheet or the map plays the lecture itself.
     blip()
