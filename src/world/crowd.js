@@ -50,8 +50,8 @@ export function createCrowd(scene, campus, opts = {}) {
   const quad = campus.layout.buildings.find((building) => building.id === 'quad')
   if (quad) {
     // The left half of each bench, so there is room to sit down beside them.
-    const seats = (campus.dressing?.benches || []).map((b) => [b.x - Math.cos(b.rot) * 0.32 + Math.sin(b.rot) * 0.05, b.z + Math.sin(b.rot) * 0.32 + Math.cos(b.rot) * 0.05, b.rot, BENCH_Y])
-    seats.push([quad.cx + 1.6, quad.cz - 4.6, 0, 0.3])
+    const seats = (campus.dressing?.benches || []).map((b) => [b.x - Math.cos(b.rot) * 0.32, b.z + Math.sin(b.rot) * 0.32, b.rot, BENCH_Y])
+    seats.push([quad.cx - 0.45, quad.cz - 4.75, 0, 0.3]) // on the stage step, back to the stage
     for (let i = 0; i < Math.min(SITTERS, seats.length); i++) {
       const [x, z, facing, y] = seats[i]
       const id = [opts.roommate || 'zanele', 'aya', 'x9', 'x10'][i]

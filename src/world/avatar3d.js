@@ -334,6 +334,8 @@ async function attachModel(group, look) {
     const foot = bones[`Foot${side}`]
     if (shin && foot) footInShin[side] = shin.worldToLocal(worldOf(foot))
   }
+  // How high the ankle bone is above the sole, standing (sitting puts feet flat).
+  const footRest = bones.FootL ? worldOf(bones.FootL).y - soleOf(model) : undefined
   const gaitKey = `${g}:${look.outfitFile}`
   gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
   if (look.organt) addOrgantMark(model)
@@ -347,7 +349,7 @@ async function attachModel(group, look) {
   group.userData.fade = 0
   fadeIn(group, 0)
   group.add(model)
-  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, rest })
+  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, rest })
   live.add(group)
   group.dispatchEvent({ type: 'rigged' })
 }
@@ -441,9 +443,13 @@ export function gesture(group, name) {
 }
 
 // Sitting: bend the hips and knees on top of the idle, and lower the body so the
-// seat rests on the seat. Callers put the avatar's origin at the seat surface (y)
-// and its centre (x, z), facing out of the seat. SIT holds the bend angles and offsets.
-export const SIT = { thigh: -1.57, knee: 1.57, drop: 0.08, back: -0.12 }
+// seat of the trousers rests on the seat. Callers put the avatar's origin at the
+// seat surface (y) and its centre (x, z), facing out of the seat. fitSeat (once per
+// person and seat) measures the body: it slides the hips back until the back
+// touches the backrest, drops them onto the seat, and angles the thighs and shins
+// so the feet rest flat on the floor (seats are SEAT_HEIGHT above the floor; one
+// lower than SIT.low is on the floor itself, like a stage step).
+export const SIT = { thigh: -1.57, knee: 1.57, drop: 0.08, back: -0.12, backrest: -0.17, seatHeight: 0.46, low: 0.5 }
 const bend = new THREE.Quaternion()
 const parentQ = new THREE.Quaternion()
 const sideways = new THREE.Vector3()
@@ -455,22 +461,89 @@ function turnWorld(bone, axis, angle) {
   bone.quaternion.premultiply(bend.setFromAxisAngle(local, angle))
   bone.updateMatrixWorld(true)
 }
-function sitPose(group, onGround) {
-  const { bones, hipHeight } = group.userData
-  const model = group.getObjectByName('rig')
-  model.position.y = -(hipHeight || 0.9) + SIT.drop
-  model.position.z = SIT.back
+function bendLegs(group, model, thigh, knee, onGround) {
+  const { bones } = group.userData
   model.updateMatrixWorld(true)
   // The body's left-right axis, in world space.
   sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(new THREE.Quaternion())).normalize()
   for (const side of ['L', 'R']) {
     const up = bones[`UpperLeg${side}`]
     const low = bones[`LowerLeg${side}`]
-    if (up) turnWorld(up, sideways, SIT.thigh)
-    if (low && !onGround) turnWorld(low, sideways, SIT.knee)
+    if (up) turnWorld(up, sideways, thigh)
+    if (low && !onGround) turnWorld(low, sideways, knee)
   }
   // Carry each foot to the end of its bent shin.
   carryFeet(model, bones, group.userData.footInShin)
+}
+const legNames = new Set(['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR'])
+function restLegs(group) {
+  for (const [bone, p, q] of group.userData.rest || []) if (legNames.has(bone.name)) { bone.position.copy(p); bone.quaternion.copy(q) }
+}
+function fitSeat(group, model, seatY, onGround) {
+  const { bones, hipHeight } = group.userData
+  // From the legs' rest pose, not this frame's clip (the walk may still be fading out).
+  const restore = () => restLegs(group)
+  const fit = { seatY, y: -(hipHeight || 0.9) + SIT.drop, z: SIT.back, thigh: SIT.thigh, knee: SIT.knee }
+  const pose = () => { restore(); model.position.set(0, fit.y, fit.z); bendLegs(group, model, fit.thigh, fit.knee, onGround) }
+  const isCloth = (n) => n.userData.part === 'legs' || n.userData.part === 'body'
+  const isFeet = (n) => n.userData.part === 'feet'
+  const floor = seatY < SIT.low ? 0 : seatY - SIT.seatHeight
+  const legs = !onGround && bones.FootL && bones.LowerLegL && bones.UpperLegL
+  pose()
+  // The back against the backrest: the rearmost point of the lower back.
+  let back = Infinity
+  group.updateMatrixWorld(true)
+  group.traverse((node) => {
+    if (!node.isSkinnedMesh || node.userData.part !== 'body') return
+    const count = node.geometry.attributes.position.count
+    for (let i = 0; i < count; i++) {
+      node.getVertexPosition(i, vtx)
+      node.localToWorld(vtx)
+      group.worldToLocal(vtx)
+      if (vtx.y > 0.12 && vtx.y < 0.5 && Math.abs(vtx.x) < 0.12 && vtx.z < back) back = vtx.z
+    }
+  })
+  if (Number.isFinite(back)) fit.z += Math.max(-0.15, Math.min(0.2, SIT.backrest - back))
+  for (let round = 0; round < 4; round++) {
+    pose()
+    // The seat of the trousers on the seat.
+    const butt = lowest(group, isCloth, worldOf(bones.Hips || model))
+    if (Number.isFinite(butt)) fit.y -= butt - seatY
+    pose()
+    if (!legs) break
+    // Feet flat on the floor.
+    const d = lowest(group, isFeet) - floor
+    if (Math.abs(d) < 0.01) break
+    const knee = worldOf(bones.LowerLegL)
+    const thighLen = knee.distanceTo(worldOf(bones.UpperLegL))
+    const shinLen = worldOf(bones.FootL).distanceTo(knee) + 0.08
+    if (d > 0 && fit.knee >= SIT.knee - 0.01) {
+      // Feet dangling: slope the thighs down (shins stay upright).
+      const t = Math.min(0.7 - (fit.thigh - SIT.thigh), Math.asin(Math.min(1, d / thighLen)))
+      fit.thigh += t
+      fit.knee -= t
+    } else {
+      // A low seat: the shins reach forward so the feet stay on the floor.
+      const forward = SIT.knee - (fit.thigh - SIT.thigh) - fit.knee // the shin's lean now
+      const drop = Math.cos(forward) * shinLen // how far the shin reaches down now
+      const c = Math.max(0, Math.min(1, (drop + d) / shinLen))
+      fit.knee -= Math.min(1.2, Math.acos(c)) - forward
+    }
+  }
+  restore()
+  return fit
+}
+const seatAt = new THREE.Vector3()
+function sitPose(group, onGround) {
+  const data = group.userData
+  const model = group.getObjectByName('rig')
+  const seatY = +group.getWorldPosition(seatAt).y.toFixed(3)
+  if (data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround }
+  const fit = data.sitFit
+  model.position.y = fit.y
+  model.position.z = fit.z
+  restLegs(group)
+  bendLegs(group, model, fit.thigh, fit.knee, onGround)
 }
 
 // How the body follows the ground: the clips' lift (see calibrate), blended by weight.
@@ -563,23 +636,25 @@ export function poseAvatar(group, walking, time) {
 // trousers (lowest leg vertex near the hips) and the body's lowest point overall.
 const live = new Set()
 const vtx = new THREE.Vector3()
-function lowest(group, test) {
+// near: only vertices within that horizontal distance of a point (the seat of the trousers).
+function lowest(group, test, near = null, radius = 0.14) {
   let min = Infinity
   group.traverse((node) => {
     if (!node.isSkinnedMesh || !node.visible || !test(node)) return
     const count = node.geometry.attributes.position.count
-    const step = Math.max(1, Math.floor(count / 400))
+    const step = near ? 1 : Math.max(1, Math.floor(count / 400))
     for (let i = 0; i < count; i += step) {
       node.getVertexPosition(i, vtx)
       node.localToWorld(vtx)
+      if (near && Math.hypot(vtx.x - near.x, vtx.z - near.z) > radius) continue
       if (vtx.y < min) min = vtx.y
     }
   })
   return min
 }
-function inScene(node) {
-  for (let n = node; n; n = n.parent) { if (!n.visible) return false; if (n.isScene) return true }
-  return false
+function sceneOf(node) {
+  for (let n = node; n; n = n.parent) { if (!n.visible) return null; if (n.isScene) return n }
+  return null
 }
 // Any skin showing on the feet (no shoes)?
 function bareFeet(group) {
@@ -596,8 +671,8 @@ export function measureBody(group) {
   group.updateMatrixWorld(true)
   const hips = data.bones?.Hips ? worldOf(data.bones.Hips) : null
   const ground = group.parent ? group.parent.localToWorld(new THREE.Vector3(group.position.x, data.pose === 'sit' ? 0 : group.position.y, group.position.z)).y : group.position.y
-  return {
-    id: data.personId || group.name,
+  const out = {
+    id: data.isPlayer ? 'player' : data.personId || 'extra',
     pose: data.pose || 'stand',
     clip: data.current,
     rate: +(data.actions?.[data.current]?.timeScale ?? 0).toFixed(2),
@@ -605,14 +680,26 @@ export function measureBody(group) {
     x: +group.position.x.toFixed(2), y: +group.position.y.toFixed(3), z: +group.position.z.toFixed(2),
     sole: +lowest(group, (n) => n.userData.part === 'feet').toFixed(3),
     low: +lowest(group, () => true).toFixed(3),
-    seatOfPants: hips ? +lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body').toFixed(3) : null,
+    seatOfPants: hips ? +lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', hips).toFixed(3) : null,
     hips: hips ? +hips.y.toFixed(3) : null,
     ground: +ground.toFixed(3),
     standIn: group.children.some((c) => c.userData.standIn && c.visible),
     bareFeet: bareFeet(group),
   }
+  // Sitting: the seat of the trousers vs the seat, the soles vs the floor under it.
+  if (out.pose === 'sit' && out.seatOfPants !== null) {
+    const seat = group.getWorldPosition(new THREE.Vector3()).y
+    out.seatGap = +(out.seatOfPants - seat).toFixed(3)
+    out.footGap = +(out.sole - (seat < SIT.low ? 0 : seat - SIT.seatHeight)).toFixed(3)
+    out.fit = data.sitFit && { thigh: +data.sitFit.thigh.toFixed(2), knee: +data.sitFit.knee.toFixed(2), y: +data.sitFit.y.toFixed(3), z: +data.sitFit.z.toFixed(3), seatY: data.sitFit.seatY, onGround: data.sitFit.onGround }
+    out.walking = data.current
+  }
+  return out
 }
 if (typeof window !== 'undefined') {
   window.mzansiGait = () => Object.fromEntries(Object.entries(gaits).map(([k, g]) => [k, Object.fromEntries(Object.entries(g).map(([c, v]) => [c, { speed: +v.speed.toFixed(2), maxLift: +Math.max(...v.lift).toFixed(3),   minLift: +Math.min(...v.lift).toFixed(3) }]))]))
-  window.mzansiBodies = () => [...live].filter((g) => !g.userData.disposed && inScene(g)).map(measureBody)
+  window.mzansiBodies = (where) => {
+    for (const g of live) if (g.userData.disposed) live.delete(g)
+    return [...live].filter((g) => sceneOf(g) && (!where || sceneOf(g).name === where)).map((g) => ({ ...measureBody(g), scene: sceneOf(g).name }))
+  }
 }

@@ -61,3 +61,114 @@ test('M6 every outfit, player and NPC: shoes on', async ({ page }) => {
   for (const b of all.filter((x) => x.pose === 'stand')) expect(Math.abs(b.sole - b.ground), b.id).toBeLessThan(CM)
   await saveVideo(page, 'M6')
 })
+
+// Tap a person where they are on screen (like a player), else start the chat directly.
+async function tapPerson(page, id) {
+  const at = await page.evaluate((who) => window.mzansiPersonOnScreen(who), id)
+  const ok = at && !at.behind && at.x > 20 && at.x < 392 && at.y > 300 && at.y < 780
+  if (ok) await page.mouse.click(at.x, at.y)
+  await page.waitForTimeout(600)
+  const started = await page.evaluate(() => Boolean(document.getElementById('world').dataset.talking))
+  if (!ok || !started) await page.evaluate((who) => window.mzansiTalkTo(who), id)
+}
+
+// Side view of a seated body (campus camera), then its measurements.
+async function sideOf(page, body, name, scene = 'campus') {
+  const a = Math.atan2(1, 0) // 90 degrees: square to the body
+  const view = await page.evaluate(([b, sc]) => window.mzansiBodies(sc).find((x) => x.id === b), [body, scene])
+  const rot = scene === 'campus' ? await page.evaluate((id) => (id === 'player' ? null : window.mzansiPersonPos(id)?.rot), body) : null
+  if (scene === 'campus') {
+    const r = rot ?? (await page.evaluate(() => window.mzansiPlayerRot?.() ?? 0))
+    const s = Math.sin(r + a)
+    const c = Math.cos(r + a)
+    await page.evaluate(([v, s, c]) => window.mzansiCam([v.x + s * 2.4, v.y + 0.75, v.z + c * 2.4], [v.x, v.y + 0.25, v.z]), [view, s, c])
+    await page.waitForTimeout(1600)
+  }
+  await page.screenshot({ path: `${OUT}/${name}.png` })
+  return view
+}
+
+const playerBody = (page) => page.evaluate(() => window.mzansiBodies('campus').find((b) => b.id === 'player'))
+
+function expectSeated(b, what) {
+  console.log(what, JSON.stringify({ id: b.id, seat: b.y, seatGap: b.seatGap, footGap: b.footGap, sole: b.sole, fit: b.fit, clip: b.walking, hips: b.hips }))
+  expect(b.pose, what).toBe('sit')
+  expect(Math.abs(b.seatGap), `${what}: hips on the seat`).toBeLessThan(CM)
+  expect(Math.abs(b.footGap), `${what}: feet on the floor`).toBeLessThan(0.05)
+}
+
+test('M2a sit on a Quad bench (Sit with them)', async ({ page }) => {
+  await campus(page, 'quad', '&a=21')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await card.locator('[data-kind="sit"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
+  await page.waitForTimeout(800)
+  expectSeated(await playerBody(page), 'player on a Quad bench')
+  await page.screenshot({ path: `${OUT}/M2-quad-bench.png` })
+  await sideOf(page, 'player', 'M2-quad-bench-side')
+  for (const b of (await bodies(page)).filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated on the Quad`)
+  await saveVideo(page, 'M2-quad-bench')
+})
+
+test('M2b sit on a cafeteria chair (queue at Auntie Pinky, sit and eat)', async ({ page }) => {
+  await campus(page, 'cafeteria', '&a=22')
+  await tapPerson(page, 'auntie_pinky')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 120000 })
+  await expect(card).toHaveAttribute('data-phase', 'menu')
+  await card.locator('[data-item="bunny"]').tap()
+  await card.locator('[data-size="quarter"]').tap()
+  await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
+  await page.waitForTimeout(800)
+  expectSeated(await playerBody(page), 'player on a caf chair')
+  await page.screenshot({ path: `${OUT}/M2-caf-chair.png` })
+  await sideOf(page, 'player', 'M2-caf-chair-side')
+  for (const b of (await bodies(page)).filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated at the caf`)
+  await saveVideo(page, 'M2-caf-chair')
+})
+
+test('M2c sit on a library chair (Let\'s study)', async ({ page }) => {
+  await campus(page, 'quad', '&a=23')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await card.locator('[data-kind="study"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 90000 }).toBe('sit')
+  await page.waitForTimeout(800)
+  expectSeated(await playerBody(page), 'player on a library chair')
+  await page.screenshot({ path: `${OUT}/M2-library-chair.png` })
+  const all = await bodies(page)
+  for (const b of all.filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated in the library`)
+  await saveVideo(page, 'M2-library-chair')
+})
+
+test('M2d sit on a lecture bench (day 1 lecture)', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await page.waitForURL(/#\/play/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { phase: 'lecture', minutes: 8 * 60 + 45, morningDone: true, queue: [], lectureResolved: false, lectureRoute: true })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
+  const host = page.locator('#lecture3d')
+  await expect(host).toHaveAttribute('data-step', 'seat', { timeout: 90000 })
+  await page.locator('[data-lc="choice"]').nth(2).tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiBodies('lecture').find((b) => b.id === 'player')?.pose), { timeout: 60000 }).toBe('sit')
+  await page.waitForTimeout(3000)
+  await page.screenshot({ path: `${OUT}/M2-lecture-bench.png` })
+  const all = await page.evaluate(() => window.mzansiBodies('lecture'))
+  for (const b of all.filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} on a lecture bench`)
+  await saveVideo(page, 'M2-lecture-bench')
+})
