@@ -282,7 +282,9 @@ export function createAvatar(avatar = {}) {
   head.userData.standIn = true
   group.add(head)
 
-  const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.9, 8), new THREE.MeshBasicMaterial())
+  // The tap target is the body itself (a slim cylinder): a tap on the ground next
+  // to someone walks there; only a tap on the person starts a conversation.
+  const hit = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.8, 8), new THREE.MeshBasicMaterial())
   hit.position.y = 0.95
   hit.visible = false
   hit.name = 'hit'
