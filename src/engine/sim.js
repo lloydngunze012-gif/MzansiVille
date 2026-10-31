@@ -6,6 +6,7 @@ import { FUNDING_MONEY } from '../story.js'
 import { identityCard, identityFromAction } from './identity.js'
 import { endOfDay } from './dayend.js'
 import { rollMoment } from './moments.js'
+import { beatCard, dueBeat } from './arcs.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -564,6 +565,9 @@ export function advancePhase(district, run, rng = Math.random) {
   run.minutes = toMinutes(phases[index + 1].start)
   if (run.phase === 'lecture') rollSpot(district, run, rng)
   if (run.phase === 'social') revealEvent(district, run)
+  // A storyline beat due in the new part of the day shows up even if you skipped to it.
+  const beat = !run.noMoments && !run.queue.some((card) => card.kind === 'moment') && dueBeat(run)
+  if (beat) cards.push(beatCard(run, beat))
   if (cards.length) run.queue = cards.concat(run.queue.filter((card) => !cards.some((item) => item.id === card.id)))
   return run
 }

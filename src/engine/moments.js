@@ -2,6 +2,7 @@
 // day different. Each asks for a choice; some nudge an arc (the crush, identity).
 // A moment can only come once a week; run.moments remembers what you chose.
 import { addIdentity } from './identity.js'
+import { applyBeat, beatById, beatCard, dueBeat } from './arcs.js'
 
 const C = (label, deltas, result, extra = {}) => ({ label, deltas, result, ...extra })
 
@@ -119,6 +120,13 @@ export function momentCard(run, moment) {
 // After something happens, maybe a moment: up to two a day, each once a week.
 export function rollMoment(run, rng = Math.random, force = false) {
   run.moments = run.moments || {}
+  // A storyline beat that is due comes first (it is not random and not capped).
+  const beat = !run.queue?.some((card) => card.kind === 'moment') && dueBeat(run)
+  if (beat) {
+    const card = beatCard(run, beat)
+    run.queue = [...(run.queue || []), card]
+    return card
+  }
   const today = run.momentsToday?.day === run.day ? run.momentsToday : (run.momentsToday = { day: run.day, n: 0 })
   if (today.n >= 2 || run.queue?.some((card) => card.kind === 'moment')) return null
   if (!force && rng() > 0.3) return null
@@ -134,9 +142,11 @@ export function rollMoment(run, rng = Math.random, force = false) {
 }
 
 export function chooseMoment(run, momentId, index) {
-  const moment = byId[momentId]
+  const beat = beatById(momentId)
+  const moment = byId[momentId] || beat
   const choice = moment?.choices[index]
   if (!choice) return null
+  if (beat) applyBeat(run, beat, choice, index)
   const caps = { energy: run.energyCap || 100, hunger: 100, grades: 100, social: 100 }
   for (const [k, d] of Object.entries(choice.deltas)) run.stats[k] = k === 'money' ? (run.stats.money || 0) + d : Math.max(0, Math.min(caps[k] ?? 100, (run.stats[k] || 0) + d))
   if (choice.crush && run.crush) run.crush.closeness = (run.crush.closeness || 0) + choice.crush

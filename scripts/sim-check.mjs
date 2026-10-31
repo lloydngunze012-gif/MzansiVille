@@ -12,6 +12,7 @@ import { crushChat, crushReply } from '../src/engine/crush-arc.js'
 import { addIdentity, identityFromAction, identityTitle } from '../src/engine/identity.js'
 import { cliffhanger } from '../src/engine/dayend.js'
 import { MOMENTS, chooseMoment, momentCard, rollMoment } from '../src/engine/moments.js'
+import { BEATS } from '../src/engine/arcs.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -188,6 +189,7 @@ check('random moments: ten of them, each a choice, two a day at most, once a wee
   const run = createRun(district, { ...character, past: 'clown', path: 'creative' })
   run.day = 2
   run.phase = 'social'
+  run.arcBeats = Object.fromEntries(BEATS.map((b) => [b.id, 0])) // storyline beats have their own check
   let seq = 0
   const rng = () => [0.1, 0.0, 0.1, 0.5, 0.1, 0.9][seq++ % 6]
   const a = rollMoment(run, rng)
@@ -214,6 +216,30 @@ check('random moments: ten of them, each a choice, two a day at most, once a wee
   lec.phase = 'lecture'
   chooseMoment(lec, 'lecture_cancelled', 1)
   assert.equal(lec.lectureResolved, true)
+})
+
+check('storylines: roommate, rival, money, lecturer, SRC and home beats; two or more arcs move each day', () => {
+  const arcs = new Set(BEATS.map((b) => b.arc))
+  for (const arc of ['roommate', 'rival', 'money', 'lecturer', 'src', 'home']) assert.ok(arcs.has(arc), arc)
+  // With the crush beat every day 1-5, each day moves at least two arcs.
+  for (let day = 1; day <= 5; day++) assert.ok(BEATS.filter((b) => b.day === day).length >= 1, `day ${day}`)
+  const run = createRun(district, { ...character, funding: 'nsfas' })
+  run.bestieName = 'Zanele'
+  run.day = 3
+  run.phase = 'leisure'
+  const card = rollMoment(run, () => 0.99)
+  assert.ok(card?.momentId.startsWith('arc_'), 'a due beat comes even without a lucky roll')
+  const lend = BEATS.find((b) => b.id === 'arc_roommate_3')
+  run.queue = [{ kind: 'moment', momentId: lend.id }]
+  const money = run.stats.money
+  chooseMoment(run, lend.id, 0)
+  assert.equal(run.stats.money, money - 100)
+  assert.equal(run.arcs.owed, 100)
+  assert.ok(run.people.zanele.close >= 6)
+  // The money beat reads your funding.
+  const nsfasDay = createRun(district, { ...character, funding: 'nsfas' })
+  nsfasDay.day = 2
+  assert.match(BEATS.find((b) => b.id === 'arc_money_2').text(nsfasDay), /NSFAS/)
 })
 
 check('home and course places', () => {

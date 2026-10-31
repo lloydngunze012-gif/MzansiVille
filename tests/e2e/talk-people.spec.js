@@ -192,3 +192,24 @@ test('a random moment: something happens, you choose, it shows what happened', a
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.moments.old_school.choice).toBe(1)
 })
+
+test('a storyline beat: the roommate asks to borrow R100, and remembers', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { day: 3, phase: 'leisure', minutes: 15 * 60, bestieName: 'Zanele', queue: [] })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&moments=1#/play')
+  // Skipping ahead to the evening brings the day's storyline beat.
+  const skip = page.locator('[data-act="phase"]')
+  await skip.tap()
+  const card = page.locator('[data-screen-card="moment"]')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await expect(card).toHaveAttribute('data-moment', /^arc_/)
+  await page.screenshot({ path: `${OUT}/9-story-beat.png` })
+  await card.locator('.g-choice').first().tap()
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(Object.keys(run.arcBeats || {}).length).toBe(1)
+})
