@@ -82,7 +82,7 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
 
   // (Mam' Gugu serves the queue now: tapping her sends you to the line; Kea, waiting in it, chats)
   const first = await chat(page, 'kea', '1-gugu', 0, 'stall')
-  const second = await chat(page, 'kea', '2-gugu-again')
+  const second = await chat(page, 'kea', '2-gugu-again', 2) // (his first two replies start doing something together)
   expect(second).not.toBe(first) // he remembers you
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.people.kea.chats).toBe(2)
@@ -90,7 +90,7 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
   expect(run.stats.social).toBeGreaterThan(social0)
 
   await chat(page, 'lindiwe', '3-src', 0, 'src')
-  await chat(page, 'zanele', '4-roommate', 0, 'benches')
+  await chat(page, 'zanele', '4-roommate', 1, 'benches') // (reply 0 walks off together)
   expect(errors).toEqual([])
 })
 

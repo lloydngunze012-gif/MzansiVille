@@ -502,9 +502,10 @@ function talkCard(run) {
   if (t.swapped) {
     return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="swapped">
       ${head}
+      ${t.answer ? `<p class="g-talk-line">${esc(t.answer)}</p>` : ''}
       <p class="g-talk-line">\u{1F4F1} ${esc(chat.name)} is in your phone now. \u201cText me, hey!\u201d</p>
       ${actRow}
-      <button type="button" class="g-go block" data-act="talk-bye">\u{1F44B} Bye</button>
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye" data-away="1">\u{1F44B} Bye</button><button type="button" class="g-go" data-act="talk-phone">\u{1F4F1} See your phone</button></div>
     </section>`
   }
   if (t.res) {
@@ -519,8 +520,8 @@ function talkCard(run) {
       <p class="g-talk-line">${esc(r.answer)}</p>
       ${chips ? `<p class="g-talk-fx">${chips}</p>` : ''}
       ${r.levelUp ? `<p class="g-talk-up">\u2B50 You and ${esc(chat.name)} are now: ${esc(r.level)}</p>` : ''}
-      ${actRow}
-      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye">\u{1F44B} Bye</button><button type="button" class="g-go" data-act="talk-more">Keep talking</button></div>
+      ${r.act === 'bye' ? `<button type="button" class="g-go block" data-act="talk-bye" data-away="1">\u{1F44B} Bye, ${esc(chat.name.split(' ')[0])}</button>` : `${actRow}
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye" data-away="1">\u{1F44B} Bye</button><button type="button" class="g-go" data-act="talk-more">Keep talking</button></div>`}
     </section>`
   }
   return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="line">
@@ -528,7 +529,7 @@ function talkCard(run) {
     <p class="g-talk-line">${esc(chat.line)}</p>
     ${actRow}
     <div class="g-talk-replies">${chat.replies.map((r, i) => `<button type="button" class="g-talk-reply" data-act="talk-reply" data-i="${i}">${esc(r.text)}</button>`).join('')}</div>
-    <button type="button" class="g-talk-leave" data-act="talk-bye">\u{1F44B} Walk away</button>
+    <button type="button" class="g-talk-leave" data-act="talk-bye" data-away="1">\u{1F44B} Walk away</button>
   </section>`
 }
 

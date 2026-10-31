@@ -59,7 +59,7 @@ export function chatFor(run, id) {
     close: mem.close,
     level: levelOf(mem.close),
     line: fill(line || chat.line || chat.warm, info, run),
-    replies: chat.replies.map((r) => ({ text: fill(r.text, info, run), social: r.social, close: r.close })),
+    replies: chat.replies.map((r) => ({ text: fill(r.text, info, run), social: r.social, close: r.close, act: r.act })),
   }
 }
 
@@ -86,6 +86,7 @@ export function replyTo(run, id, index) {
     level: levelOf(close),
     levelUp: levelOf(close) !== levelOf(mem.close) && close > mem.close,
     tone: (reply.close || 0) > 0 ? 'good' : (reply.close || 0) < 0 ? 'bad' : 'neutral',
+    act: reply.act,
   }
 }
 
@@ -105,7 +106,7 @@ function crushChatFor(run, id) {
     close,
     level: levelOf(close),
     line: chat.line,
-    replies: chat.replies.map((r) => ({ text: r.text, social: r.social, close: r.close })),
+    replies: chat.replies.map((r) => ({ text: r.text, social: r.social, close: r.close, act: r.act })),
   }
 }
 
@@ -128,5 +129,6 @@ function crushReplyTo(run, id, index) {
     level: levelOf(close),
     levelUp: levelOf(close) !== levelOf(before) && close > before,
     tone: reply.close > 0 ? 'good' : reply.close < 0 ? 'bad' : 'neutral',
+    act: reply.act,
   }
 }

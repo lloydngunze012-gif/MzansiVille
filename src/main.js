@@ -508,10 +508,13 @@ function joinQueue(vendor, told) {
   if (!menu || !save.run) return
   window.mzansiVendorReady = null
   if (document.body.dataset.world !== '1') { window.mzansiVendorReady = vendor; ui.talk = { id: vendor, menu: true }; paint(); return }
+  // Eating with someone: they queue behind you and stay with you till you've eaten.
+  const friend = together && { with: together.id, keep: true, answer: together.answer, name: together.name }
+  if (together) together.answer = ''
   window.dispatchEvent(new CustomEvent('mzansi-act', { detail: {
     placeId: menu.place,
     actionId: 'talk_queue',
-    sceneOpt: { vendor, told, vendorName: personInfo(vendor)?.name },
+    sceneOpt: { vendor, told, vendorName: personInfo(vendor)?.name, ...friend },
     commit() {
       spendMinutes(menu.place === 'cafeteria' ? 8 : 4)
       persist()
@@ -548,7 +551,7 @@ function spendMinutes(n) {
 
 // Play a scene for something you chose in a conversation, then apply it.
 function talkScene(actionId, placeId, sceneOpt, commit) {
-  endTalk()
+  endTalk({ keepFriend: true })
   paint()
   if (document.body.dataset.world !== '1') { commit(); persist(); paint(); return }
   window.dispatchEvent(new CustomEvent('mzansi-act', { detail: { placeId, actionId, sceneOpt, commit() { commit(); checkGoals(save.run); persist(); finishTurn() } } }))
@@ -570,25 +573,39 @@ function eatFood(sit) {
   const id = ui.talk.id
   const b = ui.talk.bought
   const menu = MENUS[id]
-  talkScene('talk_eat', menu.place, { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name }, () => {
+  const friend = together
+  together = null
+  talkScene('talk_eat', menu.place, { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name, ...(friend && { with: friend.id, name: friend.name }) }, () => {
     applyFx(save.run, b.fx)
     spendMinutes(sit ? 25 : 5)
     save.run.at = menu.place
-    flash(`\u{1F37D} ${b.label}: +${b.fx.hunger || 0} Fullness`)
+    if (!friend) { flash(`\u{1F37D} ${b.label}: +${b.fx.hunger || 0} Fullness`); return }
+    applyFx(save.run, { social: 4 })
+    closer(save.run, friend.id, 8)
+    markTogether(save.run, `eat:${friend.id}`)
+    addIdentity(save.run, { socialite: 1 })
+    flash(`\u{1F37D} Ate with ${friend.name}: +${b.fx.hunger || 0} Fullness, +4 Social`)
   })
 }
 
-function talkAct(kind) {
+// Where "Walk with me" goes: your lecture if it's next, otherwise somewhere else.
+function walkPlace(run) {
+  if (lectureWanted(run)) return venueFor(run).id
+  return run.at === 'quad' ? 'library' : 'quad'
+}
+
+// answer: what they said to the reply that led here (shown as the scene starts).
+function talkAct(kind, answer = '') {
   const run = save.run
   const id = ui.talk.id
   const info = personInfo(id)
-  const name = run.crush?.id === id ? run.crush.name : info?.name || 'them'
+  const name = run.crush?.id === id ? (run.crush.nameKnown ? run.crush.name : 'them') : info?.name || 'them'
   if (kind === 'order') { ui.talk = { id, menu: true }; paint(); return }
   if (kind === 'swap') {
     addContact(run, id, name)
     closer(run, id, 3)
     window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: 'good' } }))
-    ui.talk = { id, swapped: true }
+    ui.talk = { id, swapped: true, answer }
     blip(1100)
     persist()
     paint()
@@ -596,7 +613,7 @@ function talkAct(kind) {
   }
   if (kind === 'consult') {
     const venue = LECTURERS[id]
-    talkScene('talk_consult', 'here', { who: id, name: venue.lecturerName, hide: id }, () => {
+    talkScene('talk_consult', 'here', { who: id, name: venue.lecturerName, hide: id, answer }, () => {
       applyFx(run, { grades: 3, energy: -4 })
       run.consulted = { ...(run.consulted || {}), [run.day]: true }
       closer(run, id, 6)
@@ -607,7 +624,7 @@ function talkAct(kind) {
     return
   }
   if (kind === 'sit') {
-    talkScene('talk_sit', 'here', { who: id, name, hide: id }, () => {
+    talkScene('talk_sit', 'here', { who: id, name, hide: id, answer }, () => {
       applyFx(run, { social: 4, energy: -2 })
       closer(run, id, 8)
       markTogether(run, id)
@@ -618,7 +635,7 @@ function talkAct(kind) {
     return
   }
   if (kind === 'study') {
-    talkScene('talk_study', 'library', { who: id, hide: id }, () => {
+    talkScene('talk_study', 'library', { who: id, with: id, name, answer }, () => {
       applyFx(run, { grades: 3, social: 2, energy: -8 })
       closer(run, id, 5)
       markTogether(run, `study:${id}`)
@@ -629,14 +646,46 @@ function talkAct(kind) {
       save.run.at = 'library'
       flash(`\u{1F4DA} Studied with ${name}: +3 Grades, +2 Social`)
     })
+    return
+  }
+  if (kind === 'walk') {
+    const to = walkPlace(run)
+    const placeName = districtNow().places.find((p) => p.id === to)?.name || 'there'
+    talkScene('talk_walk', to, { who: id, with: id, name, answer, placeName }, () => {
+      applyFx(run, { social: 2, energy: -2 })
+      closer(run, id, 5)
+      markTogether(run, `walk:${id}`)
+      spendMinutes(10)
+      save.run.at = to
+      flash(`\u{1F6B6} Walked to ${placeName} with ${name}: +2 Social, closer`)
+    })
+    return
+  }
+  if (kind === 'eat') {
+    // Both of you walk to her queue, line up, order, then sit at one table.
+    const vendor = /gugu|vetkoek/i.test(answer) ? 'mam_gugu' : 'auntie_pinky'
+    together = { id, name, answer }
+    endTalk({ keepFriend: true })
+    paint()
+    if (document.body.dataset.world === '1') window.dispatchEvent(new CustomEvent('mzansi-companion', { detail: { id } }))
+    joinQueue(vendor, false)
   }
 }
 
-function endTalk() {
+const DOING = new Set(['eat', 'study', 'sit', 'walk', 'swap', 'order', 'consult'])
+// Who is coming along with you to eat (from "Let's get something to eat" to the last bite).
+let together = null
+
+// away: a goodbye - you walk off. keepFriend: the chat ends because you go and do something together.
+function endTalk({ away = false, keepFriend = false } = {}) {
+  if (!keepFriend && together) {
+    together = null
+    window.dispatchEvent(new CustomEvent('mzansi-companion', { detail: {} }))
+  }
   if (!ui.talk) return
   if (MENUS[ui.talk.id]) window.mzansiVendorReady = null
   ui.talk = null
-  window.dispatchEvent(new CustomEvent('mzansi-talk-end'))
+  window.dispatchEvent(new CustomEvent('mzansi-talk-end', { detail: { away } }))
 }
 
 window.addEventListener('mzansi-lecture-arrive', () => {
@@ -783,6 +832,8 @@ function gameAct(act, button) {
       window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: res.tone } }))
       blip(res.tone === 'bad' ? 330 : 880)
       persist()
+      // The reply leads somewhere: do it now, with their answer as the first line.
+      if (DOING.has(res.act)) { talkAct(res.act, res.answer); return true }
     }
     paint()
     return true
@@ -812,7 +863,8 @@ function gameAct(act, button) {
   if (act === 'talk-size' && ui.talk?.item) { buyFood(ui.talk.item, button.dataset.size); return true }
   if (act === 'talk-eat' && ui.talk?.bought) { eatFood(button.dataset.how === 'sit'); return true }
   if (act === 'talk-more' && ui.talk) { ui.talk = { id: ui.talk.id }; paint(); return true }
-  if (act === 'talk-bye') { endTalk(); paint(); return true }
+  if (act === 'talk-bye') { endTalk({ away: button.dataset.away === '1' }); paint(); return true }
+  if (act === 'talk-phone') { endTalk(); go('profile'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }

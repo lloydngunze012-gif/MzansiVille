@@ -3,7 +3,8 @@
 // choices; replies change closeness and set flags that later beats read.
 // run.crush = { id, name, romance, met, nameKnown, closeness, opener, sat, beats: { [day]: reply }, ... }
 
-const R = (text, close, answer, set = {}, social = 0) => ({ text, close, answer, set, social })
+// act: what the reply leads to (people.json has the list): bye, eat, study, walk...
+const R = (text, close, answer, set = {}, social = 0, act) => ({ text, close, answer, set, social, act })
 
 function beat(run) {
   const c = run.crush
@@ -23,26 +24,26 @@ function beat(run) {
       return {
         line: '{you}! Did the lecture eat you alive?',
         replies: [
-          R('Barely. Want a vetkoek?', 4, 'Mam’ Gugu’s? Only if you’re buying.', {}, 2),
+          R('Barely. Want a vetkoek?', 4, 'Mam’ Gugu’s? Only if you’re buying.', {}, 2, 'eat'),
           R('I sat in the front row. Like a nerd.', 3, 'Respect. I sat at the back like a coward.'),
-          R('Can’t stop, sorry!', -1, 'Okay… see you around.'),
+          R('Can’t stop, sorry!', -1, 'Okay… see you around.', {}, 0, 'bye'),
         ],
       }
     case 2:
       return {
         line: c.sat || c.opener === 'headphones' ? 'You left these on the bus seat yesterday. \u{1F3A7}' : 'We have to stop running into each other. People will talk.',
         replies: [
-          R('My hero. Coffee on me?', 4, 'A coffee date? Bold. I like it.', { coffee: true }, 1),
+          R('My hero. Coffee on me?', 4, 'A coffee date? Bold. I like it.', { coffee: true }, 1, 'eat'),
           R(c.sat || c.opener === 'headphones' ? 'Keep them. They suit you.' : 'Let them talk.', 3, 'Smooth. Very smooth.'),
-          R('Oh. Thanks.', 1, 'Wow. Riveting chat. See you.'),
+          R('Oh. Thanks.', 1, 'Wow. Riveting chat. See you.', {}, 0, 'bye'),
         ],
       }
     case 3:
       return {
         line: 'Test on Friday, right? I study at the library every afternoon. Join me?',
         replies: [
-          R('Yes. 15:00?', 4, '15:00. Don’t be late, I bring the good highlighters.', { studyDate: true }),
-          R('Only if you quiz me.', 3, 'Deal. I’m a strict quizzer.', { studyDate: true }),
+          R('Yes. 15:00?', 4, '15:00. Don’t be late, I bring the good highlighters.', { studyDate: true }, 0, 'study'),
+          R('Only if you quiz me.', 3, 'Deal. I’m a strict quizzer.', { studyDate: true }, 0, 'study'),
           R('I study better alone.', 0, 'Fair. The offer stands.'),
         ],
       }
@@ -64,7 +65,7 @@ function beat(run) {
             ? R('Want to go out Saturday?', close ? 6 : 1, close ? 'Yes. Finally. I thought you’d never ask.' : 'Maybe… let’s get to know each other first.', { asked: close ? 'yes' : 'soon' }, 2)
             : R('Study buddies next term?', 4, 'Obviously. You’re stuck with me.', { buddies: true }, 2),
           R('Friends celebrate too, right?', 3, 'Always. Shisanyama on me.', { friends: true }),
-          R('I need sleep for a week.', 0, 'Same. Text me when you wake up.'),
+          R('I need sleep for a week.', 0, 'Same. Text me when you wake up.', {}, 0, 'bye'),
         ],
       }
     }
@@ -72,9 +73,9 @@ function beat(run) {
       return {
         line: c.asked === 'yes' ? 'There you are. I saved you a seat.' : 'Hey you. What’s the plan today?',
         replies: [
-          R('Walk with me?', 2, 'Lead the way.'),
+          R('Walk with me?', 2, 'Lead the way.', {}, 0, 'walk'),
           R('Just came to say hi.', 1, 'Hi. Again. I don’t mind.'),
-          R('Busy day, later!', 0, 'Later then.'),
+          R('Busy day, later!', 0, 'Later then.', {}, 0, 'bye'),
         ],
       }
   }

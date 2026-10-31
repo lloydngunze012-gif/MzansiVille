@@ -1,7 +1,8 @@
 // Conversations lead to doing (owner list, item 3): every talk card offers what
 // you can do with this person, never a dead end. Vendors sell (menus.js),
 // lecturers give a consultation, students sit with you, study with you or swap
-// numbers (your phone keeps them: run.contacts).
+// numbers (your phone keeps them: run.contacts), eat with you (the caf queue,
+// one table) or walk with you.
 import { MENUS } from '../menus.js'
 import { LECTURERS } from '../venues.js'
 
@@ -22,8 +23,10 @@ export function talkActions(run, id) {
   if (crush && !run.crush.nameKnown) return []
   const out = []
   const today = run.together?.[run.day] || {}
+  if (!today[`eat:${id}`]) out.push({ kind: 'eat', label: '\u{1F37D} “Let’s get something to eat”', note: 'Caf queue together · 30 min' })
+  if (run.phase !== 'night' && !today[`study:${id}`]) out.push({ kind: 'study', label: '\u{1F4DA} “Let’s study”', note: '+Grades · +Social · 45 min' })
   if (!today[id]) out.push({ kind: 'sit', label: '\u{1FA91} Sit with them', note: '+Social · closer · 30 min' })
-  if (run.phase !== 'night' && !today[`study:${id}`]) out.push({ kind: 'study', label: '\u{1F4DA} Study together', note: '+Grades · +Social · 45 min' })
+  if (!today[`walk:${id}`]) out.push({ kind: 'walk', label: '\u{1F6B6} “Walk with me”', note: 'Walk there together · 10 min' })
   if (!isContact(run, id)) out.push({ kind: 'swap', label: '\u{1F4F1} Swap numbers', note: 'They go in your phone' })
   return out
 }
