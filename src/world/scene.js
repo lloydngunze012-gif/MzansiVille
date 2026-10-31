@@ -493,13 +493,16 @@ function overShoulder(from, to) {
   // Try a few heights and sides; take the first with a clear view of them
   // (an awning or a table can hide someone from high up).
   const tries = []
-  for (const deg of [34, 22, 50, 12]) for (const side of [0.5, -0.5, 1.1, -1.1, 1.6, -1.6]) tries.push([THREE.MathUtils.degToRad(deg), side])
-  for (const [tilt, side] of tries) {
+  // Further round them, and closer in, when buildings crowd the usual spots.
+  for (const k of [1, 0.7]) for (const deg of [34, 22, 50, 12]) for (const side of [0.5, -0.5, 1.1, -1.1, 1.6, -1.6, 2.3, -2.3, Math.PI]) tries.push([THREE.MathUtils.degToRad(deg), side, k])
+  let outside = null
+  for (const [tilt, side, k] of tries) {
     const ax = -dx / d
     const az = -dz / d
     const rx = Math.cos(side) * ax - Math.sin(side) * az
     const rz = Math.sin(side) * ax + Math.cos(side) * az
-    const pos = new THREE.Vector3(mx + rx * dist * Math.cos(tilt), 1 + dist * Math.sin(tilt), mz + rz * dist * Math.cos(tilt))
+    const r = dist * k
+    const pos = new THREE.Vector3(mx + rx * r * Math.cos(tilt), 1 + r * Math.sin(tilt), mz + rz * r * Math.cos(tilt))
     // Clear sight lines from the camera to both of them, head and knees (cast from
     // the camera: roofs and awnings are one-sided and only face upwards).
     const blocked = [from, to].some((p) => [1.6, 0.5].some((y) => {
@@ -511,8 +514,10 @@ function overShoulder(from, to) {
     // Never inside a building (rays cast from inside a wall don't see it).
     const inside = campus.layout.buildings.some((b) => pos.x > b.minX - 0.6 && pos.x < b.minX + b.w + 0.6 && pos.z > b.minZ - 0.6 && pos.z < b.minZ + b.d + 0.6 && pos.y < (b.h || 12) + 1)
     if (!blocked && !inside) { best = pos; break }
-    if (!best) best = pos
+    if (!inside && !outside) outside = pos
   }
+  // Nothing fully clear: the first spot outside any building, never one inside.
+  if (!best) best = outside || new THREE.Vector3(mx - dx / d * 6, 5, mz - dz / d * 6)
   // Aim at them, then tilt the view down so they sit about 30% from the top of the
   // screen (NDC y = +0.4): the conversation card covers the bottom half.
   const mid = new THREE.Vector3(mx, 0.9, mz)
