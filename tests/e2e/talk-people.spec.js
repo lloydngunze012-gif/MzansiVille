@@ -213,3 +213,22 @@ test('a storyline beat: the roommate asks to borrow R100, and remembers', async 
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(Object.keys(run.arcBeats || {}).length).toBe(1)
 })
+
+test('Friday test: the mark, and the choices that paid off', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    const test = { mark: 78, base: 50, rival: 71, beatRival: true, band: 'distinction', repaid: 100, lines: [{ n: 18, text: 'You studied 3 times this week' }, { n: 4, text: 'Dr Moodley remembers you volunteered' }, { n: 3, text: 'Studying with Thabo: his notes are scary good' }, { n: -2, text: 'The midnight music battle cost you sleep' }] }
+    Object.assign(save.run, { day: 5, bestieName: 'Zanele', queue: [{ id: 'friday-test-5', kind: 'test', title: '78%. Distinction!', text: '', test }] })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&fri=1#/play')
+  const card = page.locator('[data-screen-card="test"]')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await expect(card.locator('.g-mark')).toContainText('78')
+  await expect(card.locator('.g-why li')).toHaveCount(5)
+  await expect(card).toContainText('You beat him')
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: `${OUT}/10-friday-test.png` })
+})

@@ -8,6 +8,7 @@ import { identityTitle } from './identity.js'
 const MISSED = {
   lecture1: 'Missed lecture: Dr Moodley noticed the empty seat.',
   lecture: 'Missed lecture: one step closer to a DP warning.',
+  test: 'You missed the test. Dr Moodley wants to see you on Monday.',
   crushName: 'They’re still a mystery.',
   meet2: 'Campus still feels big and strange.',
   earn50: 'The hustle waits for tomorrow.',

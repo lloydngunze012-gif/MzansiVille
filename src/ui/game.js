@@ -10,6 +10,7 @@ import { identityTitle } from '../engine/identity.js'
 import { comeBackReasons } from '../engine/dayend.js'
 import { MOMENTS } from '../engine/moments.js'
 import { beatById } from '../engine/arcs.js'
+import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -287,6 +288,7 @@ function resultCard(state) {
   if (card.kind === 'milestone') return milestoneCard(state, card)
   if (card.kind === 'goals') return goalsCardHtml(run)
   if (card.kind === 'moment') return momentCardHtml(run, card)
+  if (card.kind === 'test') return testCardHtml(run, card)
   if (card.choices || card.kind === 'shop') return `<div class="g-card-wrap">${cardHtml(card, state)}</div>`
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
   const label = { identity: '\u2728 Who you\u2019re becoming', goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
@@ -300,6 +302,21 @@ function resultCard(state) {
     ${twist ? `<p class="g-twistline">\u{1F3B2} ${esc(twist.text)}</p>` : ''}
     <button type="button" class="g-go block" data-act="dismiss"${twist ? ' data-pair="1"' : ''}>${q.length > (twist ? 2 : 1) ? 'Next' : 'Continue'}</button>
   </aside>`
+}
+
+// Friday's test: the mark, and which choices this week paid off.
+function testCardHtml(run, card) {
+  const t = card.test
+  return `<section class="g-full g-event g-test ${t.band}" role="dialog" aria-label="Friday test" data-screen-card="test">
+    <div class="g-full-in">
+      <p class="g-kind">Friday \u00b7 The test</p>
+      <div class="g-mark"><b>${t.mark}</b><small>%</small></div>
+      <h2>${esc(card.title)}</h2>
+      <ul class="g-why"><li><span>Where you started</span><b>${t.base}</b></li>${t.lines.map((l) => `<li class="${l.n > 0 ? 'up' : 'down'}"><span>${esc(l.text)}</span><b>${l.n > 0 ? '+' : ''}${l.n}</b></li>`).join('')}</ul>
+      <p class="g-lede">${t.beatRival ? `\u{1F3C6} Thabo got ${t.rival}%. You beat him.` : `\u{1F624} Thabo got ${t.rival}%. Next time.`}${t.repaid ? ` ${esc(run.bestieName || 'Your roommate')} paid back the R${t.repaid}.` : ''}</p>
+      <button type="button" class="g-go block" data-act="dismiss">${t.band === 'fail' ? 'Pick yourself up' : 'Celebrate'}</button>
+    </div>
+  </section>`
 }
 
 // A random moment: something happens, and you choose.
@@ -325,9 +342,10 @@ function goalsCardHtml(run) {
   return `<div class="g-scrim"></div>
   <aside class="g-result g-goals" role="dialog" aria-label="Today's goals" data-goals="${list.length}">
     <p class="g-kind">Day ${run.day} \u00b7 Today's goals</p>
-    <h2>${list.every((g) => g.done) && list.length ? 'All done today' : 'Three things today'}</h2>
+    <h2>${list.every((g) => g.done) && list.length ? 'All done today' : esc(DAY_THEMES[run.day] || 'Three things today')}</h2>
     <ol class="g-goal-list">${list.map((g) => `<li class="${g.kind}${g.done ? ' done' : ''}"><span class="g-gk">${GOAL_KIND[g.kind]}</span><span>${esc(goalText(run, g))}</span><b>${g.done ? '\u2713' : ''}</b></li>`).join('')}</ol>
     ${run.goals?.text ? `<p class="g-lasttext">\u{1F4AC} <b>${esc(run.goals.text.from)}:</b> ${esc(run.goals.text.text)}</p>` : ''}
+    ${run.day <= 5 ? `<p class="g-week">\u{1F4C5} This week: ${esc(WEEK_GOAL.text)} <b>${Math.min(weekStudied(run), WEEK_GOAL.need)}/${WEEK_GOAL.need}</b></p>` : ''}
     <p class="g-title">${esc(identityTitle(run).text)}</p>
     <p class="g-dream"><span>${dream.icon} Year dream: <b>${esc(dream.label)}</b></span><i><em style="width:${Math.max(3, pct)}%"></em></i><small>${pct}%</small></p>
     <button type="button" class="g-go block" data-act="dismiss">Let's go</button>

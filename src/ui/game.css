@@ -489,3 +489,16 @@ body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 @keyframes g-phone-in{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
 .g-lasttext{margin:0 0 8px;padding:8px 10px;border-radius:12px;background:#1c1915;color:#fff;font-size:13px}
 .g-lasttext b{color:#47d18c}
+
+/* Week goal and the Friday test */
+.g-week{margin:0 0 8px;padding:8px 10px;border-radius:12px;background:#1d7fb81a;font-weight:700;font-size:13px;display:flex;justify-content:space-between;gap:8px}
+.g-mark{display:flex;align-items:baseline;justify-content:center;gap:2px;margin:6px 0;color:#f0c400;font:900 72px/1 system-ui;text-shadow:0 4px 0 #2a1846}
+.g-mark small{font-size:28px}
+.g-test.fail .g-mark{color:#ff8a8a}
+.g-test.distinction .g-mark{animation:g-pop .6s cubic-bezier(.2,1.8,.4,1)}
+.g-why{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px;text-align:left}
+.g-why li{display:flex;justify-content:space-between;gap:8px;padding:6px 10px;border-radius:10px;background:#ffffff14;font-size:13px;font-weight:700}
+.g-why li.up b{color:#47d18c}.g-why li.down b{color:#ff8a8a}
+@keyframes g-pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+/* Full-screen cards (moments, story beats, the test, events) hide the world's door prompt behind them */
+body:has(.g-full) .door-prompt{visibility:hidden}
