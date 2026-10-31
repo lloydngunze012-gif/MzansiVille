@@ -20,6 +20,7 @@ export const SCENE_OF = {
   talk_sit: ['sitTogether', {}],
   talk_consult: ['consult', {}],
   talk_study: ['groupStudy', { room: 'library', props: 'books' }],
+  talk_walk: ['walkTogether', {}],
   lecture_back: ['lecture', { back: true }],
   cafeteria_meal: ['queueBuy', { food: 'pap and wors', eat: true }],
   library_study: ['study', { room: 'library' }],
@@ -142,6 +143,7 @@ export function createScenes(api) {
     await api.walkTo(place.door.x, place.door.z - 2.2)
     await api.wait(0.4) // the door swings open as you arrive (scene.js)
     await api.fade()
+    api.hideCompanion(true) // whoever came with you is in the room (the scene's copy of them)
     const room = api.room(kind)
     api.teleport(room.anchors.door.x, room.anchors.door.z, Math.PI)
     api.frame(room.anchors.look)
@@ -154,6 +156,7 @@ export function createScenes(api) {
     api.clearTemps()
     api.frame(null)
     api.teleport(place.door.x, place.door.z, 0)
+    api.hideCompanion(false)
     await api.wait(0.2)
     await api.unfade()
   }
@@ -353,7 +356,7 @@ export function createScenes(api) {
       const lines = { cards: ['Scaphoid!', 'Correct! Next card.', 'Lunate?'], papers: ['Who does the conclusion?', 'Not me. I did the graph.', 'Fine. I will.'], books: ['Chapter four, page 80.', 'Found it!', 'Okay, quiz me.'] }[opt.props] || ['Okay, let us split it up.', 'I take part one.', 'Deal.']
       for (const [i, line] of lines.entries()) {
         api.progress((i + 1) / 4)
-        api.say(line, i % 2 ? 'friend' : 'you')
+        api.say(line, i % 2 ? opt.name || 'friend' : 'you')
         if (i % 2) api.gestureOf(people[0], 'interact-right'); else api.gesture('interact-right')
         await api.wait(1.3)
       }
@@ -408,6 +411,18 @@ export function createScenes(api) {
           const side = t ? -1 : 1
           await api.walkTo(seat.x + side * Math.sin(seat.rot) * 0.9, seat.z + side * Math.cos(seat.rot) * 0.9)
           sitOn(seat)
+          // Eating together: your friend takes the other chair at the same table
+          // (whoever sat there steps away for now), or the other half of the bench.
+          const friend = opt.with && api.companion()
+          if (friend) {
+            if (t?.sitter && t.sitter !== friend) t.sitter.visible = false
+            const other = t ? t.other : { x: seat.x - Math.cos(seat.rot) * 0.64, z: seat.z + Math.sin(seat.rot) * 0.64, rot: seat.rot, y: seat.y }
+            api.seatCompanion(other)
+            if (t) {
+              api.box(0.34, 0.03, 0.34, 0xffffff, t.table.x - 0.5, t.table.y, t.table.z)
+              api.box(0.24, 0.12, 0.2, 0xc9783a, t.table.x - 0.5, t.table.y + 0.07, t.table.z)
+            }
+          }
           let plate = null
           if (t) {
             // The food goes on the table in front of you.
@@ -415,11 +430,22 @@ export function createScenes(api) {
             plate = api.box(0.34, 0.03, 0.34, 0xffffff, t.table.x, t.table.y, t.table.z)
             api.box(0.24, 0.12, 0.2, 0xd08a3a, t.table.x, t.table.y + 0.07, t.table.z)
           }
-          api.say(`Sitting down with my ${opt.food}.`)
-          await steps(4, 1.0, () => api.gesture('interact-right'))
+          if (friend) {
+            const lines = [[`Sitting down with my ${opt.food}.`, 'you'], ['Eish, I needed this.', opt.name], ['Same. Lectures make you hungry.', 'you'], ['Next time I choose the spot.', opt.name]]
+            for (const [i, [text, who]] of lines.entries()) {
+              api.progress(0.3 + (i + 1) * 0.15)
+              api.say(text, who)
+              if (who === 'you') api.gesture('interact-right'); else api.gestureOf(friend, 'interact-right')
+              await api.wait(1.3)
+            }
+          } else {
+            api.say(`Sitting down with my ${opt.food}.`)
+            await steps(4, 1.0, () => api.gesture('interact-right'))
+          }
           api.say('Mmm. Worth every rand.')
           await api.wait(0.8)
           void plate
+          if (friend) { api.seatCompanion(null); if (t?.sitter && t.sitter !== friend) t.sitter.visible = true }
           api.pose('stand')
           await api.walkTo(seat.x + side * Math.sin(seat.rot) * 1.1, seat.z + side * Math.cos(seat.rot) * 1.1)
         }
@@ -432,6 +458,30 @@ export function createScenes(api) {
         await steps(2, 0.9, () => api.gesture('interact-right'))
       }
       api.hold(null)
+    },
+
+    // "Walk with me": the two of you walk across campus together, chatting, to a place.
+    async walkTogether(place, opt) {
+      const friend = api.companion()
+      api.frame(null)
+      const lines = [['So where are we going?', opt.name], [`${opt.placeName || 'Over there'}. Come.`, 'you'], ['This campus is too big, hey.', opt.name], ['We get used to it.', 'you']]
+      let i = 0
+      const talking = setInterval(() => {
+        if (i >= lines.length) return
+        const [text, who] = lines[i++]
+        api.say(text, who)
+        api.progress(i / (lines.length + 2))
+        if (who === 'you') api.gesture('interact-right')
+      }, 1600)
+      api.say(lines[i][0], lines[i++][1])
+      await api.walkTo(place.door.x, place.door.z + 1.8)
+      clearInterval(talking)
+      if (friend) api.face(friend.position.x, friend.position.z)
+      await api.wait(0.5)
+      if (friend) api.gestureOf(friend, 'emote-yes')
+      api.say(`Here we are. Thanks for walking with me!`, opt.name)
+      api.progress(1)
+      await api.wait(1.4)
     },
 
     // Sit with someone you just talked to: a bench right here, a proper chat.

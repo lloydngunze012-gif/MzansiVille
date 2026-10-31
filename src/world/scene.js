@@ -593,6 +593,7 @@ window.mzansiScreenOf = (x, z, y = 0) => {
 window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null }
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
+window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
 window.mzansiDoorOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? doorPoint(b) : null }
 window.mzansiRoute = () => {
@@ -616,15 +617,38 @@ window.addEventListener('mzansi-talk-react', (event) => {
   gesture(talk.avatar, tone === 'bad' ? 'emote-no' : 'emote-yes')
   if (tone === 'good') setTimeout(() => player && gesture(player, 'emote-yes'), ms(500))
 })
-window.addEventListener('mzansi-talk-end', () => {
+window.addEventListener('mzansi-talk-end', (event) => {
   if (!talk) return
   if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
   if (talk.pose !== undefined) talk.avatar.userData.pose = talk.pose
-  // Back to the follow camera, swung round behind you so they stay in view.
-  if (player) rig.turnBehind(player.rotation.y)
+  const them = talk.avatar
   talk = null
   closeShot = null
   delete host.dataset.talking
+  if (event.detail?.away && player && campus) {
+    // A goodbye you can see: they wave, you turn and walk a few steps off.
+    gesture(them, 'emote-yes')
+    const dx = player.position.x - them.position.x
+    const dz = player.position.z - them.position.z
+    const d = Math.hypot(dx, dz) || 1
+    let goal = null
+    for (const turn of [0, 0.6, -0.6, 1.2, -1.2, 1.8, -1.8, Math.PI]) {
+      const ux = (dx / d) * Math.cos(turn) - (dz / d) * Math.sin(turn)
+      const uz = (dx / d) * Math.sin(turn) + (dz / d) * Math.cos(turn)
+      const c = { x: player.position.x + ux * 4, z: player.position.z + uz * 4 }
+      if (!pointBlocked(campus.grid, c.x, c.z)) { goal = c; break }
+    }
+    host.dataset.walkAway = 'walking'
+    if (goal) {
+      walkTo(goal.x, goal.z, () => { host.dataset.walkAway = 'done'; rig.turnBehind(player.rotation.y) })
+      speed = WALK * 0.6
+      if (player.userData.pose === 'run') player.userData.pose = 'stand'
+      if (!route.length) host.dataset.walkAway = 'done'
+    } else host.dataset.walkAway = 'done'
+    return
+  }
+  // Back to the follow camera, swung round behind you so they stay in view.
+  if (player) rig.turnBehind(player.rotation.y)
 })
 
 // Name tags over the people near you (so you can see who to tap).
@@ -760,6 +784,14 @@ function activityApi() {
     },
     // --- scenes everywhere (activities.js) ---
     get campus() { return campus },
+    // The person coming along with you (startCompanion), if anyone.
+    companion: () => companion?.avatar || null,
+    seatCompanion: (seat) => seatCompanion(seat),
+    hideCompanion: (hidden) => {
+      if (!companion) return
+      companion.avatar.visible = !hidden
+      if (!hidden) seatCompanion(null)
+    },
     placeInfo: (id) => {
       if (id === 'here' || !id) {
         const p = player.position
@@ -920,6 +952,100 @@ function clearTemps() {
 function clearRoom() {
   if (room) { scene.remove(room.group); room = null }
 }
+// Someone coming along with you (eat together, study together, walk with me):
+// the real person leaves what they were doing and walks your trail a step behind.
+let companion = null
+function startCompanion(id) {
+  stopCompanion()
+  const avatar = everyone().find((a) => a.userData.personId === id)
+  if (!avatar || !player) return null
+  const walker = crowd?.people.find((p) => p.avatar === avatar)
+  if (walker) walker.talking = false
+  companion = { avatar, walker, home: { x: avatar.position.x, y: avatar.position.y, z: avatar.position.z, rot: avatar.rotation.y, pose: avatar.userData.pose }, trail: [{ x: player.position.x, z: player.position.z }], seat: null }
+  avatar.userData.following = true
+  avatar.userData.pose = 'stand'
+  avatar.position.y = 0
+  avatar.visible = true
+  host.dataset.companion = id
+  return companion
+}
+function stopCompanion() {
+  if (!companion) return
+  const { avatar, walker, home } = companion
+  avatar.userData.following = false
+  avatar.visible = true
+  if (walker && !walker.sitting) {
+    // A walker carries on from where they are.
+    walker.route = []
+    walker.wait = 1.5
+    avatar.userData.pose = 'stand'
+  } else {
+    // Someone with a spot of their own (a seat, a stall) goes back to it.
+    avatar.position.set(home.x, home.y, home.z)
+    avatar.rotation.y = home.rot
+    avatar.userData.pose = home.pose
+  }
+  companion = null
+  delete host.dataset.companion
+}
+// Put them on a seat (beside you at a table), or back on their feet next to you.
+function seatCompanion(seat) {
+  if (!companion) return
+  const a = companion.avatar
+  companion.seat = seat
+  if (seat) {
+    a.position.set(seat.x, seat.y || 0, seat.z)
+    a.rotation.y = seat.rot
+    a.userData.pose = seat.pose || 'sit'
+    return
+  }
+  a.userData.pose = 'stand'
+  a.position.y = 0
+  a.position.x = player.position.x - Math.sin(player.rotation.y) * 1.2
+  a.position.z = player.position.z - Math.cos(player.rotation.y) * 1.2
+  companion.trail = [{ x: player.position.x, z: player.position.z }]
+}
+function companionTick(dt) {
+  if (!companion) return
+  const a = companion.avatar
+  if (companion.seat || !a.visible) { poseAvatar(a, false, clock); return }
+  const trail = companion.trail
+  const last = trail[trail.length - 1]
+  if (Math.hypot(player.position.x - last.x, player.position.z - last.z) > 0.3) {
+    trail.push({ x: player.position.x, z: player.position.z })
+    if (trail.length > 300) trail.shift()
+  }
+  // The point on your trail about 1.4 m behind you.
+  let gap = 1.4
+  let from = { x: player.position.x, z: player.position.z }
+  let target = from
+  for (let i = trail.length - 1; i >= 0; i--) {
+    const p = trail[i]
+    const d = Math.hypot(p.x - from.x, p.z - from.z)
+    if (d >= gap) { target = { x: from.x + ((p.x - from.x) * gap) / d, z: from.z + ((p.z - from.z) * gap) / d }; break }
+    gap -= d
+    from = p
+    target = p
+  }
+  const dx = target.x - a.position.x
+  const dz = target.z - a.position.z
+  const d = Math.hypot(dx, dz)
+  // Left behind (you went through a door, the scene moved you): catch up.
+  if (d > 9) { a.position.x = target.x; a.position.z = target.z }
+  const walking = d > 0.12 && d <= 9
+  if (walking) {
+    const step = Math.min(d, Math.max(speed * 1.15, 3) * dt)
+    a.position.x += (dx / d) * step
+    a.position.z += (dz / d) * step
+    a.rotation.y = Math.atan2(dx, dz)
+  } else if (Math.hypot(player.position.x - a.position.x, player.position.z - a.position.z) < 3) {
+    a.rotation.y = Math.atan2(player.position.x - a.position.x, player.position.z - a.position.z)
+  }
+  poseAvatar(a, walking, clock)
+}
+window.addEventListener('mzansi-companion', (event) => { if (event.detail?.id) startCompanion(event.detail.id); else stopCompanion() })
+window.mzansiCompanion = () => companion && { id: companion.avatar.userData.personId, x: +companion.avatar.position.x.toFixed(2), z: +companion.avatar.position.z.toFixed(2), pose: companion.avatar.userData.pose, visible: companion.avatar.visible }
+
 function sceneTick(dt) {
   if (!tempGroup.parent) scene.add(tempGroup)
   const moving = new Set()
@@ -961,12 +1087,21 @@ async function runActivity(detail) {
   // Sitting with someone: the real them steps out while the scene's them sits with you.
   const hidden = detail.sceneOpt?.hide ? everyone().find((a) => a.userData.personId === detail.sceneOpt.hide) : null
   if (hidden) hidden.visible = false
+  // Doing it together: they come along (walk your trail) for the whole scene.
+  const friend = detail.sceneOpt?.with
+  if (friend && companion?.avatar.userData.personId !== friend) startCompanion(friend)
   try {
+    // What they said to your reply, as the scene starts.
+    if (detail.sceneOpt?.answer) {
+      activities.api.say(detail.sceneOpt.answer, detail.sceneOpt.name || 'friend')
+      await activities.api.wait(1.6)
+    }
     await activities.runner.run(detail.actionId, detail.placeId, detail.sceneOpt)
   } catch (error) {
     console.error(error)
   }
   if (hidden) hidden.visible = true
+  if (companion && !detail.sceneOpt?.keep) stopCompanion()
   activities.api.end()
   bar.hidden = true
   bar.classList.remove('small')
@@ -1320,6 +1455,7 @@ function tick(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
+    companionTick(dt)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
     if (!acting && !talk) crowd?.pushOut(player.position)
     const say = host.querySelector('.act-say')

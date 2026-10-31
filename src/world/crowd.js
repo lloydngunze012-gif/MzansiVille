@@ -130,6 +130,7 @@ export function createCrowd(scene, campus, opts = {}) {
       const { avatar } = person
       let walking = false
       // Someone you are talking to stands still and faces you.
+      if (avatar.userData.following) continue // walking with the player (scene.js)
       if (person.talking) { poseAvatar(avatar, false, person.clock); continue }
       if (!person.sitting) {
         if (person.route.length && person.wait <= 0 && yields(person, playerPos)) {
@@ -170,6 +171,7 @@ export function createCrowd(scene, campus, opts = {}) {
   const statics = campus.dressing?.statics || []
   function pushOut(position, radius = 0.85) {
     for (const person of people.concat(statics.map((avatar) => ({ avatar })))) {
+      if (person.avatar.userData.following) continue
       const pos = person.avatar.position
       const dx = position.x - pos.x
       const dz = position.z - pos.z

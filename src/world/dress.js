@@ -447,9 +447,10 @@ export function dressPlaces(layout) {
         c.rotation.y = r
         group.add(c)
       }
-      person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
+      const sitter = person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
       // The chair opposite is free: sit there to eat (the table top is about 0.78 m up).
-      freeTables.push({ seat: { x: tx + 0.95, z: cz + dz, rot: -Math.PI / 2, y: 0.08 + CHAIR_SEAT }, table: { x: tx + 0.25, y: 0.08 + 0.8, z: cz + dz } })
+      // other: the sitter's chair, for a friend eating with you.
+      freeTables.push({ seat: { x: tx + 0.95, z: cz + dz, rot: -Math.PI / 2, y: 0.08 + CHAIR_SEAT }, table: { x: tx + 0.25, y: 0.08 + 0.8, z: cz + dz }, sitter, other: { x: tx - 0.95, z: cz + dz, rot: Math.PI / 2, y: 0.08 + CHAIR_SEAT } })
       block(tx, cz + dz, 2.6, 1.4)
     }
     prop('pottedPlant', tx - 1.9, cz - 3, { s: 2.4 })
@@ -518,6 +519,7 @@ export function dressPlaces(layout) {
       moving.add(m.avatar)
     }
     for (const p of people) {
+      if (p.avatar.userData.following) continue // walking with the player (scene.js)
       p.clock += dt
       if (p.every) {
         p.next -= dt
