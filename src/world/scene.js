@@ -443,21 +443,21 @@ function overShoulder(from, to) {
   // Try a few heights and sides; take the first with a clear view of them
   // (an awning or a table can hide someone from high up).
   const tries = []
-  for (const deg of [34, 22, 50]) for (const side of [0.5, -0.5, 1.1, -1.1]) tries.push([THREE.MathUtils.degToRad(deg), side])
+  for (const deg of [34, 22, 50, 12]) for (const side of [0.5, -0.5, 1.1, -1.1, 1.6, -1.6]) tries.push([THREE.MathUtils.degToRad(deg), side])
   for (const [tilt, side] of tries) {
     const ax = -dx / d
     const az = -dz / d
     const rx = Math.cos(side) * ax - Math.sin(side) * az
     const rz = Math.sin(side) * ax + Math.cos(side) * az
     const pos = new THREE.Vector3(mx + rx * dist * Math.cos(tilt), 1 + dist * Math.sin(tilt), mz + rz * dist * Math.cos(tilt))
-    // Clear sight lines to both of them (head height), not just the middle.
-    const blocked = [from, to].some((p) => {
-      const eye = new THREE.Vector3(p.x, 1.3, p.z)
-      const dir = pos.clone().sub(eye)
-      shotRay.set(eye, dir.clone().normalize())
-      shotRay.far = dir.length()
+    // Clear sight lines from the camera to both of them, head and knees (cast from
+    // the camera: roofs and awnings are one-sided and only face upwards).
+    const blocked = [from, to].some((p) => [1.6, 0.5].some((y) => {
+      const dir = new THREE.Vector3(p.x, y, p.z).sub(pos)
+      shotRay.set(pos, dir.clone().normalize())
+      shotRay.far = dir.length() - 0.35
       return shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !isPart(hit.object))
-    })
+    }))
     if (!blocked) { best = pos; break }
     if (!best) best = pos
   }
