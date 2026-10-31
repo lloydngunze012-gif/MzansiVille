@@ -37,6 +37,8 @@ test('2D map: tap the cafeteria, back in 3D you walk there and its sheet opens',
   await page.screenshot({ path: `${OUT}/1-map.png` })
   await pin.tap()
   await expect(page.locator('#world')).toHaveAttribute('data-going', 'cafeteria', { timeout: 10000 })
+  // Even across campus, the walk takes at most about 12 s on a phone (a jog when it's far).
+  expect(Number(await page.locator('#world').getAttribute('data-walk-seconds'))).toBeLessThanOrEqual(12.5)
   await expect(page.locator('.go-skip')).toBeVisible()
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `${OUT}/2-walking.png` })

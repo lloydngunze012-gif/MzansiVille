@@ -58,6 +58,9 @@ function setShot(name, custom) {
   if (host) host.dataset.shot = s ? (name || 'custom') : 'follow'
 }
 const camLook = new THREE.Vector3()
+// Tests: look anywhere in the hall (seating look-tests); null hands the camera back.
+window.mzansiLectureShot = (pos, look) => { setShot(null, pos ? { pos, look } : null) }
+window.mzansiLectureStudents = () => students.map((a) => ({ y: +a.position.y.toFixed(2), pose: a.userData.pose }))
 
 // ---------- tiny task runner (same idea as the morning) ----------
 function task(update) {
