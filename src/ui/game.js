@@ -342,7 +342,7 @@ function goalsCardHtml(run) {
   const list = run.goals?.list || []
   const dream = dreamOf(run)
   const pct = Math.round(dreamProgress(run) * 100)
-  return `<div class="g-scrim"></div>
+  return `<div class="g-scrim soft" data-act="dismiss"></div>
   <aside class="g-result g-goals" role="dialog" aria-label="Today's goals" data-goals="${list.length}">
     <p class="g-kind">Day ${run.day} \u00b7 Today's goals</p>
     <h2>${list.every((g) => g.done) && list.length ? 'All done today' : esc(DAY_THEMES[run.day] || 'Three things today')}</h2>

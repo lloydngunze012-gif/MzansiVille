@@ -647,6 +647,32 @@ function armAuto() {
   }, 1800)
 }
 
+// A small bounce on the tapped thing and a short note: the tap was heard.
+function pulse(el, text) {
+  el.classList.remove('g-pulse')
+  void el.offsetWidth
+  el.classList.add('g-pulse')
+  blip(660)
+  toast(text)
+}
+
+// A short note on any screen (the play screen's notice line only exists there).
+let toastTimer = 0
+function toast(text) {
+  let node = document.getElementById('toast')
+  if (!node) {
+    node = document.createElement('p')
+    node.id = 'toast'
+    node.className = 'g-toast'
+    node.setAttribute('role', 'status')
+    document.body.append(node)
+  }
+  node.textContent = text
+  node.hidden = false
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { node.hidden = true }, 1800)
+}
+
 let noticeTimer = 0
 function flash(text) {
   ui.notice = text || ''
@@ -958,6 +984,15 @@ app.addEventListener('click', async (event) => {
   if (new URLSearchParams(location.search).get('shot')) return
   const place = event.target.closest('[data-place]')
   const button = event.target.closest('[data-act]')
+  // Same-page links (Leaderboards while on the board) and already-chosen options
+  // still answer the tap, so no tap ever does nothing.
+  const link = event.target.closest('a[href^="#/"]')
+  if (link && link.getAttribute('href') === location.hash) { pulse(link, 'You\u2019re already here'); return }
+  if (button && button.dataset.act !== 'sound' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
+    pulse(button, button.dataset.act === 'view' ? 'Already in this view' : button.hasAttribute('aria-current') ? 'You\u2019re already here' : 'Already selected \u2713')
+    if (button.hasAttribute('aria-current')) window.scrollTo({ top: 0, behavior: 'smooth' })
+    return
+  }
   if (!button && !place) return
   captureForm()
   const act = button?.dataset.act
@@ -1323,7 +1358,11 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'chat-retry' || act === 'board-retry') {
-    if (act === 'chat-retry') { chat.source = 'loading'; await loadChat() } else { board.source = 'loading'; paint(); await loadBoard() }
+    toast('Trying again\u2026')
+    if (act === 'chat-retry') { chat.source = 'loading'; paint(); await loadChat() } else { board.source = 'loading'; paint(); await loadBoard() }
+    const offline = act === 'chat-retry' ? chat.offline || chat.source === 'offline' : board.source === 'offline' || board.offline
+    toast(offline ? 'Still offline. Showing the campus sample for now.' : 'Up to date \u2713')
+    paint()
     return
   }
   if (act === 'send') {
