@@ -460,6 +460,7 @@ function profile(state) {
     </div>
     <p style="margin:12px 0">${esc(run.lastStatLine)}</p>
     <p class="fine">Bestie: ${esc(run.bestieName)} from ${esc(run.character.residence)}</p>
+    <section class="dream-card phone-card" aria-label="Your phone"><p>\u{1F4F1} Your phone</p>${(run.contacts || []).length ? `<ul class="phone-list">${run.contacts.map((c) => `<li><b>${esc(c.name)}</b><small>since day ${c.day}</small></li>`).join('')}</ul>` : '<small>No numbers yet. Talk to people and swap numbers.</small>'}${(run.inbox || []).length ? `<p class="phone-msgs-h">Messages</p><ul class="phone-list">${run.inbox.slice(-5).reverse().map((m) => `<li><b>${esc(m.from)}</b><small>${esc(m.text)}</small></li>`).join('')}</ul>` : ''}</section>
     <section class="dream-card id-card" aria-label="Who you're becoming"><p>Who you're becoming</p>${Object.values(PATHS).map((p) => `<div class="id-row"><span>${p.icon} ${esc(p.name.replace('The ', ''))}</span><div class="dream-bar"><i style="width:${Math.min(100, Math.round(identityPoints(run)[p.id] / 20 * 100))}%"></i></div></div>`).join('')}<small>${Math.round(identityProgress(run) * 100)}% of the way to "Known as"</small></section>
     <section class="dream-card" aria-label="Year dream"><p>${dreamOf(run).icon} Year dream: <b>${esc(dreamOf(run).label)}</b></p><div class="dream-bar"><i style="width:${Math.max(3, Math.round(dreamProgress(run) * 100))}%"></i></div><small>${Math.round(dreamProgress(run) * 100)}% of the way</small></section>
     ${card}

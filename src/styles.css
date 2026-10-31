@@ -877,3 +877,7 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .go-skip[hidden]{display:none}
 /* Map labels read on any background, and stay small */
 .map-pin .lbl { color: #fff; font: 800 10px/1.1 system-ui; text-shadow: 0 1px 2px #000, 0 0 4px #000; max-width: 76px; text-align: center; white-space: normal; }
+.phone-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.phone-list li{display:grid;padding:6px 10px;border-radius:10px;background:#2a18460d}
+.phone-list small{opacity:.75}
+.phone-msgs-h{margin:10px 0 0;font-weight:800}

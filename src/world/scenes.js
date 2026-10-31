@@ -3,6 +3,7 @@
 // (rooms.js) through the opening door. The camera frames the moment up close.
 import * as THREE from 'three'
 import { CHAIR_SEAT } from './furniture.js'
+import { VENUES } from '../venues.js'
 
 // action id -> [scene, options]. Every action in activities.csv is listed (a check
 // in scripts/sim-check.mjs keeps it that way).
@@ -13,6 +14,10 @@ export const SCENE_OF = {
   go_walk: ['walkPath', { far: true }],
   go_bus: ['busRide', { to: 'campus' }],
   lecture_attend: ['lecture', {}],
+  talk_eat: ['orderEat', {}],
+  talk_sit: ['sitTogether', {}],
+  talk_consult: ['consult', {}],
+  talk_study: ['groupStudy', { room: 'library', props: 'books' }],
   lecture_back: ['lecture', { back: true }],
   cafeteria_meal: ['queueBuy', { food: 'pap and wors', eat: true }],
   library_study: ['study', { room: 'library' }],
@@ -334,7 +339,8 @@ export function createScenes(api) {
       const room = await goInside(place, opt.room)
       const seat = room.anchors.desk || room.anchors.bench
       const others = [room.anchors.desk2 || room.anchors.bench2, room.anchors.desk3].filter(Boolean)
-      const people = others.map((s, i) => api.npc(['priya', 'noah', 'x4'][i], s.x, s.z, s.rot, { pose: room.kind === 'library' ? 'sit' : 'stand', y: s.y || 0 }))
+      const who = [...(opt.who ? [opt.who] : []), 'priya', 'noah', 'x4']
+      const people = others.map((s, i) => api.npc(who[i], s.x, s.z, s.rot, { pose: room.kind === 'library' ? 'sit' : 'stand', y: s.y || 0 }))
       if (room.kind === 'library') sitOn(seat)
       else api.teleport(seat.x, seat.z, seat.rot)
       api.frame(room.anchors.look)
@@ -351,10 +357,78 @@ export function createScenes(api) {
       await goOutside(place)
     },
 
+    // After ordering in a chat: the vendor hands it over, then you sit and eat, or take it to go.
+    async orderEat(place, opt) {
+      api.say(`Here you go! One ${opt.food}.`, opt.vendorName || 'Vendor')
+      api.gesture('pick-up')
+      await api.wait(0.8)
+      api.hold(holdable('food'))
+      api.progress(0.3)
+      await api.wait(0.6)
+      if (opt.eat) {
+        const p = P()
+        const s = { x: p.x - 2.6, z: p.z + 1.8 }
+        api.prop('/models/props/table.glb', s.x, s.z, { s: 2.3, rot: Math.PI / 2 })
+        api.chair(s.x - 0.95, s.z, Math.PI / 2)
+        api.frame(s)
+        await api.walkTo(s.x - 1.8, s.z + 0.5)
+        sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
+        api.say(`Sitting down with my ${opt.food}.`)
+        await steps(3, 1.1, () => api.gesture('interact-right'))
+        api.say('Mmm. Worth every rand.')
+        await api.wait(0.8)
+        api.pose('stand')
+      } else {
+        const p = P()
+        const away = { x: p.x + 4, z: p.z + 3 }
+        api.frame(away)
+        api.say('To go. Eating on the move.')
+        await api.walkTo(away.x, away.z)
+        await steps(2, 0.9, () => api.gesture('interact-right'))
+      }
+      api.hold(null)
+    },
+
+    // Sit with someone you just talked to: a bench right here, a proper chat.
+    async sitTogether(place, opt) {
+      const p = P()
+      const s = { x: p.x - 1.6, z: p.z + 1.6 }
+      api.box(1.8, 0.08, 0.5, 0x9a6a40, s.x, 0.43, s.z)
+      api.box(1.8, 0.4, 0.08, 0x9a6a40, s.x, 0.68, s.z - 0.25)
+      const friend = api.npc(opt.who, s.x + 0.45, s.z, 0, { pose: 'sit', y: 0.45 })
+      api.frame(s)
+      await api.walkTo(s.x - 0.45, s.z + 0.9)
+      sitOn({ x: s.x - 0.45, z: s.z, rot: 0, y: 0.45 })
+      const lines = [['So where are you from?', 'you'], [opt.line1 || 'Born and raised here. You?', opt.name || 'friend'], ['Same energy, different town.', 'you'], [opt.line2 || 'Ha! We should do this again.', opt.name || 'friend']]
+      for (const [i, [text, who]] of lines.entries()) {
+        api.progress((i + 1) / 5)
+        api.say(text, who)
+        if (who === 'you') api.gesture('interact-right'); else api.gestureOf(friend, 'emote-yes')
+        await api.wait(1.3)
+      }
+      api.pose('stand')
+    },
+
+    // A lecturer's consultation: walk with them, ask about chapter one, get it.
+    async consult(place, opt) {
+      const p = P()
+      const lec = api.npc(opt.who, p.x + 0.9, p.z, -Math.PI / 2)
+      api.frame({ x: p.x + 0.45, z: p.z })
+      api.hold(holdable('book'))
+      const lines = [['Can I ask about chapter one?', 'you'], ['Of course. What is confusing you?', opt.name], ['The part after the first case study.', 'you'], ['Think of it like this: start from the question, not the answer.', opt.name], ['Oh! That makes sense now.', 'you']]
+      for (const [i, [text, who]] of lines.entries()) {
+        api.progress((i + 1) / 6)
+        api.say(text, who)
+        if (who === 'you') api.gesture('interact-right'); else api.gestureOf(lec, 'interact-right')
+        await api.wait(1.3)
+      }
+      api.hold(null)
+    },
+
     async lecture(place, opt) {
       const room = await goInside(place, 'classroom')
       const l = room.anchors.lecturer
-      const lecturer = api.npc('dr_moodley', l.x, l.z, l.rot)
+      const lecturer = api.npc((VENUES[place.id] || VENUES.smig).lecturer, l.x, l.z, l.rot)
       room.anchors.seats.forEach((s, i) => { if (i !== 5 && i !== 11 && i % 3 !== 1) api.npc(`x${i % 12}`, s.x, s.z, s.rot, { pose: 'sit', y: s.y }) })
       const seat = opt.back ? room.anchors.backSeat : room.anchors.seat
       await api.glide(seat.x, seat.z + 0.6)
@@ -726,11 +800,11 @@ export function createScenes(api) {
 
   return {
     has: (id) => Boolean(SCENE_OF[id]),
-    async run(id, placeId) {
+    async run(id, placeId, extra = {}) {
       const [name, opt] = SCENE_OF[id]
       const place = api.placeInfo(placeId)
       if (!place || !scenes[name]) return null
-      await scenes[name](place, opt || {})
+      await scenes[name](place, { ...(opt || {}), ...extra })
       return name
     },
     names: Object.keys(scenes),

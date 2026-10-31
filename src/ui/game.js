@@ -13,6 +13,8 @@ import { beatById } from '../engine/arcs.js'
 import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
 import { venueFor } from '../venues.js'
+import { MENUS } from '../menus.js'
+import { talkActions } from '../engine/talkactions.js'
 
 // UI-only state that should not be saved.
 export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '', talk: null }
@@ -466,6 +468,45 @@ function talkCard(run) {
   const head = `<div class="g-talk-head"><span class="g-talk-ic">${esc(chat.name.replace(/^Mam' /, '').slice(0, 1))}</span>
     <div><h2>${esc(chat.name)}</h2><small>${esc(chat.role)}${chat.met || t.res ? '' : ' \u00b7 first meeting'}</small></div>
     <span class="g-talk-level">${esc(level)}<i style="width:${Math.max(4, close)}%"></i></span></div>`
+  const acts = talkActions(run, t.id)
+  const actRow = acts.length ? `<div class="g-talk-acts">${acts.map((a) => `<button type="button" class="g-talk-act" data-act="talk-act" data-kind="${a.kind}"><b>${esc(a.label)}</b><small>${esc(a.note)}</small></button>`).join('')}</div>` : ''
+  const menu = MENUS[t.id]
+  const money = run.stats.money || 0
+  const priceBtn = (attrs, name, icon, price, fx) => `<button type="button" class="g-talk-item"${money < price ? ' disabled' : ''} ${attrs}><span>${icon || ''} ${esc(name)}</span><b>R${price}</b>${effectChips(fx)}${money < price ? '<small>Not enough money</small>' : ''}</button>`
+  // Ordering: the menu, then a size if it has sizes, then sit and eat or take it to go.
+  if (menu && t.bought) {
+    return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="bought">
+      ${head}
+      <p class="g-talk-line">Here you go, baby. One ${esc(t.bought.label)}. R${t.bought.price}, thank you!</p>
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-eat" data-how="go">\u{1F6B6} Take it to go</button><button type="button" class="g-go" data-act="talk-eat" data-how="sit">\u{1FA91} Sit and eat</button></div>
+    </section>`
+  }
+  if (menu && t.item) {
+    const item = menu.items.find((i) => i.id === t.item)
+    return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="size">
+      ${head}
+      <p class="g-talk-you">\u201c${esc(item.name)}, please.\u201d</p>
+      <p class="g-talk-line">${esc(item.ask)}</p>
+      <div class="g-talk-menu">${item.sizes.map((s) => priceBtn(`data-act="talk-size" data-size="${s.id}"`, s.name, item.icon, s.price, s.fx)).join('')}</div>
+      <button type="button" class="g-talk-leave" data-act="talk-menu">\u2190 Something else</button>
+    </section>`
+  }
+  if (menu && t.menu) {
+    return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="menu">
+      ${head}
+      <p class="g-talk-line">${esc(menu.hello)}</p>
+      <div class="g-talk-menu">${menu.items.map((i) => i.sizes ? `<button type="button" class="g-talk-item" data-act="talk-item" data-item="${i.id}"><span>${i.icon} ${esc(i.name)}</span><b>from R${Math.min(...i.sizes.map((s) => s.price))}</b><small>${esc(i.ask)}</small></button>` : priceBtn(`data-act="talk-item" data-item="${i.id}"`, i.name, i.icon, i.price, i.fx)).join('')}</div>
+      <button type="button" class="g-talk-leave" data-act="talk-bye">\u{1F44B} Nothing for now, thanks</button>
+    </section>`
+  }
+  if (t.swapped) {
+    return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="swapped">
+      ${head}
+      <p class="g-talk-line">\u{1F4F1} ${esc(chat.name)} is in your phone now. \u201cText me, hey!\u201d</p>
+      ${actRow}
+      <button type="button" class="g-go block" data-act="talk-bye">\u{1F44B} Bye</button>
+    </section>`
+  }
   if (t.res) {
     const r = t.res
     const chips = [
@@ -478,14 +519,16 @@ function talkCard(run) {
       <p class="g-talk-line">${esc(r.answer)}</p>
       ${chips ? `<p class="g-talk-fx">${chips}</p>` : ''}
       ${r.levelUp ? `<p class="g-talk-up">\u2B50 You and ${esc(chat.name)} are now: ${esc(r.level)}</p>` : ''}
-      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye">Bye</button><button type="button" class="g-go" data-act="talk-more">Keep talking</button></div>
+      ${actRow}
+      <div class="g-two"><button type="button" class="g-go ghost" data-act="talk-bye">\u{1F44B} Bye</button><button type="button" class="g-go" data-act="talk-more">Keep talking</button></div>
     </section>`
   }
   return `<section class="g-talk" role="dialog" aria-label="Talking to ${esc(chat.name)}" data-talk="${esc(t.id)}" data-phase="line">
     ${head}
     <p class="g-talk-line">${esc(chat.line)}</p>
+    ${actRow}
     <div class="g-talk-replies">${chat.replies.map((r, i) => `<button type="button" class="g-talk-reply" data-act="talk-reply" data-i="${i}">${esc(r.text)}</button>`).join('')}</div>
-    <button type="button" class="g-talk-leave" data-act="talk-bye">Walk away</button>
+    <button type="button" class="g-talk-leave" data-act="talk-bye">\u{1F44B} Walk away</button>
   </section>`
 }
 
