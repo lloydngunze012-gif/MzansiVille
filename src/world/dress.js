@@ -89,6 +89,7 @@ export function dressPlaces(layout) {
   const queue = {}
   const cafQueue = {}
   const srcTables = []
+  const freeTables = []
   let performer = null
   const movers = [] // short straight walks for the place's own people
   function moveAvatar(avatar, x, z, speed = 1.8) {
@@ -447,6 +448,8 @@ export function dressPlaces(layout) {
         group.add(c)
       }
       person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
+      // The chair opposite is free: sit there to eat (the table top is about 0.78 m up).
+      freeTables.push({ seat: { x: tx + 0.95, z: cz + dz, rot: -Math.PI / 2, y: 0.08 + CHAIR_SEAT }, table: { x: tx + 0.25, y: 0.08 + 0.8, z: cz + dz } })
       block(tx, cz + dz, 2.6, 1.4)
     }
     prop('pottedPlant', tx - 1.9, cz - 3, { s: 2.4 })
@@ -525,5 +528,5 @@ export function dressPlaces(layout) {
   }
 
   queue.caf = cafQueue
-  return { group, obstacles, spots, benches, queue, srcTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }
