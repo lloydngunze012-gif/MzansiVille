@@ -250,7 +250,7 @@ function ctaBar(district, run) {
   const next = nextPhase(district, run)
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
-  if (run.lectureRoute) {
+  if (run.lectureRoute && !run.lectureResolved) {
     return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at SMIG</p></div>`
   }
   const atHome = hereOf(district, run) === sleepPlace

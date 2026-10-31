@@ -18,7 +18,7 @@ async function atLecture(page, minutes, extra = '') {
   await page.waitForURL(/#\/play/)
   await page.evaluate((m) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
-    Object.assign(save.run, { phase: 'lecture', minutes: m, morningDone: true, queue: [], lectureResolved: false })
+    Object.assign(save.run, { phase: 'lecture', minutes: m, morningDone: true, queue: [], lectureResolved: false, lectureRoute: true })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   }, minutes)
   // A new query string forces a full reload, so the edited save is read fresh.
@@ -63,6 +63,8 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await expect(page).toHaveURL(/#\/play/)
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.lectureResolved).toBe(true)
+  expect(run.lectureRoute).toBeFalsy()
+  await expect(page.locator('.g-route')).toHaveCount(0) // "Your lecture is at SMIG" is gone
   expect(run.stats.grades).toBeGreaterThan(before) // the normal +8 lecture gain applied
   // The lecture is over for today: the route sends you back to campus.
   await page.goto('/?morning=0#/lecture')

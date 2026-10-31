@@ -108,8 +108,14 @@ function buildGuide() {
   host.dataset.route = '1'
 }
 
+// The day-1 lecture is due: the 3D lecture opens however you get to SMIG.
+function lectureDue() {
+  const run = currentRun
+  return Boolean(run && (run.lectureRoute || (run.day === 1 && run.phase === 'lecture' && !run.lectureResolved)))
+}
+
 function lectureArrive() {
-  if (!currentRun?.lectureRoute) return false
+  if (!lectureDue()) return false
   currentRun.lectureRoute = false
   currentRun.lectureCard = true
   clearGuide()
@@ -121,9 +127,10 @@ function lectureArrive() {
 }
 
 function updateGuide() {
-  if (!currentRun?.lectureRoute || !player || !campus) { if (guide) clearGuide(); return }
+  if (!player || !campus) return
   const door = lectureDoor()
-  if (door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
+  if (lectureDue() && !acting && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
+  if (!currentRun?.lectureRoute) { if (guide) clearGuide(); return }
   if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide()
   for (const item of guide.children) {
     if (item.name === 'lecture-marker') item.scale.setScalar(1 + Math.sin(clock * 4) * 0.22)
@@ -513,6 +520,19 @@ function startTalk(avatar) {
   }
 }
 // Tests: where someone is on screen, so a test can tap them like a player would.
+// Tests: a world point on screen, and the glowing route to the lecture.
+window.mzansiScreenOf = (x, z, y = 0) => {
+  if (!camera) return null
+  const p = new THREE.Vector3(x, y, z).project(camera)
+  const rect = renderer.domElement.getBoundingClientRect()
+  return { x: rect.left + (p.x * 0.5 + 0.5) * rect.width, y: rect.top + (-p.y * 0.5 + 0.5) * rect.height, behind: p.z > 1 }
+}
+window.mzansiRoute = () => {
+  const door = lectureDoor()
+  if (!door || !player || !campus) return null
+  const path = findPath(campus.grid, nearestOpen(campus.grid, player.position), nearestOpen(campus.grid, door))
+  return { player: { x: player.position.x, z: player.position.z }, path: [...path, door] }
+}
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
 window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
 window.mzansiPersonOnScreen = (id) => {

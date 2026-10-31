@@ -262,8 +262,10 @@ function syncPreview(viewState) {
   }).catch((error) => console.error(error))
 }
 
+// The day-1 lecture is the 3D scene; it can never be skipped by a button.
+const LECTURE_ACTIONS = new Set(['lecture_attend', 'lecture_back', 'smig_sitin'])
 function lectureWanted(run) {
-  return Boolean(run && run.mode === 'play' && run.phase === 'lecture' && !run.lectureResolved && hasGL())
+  return Boolean(run && run.mode === 'play' && run.day === 1 && run.phase === 'lecture' && !run.lectureResolved && hasGL())
 }
 
 // The lecture adds its own seat and moment extras on top of the normal lecture gain.
@@ -280,6 +282,8 @@ function endLecture(result) {
   }
   run.lastEventLine = `Lecture 1: ${result?.moment || 'done'}`
   run.at = 'smig'
+  run.lectureRoute = false
+  delete run.lectureCard
   persist()
   go('play')
 }
@@ -915,6 +919,12 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (gameAct(act, button)) return
+  if (act === 'do' && LECTURE_ACTIONS.has(button.dataset.id) && lectureWanted(save.run)) {
+    // Attending the day-1 lecture from a sheet or the map plays the lecture itself.
+    blip()
+    go('lecture')
+    return
+  }
   if (act === 'do') {
     if (choiceWaiting()) {
       cardMini = false
