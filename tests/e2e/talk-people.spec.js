@@ -80,12 +80,13 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
   await page.screenshot({ path: `${OUT}/0-quad-tags.png` })
   const social0 = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.social)
 
-  const first = await chat(page, 'mam_gugu', '1-gugu', 0, 'stall')
-  const second = await chat(page, 'mam_gugu', '2-gugu-again')
-  expect(second).not.toBe(first) // she remembers you
+  // (Mam' Gugu serves the queue now: tapping her sends you to the line; Kea, waiting in it, chats)
+  const first = await chat(page, 'kea', '1-gugu', 0, 'stall')
+  const second = await chat(page, 'kea', '2-gugu-again')
+  expect(second).not.toBe(first) // he remembers you
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
-  expect(run.people.mam_gugu.chats).toBe(2)
-  expect(run.people.mam_gugu.close).toBeGreaterThan(0)
+  expect(run.people.kea.chats).toBe(2)
+  expect(run.people.kea.close).toBeGreaterThan(0)
   expect(run.stats.social).toBeGreaterThan(social0)
 
   await chat(page, 'lindiwe', '3-src', 0, 'src')

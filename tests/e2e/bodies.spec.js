@@ -7,7 +7,7 @@ const OUT = 'test-results/bodies'
 test.use({ viewport: { width: 412, height: 915 } })
 test.describe.configure({ mode: 'serial', timeout: 150000 })
 
-async function campus(page, spawn) {
+async function campus(page, spawn, speed = 'fast=1&') {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
@@ -23,7 +23,7 @@ async function campus(page, spawn) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   })
-  await page.goto(`/?fast=1&morning=0&spawn=${spawn}#/play`)
+  await page.goto(`/?${speed}morning=0&spawn=${spawn}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   await page.waitForTimeout(2500)
 }
@@ -62,7 +62,7 @@ test('bodies at the Quad: benches, the stall queue, walkers', async ({ page }) =
 
 test('queues are lines: straight, evenly spaced, and they move', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
-  await campus(page, 'cafeteria')
+  await campus(page, 'cafeteria', '') // normal speed: read the line before it first moves
   const pos = () => page.evaluate(() => ['thandi', 'jordan', 'priya', 'noah'].map((id) => window.mzansiPersonPos(id)))
   const a = await pos()
   // One straight line (same x), evenly spaced (about 0.95 m).
