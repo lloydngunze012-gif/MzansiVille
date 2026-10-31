@@ -111,6 +111,10 @@ export function rightNow(run) {
   if ((s.hunger ?? 100) < 20) return { icon: '\u{1F37D}', text: 'You’re starving. Eat something', tone: 'urgent' }
   if ((s.energy ?? 100) < 15) return { icon: '\u{1F971}', text: 'You’re running on empty', tone: 'urgent' }
   if ((s.money ?? 0) < 50) return { icon: '\u{1F4B8}', text: `Almost broke: R${Math.max(0, s.money || 0)} left`, tone: 'urgent' }
+  const c = run.crush
+  if (c?.met && run.day <= 5 && c.beats?.[run.day] === undefined && (run.day > 1 || run.lectureResolved)) {
+    return { icon: '\u{1F440}', text: `${c.nameKnown ? c.name : 'The one from the bus'} is at the Quad`, tone: 'story' }
+  }
   const next = goalsLeft(run)[0]
   if (next) return { icon: '\u{1F3AF}', text: goalText(run, next), tone: '' }
   if (run.goals?.day === run.day) return { icon: '✨', text: 'All 3 goals done. Enjoy the day', tone: 'win' }

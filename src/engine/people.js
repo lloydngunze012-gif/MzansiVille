@@ -2,9 +2,12 @@
 // Memory lives on the run: run.people[id] = { chats, close, mood, last }.
 // Ids are named people ("zanele") or extra students ("x3", from extra_names).
 import DATA from '../../data/campusville/people.json'
+import { CRUSHES } from '../crush.js'
+import { crushChat, crushReply } from './crush-arc.js'
 
 export function personInfo(id) {
   if (DATA.people[id]) return { id, ...DATA.people[id] }
+  if (CRUSHES[id]) return { id, name: CRUSHES[id].name, gender: CRUSHES[id].gender, role: 'Second year', bio: 'Takes the 8:20. Judges the timetable.', chats: [] }
   const m = /^x(\d+)$/.exec(id || '')
   const extra = m && DATA.extra_names[Number(m[1]) % DATA.extra_names.length]
   if (!extra) return null
@@ -35,6 +38,7 @@ function fill(text, info, run) {
 export function chatFor(run, id) {
   const info = personInfo(id)
   if (!info) return null
+  if (CRUSHES[id]) return crushChatFor(run, id)
   const mem = memoryOf(run, id)
   const chat = info.chats[Math.min(mem.chats, info.chats.length - 1)]
   let line = chat.line
@@ -55,6 +59,7 @@ export function chatFor(run, id) {
 
 // Apply a reply: Social and closeness change, the person remembers.
 export function replyTo(run, id, index) {
+  if (CRUSHES[id]) return crushReplyTo(run, id, index)
   const info = personInfo(id)
   const now = chatFor(run, id)
   if (!info || !now) return null
@@ -75,5 +80,47 @@ export function replyTo(run, id, index) {
     level: levelOf(close),
     levelUp: levelOf(close) !== levelOf(mem.close) && close > mem.close,
     tone: (reply.close || 0) > 0 ? 'good' : (reply.close || 0) < 0 ? 'bad' : 'neutral',
+  }
+}
+
+// The crush has an arc, not a fixed chat list (engine/crush-arc.js). Closeness
+// lives on run.crush (about 0-30); the talk card shows it on the usual 0-100 scale.
+function crushChatFor(run, id) {
+  if (!run.crush || run.crush.id !== id) return null
+  const c = run.crush
+  const chat = crushChat(run)
+  const close = Math.min(100, (c.closeness || 0) * 4)
+  return {
+    id,
+    name: c.nameKnown ? c.name : 'Bus stop stranger',
+    role: c.met ? 'From the bus stop' : 'Second year',
+    bio: '',
+    met: Boolean(run.people?.[id]?.chats),
+    close,
+    level: levelOf(close),
+    line: chat.line,
+    replies: chat.replies.map((r) => ({ text: r.text, social: r.social, close: r.close })),
+  }
+}
+
+function crushReplyTo(run, id, index) {
+  if (!run.crush || run.crush.id !== id) return null
+  const before = Math.min(100, (run.crush.closeness || 0) * 4)
+  const reply = crushReply(run, index)
+  if (!reply) return null
+  const close = Math.min(100, run.crush.closeness * 4)
+  const mem = memoryOf(run, id)
+  run.people = run.people || {}
+  run.people[id] = { chats: mem.chats + 1, close, mood: Math.sign(reply.close || 0), last: index, day: run.day }
+  const social = reply.social || 0
+  if (social) run.stats.social = Math.max(0, Math.min(100, (run.stats.social || 0) + social))
+  return {
+    answer: reply.answer,
+    social,
+    closeDelta: close - before,
+    close,
+    level: levelOf(close),
+    levelUp: levelOf(close) !== levelOf(before) && close > before,
+    tone: reply.close > 0 ? 'good' : reply.close < 0 ? 'bad' : 'neutral',
   }
 }

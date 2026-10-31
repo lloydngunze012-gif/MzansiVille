@@ -92,3 +92,36 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
   await chat(page, 'zanele', '4-roommate', 0, 'benches')
   expect(errors).toEqual([])
 })
+
+test('the one from the bus is at the Quad: their tag is ? until you ask their name', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await newGame(page)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    save.run.crush = { id: 'amahle', name: 'Amahle', gender: 'female', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: false }
+    save.run.lectureResolved = true
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&spawn=quad#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  // Only your crush is at the Quad (Kabelo is not).
+  await expect.poll(async () => page.evaluate(() => Boolean(window.mzansiPersonOnScreen?.('amahle'))), { timeout: 20000 }).toBe(true)
+  expect(await page.evaluate(() => window.mzansiTalkTo('kabelo'))).toBe(false)
+  await page.evaluate(() => window.mzansiTalkTo('amahle'))
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 20000 })
+  await expect(card.locator('h2')).toHaveText('Bus stop stranger')
+  await expect(card.locator('.g-talk-line')).toContainText('Bus stop')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/5-crush-line.png` })
+  await card.locator('.g-talk-reply').first().tap()
+  await expect(card.locator('.g-talk-line')).toContainText('Amahle')
+  await page.screenshot({ path: `${OUT}/5-crush-answer.png` })
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.crush.nameKnown).toBe(true)
+  expect(run.crush.beats['1']).toBe(0)
+  await card.locator('[data-act="talk-bye"]').tap()
+  expect(errors).toEqual([])
+})

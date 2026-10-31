@@ -306,6 +306,23 @@ export function dressPlaces(layout) {
     lights.push({ light: sl, base: 12 })
     block(stx, stz, 2.8, 2.2)
 
+    // The one from the bus stop, with friends, by the second bench (both are built; scene.js shows yours).
+    {
+      const b = benches[1]
+      const out = { x: Math.sin(b.rot), z: Math.cos(b.rot) }
+      const side = { x: Math.cos(b.rot), z: -Math.sin(b.rot) }
+      const at = (f, s) => [b.x + out.x * f + side.x * s, b.z + out.z * f + side.z * s]
+      for (const id of ['amahle', 'kabelo']) {
+        const [x, z] = at(1.5, 0)
+        const crush = person(id, x, z, b.rot + Math.PI, { every: 7, move: 'emote-yes' })
+        crush.userData.crush = true
+      }
+      const [fx, fz] = at(1.6, 1.0)
+      person('x12', fx, fz, b.rot + Math.PI * 0.75, { every: 6 })
+      const [gx, gz] = at(1.1, -1.0)
+      person('x13', gx, gz, b.rot - Math.PI * 0.8, { every: 8, move: 'emote-yes' })
+    }
+
     // SRC campaign tables (south-east): three equal tables, one per slate.
     STORY.src_slates.forEach((slate, i) => {
       const a = ((14 + i * 26) * Math.PI) / 180

@@ -36,6 +36,7 @@ import { roommateOf } from './avatar.js'
 import { replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
+import { newCrush } from './crush.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -209,7 +210,8 @@ function endMorning(skip, result) {
     run.at = 'gate'
     run.lectureRoute = true
   }
-  // Arrival: today's goals slide in.
+  // Arrival: today's goals slide in. (A skipped morning still has someone from the bus to find.)
+  if (!run.crush) run.crush = newCrush(run.character)
   startGoals(run)
   run.queue = [goalsCard(run), ...run.queue.filter((card) => card.kind !== 'goals')]
   ui.gear = false
