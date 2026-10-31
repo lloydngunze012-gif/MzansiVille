@@ -35,6 +35,20 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# START HERE (handoff for a new session, 31 Oct 2026)
+State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.
+Every list below is finished (newest first): Sprint 1 completion, speed rules, owner + player test (items 1-7), the Quaternius list (items 1-10, spec section 7 a-h), and the earlier plans. Only the "ON HOLD" item (off-campus residence names) and the "Still open" notes in the sprint report remain.
+
+How to work (owner's standing rules): work on main; commit and push after each fix; after each push reply with three lines (what changed / what to test on my phone / what's still broken); look-test at 412x915 from the player's camera and fix what you see; tests use ?fast=1 (src/speed.js); run only the tests that touch a change, the full suite once at the end of a sprint (npx playwright test --config playwright.edge.config.js --workers=2; 3D tests time out at 4 workers); re-run only the UX-audit screens you fixed (AUDIT="Screen,Screen"); journeys at normal speed: tests/e2e/journeys.spec.js; sim checks: npm run check.
+
+Where things live:
+- Course venues and lecturers: src/venues.js. Lecture scene: src/world/lecture.js. Morning (alarm, breakfast, bus-stop meet-cute): src/world/morning.js.
+- Campus world, camera, talk shots, walking, map go-there and Skip: src/world/scene.js. In-world map: src/world/map.js. Places, queues, terrace tables: src/world/dress.js. Crowd: src/world/crowd.js.
+- Activity scenes (queueOrder, orderEat, sitTogether, consult, study, sleep, wakeUp...): src/world/scenes.js; Quad scripts (flyers job shift): src/world/activities.js. Characters: src/world/avatar3d.js, src/world/cast.js. Creator 3D icons: src/ui/thumbs3d.js.
+- Talk actions (order menus, consult, sit, study, swap numbers): src/engine/talkactions.js, src/menus.js; talk UI in src/ui/game.js; handlers in src/main.js.
+- Story systems: src/engine/goals.js (day goals, right-now chip, dream), src/story.js (creator part 2), src/crush.js + src/engine/crush-arc.js, src/engine/identity.js, src/engine/dayend.js (summary, cliffhanger texts), src/engine/moments.js (10 random moments), src/engine/arcs.js (roommate, rival, money, lecturer, SRC, home), src/engine/friday.js (week, Friday test).
+- UX audit: tests/e2e/ux-audit.spec.js, docs/qa/ux-audit-2026-10-31.md.
+
 # SPRINT 1 COMPLETION (owner, after the player test). Finish these, then STOP (no Sprint 2).
 Confirmed working by the owner: course venues, map walking, the Law lecture, Pinky's order flow, creator icons, bus-stop facing.
 1. QUEUE THEN ORDER: no ordering from Auntie Pinky or Mam' Gugu without queueing. Tapping her (or "Food queue") walks you to the back of the line; the line moves; at the front her order card opens automatically. Tapping her from outside the line: "Back of the line, baby!" and you join it. Merge "Stand in the breakfast queue" into this flow.
