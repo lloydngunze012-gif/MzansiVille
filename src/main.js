@@ -279,6 +279,28 @@ function syncPreview(viewState) {
     const now = app.querySelector('.cc-stage')
     if (now) mod.showPreview(now, draft.avatar)
   }).catch((error) => console.error(error))
+  hydrateThumbs()
+}
+
+// Creator icons: outfit, hair and body pictures rendered from the real 3D models.
+let thumbsPromise = null
+function hydrateThumbs() {
+  const chips = [...app.querySelectorAll('.cc-chip.th[data-part]')].filter((chip) => ['outfit', 'hair', 'body'].includes(chip.dataset.part))
+  if (!chips.length) return
+  if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
+  thumbsPromise.then(({ thumbFor }) => {
+    for (const chip of chips) {
+      const part = chip.dataset.part
+      const look = { ...draft.avatar, [part]: chip.dataset.id }
+      thumbFor(look, part === 'hair' ? 'hair' : 'body').then((url) => {
+        const box = chip.isConnected && chip.querySelector('.cc-thumb')
+        if (!box || !url) return
+        box.innerHTML = `<img src="${url}" alt="">`
+        box.classList.add('is3d')
+        chip.dataset.thumb = '3d'
+      })
+    }
+  }).catch((error) => console.error(error))
 }
 
 // The day-1 lecture is the 3D scene; it can never be skipped by a button.

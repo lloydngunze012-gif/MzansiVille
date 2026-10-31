@@ -291,7 +291,7 @@ export function createAvatar(avatar = {}) {
   group.add(hit)
   group.userData.bob = body
   group.userData.look = look
-  attachModel(group, look).catch((error) => console.warn('character model', error))
+  group.userData.ready = attachModel(group, look).catch((error) => console.warn('character model', error))
   return group
 }
 

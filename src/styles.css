@@ -881,3 +881,6 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .phone-list li{display:grid;padding:6px 10px;border-radius:10px;background:#2a18460d}
 .phone-list small{opacity:.75}
 .phone-msgs-h{margin:10px 0 0;font-weight:800}
+/* Creator icons rendered from the 3D models: the whole picture shows, head included */
+.cc-thumb.is3d { width: 60px; height: 92px; }
+.cc-thumb.is3d img { display: block; width: 100%; height: 100%; object-fit: contain; }
