@@ -33,7 +33,7 @@ import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
 import { roommateOf } from './avatar.js'
-import { replyTo } from './engine/people.js'
+import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
 import { newCrush } from './crush.js'
@@ -48,6 +48,9 @@ import { anyEnabled, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from '
 import { homePlaceId } from './engine/model.js'
 import { venueFor } from './venues.js'
 import { toMinutes } from './engine/format.js'
+import { MENUS, itemOf } from './menus.js'
+import { LECTURERS } from './venues.js'
+import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -482,6 +485,100 @@ window.addEventListener('mzansi-talk', (event) => {
   blip(700)
   paint()
 })
+// Minutes pass, but never past the end of this part of the day.
+function spendMinutes(n) {
+  const run = save.run
+  const phases = districtNow().meta.phases
+  const next = phases[phases.findIndex((p) => p.id === run.phase) + 1]
+  run.minutes = Math.min(next ? toMinutes(next.start) - 1 : run.minutes + n, run.minutes + n)
+}
+
+// Play a scene for something you chose in a conversation, then apply it.
+function talkScene(actionId, placeId, sceneOpt, commit) {
+  endTalk()
+  paint()
+  if (document.body.dataset.world !== '1') { commit(); persist(); paint(); return }
+  window.dispatchEvent(new CustomEvent('mzansi-act', { detail: { placeId, actionId, sceneOpt, commit() { commit(); checkGoals(save.run); persist(); finishTurn() } } }))
+}
+
+function buyFood(itemId, sizeId) {
+  const id = ui.talk.id
+  const got = itemOf(id, itemId, sizeId)
+  if (!got || (save.run.stats.money || 0) < got.price) return
+  save.run.stats.money -= got.price // the HUD money drops as you pay
+  ui.talk = { id, bought: { item: itemId, size: sizeId, label: got.label, price: got.price, fx: got.fx } }
+  window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: 'good' } }))
+  blip(990)
+  persist()
+  paint()
+}
+
+function eatFood(sit) {
+  const id = ui.talk.id
+  const b = ui.talk.bought
+  const menu = MENUS[id]
+  talkScene('talk_eat', 'here', { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name }, () => {
+    applyFx(save.run, b.fx)
+    spendMinutes(sit ? 25 : 5)
+    save.run.at = menu.place
+    flash(`\u{1F37D} ${b.label}: +${b.fx.hunger || 0} Fullness`)
+  })
+}
+
+function talkAct(kind) {
+  const run = save.run
+  const id = ui.talk.id
+  const info = personInfo(id)
+  const name = run.crush?.id === id ? run.crush.name : info?.name || 'them'
+  if (kind === 'order') { ui.talk = { id, menu: true }; paint(); return }
+  if (kind === 'swap') {
+    addContact(run, id, name)
+    closer(run, id, 3)
+    window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: 'good' } }))
+    ui.talk = { id, swapped: true }
+    blip(1100)
+    persist()
+    paint()
+    return
+  }
+  if (kind === 'consult') {
+    const venue = LECTURERS[id]
+    talkScene('talk_consult', 'here', { who: id, name: venue.lecturerName, hide: id }, () => {
+      applyFx(run, { grades: 3, energy: -4 })
+      run.consulted = { ...(run.consulted || {}), [run.day]: true }
+      closer(run, id, 6)
+      addIdentity(run, { scholar: 1 })
+      spendMinutes(20)
+      flash('\u{1F4D6} Consultation: +3 Grades')
+    })
+    return
+  }
+  if (kind === 'sit') {
+    talkScene('talk_sit', 'here', { who: id, name, hide: id }, () => {
+      applyFx(run, { social: 4, energy: -2 })
+      closer(run, id, 8)
+      markTogether(run, id)
+      addIdentity(run, { socialite: 1 })
+      spendMinutes(30)
+      flash(`\u{1FA91} You and ${name}: +4 Social, closer`)
+    })
+    return
+  }
+  if (kind === 'study') {
+    talkScene('talk_study', 'library', { who: id, hide: id }, () => {
+      applyFx(run, { grades: 3, social: 2, energy: -8 })
+      closer(run, id, 5)
+      markTogether(run, `study:${id}`)
+      run.weekStudied = (run.weekStudied || 0) + 1
+      if (run.today?.day === run.day) run.today.studied += 1
+      addIdentity(run, { scholar: 1 })
+      spendMinutes(45)
+      save.run.at = 'library'
+      flash(`\u{1F4DA} Studied with ${name}: +3 Grades, +2 Social`)
+    })
+  }
+}
+
 function endTalk() {
   if (!ui.talk) return
   ui.talk = null
@@ -625,6 +722,15 @@ function gameAct(act, button) {
     paint()
     return true
   }
+  if (act === 'talk-act' && ui.talk) { talkAct(button.dataset.kind); return true }
+  if (act === 'talk-menu' && ui.talk) { ui.talk = { id: ui.talk.id, menu: true }; paint(); return true }
+  if (act === 'talk-item' && ui.talk) {
+    const item = MENUS[ui.talk.id]?.items.find((i) => i.id === button.dataset.item)
+    if (item?.sizes) { ui.talk = { id: ui.talk.id, item: item.id }; paint() } else if (item) buyFood(item.id)
+    return true
+  }
+  if (act === 'talk-size' && ui.talk?.item) { buyFood(ui.talk.item, button.dataset.size); return true }
+  if (act === 'talk-eat' && ui.talk?.bought) { eatFood(button.dataset.how === 'sit'); return true }
   if (act === 'talk-more' && ui.talk) { ui.talk = { id: ui.talk.id }; paint(); return true }
   if (act === 'talk-bye') { endTalk(); paint(); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }

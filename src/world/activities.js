@@ -222,9 +222,9 @@ export function createActivities(api) {
 
   const everywhere = createScenes(api)
   return {
-    async run(actionId, placeId) {
+    async run(actionId, placeId, extra) {
       if (SCRIPTS[actionId]) { await scripts[SCRIPTS[actionId]](); return SCRIPTS[actionId] }
-      if (everywhere.has(actionId)) return everywhere.run(actionId, placeId)
+      if (everywhere.has(actionId)) return everywhere.run(actionId, placeId, extra)
       await scripts.stand()
       return 'stand'
     },

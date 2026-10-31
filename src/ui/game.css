@@ -502,3 +502,13 @@ body:has(.g-menu) #app{z-index:100}.g-menu,.g-scrim{pointer-events:auto}
 @keyframes g-pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
 /* Full-screen cards (moments, story beats, the test, events) hide the world's door prompt behind them */
 body:has(.g-full) .door-prompt{visibility:hidden}
+
+/* Talk card actions: order, sit, study, swap numbers, consult */
+.g-talk-acts{display:grid;gap:6px;margin:6px 0}
+.g-talk-act{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:44px;padding:8px 12px;border-radius:14px;border:2px solid #f0c400;background:#fff6d6;color:#22143b;text-align:left;font:700 14px system-ui}
+.g-talk-act small{font:600 11px system-ui;opacity:.75}
+.g-talk-menu{display:grid;gap:6px;margin:6px 0}
+.g-talk-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 8px;min-height:48px;padding:8px 12px;border-radius:14px;border:2px solid #2a184622;background:#fff;color:#22143b;text-align:left;font:700 14px system-ui}
+.g-talk-item b{color:#1f7a3a;font-size:15px}
+.g-talk-item .g-fxs,.g-talk-item small{grid-column:1/-1;font:600 11px system-ui;opacity:.8}
+.g-talk-item:disabled{opacity:.5}

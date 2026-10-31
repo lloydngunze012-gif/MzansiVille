@@ -739,6 +739,10 @@ function activityApi() {
     // --- scenes everywhere (activities.js) ---
     get campus() { return campus },
     placeInfo: (id) => {
+      if (id === 'here' || !id) {
+        const p = player.position
+        return { id: 'here', x: p.x, z: p.z, door: { x: p.x, z: p.z }, front: { x: p.x, z: p.z - 2.6 }, open: true }
+      }
       const b = campus.layout.buildings.find((item) => item.id === id)
       if (!b) return null
       const door = doorPoint(b)
@@ -918,11 +922,15 @@ async function runActivity(detail) {
   bar.querySelector('span').style.width = '0%'
   if (!activities) activities = { api: activityApi() }
   activities.runner = activities.runner || createActivities(activities.api)
+  // Sitting with someone: the real them steps out while the scene's them sits with you.
+  const hidden = detail.sceneOpt?.hide ? everyone().find((a) => a.userData.personId === detail.sceneOpt.hide) : null
+  if (hidden) hidden.visible = false
   try {
-    await activities.runner.run(detail.actionId, detail.placeId)
+    await activities.runner.run(detail.actionId, detail.placeId, detail.sceneOpt)
   } catch (error) {
     console.error(error)
   }
+  if (hidden) hidden.visible = true
   activities.api.end()
   bar.hidden = true
   bar.classList.remove('small')
@@ -1095,7 +1103,7 @@ function pin(node, x, y, z, lift = 0) {
 function promptDoor() {
   const node = host.querySelector('.door-prompt')
   const near = nearestDoor()
-  if (!near || near.dist > 2.2 || mapUi.isOpen()) {
+  if (!near || near.dist > 2.2 || mapUi.isOpen() || acting || talk) {
     node.hidden = true
     return
   }
