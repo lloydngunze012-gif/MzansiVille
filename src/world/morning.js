@@ -649,6 +649,56 @@ function follow(obj, offset) {
 }
 function stopFollow(obj) { obj.userData.followEnd = true }
 
+// A framed shot: the camera keeps every listed person head to feet (and any props)
+// in the clear band of a phone screen, between the HUD on top and the choice cards
+// below, looking from `dir` (the room's open front). Ends with endFrame().
+let frameId = 0
+const UP = new THREE.Vector3(0, 1, 0)
+const fr = { f: new THREE.Vector3(), r: new THREE.Vector3(), u: new THREE.Vector3(), c: new THREE.Vector3(), p: new THREE.Vector3() }
+function frameOn(subjects, dir = [0.35, 0.75, 1]) {
+  const id = ++frameId
+  stopFollow(player)
+  const d = new THREE.Vector3(...dir).normalize()
+  fr.f.copy(d).negate()
+  fr.r.crossVectors(fr.f, UP).normalize()
+  fr.u.crossVectors(fr.r, fr.f)
+  return task(() => {
+    if (id !== frameId || !running) return true
+    const pts = []
+    for (const s of subjects()) {
+      if (s.isObject3D) {
+        if (!s.visible) continue
+        const lying = s.userData.pose === 'lie'
+        const base = lying ? s.position.y - 0.1 : s.position.y
+        // a lying person spans the bed; a standing one spans feet to head
+        if (lying) for (const dz of [-0.95, 0.95]) pts.push(new THREE.Vector3(s.position.x, base, s.position.z + dz), new THREE.Vector3(s.position.x, base + 0.45, s.position.z + dz))
+        else for (const y of [0, 1.85]) for (const dx of [-0.3, 0.3]) pts.push(new THREE.Vector3(s.position.x + dx, base + y, s.position.z))
+      } else pts.push(new THREE.Vector3(...s))
+    }
+    if (!pts.length) return false
+    fr.c.set(0, 0, 0)
+    for (const q of pts) fr.c.add(q)
+    fr.c.divideScalar(pts.length)
+    let w = 0, h = 0, depth = 0
+    for (const q of pts) {
+      fr.p.subVectors(q, fr.c)
+      w = Math.max(w, Math.abs(fr.p.dot(fr.r)))
+      h = Math.max(h, Math.abs(fr.p.dot(fr.u)))
+      depth = Math.max(depth, fr.p.dot(d))
+    }
+    const tv = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+    const th = tv * camera.aspect
+    // Subjects fill 44% of the height (the band above the cards) and 86% of the width.
+    const dist = Math.max(h * 1.12 / (tv * 0.44), w * 1.12 / (th * 0.86), 2.2) + depth
+    // Lower the aim so the band sits above the screen's middle, clear of the cards.
+    const half = (dist - depth) * tv
+    camTarget.copy(fr.c).addScaledVector(fr.u, -half * 0.24)
+    camOffset.copy(d).multiplyScalar(dist)
+    return false
+  })
+}
+function endFrame() { frameId++ }
+
 // ---------- the scripted morning ----------
 let cafBreakfast = false
 async function play() {
@@ -667,12 +717,13 @@ async function play() {
   player.userData.pose = 'lie'
   player.position.set(-2.1, 0.62, -1.1)
   player.rotation.set(-Math.PI / 2, 0, 0)
-  camTarget.set(-2.1, 0.6, -1.6)
-  camOffset.set(1.2, 2.6, 3.6)
-  camera.position.set(-1.4, 2.1, 0.8)
-  camLook.copy(camTarget)
-  roommate.position.set(ANCHORS.roommate[0], 0, ANCHORS.roommate[1])
+  // The roommate stands at the foot of your bed, so one shot holds you both, head to feet.
+  roommate.position.set(-0.85, 0, 0.15)
   face(roommate, ANCHORS.bed[0], ANCHORS.bed[1])
+  frameOn(() => [player, roommate], [0.55, 0.85, 1])
+  camTarget.set(-1.5, 0.6, -0.8)
+  camera.position.set(1.2, 4.2, 4.2)
+  camLook.copy(camTarget)
   run.minutes = Math.max(run.minutes, WAKE)
   opts.onUpdate()
   // Zanele says hi first.
@@ -704,6 +755,7 @@ async function play() {
   if (snoozes >= SNOOZE_MAX) await talk(line('late_variants.snoozed_too_long.zanele', 'I let you sleep. I regret it. Run.'), roommate)
   else if (snoozes > 0) await talk(line('steps.wake.zanele', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
   clockShow(false)
+  walkTo(roommate, ANCHORS.roommate[0], ANCHORS.roommate[1], 1.6).then(() => face(roommate, ANCHORS.bed[0], ANCHORS.bed[1]))
   await talk(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
   // sit up, then swing out of bed
   await tween(0.8, (k) => { player.rotation.x = -Math.PI / 2 * (1 - k); player.position.y = 0.62 + k * 0.1 })
@@ -712,6 +764,7 @@ async function play() {
   player.userData.pose = 'stand'
   bubble('')
   await addMinutes(2, 0.5)
+  endFrame()
   camOffset.set(0, 5.2, 6.2)
   follow(player)
   // 2. kettle
@@ -946,8 +999,8 @@ function holdBowl() {
   })
 }
 function lookAtKettle(on) {
-  if (on) { stopFollow(player); camTarget.set(0.9, 1.0, -2.35); camOffset.set(0.4, 1.5, 2.4); kettleLight.userData.pulse = true }
-  else { kettleLight.userData.pulse = false; kettleLight.intensity = 0; camOffset.set(0, 5.2, 6.2); follow(player) }
+  if (on) { frameOn(() => [player, roommate, [0.9, 0.9, -2.55], [1.55, 0.9, -2.55]], [0.3, 0.8, 1]); kettleLight.userData.pulse = true }
+  else { endFrame(); kettleLight.userData.pulse = false; kettleLight.intensity = 0; camOffset.set(0, 5.2, 6.2); follow(player) }
 }
 
 async function eat() {

@@ -321,7 +321,8 @@ export function dressPlaces(layout) {
       box(t, 2.4, 0.08, 1.8, c1, 0, 2.3, -0.1)
       box(t, 2.4, 0.3, 0.05, c2, 0, 2.15, 0.8)
       sign(t, [slate.name], { x: 0, y: 1.55, z: -0.83, w: 2.1, h: 0.55, bg: c1, fg: c2 === '#ffffff' ? '#ffffff' : c2, font: 52 })
-      const back = new THREE.Vector3(0, 0, -1.1).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
+      // Campaigners stand beside their table, out from under the roof, so you see them from above.
+      const back = new THREE.Vector3(1.6, 0, 0.35).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
       void c3
       const campaigner = person(['bongani', 'lindiwe', 'ruan'][i], back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
       const frontAt = new THREE.Vector3(0, 0, 1.7).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
