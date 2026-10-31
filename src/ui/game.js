@@ -9,6 +9,7 @@ import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine
 import { identityTitle } from '../engine/identity.js'
 import { comeBackReasons } from '../engine/dayend.js'
 import { MOMENTS } from '../engine/moments.js'
+import { beatById } from '../engine/arcs.js'
 import './game.css'
 
 // UI-only state that should not be saved.
@@ -303,11 +304,11 @@ function resultCard(state) {
 
 // A random moment: something happens, and you choose.
 function momentCardHtml(run, card) {
-  const moment = MOMENTS.find((m) => m.id === card.momentId)
+  const moment = MOMENTS.find((m) => m.id === card.momentId) || beatById(card.momentId)
   const buttons = card.choices.map((label, i) => `<button type="button" class="g-choice" data-act="moment" data-i="${i}"><strong>${esc(label)}</strong><span class="g-act-fx">${effectChips(moment?.choices[i]?.deltas || {})}</span></button>`).join('')
   return `<section class="g-full g-event g-moment" role="dialog" aria-label="${esc(card.title)}" data-screen-card="moment" data-moment="${esc(card.momentId)}">
     <div class="g-full-in">
-      <p class="g-kind">Meanwhile \u00b7 Day ${run.day}</p>
+      <p class="g-kind">${beatById(card.momentId) ? `Story \u00b7 ${esc(beatById(card.momentId).arc)}` : 'Meanwhile'} \u00b7 Day ${run.day}</p>
       <div class="g-emblem">${card.icon || '\u2728'}</div>
       <h2>${esc(card.title)}</h2>
       <p class="g-lede">${esc(card.text)}</p>

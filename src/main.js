@@ -63,7 +63,11 @@ function loadSave() {
   }
 }
 
+// Random moments interrupt with a full-screen choice; automated tests that are not
+// about them turn them off (?moments=1 turns them back on).
+const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.search).get('moments') !== '1'
 let save = loadSave()
+if (save.run) save.run.noMoments = NO_MOMENTS
 let edits = []
 let draft = emptyDraft()
 let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
@@ -81,9 +85,6 @@ function districtNow() {
   return withEventEdits(districtById(id), edits)
 }
 
-// Random moments interrupt with a full-screen choice; automated tests that are not
-// about them turn them off (?moments=1 turns them back on).
-const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.search).get('moments') !== '1'
 function persist() {
   if (save.run) save.run.noMoments = NO_MOMENTS
   localStorage.setItem(KEY, JSON.stringify(save))
