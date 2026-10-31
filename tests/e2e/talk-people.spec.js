@@ -239,10 +239,15 @@ test('talking leads to doing: order a bunny chow, pick a size, pay, sit and eat'
   await page.goto('/?fast=1&morning=0&spawn=cafeteria#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats)
+  // Tapping her from outside the line: "Back of the line, baby!" and you join it.
   await page.evaluate(() => window.mzansiTalkTo('auntie_pinky'))
+  await expect(page.locator('#toast')).toContainText('Back of the line')
+  await expect(page.locator('#world')).toHaveAttribute('data-activity', 'queueOrder', { timeout: 10000 })
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/11-queue.png` })
+  // At the front, her order card opens by itself.
   const card = page.locator('.g-talk')
-  await expect(card).toBeVisible({ timeout: 20000 })
-  await card.locator('[data-act="talk-act"][data-kind="order"]').tap()
+  await expect(card).toBeVisible({ timeout: 60000 })
   await expect(card).toHaveAttribute('data-phase', 'menu')
   await page.waitForTimeout(800)
   await page.screenshot({ path: `${OUT}/11-menu.png` })

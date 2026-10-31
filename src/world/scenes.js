@@ -15,6 +15,7 @@ export const SCENE_OF = {
   go_bus: ['busRide', { to: 'campus' }],
   lecture_attend: ['lecture', {}],
   talk_eat: ['orderEat', {}],
+  talk_queue: ['queueOrder', {}],
   talk_sit: ['sitTogether', {}],
   talk_consult: ['consult', {}],
   talk_study: ['groupStudy', { room: 'library', props: 'books' }],
@@ -358,6 +359,33 @@ export function createScenes(api) {
       api.hold(null)
       api.pose('stand')
       await goOutside(place)
+    },
+
+    // Ordering starts in the queue: back of the line, the line moves, then the front.
+    async queueOrder(place, opt) {
+      const q = opt.vendor === 'mam_gugu' ? api.dressing.queue?.stall : api.dressing.queue?.caf
+      if (!q) return
+      q.busy = true
+      while (q.cycling) await api.wait(0.3)
+      const end = q.slot(q.people.length)
+      api.frame(q.front)
+      api.say(opt.told ? 'Back of the line, baby!' : 'Joining the queue.', opt.told ? opt.vendorName : 'you')
+      await api.walkTo(end.x, end.z)
+      api.face(q.front.x, q.front.z - 3)
+      const n = q.people.length
+      for (let i = n; i > 0; i--) {
+        api.progress(1 - i / (n + 1))
+        api.say(i === 1 ? 'Nearly there\u2026' : `${i} people ahead.`)
+        await api.wait(0.7)
+        await q.serveFront()
+        const next = q.slot(i - 1)
+        await api.walkTo(next.x, next.z, 2.4)
+        api.face(q.front.x, q.front.z - 3)
+      }
+      api.say('My turn!')
+      api.progress(1)
+      await api.wait(0.6)
+      q.rejoin()
     },
 
     // After ordering in a chat: the vendor hands it over, then you sit and eat, or take it to go.

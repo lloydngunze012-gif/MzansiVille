@@ -521,6 +521,11 @@ let talk = null
 function startTalk(avatar) {
   if (!player || talk || acting || actionLeft > 0) return
   const id = avatar.userData.personId
+  // Vendors serve the queue: from outside the line, you are sent to the back of it.
+  if ((id === 'auntie_pinky' || id === 'mam_gugu') && window.mzansiVendorReady !== id) {
+    window.dispatchEvent(new CustomEvent('mzansi-vendor-tap', { detail: { id } }))
+    return
+  }
   const walker = crowd?.people.find((p) => p.avatar === avatar)
   if (walker) walker.talking = true
   talk = { avatar, id, walker }

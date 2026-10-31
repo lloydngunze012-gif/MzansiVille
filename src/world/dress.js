@@ -405,6 +405,31 @@ export function dressPlaces(layout) {
     cafQueue.slot = (i) => ({ x: cx + 2.8, z: front + 2.05 + i * 0.95 })
     cafQueue.aside = { x: cx + 2.8 - 3.2, z: front + 4.2 }
     cafQueue.face = Math.PI
+    // Serve the front person (they step aside to eat), the line moves up; rejoin later.
+    const cafAside = []
+    cafQueue.serveFront = async () => {
+      const line = cafQueue.people
+      const served = line.shift()
+      if (!served) return
+      gesture(auntie, 'interact-right')
+      gesture(served, 'pick-up')
+      await new Promise((r) => setTimeout(r, ms(700)))
+      cafAside.push(served)
+      moveAvatar(served, cafQueue.aside.x - cafAside.length * 0.9, cafQueue.aside.z, 1.4).then(() => gesture(served, 'emote-yes'))
+      await Promise.all(line.map((p, i) => moveAvatar(p, cafQueue.slot(i).x, cafQueue.slot(i).z, 1.6)))
+      line.forEach((p) => { p.rotation.y = cafQueue.face })
+    }
+    cafQueue.rejoin = () => {
+      setTimeout(() => {
+        while (cafAside.length) {
+          const p = cafAside.shift()
+          cafQueue.people.push(p)
+          const s = cafQueue.slot(cafQueue.people.length - 1)
+          moveAvatar(p, s.x, s.z).then(() => { p.rotation.y = cafQueue.face })
+        }
+        cafQueue.busy = false
+      }, ms(5000))
+    }
     cafQueue.people = ['thandi', 'jordan', 'priya', 'noah'].map((id, i) => {
       const s = cafQueue.slot(i)
       return person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' })
