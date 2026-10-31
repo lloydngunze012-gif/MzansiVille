@@ -178,7 +178,10 @@
     },
     "hungry": {
       "bubble": "No breakfast, no problem. Probably. Bus, here I come."
-    }
+    },
+    "head-out": { "caption": "Bag, student card, charger. Walk to the stop, or let the morning blur by." },
+    "meet": { "caption": "Same bus, same wait. They have nice shoes and a very judgemental eyebrow for the timetable." },
+    "skip-ride": { "caption": "Shower, the stop, the bus, the gate. Westville appears like a jump cut." }
   },
   "late_variants": {
     "bus_late": {
