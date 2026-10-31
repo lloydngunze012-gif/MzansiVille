@@ -62,6 +62,7 @@ GOAL: every body moves, stands, sits and lies like a real person, the player and
 7. From the backlog: a friend walks beside you; walks back after an activity; never show the blocky stand-in while a model loads.
 TESTS: automatic checks (foot vs ground, hip vs seat, body vs mattress, no overlaps) + normal-speed Playwright videos per journey.
 FINISH LINE (412x915, normal speed): M1 Quad walk 20 s; M2 sit on Quad bench, caf chair, lecture bench, library chair; M3 bed, sleep, get up; M4 walk into wall, bed, table; M5 eat together (beside you, sits, walks back); M6 every outfit has shoes; M7 crowded Quad 30 s. Save screenshots + videos in docs/sprints/motion/ with report.md, push, STOP.
+Status: the Motion sprint is DONE and pushed (M1-M7 all pass). Report: docs/sprints/motion/report.md. Wait for the owner's next focus; don't start one. Where motion lives: src/world/avatar3d.js (gait calibration and clip rate, carryFeet, live sole points, fitSeat, liePose/layDown, slump, mzansiBodies test hook), companion/returners/hitsSolid in src/world/scene.js, room furniture blocks in src/world/rooms.js, boxPath in src/world/nav.js. Motion tests: tests/e2e/motion.spec.js with --workers=1.
 
 # START HERE (handoff for a new session, 31 Oct 2026)
 State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.

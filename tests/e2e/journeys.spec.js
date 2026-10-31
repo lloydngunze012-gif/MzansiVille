@@ -81,7 +81,7 @@ test('J1: a Law student from the gate follows the route to Law and walks into th
   await page.waitForTimeout(2500)
   await expect(page.locator('.g-now')).toContainText('Law')
   await shot(page, 'J1-1')
-  for (let taps = 0; taps < 60; taps++) {
+  for (let taps = 0; taps < 160; taps++) { // (a brisk 2 m/s walk: about 45 s from the gate to Law on a phone)
     if (/#\/lecture/.test(page.url())) break
     // A tap that lands on someone walking by opens a chat: walk away and carry on, like a player.
     const leave = page.locator('.g-talk [data-act="talk-bye"]').last()
@@ -104,7 +104,7 @@ test('J1: a Law student from the gate follows the route to Law and walks into th
     await page.waitForTimeout(1600)
     if (taps === 4) await shot(page, 'J1-2')
   }
-  await expect(page).toHaveURL(/#\/lecture/, { timeout: 20000 })
+  await expect(page).toHaveURL(/#\/lecture/, { timeout: 60000 })
   await expect(page.locator('#lecture3d')).toHaveAttribute('data-venue', 'law')
   await page.waitForTimeout(2500)
   await shot(page, 'J1-3')
