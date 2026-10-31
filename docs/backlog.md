@@ -11,3 +11,4 @@ Problems noticed outside the current sprint's focus. One line each; fixed in a l
 
 ## People (later)
 - People: conversation actions should unlock with closeness. Strangers get directions / walk with me; acquaintances get eat / study together; friends get everything.
+- Looks: dresses and skirts poke out in spikes at the thighs when sitting (the skirt is skinned to the thigh bones).
