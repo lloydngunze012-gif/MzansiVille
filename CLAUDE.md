@@ -35,6 +35,12 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# SPEED RULES (owner, from now on)
+1. Tests run with ?fast=1: animations, walks and timers run 10x faster (src/speed.js). Use it for all e2e tests and audits.
+2. After each fix, run only the tests that touch what changed. Run the full suite once, at the end of the sprint.
+3. Don't re-run the full UX audit after every fix; re-run only the screens you fixed (AUDIT="Screen,Screen").
+4. Commit and push after each fix, not in big batches, so the owner can test in parallel.
+
 # CURRENT LIST (owner + player test, 31 Oct). Look-test each at 412x915, push after each, don't stop for review.
 The rule: every tap must lead to a visible, sensible result, and every option must make sense for why it exists. If a tap does nothing, that's a bug.
 1. COURSE DECIDES YOUR LECTURES. Each course has a home venue: Law -> Law; Accounting, Information Systems, Management, Marketing -> SMIG; Computer Science, Science -> Science; Engineering -> Engineering; Medicine, Nursing -> Health Sci. The day goal, the route, the "Lecture in 15 min" chip and the glowing marker point only to the player's venue. Each venue has its own lecture scene and lecturer. Other venues stay open as an optional "sit in".
