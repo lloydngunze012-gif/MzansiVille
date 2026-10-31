@@ -35,6 +35,7 @@ import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } fr
 import { roommateOf } from './avatar.js'
 import { replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
+import { PATH_DREAM, storyWithDefaults } from './story.js'
 import { startGroove, stopGroove } from './groove.js'
 
 let shareMilestone = null
@@ -384,7 +385,7 @@ function paint() {
     shareBlob = drawShareCard(canvas, { district, run, url: shareUrl(), milestone: shot ? shown.shareMilestone : shareMilestone })
       .then(() => exportCard(canvas)).catch(() => null)
   }
-  if (app.dataset.screen !== 'title' && !app.querySelector('.g-home')) {
+  if (app.dataset.screen !== 'title' && app.dataset.screen !== 'create' && !app.querySelector('.g-home')) {
     app.insertAdjacentHTML('beforeend', '<button class="g-home g-home-float" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>')
   }
   syncWorld(shown)
@@ -909,6 +910,13 @@ app.addEventListener('click', async (event) => {
       return
     }
     draft.error = ''
+    // Part 1 is your look; part 2 is your story, then campus.
+    if (!draft.edit && draft.step !== 'story') {
+      draft.step = 'story'
+      paint()
+      window.scrollTo(0, 0)
+      return
+    }
     if (draft.edit && save.run) {
       save.run.character = { ...save.run.character, ...read.character }
       draft = emptyDraft()
@@ -916,9 +924,24 @@ app.addEventListener('click', async (event) => {
       go('title')
       return
     }
-    save.run = createRun(district, read.character)
+    save.run = createRun(district, { ...read.character, ...storyWithDefaults(draft.story) })
+    draft.step = 'look'
     persist()
     go('play')
+    return
+  }
+  if (act === 'story') {
+    const { k, id } = button.dataset
+    draft.story = { ...(draft.story || {}), [k]: id }
+    // The dream follows the path until you pick a dream yourself.
+    if (k === 'path' && !draft.storyDream) draft.story.dream = PATH_DREAM[id]
+    if (k === 'dream') draft.storyDream = true
+    paint()
+    return
+  }
+  if (act === 'story-back') {
+    draft.step = 'look'
+    paint()
     return
   }
   if (act === 'place') {

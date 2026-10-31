@@ -21,6 +21,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   await page.locator('#residence').selectOption({ index: 1 })
   await page.locator('#course').selectOption({ index: 1 })
   await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.character.avatar)
   expect(saved).toMatchObject({ gender: 'female', skin: 'ebony', hair: 'braids', outfit: 'dress', body: 'curvy' })
 

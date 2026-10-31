@@ -2,6 +2,7 @@ import { balancedScore } from './board.js'
 import { formatDelta, hashString, toMinutes, weekdayName, fillTemplate } from './format.js'
 import { coursePlaceId, homePlaceId, pickBestie } from './model.js'
 import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals.js'
+import { FUNDING_MONEY } from '../story.js'
 
 function clamp(n, min, max) {
   return Math.min(max, Math.max(min, Math.round(n)))
@@ -456,7 +457,7 @@ export function createRun(district, character, now = new Date()) {
       // Creator part 2: your story (funding, hometown, who you were, who you want to be, the dream, interest).
       ...Object.fromEntries(['funding', 'hometown', 'past', 'path', 'dream', 'interest'].filter((k) => character[k]).map((k) => [k, character[k]])),
     },
-    stats: { ...meta.start },
+    stats: { ...meta.start, money: meta.start.money + (FUNDING_MONEY[character.funding] || 0) },
     energyCap: 100,
     day: 1,
     phase: meta.phases[0].id,

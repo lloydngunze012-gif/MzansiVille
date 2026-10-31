@@ -859,3 +859,11 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .dream-card p{margin:0 0 8px}
 .dream-bar{height:10px;border-radius:999px;background:#ffffff22;overflow:hidden}
 .dream-bar i{display:block;height:100%;background:linear-gradient(90deg,#f0c400,#ff8a4c)}
+/* Creator part 2: your story */
+.cc-lede{margin:0 0 4px;color:#fff6e6;font-weight:700}
+.cc-picks{display:flex;flex-wrap:wrap;gap:6px}
+.cc-pick{flex:1 1 calc(50% - 6px);min-height:44px;padding:8px 10px;border-radius:14px;border:2px solid #ffffff33;background:#22143be6;color:#fff6e6;text-align:left;display:flex;flex-direction:column;gap:2px;font:700 14px system-ui}
+.cc-pick small{font:500 11px system-ui;opacity:.8}
+.cc-pick[aria-pressed="true"]{border-color:#f0c400;background:#fff;color:#22143b;box-shadow:0 0 0 2px #7b3fe4,0 4px 0 #f0c400}
+.cc-step2 .cc-story{margin-bottom:6px}
+.cc-top button.cc-back{background:none;border:0;font:inherit;padding:0;cursor:pointer}
