@@ -224,6 +224,7 @@ function ensureRenderer() {
   host.appendChild(renderer.domElement)
 
   scene = new THREE.Scene()
+  scene.name = 'campus'
   scene.fog = new THREE.Fog(0xc5e6f4, 70, 190)
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 280)
   rig = createCameraRig()
@@ -594,6 +595,7 @@ window.mzansiScreenOf = (x, z, y = 0) => {
 // Tests: aim the camera anywhere (look-tests of bodies, seats and queues), and where someone is.
 window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null }
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
+window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
 window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
@@ -1205,6 +1207,7 @@ function respawn(district, run) {
   if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}`) rebuild(district, homeId)
   if (player) scene.remove(player)
   player = createAvatar(run.character?.avatar)
+  player.userData.isPlayer = true
   host.dataset.look = JSON.stringify(player.userData.look)
   const home = campus.layout.buildings.find((building) => building.id === homeId) || campus.layout.buildings[0]
   const gate = run.at === 'gate' && campus.layout.buildings.find((building) => building.id === 'gate')

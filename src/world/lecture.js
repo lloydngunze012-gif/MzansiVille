@@ -262,6 +262,7 @@ function build() {
   renderer.shadowMap.enabled = true
   host.prepend(renderer.domElement)
   scene = new THREE.Scene()
+  scene.name = 'lecture'
   scene.background = new THREE.Color(0xf3e6cc)
   camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100)
   hemi = new THREE.HemisphereLight(0xfff6e8, 0x8a7360, HEMI)
@@ -441,6 +442,7 @@ async function play() {
   lecturer.position.set(0, 0.5, -4.9)
   scene.add(lecturer)
   player = createAvatar(run.character?.avatar)
+  player.userData.isPlayer = true
   host.dataset.look = JSON.stringify(player.userData.look)
   player.position.set(AISLE_X, 0, 8.4)
   player.rotation.y = Math.PI

@@ -566,6 +566,7 @@ function build() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   host.prepend(renderer.domElement)
   scene = new THREE.Scene()
+  scene.name = 'morning'
   scene.background = new THREE.Color(0xf4c58e)
   scene.fog = new THREE.Fog(0xf4c58e, 30, 90)
   camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 200)
@@ -1134,6 +1135,7 @@ export function startMorning(options) {
   host.dataset.roomie = ROOMIE
   uiq('.mm-tag').textContent = ROOMIE
   player = createAvatar(opts.run.character?.avatar)
+  player.userData.isPlayer = true
   host.dataset.look = JSON.stringify(player.userData.look)
   player.userData.pose = 'stand'
   scene.add(player)
