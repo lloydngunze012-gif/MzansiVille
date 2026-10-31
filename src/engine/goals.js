@@ -1,6 +1,7 @@
 // The goal ladder (spec section 2): the year dream, three day goals each morning
 // (one must, one story, one dream) and one "right now" nudge. Everything here reads
 // and writes the run only; the UI draws it.
+import { venueFor } from '../venues.js'
 
 export const DREAMS = {
   deans: { id: 'deans', icon: '\u{1F393}', label: "Make the Dean's List", short: "Dean's List" },
@@ -55,9 +56,9 @@ export function trackToday(run, action, deltas) {
 
 const crushName = (run) => (run.crush?.nameKnown ? run.crush.name : 'the one from the bus')
 const GOALS = {
-  lecture1: { text: () => 'Get to your 9:00 lecture', done: (run) => Boolean(run.attendedToday) },
-  lecture: { text: () => 'Go to your lecture', done: (run) => Boolean(run.attendedToday) },
-  test: { text: () => 'Write the test at 9:00', done: (run) => Boolean(run.fridayTest) },
+  lecture1: { text: (run) => `Get to your 9:00 lecture at ${venueFor(run).name}`, done: (run) => Boolean(run.attendedToday) },
+  lecture: { text: (run) => `Go to your lecture at ${venueFor(run).name}`, done: (run) => Boolean(run.attendedToday) },
+  test: { text: (run) => `Write the test at 9:00, ${venueFor(run).name}`, done: (run) => Boolean(run.fridayTest) },
   crushName: { text: () => 'Find out the name of the one from the bus', done: (run) => Boolean(run.crush?.nameKnown) },
   meet2: { text: () => 'Talk to 2 new people', done: (run) => metCount(run) - today(run).met >= 2 },
   earn50: { text: (run) => (run.earned ? 'Earn R50 today' : 'Earn your first R50'), done: (run) => today(run).earned >= 50 },
@@ -111,7 +112,8 @@ export function rightNow(run) {
   }
   if (run.day === 1 && run.phase === 'lecture' && !run.lectureResolved) {
     const left = 9 * 60 - run.minutes
-    return { icon: '\u{1F393}', text: left > 0 ? `Lecture at SMIG in ${left} min` : `Lecture started ${-left} min ago · SMIG`, tone: left <= 10 ? 'urgent' : '' }
+    const at = venueFor(run).name
+    return { icon: '\u{1F393}', text: left > 0 ? `Lecture at ${at} in ${left} min` : `Lecture started ${-left} min ago \u00b7 ${at}`, tone: left <= 10 ? 'urgent' : '' }
   }
   if ((s.hunger ?? 100) < 20) return { icon: '\u{1F37D}', text: 'You’re starving. Eat something', tone: 'urgent' }
   if ((s.energy ?? 100) < 15) return { icon: '\u{1F971}', text: 'You’re running on empty', tone: 'urgent' }

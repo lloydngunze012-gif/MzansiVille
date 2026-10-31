@@ -3,6 +3,7 @@ import { createAvatar, poseAvatar } from './avatar3d.js'
 import { lookForPerson } from './cast.js'
 import { doorPoint } from './layout.js'
 import { cellCenter, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
+import { VENUES } from '../venues.js'
 
 // Other students: some walk between building doors, some sit on the Quad lawn.
 // Each is a person you can talk to (people.json); their look comes from cast.js.
@@ -64,12 +65,13 @@ export function createCrowd(scene, campus, opts = {}) {
     }
   }
 
-  // Dr Moodley outside SMIG, between lectures.
-  const smig = campus.layout.buildings.find((b) => b.id === 'smig')
-  if (smig) {
-    const avatar = createAvatar(lookForPerson('dr_moodley'))
-    avatar.userData.personId = 'dr_moodley'
-    avatar.position.set(smig.x + 3.2, 0, smig.maxZ + 2.2)
+  // Each venue's lecturer outside their building, between lectures.
+  for (const venue of Object.values(VENUES)) {
+    const hall = campus.layout.buildings.find((b) => b.id === venue.id)
+    if (!hall) continue
+    const avatar = createAvatar(lookForPerson(venue.lecturer))
+    avatar.userData.personId = venue.lecturer
+    avatar.position.set(hall.x + 3.2, 0, hall.maxZ + 2.2)
     avatar.rotation.y = 0.4
     group.add(avatar)
     people.push({ avatar, sitting: true, standing: true, clock: 0 })

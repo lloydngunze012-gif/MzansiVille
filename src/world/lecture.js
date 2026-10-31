@@ -6,6 +6,8 @@ import LINES from '../../data/campusville/day1_lecture.json'
 import { genderOf, roommateOf } from '../avatar.js'
 import { sfx, loop as soundLoop } from '../audio.js'
 import { createAvatar, CROWD_MODELS, gesture, poseAvatar } from './avatar3d.js'
+import { venueFor } from '../venues.js'
+import { lookForPerson } from './cast.js'
 
 const LECTURE = 9 * 60
 const SPEED = 2.6
@@ -87,7 +89,40 @@ function walk(who, pts, speed = SPEED) {
 // ---------- lines ----------
 let male = false
 let roomie = 'Zanele'
+let venue = null
+let walls = []
+let stageProp = null
+// Each venue looks its own: wall colours and one prop on the stage.
+function dressVenue() {
+  walls[0].material.color.setHex(venue.wall)
+  walls[1].material.color.setHex(venue.side)
+  walls[2].material.color.setHex(venue.side)
+  stageProp.clear()
+  const m = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 })
+  const add = (geo, color, x, y, z) => { const mesh = new THREE.Mesh(geo, m(color)); mesh.position.set(x, y, z); mesh.castShadow = true; stageProp.add(mesh); return mesh }
+  if (venue.prop === 'skeleton') {
+    add(new THREE.BoxGeometry(0.06, 1.7, 0.06), 0x8a8f96, 0, 0.85, 0)
+    add(new THREE.SphereGeometry(0.16, 10, 8), 0xf4f1e6, 0, 1.95, 0)
+    add(new THREE.BoxGeometry(0.42, 0.6, 0.14), 0xf4f1e6, 0, 1.45, 0)
+    for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.06, 0.6, 0.06), 0xf4f1e6, s * 0.27, 1.35, 0); add(new THREE.BoxGeometry(0.07, 0.8, 0.07), 0xf4f1e6, s * 0.1, 0.6, 0) }
+  } else if (venue.prop === 'flasks') {
+    add(new THREE.BoxGeometry(1.4, 0.9, 0.6), 0xeeeeee, 0, 0.45, 0)
+    for (const [x, c] of [[-0.4, 0x47d18c], [0, 0x6fb6ff], [0.4, 0xff8a4c]]) add(new THREE.CylinderGeometry(0.08, 0.14, 0.32, 10), c, x, 1.06, 0)
+  } else if (venue.prop === 'gavel') {
+    add(new THREE.BoxGeometry(1.2, 1.0, 0.7), 0x5a2f1d, 0, 0.5, 0)
+    add(new THREE.CylinderGeometry(0.07, 0.07, 0.26, 10), 0x3a1f12, 0, 1.08, 0).rotation.z = Math.PI / 2
+    add(new THREE.BoxGeometry(0.9, 0.6, 0.05), venue.accent, 0, 2.2, -0.9)
+  } else if (venue.prop === 'truss') {
+    for (const [x, r] of [[-0.5, 0.7], [0.5, -0.7], [0, 0]]) add(new THREE.BoxGeometry(0.06, 1.4, 0.06), 0xd97a1d, x, 0.9, 0).rotation.z = r
+    add(new THREE.BoxGeometry(1.6, 0.06, 0.06), 0xd97a1d, 0, 0.3, 0)
+  } else {
+    add(new THREE.BoxGeometry(0.06, 1.4, 0.06), 0x3a3a3a, 0, 0.7, 0)
+    add(new THREE.BoxGeometry(1.0, 0.7, 0.04), 0xffffff, 0, 1.6, 0)
+    for (const [x, h] of [[-0.3, 0.2], [0, 0.35], [0.3, 0.5]]) add(new THREE.BoxGeometry(0.16, h, 0.02), venue.accent, x, 1.3 + h / 2, 0.03)
+  }
+}
 function words(text) {
+  if (typeof text === 'string' && venue && venue.id !== 'smig') text = text.replace(/SMIG/g, venue.name)
   if (!male || typeof text !== 'string') return text
   return text.replace(/Zanele/g, roomie)
     .replace(/\bShe\b/g, 'He').replace(/\bshe\b/g, 'he')
@@ -107,6 +142,7 @@ function seatFor(option) {
 }
 function nameOf(who) {
   if (who === 'zanele') return roomie
+  if (who === 'lecturer' && venue) return venue.lecturerName
   return WHO[who] ?? ''
 }
 
@@ -206,7 +242,7 @@ function boardText(lines, dark = false) {
   boardCtx.fillStyle = dark ? '#33402f' : '#f4f1e6'
   boardCtx.font = 'bold 40px sans-serif'
   boardCtx.textAlign = 'center'
-  lines.forEach((text, i) => boardCtx.fillText(text, 256, 80 + i * 60))
+  lines.forEach((text, i) => boardCtx.fillText(text, 256, 80 + i * 60, 440)) // squeezed to fit the board
   boardTex.needsUpdate = true
 }
 
@@ -252,9 +288,10 @@ function build() {
     light.name = 'strip-light'
     scene.add(light)
   }
-  box(14, 6, 0.3, 0xf6ecd8, 0, 3, -6.5)          // front wall
-  box(0.3, 6, 16, 0xeadcc2, -7, 3, 1)            // left wall
-  box(0.3, 6, 16, 0xeadcc2, 7, 3, 1)             // right wall
+  walls = [box(14, 6, 0.3, 0xf6ecd8, 0, 3, -6.5), box(0.3, 6, 16, 0xeadcc2, -7, 3, 1), box(0.3, 6, 16, 0xeadcc2, 7, 3, 1)] // front, left, right
+  stageProp = new THREE.Group()
+  stageProp.position.set(-3.6, 0.5, -5.2)
+  scene.add(stageProp)
   box(5, 0.5, 2, 0x6b4a33, -1, 0.25, -5)         // stage
   box(1.2, 1.1, 0.6, 0x5a3c28, 1.2, 1.05, -4.6)  // lectern
   // Tiered rows: a step, a desk and a bench per row.
@@ -388,14 +425,15 @@ async function play() {
   const run = opts.run
   const late = run.minutes > LECTURE
   const total = {}
-  boardText(['Welcome to SMIG', 'Lecture 1'])
+  boardText([`Welcome to ${venue.name}`, venue.subject])
+  dressVenue()
   hemi.intensity = HEMI
   sun.intensity = SUN
   lights(1)
   setShot(null)
   clipboard.position.y = -5
   populate(late)
-  lecturer = createAvatar({ model: 'male-d', skin: 'deep', outfit: 'jacket', topColor: '#5b4a3a', bottomColor: '#2b2b2b' })
+  lecturer = createAvatar(lookForPerson(venue.lecturer))
   lecturer.position.set(0, 0.5, -4.9)
   scene.add(lecturer)
   player = createAvatar(run.character?.avatar)
@@ -483,7 +521,7 @@ async function play() {
   else say(null)
   await tapNext(uiq(seat.id === 'zanele' && reaction ? '.lc-say' : '.lc-caption'))
   if (moment.id === 'load_shedding') {
-    boardText(['Welcome to SMIG', 'Lecture 1'])
+    boardText([`Welcome to ${venue.name}`, venue.subject])
     await tween(0.6, (k) => { hemi.intensity = HEMI * (0.15 + k * 0.85); sun.intensity = SUN * (0.05 + k * 0.95); lights(k) })
   }
   clipboard.position.y = -5
@@ -513,7 +551,7 @@ async function play() {
   // Done card: what this lecture gave you (the normal lecture gain is added by the game).
   setStep('done')
   const card = uiq('.mm-card')
-  card.innerHTML = `<p class="mm-kind">SMIG · 09:00</p><h2>${words(LINES.goal.done)}</h2>
+  card.innerHTML = `<p class="mm-kind">${venue.name} · 09:00</p><h2>${words(LINES.goal.done)}</h2>
     <p>${words(LINES.end_of_lecture.summary.line)}</p>
     <p class="lc-deltas">${deltaHtml(total) || 'No extras today.'}</p>
     <button type="button" class="mm-go" data-lc="done">Back to campus</button>`
@@ -545,7 +583,10 @@ function tick(now) {
 
 export function startLecture(options) {
   opts = options
+  venue = venueFor(opts.run)
   if (!renderer) build()
+  host.dataset.venue = venue.id
+  host.dataset.lecturer = venue.lecturerName
   host.hidden = false
   uiRoot.hidden = false
   if (running) return

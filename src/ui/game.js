@@ -12,6 +12,7 @@ import { MOMENTS } from '../engine/moments.js'
 import { beatById } from '../engine/arcs.js'
 import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
+import { venueFor } from '../venues.js'
 
 // UI-only state that should not be saved.
 export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '', talk: null }
@@ -257,7 +258,7 @@ function ctaBar(district, run) {
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
   if (run.lectureRoute && !run.lectureResolved) {
-    return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at SMIG</p></div>`
+    return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at ${esc(venueFor(run).name)}</p></div>`
   }
   const atHome = hereOf(district, run) === sleepPlace
   if (run.phase === 'night') line = atHome ? 'Night. You are home \u2014 tap Sleep to end the day.' : 'Night. Go home and sleep to end the day.'
@@ -427,7 +428,7 @@ export function mapHome(state, openPlace = '') {
   else if (run.queue?.[0]) layer = resultCard(state)
   else if (run.mode === 'summary') layer = summaryCard(state)
   else if (run.lectureCard) {
-    layer = `<div class="g-scrim"></div><aside class="g-result g-lecture" role="dialog" aria-label="Lecture starts"><p class="g-kind">SMIG \u00b7 09:00</p><h2>Lecture starts</h2><p>You made it to your first lecture. Find a seat \u2014 the full lecture is coming soon.</p><button type="button" class="g-go block" data-act="lecture-go">Continue</button></aside>`
+    layer = `<div class="g-scrim"></div><aside class="g-result g-lecture" role="dialog" aria-label="Lecture starts"><p class="g-kind">${esc(venueFor(run).name)} \u00b7 09:00</p><h2>Lecture starts</h2><p>You made it to your first lecture. Find a seat \u2014 the full lecture is coming soon.</p><button type="button" class="g-go block" data-act="lecture-go">Continue</button></aside>`
   } else if (run.promptSave && !run.userId && !run.saveSnooze && run.mode === 'play') {
     layer = `<div class="g-scrim"></div><aside class="g-result"><p class="g-kind">Day ${run.day}</p><h2>Keep ${esc(run.character.name)}?</h2><p>Guests live on this phone only. Make a free account so this student survives a cleared browser.</p><div class="g-two"><button type="button" class="g-go ghost" data-act="snooze">Not now</button><button type="button" class="g-go" data-act="nav" data-go="save">Save progress</button></div></aside>`
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
@@ -492,7 +493,7 @@ export function lectureScreen(state) {
   const { district, run } = state
   return `<main class="screen g-screen g-3d g-morning g-lecture-screen" data-screen="lecture">
     ${hud(district, run)}
-    <p class="g-goal" role="status"><span>\u{1F3AF} Find a seat and get through the lecture.</span><b>SMIG</b></p>
+    <p class="g-goal" role="status"><span>\u{1F3AF} Find a seat and get through the lecture.</span><b>${esc(venueFor(run).name)}</b></p>
   </main>`
 }
 

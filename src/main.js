@@ -46,6 +46,7 @@ let shareBlob = null
 import { emptyDraft, shotState, view } from './ui/render.js'
 import { anyEnabled, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
 import { homePlaceId } from './engine/model.js'
+import { venueFor } from './venues.js'
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -277,7 +278,7 @@ function syncPreview(viewState) {
 }
 
 // The day-1 lecture is the 3D scene; it can never be skipped by a button.
-const LECTURE_ACTIONS = new Set(['lecture_attend', 'lecture_back', 'smig_sitin'])
+const LECTURE_ACTIONS = new Set(['lecture_attend', 'lecture_back'])
 function lectureWanted(run) {
   return Boolean(run && run.mode === 'play' && run.day === 1 && run.phase === 'lecture' && !run.lectureResolved && hasGL())
 }
@@ -295,7 +296,7 @@ function endLecture(result) {
     run.stats[k] = Math.max(0, Math.min(caps[k] ?? 100, (run.stats[k] || 0) + d))
   }
   run.lastEventLine = `Lecture 1: ${result?.moment || 'done'}`
-  run.at = 'smig'
+  run.at = venueFor(run).id
   run.lectureRoute = false
   delete run.lectureCard
   persist()
@@ -623,7 +624,7 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
-  if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go(lectureWanted(save.run) ? 'lecture' : 'place/smig'); return true }
+  if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go(lectureWanted(save.run) ? 'lecture' : `place/${venueFor(save.run).id}`); return true }
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
   if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
   if (act === 'close-sheet') { go('play'); return true }
