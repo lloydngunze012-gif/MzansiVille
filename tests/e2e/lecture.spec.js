@@ -106,3 +106,21 @@ test('your course decides your lecture: a Law student goes to Law, with Prof Nai
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/law_route.png` })
 })
+
+test('the other students sit on the benches, not between them', async ({ page }) => {
+  test.setTimeout(120000)
+  fs.mkdirSync(OUT, { recursive: true })
+  await atLecture(page, 8 * 60 + 45)
+  await expect(page.locator('#lecture3d')).toHaveAttribute('data-step', /walk-in|seat/, { timeout: 30000 })
+  await page.waitForTimeout(3000)
+  const students = await page.evaluate(() => window.mzansiLectureStudents())
+  expect(students.length).toBeGreaterThan(10)
+  for (const s of students) { expect(s.pose).toBe('sit'); expect(s.y).toBeGreaterThan(0.4) }
+  // From the side of the hall, across the rows.
+  await page.evaluate(() => window.mzansiLectureShot([6.2, 4.2, 6], [-1, 1.2, 1]))
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/6_rows_side.png` })
+  await page.evaluate(() => window.mzansiLectureShot([0, 3.6, -5.6], [0, 1.4, 4]))
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/7_rows_front.png` })
+})

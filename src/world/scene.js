@@ -326,7 +326,10 @@ function walkTo(x, z, done) {
   if (route.length && Math.hypot(route[0].x - player.position.x, route[0].z - player.position.z) < 0.8) route.shift()
   arrive = done || null
   stuck = 0
-  speed = WALK
+  // No walk takes more than about 12 s on a phone: long trips are a jog.
+  speed = Math.max(WALK, routeLength() / 12)
+  if (player.userData.pose === 'stand' || player.userData.pose === 'run') player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
+  host.dataset.walkSeconds = (routeLength() / speed).toFixed(1)
 }
 
 function routeLength() {
@@ -415,6 +418,7 @@ function repath() {
 
 function follow(dt) {
   if (!route.length) {
+    if (player.userData.pose === 'run') player.userData.pose = 'stand'
     if (arrive) {
       const done = arrive
       arrive = null
