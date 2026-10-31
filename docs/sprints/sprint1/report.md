@@ -42,7 +42,7 @@ All seven journeys pass.
 
 ## Tests at the end of the sprint
 
-- 49 sim checks pass.
+- 46 sim checks pass.
 - Full e2e suite with `?fast=1` (everything except the journeys and the long UX audit): 62 passed and 4 failed on the first run. Two failures were timing checks that fast mode outruns. The other two were tests written for behaviour this sprint changed on purpose: tapping the cafeteria's Food queue spot, or Mam' Gugu, now sends you to the queue instead of walking or chatting. All four were updated and pass.
 - Journeys J1–J7 at normal speed: 7 passed.
 
