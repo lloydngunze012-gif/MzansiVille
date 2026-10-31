@@ -1,7 +1,21 @@
 import { actionsAt, actionState } from '../engine/sim.js'
-import { WORLD_MAX, WORLD_MIN } from './layout.js'
+const PAD = 8
+// Short names so labels never run into each other on a phone.
+const SHORT = {
+  'Engineering Lecture Venue': 'Engineering', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
+  'Health Sciences Lecture Venue': 'Health Sci', 'Other on-campus blocks': 'Other blocks', 'Main Bus Station': 'Bus station',
+  'Off-campus res (bus home)': 'Off-campus res',
+}
 
-const PAD = 22
+// The map's frame: every building fits, with a little margin.
+function frameOf(buildings) {
+  if (!buildings.length) return { x: -60, z: -60, w: 120, h: 120 }
+  const minX = Math.min(...buildings.map((b) => b.minX)) - PAD
+  const maxX = Math.max(...buildings.map((b) => b.minX + b.w)) + PAD
+  const minZ = Math.min(...buildings.map((b) => b.minZ)) - PAD
+  const maxZ = Math.max(...buildings.map((b) => b.minZ + b.d)) + PAD
+  return { x: minX, z: minZ, w: maxX - minX, h: maxZ - minZ }
+}
 const KIND_ICON = {
   hub: '◆',
   food: '🍽',
@@ -48,14 +62,16 @@ export function createCampusMap(host) {
   let district = null
   let run = null
   let active = new Set()
+  let onGo = null
   let onWalk = () => {}
   let selected = null
 
   function placeButtons() {
-    const span = WORLD_MAX - WORLD_MIN + PAD * 2
-    const origin = WORLD_MIN - PAD
-    stage.innerHTML = `<svg viewBox="${origin} ${origin} ${span} ${span}" class="map-svg" aria-hidden="true">
-      <rect x="${origin}" y="${origin}" width="${span}" height="${span}" fill="#6ea84e"></rect>
+    const f = frameOf(buildings)
+    // The stage keeps the map's own shape, so pins sit exactly on their buildings.
+    stage.style.aspectRatio = `${f.w} / ${f.h}`
+    stage.innerHTML = `<svg viewBox="${f.x} ${f.z} ${f.w} ${f.h}" class="map-svg" aria-hidden="true">
+      <rect x="${f.x}" y="${f.z}" width="${f.w}" height="${f.h}" fill="#6ea84e"></rect>
     </svg>`
     const svg = stage.querySelector('svg')
     for (const path of paths) {
@@ -71,6 +87,24 @@ export function createCampusMap(host) {
         svg.append(line)
       }
     }
+    // Pin spots in % of the map; pins too close together are pushed apart so each stays tappable.
+    const spot = new Map(buildings.map((b) => [b.id, { x: ((b.x - f.x) / f.w) * 100, y: ((b.z - f.z) / f.h) * 100 }]))
+    const minGap = 12
+    for (let pass = 0; pass < 6; pass++) {
+      for (const a of buildings) for (const b of buildings) {
+        if (a === b) continue
+        const p = spot.get(a.id)
+        const q = spot.get(b.id)
+        const dx = q.x - p.x
+        const dy = q.y - p.y
+        const d = Math.hypot(dx, dy)
+        if (d >= minGap) continue
+        const push = (minGap - d) / 2
+        const ux = d ? dx / d : 1
+        const uy = d ? dy / d : 0
+        p.x -= ux * push; p.y -= uy * push; q.x += ux * push; q.y += uy * push
+      }
+    }
     for (const building of buildings) {
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       line.setAttribute('x', building.minX)
@@ -83,10 +117,11 @@ export function createCampusMap(host) {
       const button = document.createElement('button')
       button.type = 'button'
       button.className = `map-pin${active.has(building.id) ? ' live' : ''}`
-      button.style.left = `${((building.x - origin) / span) * 100}%`
-      button.style.top = `${((building.z - origin) / span) * 100}%`
-      button.innerHTML = `<span class="ico">${KIND_ICON[building.kind] || '•'}</span><span>${building.name}</span>`
-      button.addEventListener('click', () => select(building))
+      button.style.left = `${Math.max(6, Math.min(94, spot.get(building.id).x))}%`
+      button.style.top = `${Math.max(5, Math.min(95, spot.get(building.id).y))}%`
+      button.innerHTML = `<span class="ico">${KIND_ICON[building.kind] || '•'}</span><span class="lbl">${SHORT[building.name] || building.name}</span>`
+      button.dataset.place = building.id
+      button.addEventListener('click', () => { close(); onGo ? onGo(building.id) : select(building) })
       stage.append(button)
     }
     const you = document.createElement('div')
@@ -107,10 +142,9 @@ export function createCampusMap(host) {
   function drawYou(x, z, facing) {
     const you = stage.querySelector('.map-you')
     if (!you) return
-    const span = WORLD_MAX - WORLD_MIN + PAD * 2
-    const origin = WORLD_MIN - PAD
-    you.style.left = `${((x - origin) / span) * 100}%`
-    you.style.top = `${((z - origin) / span) * 100}%`
+    const f = frameOf(buildings)
+    you.style.left = `${((x - f.x) / f.w) * 100}%`
+    you.style.top = `${((z - f.z) / f.h) * 100}%`
     you.style.transform = `translate(-50%, -50%) rotate(${facing}rad)`
   }
 
@@ -140,6 +174,7 @@ export function createCampusMap(host) {
     close,
     isOpen: () => !overlay.hidden,
     setHandler(fn) { onWalk = fn },
+    setGo(fn) { onGo = fn },
     sync(next) {
       buildings = next.buildings
       paths = next.paths || []

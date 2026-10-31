@@ -47,6 +47,7 @@ import { emptyDraft, shotState, view } from './ui/render.js'
 import { anyEnabled, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
 import { homePlaceId } from './engine/model.js'
 import { venueFor } from './venues.js'
+import { toMinutes } from './engine/format.js'
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -464,6 +465,17 @@ function prewarmAudio() {
   }, { timeout: 1500 }))
 }
 // Talking: the scene walks you up to someone, then the card takes over.
+// Skipping a walk costs the minutes it would have taken (never past the end of this part of the day).
+window.addEventListener('mzansi-travel-skip', (event) => {
+  const run = save.run
+  if (!run || run.mode !== 'play') return
+  const phases = districtNow().meta.phases
+  const next = phases[phases.findIndex((p) => p.id === run.phase) + 1]
+  const limit = next ? toMinutes(next.start) - 1 : run.minutes + 60
+  run.minutes = Math.min(limit, run.minutes + (event.detail?.minutes || 1))
+  persist()
+  paint()
+})
 window.addEventListener('mzansi-talk', (event) => {
   if (!save.run || !event.detail?.id) return
   ui.talk = { id: event.detail.id }
@@ -626,7 +638,22 @@ function gameAct(act, button) {
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
   if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go(lectureWanted(save.run) ? 'lecture' : `place/${venueFor(save.run).id}`); return true }
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
-  if (act === 'place-open') { seenMapHint(); blip(600); ui.gear = false; go(`place/${button.dataset.id}`); return true }
+  if (act === 'place-open') {
+    seenMapHint()
+    blip(600)
+    ui.gear = false
+    // From the 2D map (with 3D available): back to the 3D view and walk there.
+    if (!viewFlags.world && viewFlags.gl && button.closest('.g-map')) {
+      try { localStorage.setItem('mzansiville.view', '3d') } catch { /* ignore */ }
+      const id = button.dataset.id
+      go('play')
+      paint()
+      setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-go-place', { detail: { id } })), 400)
+      return true
+    }
+    go(`place/${button.dataset.id}`)
+    return true
+  }
   if (act === 'close-sheet') { go('play'); return true }
   if (act === 'spot') {
     // Walk to a spot in the place: the sheet closes so you watch yourself go.

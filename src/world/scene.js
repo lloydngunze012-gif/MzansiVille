@@ -163,6 +163,7 @@ function ensureHud() {
   if (host.querySelector('.door-prompt')) return
   host.insertAdjacentHTML('beforeend', `
     <p class="door-prompt" hidden></p>
+    <button type="button" class="go-skip" hidden>\u23E9 Skip there</button>
     <div class="act-bar" hidden><span></span><em>Doing it</em></div>
     <p class="floater" hidden></p>
     <p class="act-say" hidden></p>
@@ -225,6 +226,7 @@ function ensureRenderer() {
   rig = createCameraRig()
   mapUi = createCampusMap(host)
   mapUi.setHandler((x, z) => walkTo(x, z))
+  mapUi.setGo((id) => goTo(id))
 
   hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
   ambient = new THREE.AmbientLight(0xfff1dc, 0.25)
@@ -336,13 +338,46 @@ function routeLength() {
   return len
 }
 
-function approach(id) {
+// Go to a place (from either map): walk there and open its sheet on arrival.
+// While you walk, "Skip there" jumps you to the door; the clock moves on.
+let going = null
+function goTo(id) {
+  const building = campus?.layout.buildings.find((item) => item.id === id)
+  if (!building || !player) return
+  const door = doorPoint(building)
+  const skip = host.querySelector('.go-skip')
+  going = { id, door }
+  host.dataset.going = id
+  skip.hidden = false
+  skip.onclick = () => {
+    if (!going) return
+    const far = Math.hypot(going.door.x - player.position.x, going.door.z - player.position.z)
+    window.dispatchEvent(new CustomEvent('mzansi-travel-skip', { detail: { minutes: Math.max(1, Math.round(far / 12)) } }))
+    route = []
+    arrive = null
+    player.position.set(going.door.x, player.position.y, going.door.z)
+    const id2 = going.id
+    endGoing()
+    openPlace(id2)
+  }
+  approach(id, () => { endGoing() })
+}
+function endGoing() {
+  going = null
+  delete host.dataset.going
+  const skip = host.querySelector('.go-skip')
+  if (skip) skip.hidden = true
+}
+window.mzansiGoTo = (id) => goTo(id)
+window.addEventListener('mzansi-go-place', (event) => { if (visible) goTo(event.detail?.id) })
+
+function approach(id, onArrive) {
   const building = campus?.layout.buildings.find((item) => item.id === id)
   if (!building) return
   const door = doorPoint(building)
   const dist = Math.hypot(door.x - player.position.x, door.z - player.position.z)
-  if (dist < 2.2) openPlace(id)
-  else walkTo(door.x, door.z, () => openPlace(id))
+  if (dist < 2.2) { onArrive?.(); openPlace(id) }
+  else walkTo(door.x, door.z, () => { onArrive?.(); openPlace(id) })
 }
 
 function openPlace(id) {
