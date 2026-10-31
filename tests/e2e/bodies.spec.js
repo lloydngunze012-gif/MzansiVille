@@ -59,3 +59,23 @@ test('bodies at the Quad: benches, the stall queue, walkers', async ({ page }) =
   await side(page, 'x3', 'quad-walker-x3')
   await side(page, 'amahle', 'quad-crush')
 })
+
+test('queues are lines: straight, evenly spaced, and they move', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await campus(page, 'cafeteria')
+  const pos = () => page.evaluate(() => ['thandi', 'jordan', 'priya', 'noah'].map((id) => window.mzansiPersonPos(id)))
+  const a = await pos()
+  // One straight line (same x), evenly spaced (about 0.95 m).
+  for (const p of a) expect(Math.abs(p.x - a[0].x)).toBeLessThan(0.05)
+  const zs = a.map((p) => p.z).sort((m, n) => m - n)
+  for (let i = 1; i < zs.length; i++) expect(Math.abs(zs[i] - zs[i - 1] - 0.95)).toBeLessThan(0.1)
+  // Look along the line from the side.
+  await page.evaluate(([f, l]) => window.mzansiCam([f.x + 4.5, 1.6, (f.z + l.z) / 2 + 1], [f.x, 0.9, (f.z + l.z) / 2]), [a[0], a[3]])
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/queue-line.png` })
+  // The front is served and steps out; everyone shuffles up.
+  // (the headless browser runs slowly, so allow time)
+  await expect.poll(async () => (await pos()).some((p, i) => Math.hypot(p.x - a[i].x, p.z - a[i].z) > 0.5), { timeout: 60000, intervals: [1000] }).toBe(true)
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/queue-moved.png` })
+})

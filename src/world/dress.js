@@ -275,6 +275,9 @@ export function dressPlaces(layout) {
     queue.stall = {
       front,
       slot,
+      aside: { x: front.x + side.x * 3 + up.x * 1.5, z: front.z + side.z * 3 + up.z * 1.5 },
+      face: stall.rotation.y + Math.PI,
+      vendor,
       get people() { return waiting },
       vendorServes() { gesture(vendor, 'interact-right') },
       async serveFront() {
@@ -297,6 +300,7 @@ export function dressPlaces(layout) {
             const s = slot(waiting.length - 1)
             moveAvatar(p, s.x, s.z).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
           }
+          queue.stall.busy = false
         }, 6000)
       },
     }
@@ -396,7 +400,10 @@ export function dressPlaces(layout) {
     const auntie = person('auntie_pinky', cx + 2.8, front + 0.5, 0, { every: 5 })
     cafQueue.auntie = auntie
     cafQueue.front = { x: cx + 2.8, z: front + 2.05 }
-    cafQueue.slot = (i) => ({ x: cx + 2.8 + (i % 2 ? 0.2 : -0.1), z: front + 2.05 + i * 0.95 })
+    // One straight line facing the counter, evenly spaced.
+    cafQueue.slot = (i) => ({ x: cx + 2.8, z: front + 2.05 + i * 0.95 })
+    cafQueue.aside = { x: cx + 2.8 - 3.2, z: front + 4.2 }
+    cafQueue.face = Math.PI
     cafQueue.people = ['thandi', 'jordan', 'priya', 'noah'].map((id, i) => {
       const s = cafQueue.slot(i)
       return person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' })
@@ -436,7 +443,37 @@ export function dressPlaces(layout) {
     for (const { material, base } of glows) material.emissiveIntensity = 0.15 + base * n
   }
 
+  // Queues keep moving on their own: the front person is served and steps out to
+  // eat, the line shuffles up, and later they rejoin at the back. Paused while
+  // the player is in that queue (busy).
+  let queueClock = 0
+  async function cycleQueue(q, line, server) {
+    if (!q || q.busy || q.cycling || line.length < 2) return
+    q.cycling = true
+    const served = line.shift()
+    gesture(server, 'interact-right')
+    gesture(served, 'pick-up')
+    await new Promise((r) => setTimeout(r, 900))
+    await Promise.all([moveAvatar(served, q.aside.x, q.aside.z, 1.4), ...line.map((p, i) => moveAvatar(p, q.slot(i).x, q.slot(i).z, 1.2))])
+    line.forEach((p) => { p.rotation.y = q.face })
+    gesture(served, 'emote-yes')
+    await new Promise((r) => setTimeout(r, 4000))
+    if (!q.busy) {
+      const s = q.slot(line.length)
+      await moveAvatar(served, s.x, s.z, 1.4)
+      served.rotation.y = q.face
+      line.push(served)
+    } else line.push(served)
+    q.cycling = false
+  }
+
   function update(dt) {
+    queueClock += dt
+    if (queueClock > 6) {
+      queueClock = 0
+      cycleQueue(cafQueue.people ? cafQueue : null, cafQueue.people || [], cafQueue.auntie)
+      if (queue.stall) cycleQueue(queue.stall, queue.stall.people, queue.stall.vendor)
+    }
     const moving = new Set()
     for (let i = movers.length - 1; i >= 0; i--) {
       const m = movers[i]
