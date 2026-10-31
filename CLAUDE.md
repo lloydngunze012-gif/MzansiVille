@@ -35,6 +35,21 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# ONE FOCUS PER SPRINT (owner's standing rule, from the Actions sprint on)
+Each sprint has one focus. Any problem noticed outside the focus (bodies, feet, sitting posture, crowds, looks...) goes into docs/backlog.md as a one-line description. Do NOT fix it during the sprint.
+
+# CURRENT SPRINT: ACTIONS (owner, 31 Oct). Only actions. Finish, push, then STOP and report. Don't start the next focus.
+Every promise and every button must lead to something happening. Judge only THAT it happens, not how good the body looks while doing it.
+1. Every conversation reply leads to an action or clearly ends the chat:
+   - "Walk away" ends the chat and the player walks a few steps away.
+   - "Let's go get something to eat" -> both walk to the cafeteria, queue, buy, sit at the same table and eat.
+   - "Let's study", "Sit with them", "Walk with me", "Swap numbers": the NPC comes with you and you do it together, or the number appears in your phone.
+   - Go through every reply in people.json and every lecture/morning choice. Each one leads to a visible action, a result, or a clear goodbye. List them all in the report with what each one does.
+2. Queue then order: tapping Auntie Pinky or Mam' Gugu walks you to the back of the line; the line moves; at the front her order card opens. Tapping her from outside the line: "Back of the line, baby!" and you join it.
+3. Every button and tap target leads to a sensible result. Re-run the UX audit and fix any dead end.
+FINISH LINE (412x915, taps only): A1 "Walk away" ends the chat and the player moves off. A2 Talk to a student -> "Let's get something to eat" -> both walk to the cafeteria, queue, buy, sit together and eat. A3 Talk to a student -> "Let's study" -> both go to the library and study. A4 "Swap numbers" -> the contact appears in your phone. A5 Tap Auntie Pinky -> back of the line -> front -> order -> pay -> sit and eat. A6 The full list of conversation replies and what each does. A7 UX audit: zero dead ends.
+Save normal-speed screenshots for A1-A5 in docs/sprints/actions/ plus report.md, and push.
+
 # START HERE (handoff for a new session, 31 Oct 2026)
 State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.
 Every list below is finished (newest first): Sprint 1 completion, speed rules, owner + player test (items 1-7), the Quaternius list (items 1-10, spec section 7 a-h), and the earlier plans. Only the "ON HOLD" item (off-campus residence names) and the "Still open" notes in the sprint report remain.
