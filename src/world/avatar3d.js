@@ -162,11 +162,11 @@ function addOrgantMark(model) {
   const top = worldOf(neck)
   const low = worldOf(torso)
   const shoulders = worldOf(model.getObjectByName('UpperArmL') || neck).distanceTo(worldOf(model.getObjectByName('UpperArmR') || neck)) || 0.3
-  const w = shoulders * 0.5
+  const w = shoulders * 0.95
   const mark = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.75), new THREE.MeshStandardMaterial({ map: organtPrint(), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }))
   mark.name = 'organt-mark'
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(model.getWorldQuaternion(new THREE.Quaternion()))
-  const at = new THREE.Vector3().lerpVectors(low, top, 0.55).addScaledVector(forward, shoulders * 0.36)
+  const at = new THREE.Vector3().lerpVectors(low, top, 0.42).addScaledVector(forward, shoulders * 0.72)
   model.add(mark)
   mark.position.copy(model.worldToLocal(at))
   mark.updateMatrixWorld(true)
