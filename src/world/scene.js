@@ -531,6 +531,20 @@ function overShoulder(from, to) {
   const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize()
   const tiltDown = Math.atan(0.4 * halfH)
   dir.applyAxisAngle(right, -tiltDown)
+  // Both heads (and feet) in the strip above the card: pull back along the same line
+  // until they fit (people far apart, one behind the other, need a wider shot).
+  const probe = camera.clone()
+  for (const scale of [1, 1.25, 1.55, 1.9, 2.4]) {
+    const pos = mid.clone().addScaledVector(best.clone().sub(mid), scale)
+    probe.position.copy(pos)
+    probe.lookAt(pos.clone().addScaledVector(dir, 10))
+    probe.updateMatrixWorld()
+    const fits = [from, to].every((p) => [1.85, 0.05].every((y) => {
+      const q = new THREE.Vector3(p.x, y, p.z).project(probe)
+      return q.z < 1 && Math.abs(q.x) < 0.9 && q.y < 0.82 && q.y > -0.08
+    }))
+    if (fits || scale === 2.4) return { pos, look: pos.clone().addScaledVector(dir, 10) }
+  }
   return { pos: best, look: best.clone().addScaledVector(dir, 10) }
 }
 
@@ -606,7 +620,10 @@ window.mzansiHeads = (ids = []) => {
   const out = []
   const ray = new THREE.Raycaster()
   const blockers = campus ? [campus.buildings, campus.dressing.group, ...(room ? [room.group] : []), tempGroup] : []
-  for (const a of [player, ...everyone().filter((x) => ids.includes(x.userData.personId))]) {
+  // ('near': everyone within 2.5 m of you, like the scene's own copy of a friend in a room)
+  const near = (x) => x !== player && x.visible && Math.hypot(x.position.x - player.position.x, x.position.z - player.position.z) < 2.5
+  const pool = [...everyone(), ...temps]
+  for (const a of [player, ...pool.filter((x, i) => pool.indexOf(x) === i && (ids.includes(x.userData.personId) || (ids.includes('near') && near(x))))]) {
     if (!a?.visible) continue
     const head = a.getObjectByName('Head')
     if (!head) continue

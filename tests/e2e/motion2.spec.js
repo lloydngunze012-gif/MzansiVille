@@ -451,13 +451,17 @@ async function headsInThreeViews(page, ids, name) {
   const results = []
   for (const mode of ['top', 'sims', 'eye']) {
     await page.evaluate((m) => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: m })), mode)
-    await page.waitForTimeout(1800)
+    // (once the camera has glided into the shot)
+    await expect.poll(() => page.evaluate(() => { const d = JSON.parse(window.mzansiDebug()); return d.shot?.pos ? Math.hypot(...d.cam.map((v, i) => v - d.shot.pos[i])) : 0 }), { timeout: 20000, intervals: [300] }).toBeLessThan(0.25)
+    await page.waitForTimeout(400)
     const r = await page.evaluate((list) => window.mzansiHeads(list), ids)
     await page.screenshot({ path: `${OUT}/M7-${name}-${mode}.png` })
     console.log(name, mode, JSON.stringify(r))
+    if (process.env.DEBUG_T) console.log('dbg', await page.evaluate((list) => JSON.stringify({ d: JSON.parse(window.mzansiDebug()), p: window.mzansiPlayerPos(), o: list.map((i) => window.mzansiPersonPos(i)), pose: window.mzansiPlayerPose() }), ids))
     results.push(r)
   }
   for (const r of results) {
+    expect(r.close, `${name} ${r.mode}: still the framed shot`).toBe(true)
     expect(r.heads.length, `${name} ${r.mode}: people framed`).toBeGreaterThanOrEqual(ids.length + 1)
     for (const h of r.heads) {
       expect(h.inside && !h.underHud, `${name} ${r.mode}: ${h.id}'s head on screen`).toBe(true)
@@ -483,8 +487,8 @@ test('M7b heads in frame: studying together in Top, Sims and Eye', async ({ page
   await expect(card).toBeVisible({ timeout: 30000 })
   await card.locator('[data-kind="study"]').tap()
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 150000 }).toBe('sit')
-  await page.waitForTimeout(2500)
-  await headsInThreeViews(page, ['x12'], 'study')
+  await page.waitForTimeout(800)
+  await headsInThreeViews(page, ['near'], 'study')
   await saveVideo(page, 'M7-study')
 })
 
