@@ -10,6 +10,9 @@ Problems noticed outside the current sprint's focus. One line each; fixed in a l
 
 Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in while a model loads, a friend trailing a step behind, a student jumping back to their old spot after an activity.
 
+## Motion round 2: time-boxed, not finished
+- Sit/stand with clips (30 min, 1 Nov): Quaternius Universal Animation Library Standard (CC0, public/models/ual) retargets onto our rig (world-space bone turns from the bind pose; hips scaled to our height) and looks natural (hands on the lap). Wired as Sitting_Enter / Sitting_Idle_Loop / Sitting_Exit, seat placed under the clip's hips, foot lock for seat height; try it with ?sitclips=1. Not passing yet: the clip steps back ~44 cm while sitting (feet must move < 3 cm) and seated feet float ~9 cm on the caf chair. Next: start from the clip's end stance (stand where its feet end), lock both ankles to that stance through the clip, and fit y1 with the foot lock applied. The free pack has no lie-down, get-up or shower clips. Until then the planted-feet hand-made sit is on (feet move 1.4 cm).
+
 ## World & looks (high priority)
 - World: the player's room is a box in an empty void; build the res around it (corridor, window views, the building outside).
 - World: the bus stop is empty; give it a shelter, a timetable, people waiting, and a road with taxis.

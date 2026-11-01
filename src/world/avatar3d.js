@@ -408,6 +408,8 @@ async function attachModel(group, look) {
   group.add(model)
   Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, soles, rest, footFlat })
   live.add(group)
+  // (the clip sit is on trial: ?sitclips=1, see docs/backlog.md)
+  if (!ualReady && typeof location !== 'undefined' && /[?&]sitclips=1/.test(location.search)) preloadSitClips()
   group.dispatchEvent({ type: 'rigged' })
 }
 
@@ -612,6 +614,7 @@ function sitPose(group, onGround) {
   const seatY = +group.getWorldPosition(seatAt).y.toFixed(3)
   // (not while sitting down or standing up: the caller may already have cleared the seat's floor)
   const refit = data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround || data.sitFit.floor !== data.seatFloor
+  if (ualReady && !onGround) { clipSeated(group, model, data.lastTime || 0); return }
   if (refit && !(data.sitMove && data.sitFit)) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround, floor: data.seatFloor }
   const fit = data.sitFit
   model.position.y = fit.y
@@ -789,7 +792,7 @@ function startSitMove(group) {
       const s = Math.sin(group.rotation.y)
       data.sitMove = { dir: 1, k: 0, turn: 0, from: { x: dx * c - dz * s, z: dx * s + dz * c, yaw: wrap(data.standAt.yaw - group.rotation.y) } }
     }
-  } else if (isStanding(pose) && prev === 'sit' && data.sitFit && !data.sitFit.onGround && data.seatAt && !data.sitMove) {
+  } else if (isStanding(pose) && prev === 'sit' && (ualReady ? data.clipSeat : data.sitFit && !data.sitFit.onGround) && data.seatAt && !data.sitMove) {
     data.sitMove = { dir: -1, k: 1, seat: { ...data.seatAt } }
   }
   if (pose === 'sit') data.seatAt = { x: group.position.x, y: group.position.y, z: group.position.z, rot: group.rotation.y }
@@ -800,6 +803,7 @@ function startSitMove(group) {
 // then they stand in front of the seat).
 function sitMotion(group, model, move, dt) {
   const data = group.userData
+  if (ualReady) return clipSitMotion(group, model, move, dt)
   if (move.dir < 0) {
     // Hold the seat while rising (callers may already have moved the person on).
     group.position.set(move.seat.x, move.seat.y, move.seat.z)
@@ -1150,4 +1154,199 @@ function feetNow(group) {
     if (n) out.push([+(sum.x / n).toFixed(3), +(sum.y / n).toFixed(3), +(sum.z / n).toFixed(3), +low.toFixed(3)])
   }
   return out
+}
+
+// Clips from the Universal Animation Library (Quaternius, CC0: public/models/ual),
+// retargeted live onto our rig: each mapped bone takes the source bone's turn away
+// from its rest pose, in world space; the hips also take its lift and drop.
+const UAL_MAP = {
+  pelvis: 'Hips', spine_01: 'Abdomen', spine_02: 'Torso', spine_03: 'Chest', neck_01: 'Neck', Head: 'Head',
+  clavicle_l: 'ShoulderL', upperarm_l: 'UpperArmL', lowerarm_l: 'LowerArmL', hand_l: 'WristL',
+  clavicle_r: 'ShoulderR', upperarm_r: 'UpperArmR', lowerarm_r: 'LowerArmR', hand_r: 'WristR',
+  thigh_l: 'UpperLegL', calf_l: 'LowerLegL', foot_l: 'FootL', thigh_r: 'UpperLegR', calf_r: 'LowerLegR', foot_r: 'FootR',
+}
+let ual = null
+function loadUal() {
+  ual ||= import('three/addons/loaders/GLTFLoader.js').then(({ GLTFLoader }) => new GLTFLoader().loadAsync('/models/ual/UAL1_Standard.glb')).then((gltf) => {
+    const root = gltf.scene
+    root.updateMatrixWorld(true)
+    const bones = {}
+    root.traverse((n) => { if (n.isBone && UAL_MAP[n.name]) bones[n.name] = n })
+    const rest = {}
+    for (const [name, bone] of Object.entries(bones)) rest[name] = { q: bone.getWorldQuaternion(new THREE.Quaternion()), p: bone.getWorldPosition(new THREE.Vector3()) }
+    const mixer = new THREE.AnimationMixer(root)
+    const clips = Object.fromEntries(gltf.animations.map((c) => [c.name, c]))
+    return { root, bones, rest, mixer, clips, hipHeight: rest.pelvis.p.y }
+  })
+  return ual
+}
+// Our rig's bind (rest) pose, each bone's turn relative to the model (once per person).
+function rigRest(group, model) {
+  const data = group.userData
+  if (data.rigRest) return data.rigRest
+  let skin = null
+  model.traverse((n) => { if (!skin && n.isSkinnedMesh) skin = n })
+  const bones = {}
+  const rest = {}
+  const q = new THREE.Quaternion()
+  const p = new THREE.Vector3()
+  const sc = new THREE.Vector3()
+  for (const name of Object.values(UAL_MAP)) {
+    const i = skin.skeleton.bones.findIndex((b) => b.name === name)
+    if (i < 0) continue
+    bones[name] = skin.skeleton.bones[i]
+    skin.skeleton.boneInverses[i].clone().invert().decompose(p, q, sc)
+    rest[name] = { q: q.clone() }
+  }
+  data.rigRest = { bones, rest }
+  return data.rigRest
+}
+const srcQ = new THREE.Quaternion()
+const delta = new THREE.Quaternion()
+// Pose this person from a UAL clip at time t (seconds).
+function poseFromUal(group, model, src, clipName, t) {
+  const data = group.userData
+  const clip = src.clips[clipName]
+  if (!clip) return
+  const action = src.mixer.clipAction(clip)
+  if (!action.isRunning()) { src.mixer.stopAllAction(); action.play() }
+  action.time = Math.min(t, clip.duration)
+  src.mixer.update(0)
+  src.root.updateMatrixWorld(true)
+  const { bones, rest } = rigRest(group, model)
+  const modelQ = model.getWorldQuaternion(new THREE.Quaternion())
+  const srcRootInv = src.root.getWorldQuaternion(new THREE.Quaternion()).invert()
+  // Parents before children (the map is in hierarchy order).
+  for (const [from, to] of Object.entries(UAL_MAP)) {
+    const s = src.bones[from]
+    const b = bones[to]
+    if (!s || !b || !rest[to]) continue
+    // The source bone's turn from its rest, in the source's own frame...
+    delta.copy(srcRootInv).multiply(s.getWorldQuaternion(srcQ)).multiply(src.rest[from].q.clone().invert().multiply(srcRootInv.clone().invert()))
+    // ...applied to ours, in the model's frame.
+    const want = modelQ.clone().multiply(delta).multiply(rest[to].q)
+    b.quaternion.copy(b.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(want))
+    b.updateMatrixWorld(true)
+  }
+  // The hips rise and drop with the clip (scaled to our height).
+  const p = src.bones.pelvis.getWorldPosition(new THREE.Vector3()).sub(src.rest.pelvis.p).applyQuaternion(srcRootInv)
+  const k = (data.hipHeight || 0.9) / src.hipHeight
+  model.position.add(p.multiplyScalar(k))
+  carryFeet(model, data.bones, data.footInShin)
+}
+
+// ---------- Sitting with the clips (Sitting_Enter, Sitting_Idle_Loop, Sitting_Exit) ----------
+// Each seat is placed under the clip: the person stands in front of it where the clip
+// starts, and the clip's hips land on the seat; the only adjustment is a small foot
+// lock that keeps the soles on the floor when the seat is higher or lower than the
+// clip's own chair. Until the clips have loaded, the hand-made sit stands in.
+let ualReady = null
+export function preloadSitClips() { loadUal().then((src) => { ualReady = src }).catch(() => {}) }
+function pelvisAt(src, name, t) {
+  const clip = src.clips[name]
+  const action = src.mixer.clipAction(clip)
+  if (!action.isRunning()) { src.mixer.stopAllAction(); action.play() }
+  action.time = Math.max(0, Math.min(t, clip.duration))
+  src.mixer.update(0)
+  src.root.updateMatrixWorld(true)
+  return src.bones.pelvis.getWorldPosition(new THREE.Vector3()).sub(src.rest.pelvis.p).applyQuaternion(src.root.getWorldQuaternion(new THREE.Quaternion()).invert())
+}
+// How far through sitting down (0 standing .. 1 seated) the clip's hips are at t.
+function dropAt(src, name, t) {
+  const c = (src.drops ||= {})
+  const d = (c[name] ||= { start: pelvisAt(src, name, 0).y, end: pelvisAt(src, name, src.clips[name].duration).y })
+  const hi = Math.max(d.start, d.end)
+  const lo = Math.min(d.start, d.end)
+  return Math.max(0, Math.min(1, (hi - pelvisAt(src, name, t).y) / Math.max(1e-3, hi - lo)))
+}
+// Where this seat puts the clip, once per person and seat: the standing spot in front
+// of it, the body's height standing on the floor (y0) and seated on the seat (y1).
+function clipSeat(group, model) {
+  const data = group.userData
+  const src = ualReady
+  const seatY = +group.getWorldPosition(seatAt).y.toFixed(3)
+  const floor = seatFloorOf(group, seatY)
+  if (data.clipSeat?.seatY === seatY && data.clipSeat.floor === floor) return data.clipSeat
+  group.updateMatrixWorld(true)
+  const k = (data.hipHeight || 0.9) / src.hipHeight
+  const end = pelvisAt(src, 'Sitting_Enter', src.clips.Sitting_Enter.duration).multiplyScalar(k)
+  const c = { seatY, floor, k, stand: { x: -end.x, z: -end.z }, y0: floor - seatY, y1: 0 }
+  // Standing at the start of the clip: soles on the floor.
+  model.rotation.set(0, 0, 0)
+  model.position.set(c.stand.x, c.y0, c.stand.z)
+  poseFromUal(group, model, src, 'Sitting_Enter', 0)
+  model.updateMatrixWorld(true)
+  c.y0 += floor - lowest(group, (n) => n.userData.part === 'feet')
+  // Seated: the seat of the trousers on the seat.
+  model.position.set(c.stand.x, c.y0, c.stand.z)
+  poseFromUal(group, model, src, 'Sitting_Idle_Loop', 0)
+  model.updateMatrixWorld(true)
+  c.y1 = c.y0 + seatY - lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(data.bones.Hips || model))
+  data.clipSeat = c
+  data.standReach = c.stand.z
+  return c
+}
+// One frame of a clip at this seat; f blends the body's height from standing on the
+// floor (0) to seated on the seat (1), and the feet stay where the clip puts them.
+function clipSit(group, model, name, t, f, at = null) {
+  const data = group.userData
+  const c = clipSeat(group, model)
+  const y = c.y0 + (c.y1 - c.y0) * f
+  model.rotation.set(0, at?.yaw || 0, 0)
+  model.position.set(at ? at.x : c.stand.x, y, at ? at.z : c.stand.z)
+  poseFromUal(group, model, ualReady, name, t)
+  const shift = y - c.y0
+  if (Math.abs(shift) > 0.002) {
+    model.updateMatrixWorld(true)
+    for (const side of ['L', 'R']) {
+      const foot = data.bones[`Foot${side}`]
+      if (foot) legTo(group, side, worldOf(foot).add(new THREE.Vector3(0, -shift, 0)))
+    }
+    carryFeet(model, data.bones, data.footInShin)
+  }
+}
+function clipSeated(group, model, time) {
+  clipSit(group, model, 'Sitting_Idle_Loop', time % ualReady.clips.Sitting_Idle_Loop.duration, 1)
+}
+function clipSitMotion(group, model, move, dt) {
+  const data = group.userData
+  const src = ualReady
+  if (move.dir < 0) {
+    // Hold the seat while rising (callers may already have moved the person on).
+    group.position.set(move.seat.x, move.seat.y, move.seat.z)
+    group.rotation.y = move.seat.rot
+  }
+  group.updateMatrixWorld(true)
+  const c = clipSeat(group, model)
+  if (move.dir > 0 && move.turn < 1) {
+    // Turn round on the spot, shuffling onto the clip's starting spot.
+    const span = 0.2 + Math.abs(move.from.yaw) / SIT_MOVE.turn
+    move.turn = Math.min(1, move.turn + dt / span)
+    const e = move.turn * move.turn * (3 - 2 * move.turn)
+    clipSit(group, model, 'Sitting_Enter', 0, 0, { x: move.from.x + (c.stand.x - move.from.x) * e, z: move.from.z + (c.stand.z - move.from.z) * e, yaw: move.from.yaw * (1 - e) })
+    data.sitPhase = 'turn'
+    return
+  }
+  const name = move.dir > 0 ? 'Sitting_Enter' : 'Sitting_Exit'
+  const dur = src.clips[name].duration
+  move.t = (move.t || 0) + dt
+  const t = Math.min(dur, move.t)
+  const drop = dropAt(src, name, t)
+  data.sitPhase = move.dir > 0 ? 'lower' : 'rise'
+  clipSit(group, model, name, t, move.dir > 0 ? drop : 1 - drop)
+  if (t < dur) return
+  if (move.dir > 0) { data.sitMove = null; data.sitPhase = 'seated'; return }
+  // Up: standing where the clip ends, on the floor.
+  const end = pelvisAt(src, 'Sitting_Exit', dur).multiplyScalar(c.k)
+  const x = c.stand.x + end.x
+  const z = c.stand.z + end.z
+  const cs = Math.cos(move.seat.rot)
+  const sn = Math.sin(move.seat.rot)
+  group.position.set(move.seat.x + x * cs + z * sn, c.floor, move.seat.z - x * sn + z * cs)
+  model.position.set(0, 0, 0)
+  model.rotation.set(0, 0, 0)
+  data.sitMove = null
+  data.sitPhase = 'up'
+  data.yaw = move.seat.rot
+  data.lastPos?.copy(group.position)
 }
