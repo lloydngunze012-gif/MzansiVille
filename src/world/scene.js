@@ -22,9 +22,15 @@ import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestO
 import { venueFor } from '../venues.js'
 import { SPEED, ms } from '../speed.js'
 
-// A brisk walk (m/s); long trips jog, up to RUN_MAX (the run clip keeps up to there).
-const WALK = 2
-const RUN_MAX = 9
+// A brisk walk (m/s): the walk clip plays at the speed you really move. Trips longer
+// than JOG_FROM are a jog (the run clip, played slower), up to JOG_MAX.
+const WALK = 1.75
+const JOG = 3.4
+const JOG_FROM = 15
+const JOG_MAX = 4.5
+// How fast to go for a trip this long: a brisk walk, or a jog for anything past 15 m
+// (Skip is there for the longest trips).
+const paceFor = (len) => (len <= JOG_FROM ? WALK : Math.min(JOG_MAX, Math.max(JOG, len / 14)))
 const host = document.getElementById('world')
 
 let renderer
@@ -333,8 +339,8 @@ function walkTo(x, z, done) {
   if (route.length && Math.hypot(route[0].x - player.position.x, route[0].z - player.position.z) < 0.8) route.shift()
   arrive = done || null
   stuck = 0
-  // No walk takes more than about 12 s on a phone: long trips are a jog (map Skip for the longest).
-  speed = Math.min(RUN_MAX, Math.max(WALK, routeLength() / 12))
+  // A brisk walk, or a jog past 15 m (map Skip for the longest trips).
+  speed = paceFor(routeLength())
   if (player.userData.pose === 'stand' || player.userData.pose === 'run') player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
   host.dataset.walkSeconds = (routeLength() / speed).toFixed(1)
 }
@@ -615,6 +621,8 @@ window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(.
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+window.mzansiWalkTo = (x, z) => walkTo(x, z)
+window.mzansiWalkPace = () => ({ speed: +speed.toFixed(2), route: +routeLength().toFixed(1), pose: player?.userData.pose })
 // Tests (nobody inside furniture): how deep any part of a body is inside a chair,
 // table, bench, counter or wall near them (box parts exactly, model parts by their
 // boxes), and for a seated body, which way it faces against the chair under it.
@@ -1521,8 +1529,8 @@ function beginAction(detail) {
         host.dataset.walk = 'arrived'
         startBar(detail)
       })
-      // Action walks are paced to land in about 2.5 s however far the door is.
-      speed = Math.min(RUN_MAX, Math.max(WALK, routeLength() / 2.5))
+      // Action walks: a brisk walk, or a jog past 15 m, like any trip.
+      speed = paceFor(routeLength())
       return
     }
   }

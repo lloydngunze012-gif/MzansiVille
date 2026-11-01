@@ -1146,10 +1146,10 @@ if (typeof window !== 'undefined') {
       const id = d.isPlayer ? 'player' : d.personId || 'extra'
       if (rec.ids && !rec.ids.includes(id)) continue
       const p = g.parent ? g.parent.localToWorld(g.position.clone()) : g.position.clone()
-      const row = { id, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', phase: d.sitMove ? d.sitPhase : null, walking: d.current === CLIP.walk || d.current === CLIP.sprint }
+      const row = { id, clock: d.lastTime, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', phase: d.sitMove ? d.sitPhase : null, walking: d.current === CLIP.walk || d.current === CLIP.sprint }
       if (full || rec.feet?.includes(id)) {
         const m = measureBody(g)
-        Object.assign(row, { sole: m.sole, ground: m.ground, floor: m.floor, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
+        Object.assign(row, { rate: m.rate, natural: m.natural, sole: m.sole, ground: m.ground, floor: m.floor, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
         if (rec.feet?.includes(id)) row.feet = feetNow(g)
       }
       people.push(row)
