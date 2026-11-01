@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, gesture, layDown, lookOf, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, inTransition, layDown, lookOf, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { lookForPerson, nameOf } from './cast.js'
@@ -597,6 +597,9 @@ window.mzansiScreenOf = (x, z, y = 0) => {
 window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(...pos), look: new THREE.Vector3(...look) } : null }
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
+window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
+window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
 window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
@@ -731,6 +734,12 @@ function updateTags() {
 // the activity out before the result lands. The bar is only a small timer.
 let acting = false
 let activities = null
+// Resolves once a sit-down or stand-up has finished (it starts on the next frame).
+const settledOf = (a) => new Promise((resolve) => {
+  let frames = 0
+  const check = () => { if (++frames > 2 && !inTransition(a)) resolve(); else requestAnimationFrame(check) }
+  requestAnimationFrame(check)
+})
 const BENCH_Y = 0.45
 function activityApi() {
   const bar = () => host.querySelector('.act-bar')
@@ -763,7 +772,7 @@ function activityApi() {
     get dressing() { return campus.dressing },
     spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
     // Scene walks always finish: if the path is blocked, step into place after a while.
-    walkTo: (x, z, pace = WALK) => new Promise((resolve) => {
+    walkTo: async (x, z, pace = WALK) => { if (inTransition(player)) await settledOf(player); return new Promise((resolve) => {
       let done = false
       const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, ms(250)) }
       walkTo(x, z, finish)
@@ -771,7 +780,7 @@ function activityApi() {
       if (!route.length) finish()
       const far = Math.hypot(x - player.position.x, z - player.position.z)
       setTimeout(() => { if (!done) { route = []; arrive = null; finish() } }, ms(1500 + (far / pace) * 1800))
-    }),
+    }) },
     wait: (s) => new Promise((resolve) => setTimeout(resolve, ms(s * 1000))),
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
     gesture: (name) => gesture(player, name),
@@ -781,7 +790,9 @@ function activityApi() {
       player.userData.pose = p
       if (p === 'sit') { player.position.y = y; player.userData.seatFloor = floor }
       if (p === 'lie') { layDown(player, player.rotation.y); player.position.y = 0.02 }
+      return settledOf(player)
     },
+    settled: (a = player) => settledOf(a),
     // bed: { x, z, lieY, rot (0 = head towards -z) }; edge: the seat on its side { x, z, y, rot }.
     lieDown: async (bed, edge) => {
       standUp()
@@ -800,15 +811,16 @@ function activityApi() {
       player.userData.pose = 'sit'
       player.userData.seatFloor = 0
     },
+    // Sitting down and standing up play out (avatar3d); these resolve once they have.
     sitAt: (seat) => {
       player.position.set(seat.x, seat.y, seat.z)
       player.rotation.y = seat.rot
       player.userData.pose = 'sit'
+      return settledOf(player)
     },
     stand: () => {
       standUp()
-      player.position.x += Math.sin(player.rotation.y) * 0.9
-      player.position.z += Math.cos(player.rotation.y) * 0.9
+      return settledOf(player)
     },
     freeSeat: () => {
       const benches = campus.dressing.benches || []
@@ -850,7 +862,7 @@ function activityApi() {
     // Wait until whoever came with you has walked to their seat and sat down.
     companionSettled: () => new Promise((resolve) => {
       const start = performance.now()
-      const check = () => (!companion?.settling || performance.now() - start > 20000 ? resolve() : setTimeout(check, 100))
+      const check = () => ((!companion?.settling && !(companion && inTransition(companion.avatar))) || performance.now() - start > 20000 ? resolve() : setTimeout(check, 100))
       check()
     }),
     hideCompanion: (hidden) => {
@@ -906,7 +918,9 @@ function activityApi() {
       // (the last walk's pull onto its exact end point would hold you back from the seat)
       snapTo = null
       route = []
-      await new Promise((resolve) => { scriptMove = { x: seat.x, z: seat.z, pace: 0.9, resolve } })
+      // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
+      const stand = standSpotFor(player, seat)
+      await new Promise((resolve) => { scriptMove = { x: stand.x, z: stand.z, pace: 0.9, resolve } })
     },
     teleport: (x, z, rot) => {
       route = []
@@ -1164,7 +1178,9 @@ function companionTick(dt) {
       if (stepAvatar(a, st.via.x, st.via.z, 2, dt, true) > 0.1) { poseAvatar(a, true, clock); return }
       st.via = null
     }
-    if (stepAvatar(a, st.x, st.z, 0.9, dt, true) > 0.05) { poseAvatar(a, true, clock); return }
+    // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
+    const stand = st.pose === 'sit' ? standSpotFor(a, st) : st
+    if (stepAvatar(a, stand.x, stand.z, 0.9, dt, true) > 0.05) { poseAvatar(a, true, clock); return }
     a.position.set(st.x, st.y || 0, st.z)
     a.rotation.y = st.rot
     a.userData.pose = st.pose
@@ -1363,6 +1379,7 @@ function rebuild(district, homeId) {
   crowd?.dispose()
   campus = createCampus(district, homeId)
   scene.add(campus.group)
+  scene.userData.floorAt = campus.floor.at // soles rest on paths, plazas and decks (avatar3d)
   crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase() })
   builtId = `${district.meta.id}|${homeId}|${genderOf(currentRun?.character?.avatar)}`
 }

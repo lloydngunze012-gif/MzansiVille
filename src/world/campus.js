@@ -1,3 +1,4 @@
+import { createFloor } from './floor.js'
 import * as THREE from 'three'
 import { buildingLayout } from './layout.js'
 import { buildGrid } from './nav.js'
@@ -115,7 +116,7 @@ export function fitLabels(buildings, camera, dt, focus = null) {
   }
 }
 
-function ribbon(a, b) {
+function ribbon(a, b, floor) {
   const dx = b.x - a.x
   const dz = b.z - a.z
   const len = Math.hypot(dx, dz)
@@ -124,6 +125,7 @@ function ribbon(a, b) {
   mesh.position.set((a.x + b.x) / 2, 0.04, (a.z + b.z) / 2)
   mesh.rotation.y = Math.atan2(-dz, dx)
   mesh.receiveShadow = true
+  floor.box(mesh.position.x, mesh.position.z, len / 2, 1.9, mesh.rotation.y, 0.07)
   return mesh
 }
 
@@ -247,9 +249,11 @@ export function createCampus(district, homeId) {
   lawn.name = 'ground'
   group.add(lawn)
 
+  // What people stand on: paths, the Quad plaza, the terrace deck (floor.js).
+  const floor = createFloor()
   for (const path of layout.paths) {
     for (let i = 1; i < path.length; i += 1) {
-      const piece = ribbon(path[i - 1], path[i])
+      const piece = ribbon(path[i - 1], path[i], floor)
       if (piece) group.add(piece)
     }
   }
@@ -260,13 +264,13 @@ export function createCampus(district, homeId) {
     buildings.add(buildingMesh(building, building.id === homeId))
   }
   group.add(buildings)
-  const dressing = dressPlaces(layout)
+  const dressing = dressPlaces(layout, floor)
   group.add(dressing.group)
   addTrees(group, { ...layout, buildings: layout.buildings.concat(dressing.obstacles.map((o) => ({ ...o }))), plazas: [{ x: 0, z: 0, r: 13 }] })
 
   const grid = buildGrid(layout.obstacles.concat(dressing.obstacles))
   upgrade(buildings, layout.buildings)
-  return { group, ground: lawn, buildings, grid, layout, dressing, surroundings }
+  return { group, ground: lawn, buildings, grid, layout, dressing, surroundings, floor }
 }
 
 // n: 0 day, 1 night. Windows across campus plus the dressed places' lights.

@@ -160,12 +160,13 @@ export function createScenes(api) {
     await api.wait(0.2)
     await api.unfade()
   }
-  // Room seats stand on the room's floor (y 0), however high the seat (a bed edge, a couch).
-  // People walk up to their seat (around the furniture) rather than appear on it.
+  // Feet rest on the floor under the seat (the floor map: a room's floor, the caf deck),
+  // however high the seat (a bed edge, a couch). People walk up to their seat (around
+  // the furniture), turn round and sit down (avatar3d) rather than appear on it.
   const sitOn = async (seat) => {
     await api.walkToSeat(seat)
     api.teleport(seat.x, seat.z, seat.rot)
-    api.pose('sit', seat.y || CHAIR_SEAT, 0)
+    await api.pose('sit', seat.y || CHAIR_SEAT)
   }
 
   // A small counter with a vendor and two people waiting, in front of a place.

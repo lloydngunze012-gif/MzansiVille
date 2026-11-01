@@ -263,6 +263,22 @@ function soleNow(data) {
   }
   return min
 }
+// How far to lift the body so every sole point is on or above what's under it (the
+// scene's floor map: paths, decks, steps; never below the person's own ground).
+function soleLift(data, floorAt, ground) {
+  let need = -Infinity
+  for (const [foot, local] of data.soles) {
+    soleAt.copy(local).applyMatrix4(foot.matrixWorld)
+    const under = Math.max(ground, floorAt(soleAt.x, soleAt.z))
+    if (under - soleAt.y > need) need = under - soleAt.y
+  }
+  return need
+}
+// The floor map of the scene a person is in (scene.userData.floorAt), if any.
+function floorOf(group) {
+  for (let n = group.parent; n; n = n.parent) if (n.userData?.floorAt) return n.userData.floorAt
+  return null
+}
 
 // Put each foot back at the end of its shin (see footInShin in attachModel).
 function carryFeet(model, bones, footInShin) {
@@ -363,6 +379,11 @@ async function attachModel(group, look) {
   // Rest pose of the bones the poses move: not every clip drives them, so they are
   // reset each frame before the clip plays (or the bends would pile up).
   const rest = Object.values(bones).map((bone) => [bone, bone.position.clone(), bone.quaternion.clone()])
+  // Each foot's resting turn relative to the whole body (sitting keeps the feet flat
+  // whatever the clip does to the hips above them).
+  const modelQ = model.getWorldQuaternion(new THREE.Quaternion()).invert()
+  const footFlat = {}
+  for (const side of ['L', 'R']) if (bones[`Foot${side}`]) footFlat[side] = modelQ.clone().multiply(bones[`Foot${side}`].getWorldQuaternion(new THREE.Quaternion()))
   const footInShin = {}
   for (const side of ['L', 'R']) {
     const shin = bones[`LowerLeg${side}`]
@@ -385,7 +406,7 @@ async function attachModel(group, look) {
   group.userData.fade = 0
   fadeIn(group, 0)
   group.add(model)
-  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, soles, rest })
+  Object.assign(group.userData, { mixer, actions, current: '', rigged: true, gait: gaits[gaitKey], yaw: group.rotation.y, headParts: heads, bones, hipHeight, footInShin, footRest, soles, rest, footFlat })
   live.add(group)
   group.dispatchEvent({ type: 'rigged' })
 }
@@ -512,19 +533,30 @@ function bendLegs(group, model, thigh, knee, onGround) {
   // Carry each foot to the end of its bent shin.
   carryFeet(model, bones, group.userData.footInShin)
 }
-const legNames = new Set(['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR'])
+// (and the hips and waist: a seated body is fitted and posed with them at rest, so the
+// walk or idle clip swaying them can't tip the seat of the trousers or a foot off its spot)
+const legNames = new Set(['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR', 'Hips', 'Abdomen'])
 function restLegs(group) {
   for (const [bone, p, q] of group.userData.rest || []) if (legNames.has(bone.name)) { bone.position.copy(p); bone.quaternion.copy(q) }
+}
+// The floor under a seat: the caller's (rooms, beds), else the scene's floor map
+// (a deck, a lecture row), else a standard seat height above the floor.
+function seatFloorOf(group, seatY) {
+  if (group.userData.seatFloor !== undefined) return group.userData.seatFloor
+  const floorAt = floorOf(group)
+  if (floorAt) { const p = group.getWorldPosition(new THREE.Vector3()); return floorAt(p.x, p.z) }
+  return seatY < SIT.low ? 0 : seatY - SIT.seatHeight
 }
 function fitSeat(group, model, seatY, onGround) {
   const { bones, hipHeight } = group.userData
   // From the legs' rest pose, not this frame's clip (the walk may still be fading out).
   const restore = () => restLegs(group)
   const fit = { seatY, y: -(hipHeight || 0.9) + SIT.drop, z: SIT.back, thigh: SIT.thigh, knee: SIT.knee }
-  const pose = () => { restore(); model.position.set(0, fit.y, fit.z); bendLegs(group, model, fit.thigh, fit.knee, onGround) }
+  // (square to the seat: a sit-down measures while the body is still turning round)
+  const pose = () => { restore(); model.rotation.set(0, 0, 0); model.position.set(0, fit.y, fit.z); bendLegs(group, model, fit.thigh, fit.knee, onGround) }
   const isCloth = (n) => n.userData.part === 'legs' || n.userData.part === 'body'
   const isFeet = (n) => n.userData.part === 'feet'
-  const floor = group.userData.seatFloor ?? (seatY < SIT.low ? 0 : seatY - SIT.seatHeight)
+  const floor = seatFloorOf(group, seatY)
   const legs = !onGround && bones.FootL && bones.LowerLegL && bones.UpperLegL
   pose()
   // The back against the backrest: the rearmost point of the lower back.
@@ -568,19 +600,252 @@ function fitSeat(group, model, seatY, onGround) {
     }
   }
   restore()
+  fit.floorY = floor
   return fit
 }
 const seatAt = new THREE.Vector3()
 function sitPose(group, onGround) {
   const data = group.userData
   const model = group.getObjectByName('rig')
+  // (fresh: on the first frame on a seat the world matrix still has them standing)
+  group.updateMatrixWorld(true)
   const seatY = +group.getWorldPosition(seatAt).y.toFixed(3)
-  if (data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround || data.sitFit.floor !== data.seatFloor) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround, floor: data.seatFloor }
+  // (not while sitting down or standing up: the caller may already have cleared the seat's floor)
+  const refit = data.sitFit?.seatY !== seatY || data.sitFit.onGround !== onGround || data.sitFit.floor !== data.seatFloor
+  if (refit && !(data.sitMove && data.sitFit)) data.sitFit = { ...fitSeat(group, model, seatY, onGround), onGround, floor: data.seatFloor }
   const fit = data.sitFit
   model.position.y = fit.y
   model.position.z = fit.z
   restLegs(group)
+  if (!onGround && data.bones.FootR && data.footInShin?.R) { sitBetween(group, model, 1); return }
   bendLegs(group, model, fit.thigh, fit.knee, onGround)
+}
+
+// Sitting down and standing up, with the feet planted. The pack has no sit clips,
+// so the legs are bent by hand: from standing in front of the seat (back to it),
+// the hips go back and down onto the seat while each ankle stays where it is (leg
+// IK: thigh and shin angles from the hip-to-ankle distance), and the body leans
+// forward a little on the way, like a person lowering themselves. Standing up is
+// the same in reverse. poseAvatar starts one when the pose changes between 'stand'
+// and 'sit' (callers just set the pose and the seat position).
+export const SIT_MOVE = { turn: 3, lower: 1.0, lean: 0.4, reach: 1.6 }
+const toLocal = (group, bone) => group.worldToLocal(worldOf(bone))
+// The standing stance for this seat (kept with the seat fit): where the ankles
+// plant, in group space, so that seated they rest where the fit put them.
+function sitRig(group, model, fit) {
+  if (fit.rig) return fit.rig
+  const { bones } = group.userData
+  restLegs(group)
+  model.position.set(0, 0, 0)
+  model.rotation.set(0, 0, 0)
+  model.updateMatrixWorld(true)
+  const rest = { L: toLocal(group, bones.FootL), R: toLocal(group, bones.FootR) }
+  // Standing on the floor with the rest legs: how high the model sits.
+  const floor = fit.floorY - fit.seatY
+  const standY = floor - group.worldToLocal(new THREE.Vector3(0, lowest(group, (n) => n.userData.part === 'feet'), 0)).y
+  // How far forward the fit put the feet.
+  model.position.set(0, fit.y, fit.z)
+  bendLegs(group, model, fit.thigh, fit.knee, false)
+  const seated = toLocal(group, bones.FootL)
+  restLegs(group)
+  model.position.set(0, 0, 0)
+  model.updateMatrixWorld(true)
+  const stand = { x: 0, y: standY, z: seated.z - rest.L.z }
+  const plant = (v) => new THREE.Vector3(v.x + stand.x, v.y + stand.y, v.z + stand.z)
+  fit.rig = { stand, ankles: { L: plant(rest.L), R: plant(rest.R) }, lift: { L: new THREE.Vector3(), R: new THREE.Vector3() } }
+  group.userData.standReach = stand.z
+  // Some shoes are partly skinned to the shin and sag or twist as the knee bends:
+  // compare each shoe standing and seated, and move that ankle by the difference so
+  // the shoe itself stays put (a few rounds: moving the ankle changes the knee too).
+  sitBetween(group, model, 0)
+  model.updateMatrixWorld(true)
+  const standing = shoesBySide(group)
+  // (each round also puts the seat of the trousers back on the seat: the planted legs
+  // angle the thighs a little differently from the fit)
+  for (let round = 0; round < 6; round++) {
+    sitBetween(group, model, 1)
+    model.updateMatrixWorld(true)
+    const butt = lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(bones.Hips || model))
+    if (Number.isFinite(butt)) fit.y -= butt - fit.seatY
+    const seatedShoes = shoesBySide(group)
+    for (const side of ['L', 'R']) {
+      const a = standing[side]
+      const b = seatedShoes[side]
+      if (!a || !b) continue
+      fit.rig.lift[side].add(group.worldToLocal(a.mid.clone()).sub(group.worldToLocal(b.mid.clone())).setY(0))
+      fit.rig.lift[side].y += fit.floorY - b.low
+    }
+  }
+  restLegs(group)
+  model.position.set(0, 0, 0)
+  model.updateMatrixWorld(true)
+  return fit.rig
+}
+// Each shoe's middle and lowest point (world), split by the body's left and right.
+function shoesBySide(group) {
+  const out = {}
+  group.traverse((node) => {
+    if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'feet') return
+    const count = node.geometry.attributes.position.count
+    const step = Math.max(1, Math.floor(count / 400))
+    for (let i = 0; i < count; i += step) {
+      node.getVertexPosition(i, vtx)
+      node.localToWorld(vtx)
+      const side = group.worldToLocal(soleAt.copy(vtx)).x > 0 ? 'L' : 'R'
+      const o = (out[side] ||= { sum: new THREE.Vector3(), n: 0, low: Infinity })
+      o.sum.add(vtx)
+      o.n++
+      if (vtx.y < o.low) o.low = vtx.y
+    }
+  })
+  for (const o of Object.values(out)) o.mid = o.sum.divideScalar(o.n)
+  return out
+}
+const clamp1 = (v) => Math.max(-1, Math.min(1, v))
+const legA = new THREE.Vector3()
+const legB = new THREE.Vector3()
+const axisW = new THREE.Vector3()
+// Two-bone leg IK for one side: bend the knee to the hip-to-target distance, then
+// swing the thigh so the ankle lands on the target (world space).
+function legTo(group, side, target) {
+  const { bones, footInShin } = group.userData
+  const up = bones[`UpperLeg${side}`]
+  const low = bones[`LowerLeg${side}`]
+  const foot = bones[`Foot${side}`]
+  if (!up || !low || !foot || !footInShin?.[side]) return
+  const H = worldOf(up)
+  const K = worldOf(low)
+  const A = low.localToWorld(footInShin[side].clone())
+  const L1 = H.distanceTo(K)
+  const L2 = K.distanceTo(A)
+  const D = Math.max(Math.abs(L1 - L2) + 0.01, Math.min(L1 + L2 - 0.001, H.distanceTo(target)))
+  const before = legA.subVectors(H, K).angleTo(legB.subVectors(A, K))
+  const after = Math.acos(clamp1((L1 * L1 + L2 * L2 - D * D) / (2 * L1 * L2)))
+  sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
+  turnWorld(low, sideways, before - after)
+  const reach = low.localToWorld(footInShin[side].clone()).sub(H).normalize()
+  const want = target.clone().sub(H).normalize()
+  const angle = Math.acos(clamp1(reach.dot(want)))
+  if (angle > 1e-5) turnWorld(up, axisW.crossVectors(reach, want).normalize(), angle)
+}
+// Feet flat to the body, whatever the clip turned the bones above them.
+const flatQ = new THREE.Quaternion()
+function flatFeet(group, model) {
+  const { bones, footFlat } = group.userData
+  if (!footFlat) return
+  model.getWorldQuaternion(flatQ)
+  for (const side of ['L', 'R']) {
+    const foot = bones[`Foot${side}`]
+    if (!foot || !footFlat[side]) continue
+    const want = flatQ.clone().multiply(footFlat[side])
+    foot.quaternion.copy(foot.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(want))
+    foot.updateMatrixWorld(true)
+  }
+}
+// One frame between standing in front of the seat (k = 0) and seated (k = 1): the
+// hips travel back and down, each ankle stays planted where it stood.
+function sitBetween(group, model, k) {
+  const data = group.userData
+  const fit = data.sitFit
+  const rig = sitRig(group, model, fit)
+  const e = k * k * (3 - 2 * k)
+  // The hips go back a little sooner than they go down.
+  const back = Math.min(1, e * 1.25)
+  restLegs(group)
+  model.rotation.y = 0
+  model.position.set(rig.stand.x * (1 - back), rig.stand.y + (fit.y - rig.stand.y) * e, rig.stand.z + (fit.z - rig.stand.z) * back)
+  model.updateMatrixWorld(true)
+  // (the sag comes early, with the first bend of the knee)
+  for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
+  carryFeet(model, data.bones, data.footInShin)
+  flatFeet(group, model)
+  // Leaning forward over the knees on the way down (and up).
+  if (data.bones.Abdomen && k > 0 && k < 1) {
+    sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
+    turnWorld(data.bones.Abdomen, sideways, SIT_MOVE.lean * Math.sin(Math.PI * k))
+  }
+}
+// Is this person sitting down or standing up right now?
+export function inTransition(group) { return Boolean(group.userData.sitMove) }
+// Where to stand to sit on a seat (parent space): in front of it, ankles over where
+// they'll rest. seat: { x, z, rot } (rot faces out of the seat).
+export function standSpotFor(group, seat) {
+  const z = group.userData.standReach ?? 0.3
+  return { x: seat.x + Math.sin(seat.rot) * z, z: seat.z + Math.cos(seat.rot) * z }
+}
+// Starts a sit-down or stand-up when the pose changes between standing and sitting.
+const isStanding = (p) => p === undefined || p === 'stand' || p === 'talk' || p === 'run'
+function startSitMove(group) {
+  const data = group.userData
+  const prev = data.prevPose
+  const pose = data.pose || 'stand'
+  data.prevPose = pose
+  if (pose === 'sit' && prev && isStanding(prev) && data.standAt && group.position.y >= 0.2 && !data.sitMove) {
+    // From where they stood, in the seat's own frame.
+    const dx = data.standAt.x - group.position.x
+    const dz = data.standAt.z - group.position.z
+    if (Math.hypot(dx, dz) < SIT_MOVE.reach) {
+      const c = Math.cos(group.rotation.y)
+      const s = Math.sin(group.rotation.y)
+      data.sitMove = { dir: 1, k: 0, turn: 0, from: { x: dx * c - dz * s, z: dx * s + dz * c, yaw: wrap(data.standAt.yaw - group.rotation.y) } }
+    }
+  } else if (isStanding(pose) && prev === 'sit' && data.sitFit && !data.sitFit.onGround && data.seatAt && !data.sitMove) {
+    data.sitMove = { dir: -1, k: 1, seat: { ...data.seatAt } }
+  }
+  if (pose === 'sit') data.seatAt = { x: group.position.x, y: group.position.y, z: group.position.z, rot: group.rotation.y }
+  if (pose === 'lie') { data.sitMove = null; data.seatAt = null }
+  return data.sitMove
+}
+// One frame of a sit-down (turn round on the spot, then lower) or a stand-up (rise,
+// then they stand in front of the seat).
+function sitMotion(group, model, move, dt) {
+  const data = group.userData
+  if (move.dir < 0) {
+    // Hold the seat while rising (callers may already have moved the person on).
+    group.position.set(move.seat.x, move.seat.y, move.seat.z)
+    group.rotation.y = move.seat.rot
+    group.updateMatrixWorld(true)
+  }
+  sitPose(group, false) // keeps the seat fit current
+  const rig = sitRig(group, model, data.sitFit)
+  restLegs(group)
+  if (move.dir > 0 && move.turn < 1) {
+    // Part-way round, measure the seat again: the body has settled into the idle (the
+    // first measure, mid-stride, sits the hips and feet a little off), and the
+    // shuffle onto the spot in front of the seat smoothly takes the new spot.
+    move.t = (move.t || 0) + dt
+    if (!move.refit && move.t >= 0.15) {
+      move.refit = true
+      data.sitFit = null
+      sitPose(group, false)
+      restLegs(group)
+    }
+    const rig = sitRig(group, model, data.sitFit)
+    const span = 0.2 + Math.abs(move.from.yaw) / SIT_MOVE.turn
+    move.turn = Math.min(1, move.turn + dt / span)
+    const e = move.turn * move.turn * (3 - 2 * move.turn)
+    model.rotation.y = move.from.yaw * (1 - e)
+    model.position.set(move.from.x + (rig.stand.x - move.from.x) * e, rig.stand.y, move.from.z + (rig.stand.z - move.from.z) * e)
+    carryFeet(model, data.bones, data.footInShin)
+    data.sitPhase = 'turn'
+    return
+  }
+  move.k = Math.max(0, Math.min(1, move.k + (move.dir * dt) / SIT_MOVE.lower))
+  data.sitPhase = move.dir > 0 ? 'lower' : 'rise'
+  sitBetween(group, model, move.k)
+  if (move.dir > 0 && move.k >= 1) { data.sitMove = null; data.sitPhase = 'seated' }
+  if (move.dir < 0 && move.k <= 0) {
+    // Standing in front of the seat now, on the floor.
+    const c = Math.cos(move.seat.rot)
+    const s = Math.sin(move.seat.rot)
+    const fit = data.sitFit
+    group.position.set(move.seat.x + rig.stand.x * c + rig.stand.z * s, fit.floorY, move.seat.z - rig.stand.x * s + rig.stand.z * c)
+    model.position.set(0, 0, 0)
+    data.sitMove = null
+    data.sitPhase = 'up'
+    data.yaw = move.seat.rot
+    data.lastPos?.copy(group.position)
+  }
 }
 
 // Lying: the caller tips the group onto its back (rotation.x = -PI/2*recline, see
@@ -656,7 +921,7 @@ export function poseAvatar(group, walking, time) {
   // first, so the step never points more than CRAB away from the body.
   const upright = data.pose !== 'sit' && data.pose !== 'lie' && data.pose !== 'dance'
   data.crab = 0
-  if (data.rigged && upright && walking && last && moved > 1e-4 && moved < 2 && dt > 0) {
+  if (data.rigged && upright && walking && !data.sitMove && last && moved > 1e-4 && moved < 2 && dt > 0) {
     const want = Math.atan2(group.position.x - last.x, group.position.z - last.z)
     if (data.yaw === undefined) data.yaw = want
     const off = wrap(want - data.yaw)
@@ -682,8 +947,9 @@ export function poseAvatar(group, walking, time) {
     return
   }
   if (data.baseY !== undefined) { if (data.pose !== 'lie') group.position.y = data.baseY; group.rotation.z = 0; data.baseY = undefined }
+  const move = startSitMove(group)
   const onGround = data.pose === 'sit' && group.position.y < 0.2
-  const settled = data.pose === 'sit' || data.pose === 'lie'
+  const settled = data.pose === 'sit' || data.pose === 'lie' || Boolean(move)
   // Walking in place against a wall reads as sliding: stand still instead.
   const moving = walking && data.speed > 0.25
   const fast = data.speed > RUN_FROM
@@ -714,10 +980,18 @@ export function poseAvatar(group, walking, time) {
   if (data.pose !== 'sit' && data.pose !== 'lie') carryFeet(model, data.bones, data.footInShin)
   // Standing on the soles: the lowest sole point rests on the ground (the group's y).
   if (!settled && data.soles?.length) {
-    const sole = soleNow(data)
-    if (Number.isFinite(sole)) model.position.y = group.getWorldPosition(seatAt).y - sole
+    const ground = group.getWorldPosition(seatAt).y
+    const floorAt = floorOf(group)
+    if (floorAt) {
+      const lift = soleLift(data, floorAt, ground)
+      if (Number.isFinite(lift)) model.position.y = lift
+    } else {
+      const sole = soleNow(data)
+      if (Number.isFinite(sole)) model.position.y = ground - sole
+    }
   } else if (!settled) model.position.y = liftOf(data)
-  if (data.pose === 'sit') sitPose(group, onGround)
+  if (move) sitMotion(group, model, move, dt)
+  else if (data.pose === 'sit') sitPose(group, onGround)
   if (data.pose === 'lie') liePose(group, model)
   // Slumping forward (dozing at a desk): bend at the waist, hips stay on the seat.
   if (data.slump && data.bones.Abdomen) {
@@ -730,6 +1004,7 @@ export function poseAvatar(group, walking, time) {
     model.position.y += Math.abs(Math.sin(beat * Math.PI)) * 0.1
     model.rotation.y += Math.sin(beat * Math.PI / 2) * 0.4
   }
+  if (!settled) data.standAt = { x: group.position.x, z: group.position.z, yaw: data.yaw }
   if (data.fade !== undefined && data.fade < 1) fadeIn(group, dt)
 }
 
@@ -776,6 +1051,7 @@ export function measureBody(group) {
   const out = {
     id: data.isPlayer ? 'player' : data.personId || 'extra',
     pose: data.pose || 'stand',
+    phase: data.sitMove ? data.sitPhase : null,
     clip: data.current,
     rate: +(data.actions?.[data.current]?.timeScale ?? 0).toFixed(2),
     t: +(data.actions?.[data.current]?.time ?? 0).toFixed(3),
@@ -793,12 +1069,18 @@ export function measureBody(group) {
     standIn: group.children.some((c) => c.userData.standIn && c.visible),
     bareFeet: bareFeet(group),
   }
+  // On a floor map: each shoe's lowest point against what's under that shoe.
+  const floorAt = floorOf(group)
+  if (floorAt && out.pose !== 'sit' && out.pose !== 'lie') {
+    const gap = Math.min(...feetNow(group).map((f) => f[3] - Math.max(ground, floorAt(f[0], f[2]))))
+    if (Number.isFinite(gap)) out.ground = +(out.sole - gap).toFixed(3)
+  }
   // Sitting: the seat of the trousers vs the seat, the soles vs the floor under it.
   if (out.pose === 'sit' && out.seatOfPants !== null) {
     const seat = group.getWorldPosition(new THREE.Vector3()).y
     out.seatGap = +(out.seatOfPants - seat).toFixed(3)
-    out.footGap = +(out.sole - (data.seatFloor ?? (seat < SIT.low ? 0 : seat - SIT.seatHeight))).toFixed(3)
-    out.fit = data.sitFit && { thigh: +data.sitFit.thigh.toFixed(2), knee: +data.sitFit.knee.toFixed(2), y: +data.sitFit.y.toFixed(3), z: +data.sitFit.z.toFixed(3), seatY: data.sitFit.seatY, onGround: data.sitFit.onGround }
+    out.footGap = +(out.sole - seatFloorOf(group, seat)).toFixed(3)
+    out.fit = data.sitFit && { thigh: +data.sitFit.thigh.toFixed(2), knee: +data.sitFit.knee.toFixed(2), y: +data.sitFit.y.toFixed(3), z: +data.sitFit.z.toFixed(3), seatY: data.sitFit.seatY, onGround: data.sitFit.onGround, floorY: data.sitFit.floorY, lift: data.sitFit.rig && Object.fromEntries(Object.entries(data.sitFit.rig.lift).map(([k, v]) => [k, v.toArray().map((n) => +n.toFixed(3))])) }
     out.walking = data.current
   }
   // Lying: the body's lowest point vs the mattress top (the origin).
@@ -828,7 +1110,7 @@ if (typeof window !== 'undefined') {
       const id = d.isPlayer ? 'player' : d.personId || 'extra'
       if (rec.ids && !rec.ids.includes(id)) continue
       const p = g.parent ? g.parent.localToWorld(g.position.clone()) : g.position.clone()
-      const row = { id, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', walking: d.current === CLIP.walk || d.current === CLIP.sprint }
+      const row = { id, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', phase: d.sitMove ? d.sitPhase : null, walking: d.current === CLIP.walk || d.current === CLIP.sprint }
       if (full || rec.feet?.includes(id)) {
         const m = measureBody(g)
         Object.assign(row, { sole: m.sole, ground: m.ground, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
@@ -843,12 +1125,14 @@ if (typeof window !== 'undefined') {
   window.mzansiRecordStop = () => { const r = rec; rec = null; return r?.frames || [] }
 }
 
-// Where the two feet are in the world (the lowest sole point of each), for the
-// planted-feet checks.
+// Where the two feet are in the world (the middle of each shoe, and its lowest
+// point), for the planted-feet checks.
 function feetNow(group) {
   const out = []
   for (const side of ['L', 'R']) {
-    let best = null
+    const sum = new THREE.Vector3()
+    let n = 0
+    let low = Infinity
     group.traverse((node) => {
       if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'feet') return
       const count = node.geometry.attributes.position.count
@@ -858,10 +1142,12 @@ function feetNow(group) {
         node.localToWorld(vtx)
         const local = group.worldToLocal(vtx.clone())
         if ((side === 'L') !== (local.x > 0)) continue
-        if (!best || vtx.y < best.y) best = vtx.clone()
+        sum.add(vtx)
+        n++
+        low = Math.min(low, vtx.y)
       }
     })
-    if (best) out.push([+best.x.toFixed(3), +best.y.toFixed(3), +best.z.toFixed(3)])
+    if (n) out.push([+(sum.x / n).toFixed(3), +(sum.y / n).toFixed(3), +(sum.z / n).toFixed(3), +low.toFixed(3)])
   }
   return out
 }

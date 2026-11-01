@@ -77,7 +77,7 @@ function sign(parent, lines, { x, y, z, rot = 0, w = 3, h = 0.8, bg = '#22143b',
 
 const facing = (x, z, tx, tz) => Math.atan2(tx - x, tz - z)
 
-export function dressPlaces(layout) {
+export function dressPlaces(layout, floor) {
   const group = new THREE.Group()
   group.name = 'dressing'
   const lights = [] // { light, base }
@@ -197,6 +197,8 @@ export function dressPlaces(layout) {
     // Paving with a ring of darker pavers.
     const plaza = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.06, 40), mat(0xd9c49c))
     plaza.position.set(cx, 0.03, cz)
+    floor?.disc(cx, cz, 11, 0.06)
+    floor?.disc(cx, cz, 6.3, 0.065, 5.6)
     plaza.receiveShadow = true
     group.add(plaza)
     const ring = new THREE.Mesh(new THREE.RingGeometry(5.6, 6.3, 40), mat(0xb89c6e))
@@ -439,6 +441,7 @@ export function dressPlaces(layout) {
     // Terrace on the west side: deck, tables, chairs, two people eating, lights.
     const tx = b.minX - 3
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
+    floor?.box(tx, cz, 2.2, 3.2, 0, 0.08)
     for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
       prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
       for (const [cx2, r] of [[tx - 0.95, Math.PI / 2], [tx + 0.95, -Math.PI / 2]]) {
