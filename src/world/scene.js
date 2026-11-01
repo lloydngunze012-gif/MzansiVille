@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
@@ -15,6 +16,8 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
+import { createPlayerState } from './player-state.js'
+import { createStick, touchDevice } from './stick.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
 import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
@@ -67,7 +70,8 @@ let currentDistrict = null
 let actionLeft = 0
 let actionCommit = null
 let tourIndex = 0
-let pendingAction = null
+let ps = null // the player's one state (player-state.js)
+let pad = null // the phone thumbstick (stick.js)
 let snapTo = null
 let gateDay = ''
 let guide = null
@@ -146,7 +150,7 @@ function lectureArrive() {
 function updateGuide() {
   if (!player || !campus) return
   const door = lectureDoor()
-  if (lectureDue() && !acting && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
+  if (lectureDue() && ps.open && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
   if (!currentRun?.lectureRoute) { if (guide) clearGuide(); return }
   if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide()
   for (const item of guide.children) {
@@ -238,9 +242,11 @@ function ensureRenderer() {
   scene.fog = new THREE.Fog(0xc5e6f4, 70, 190)
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 280)
   rig = createCameraRig()
+  ps = createPlayerState({ host, onExit: leaveState, alive: stateAlive })
   mapUi = createCampusMap(host)
-  mapUi.setHandler((x, z) => walkTo(x, z))
-  mapUi.setGo((id) => goTo(id))
+  // (the map is an order: whatever you were doing, you leave it and go)
+  mapUi.setHandler((x, z) => { ps.leave('map'); walkTo(x, z) })
+  mapUi.setGo((id) => { ps.leave('map'); goTo(id) })
 
   hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
   ambient = new THREE.AmbientLight(0xfff1dc, 0.25)
@@ -259,12 +265,19 @@ function ensureRenderer() {
   sun.target = sunTarget
   scene.add(sun)
 
+  // Phones get a thumbstick (the minimap moves up to the top right).
+  if (touchDevice()) {
+    pad = createStick(host, { onPress: stopHere })
+    document.body.classList.add('has-stick')
+  }
   input = bindCampusInput(renderer.domElement, {
     camera,
     cameraRig: rig,
     raycaster,
+    pad,
+    onSelf: tappedSelf,
     worldOn: () => visible && host.dataset.on === '1',
-    blocked: () => mapUi.isOpen() || actionLeft > 0 || acting || Boolean(talk) || Boolean(pendingAction) || !host.querySelector('.onboard').hidden,
+    blocked: () => !ps.open,
     pickables: () => ({
       buildings: campus ? [campus.buildings] : [],
       ground: campus ? [campus.ground] : [],
@@ -275,11 +288,12 @@ function ensureRenderer() {
     onVendor: (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a) },
     onGround: (x, z) => walkTo(x, z),
     onBuilding: (id) => approach(id),
-    onStick: (x, z) => {
+    onStick: (x, z, run) => {
       route = []
       routeGoal = null
       arrive = null
-      steering = { x, z }
+      snapTo = null
+      steering = { x, z, run }
     },
   })
 
@@ -291,7 +305,7 @@ function ensureRenderer() {
   window.addEventListener('mzansi-help', () => { if (visible) showTour(true) })
   window.addEventListener('mzansi-act', (event) => beginAction(event.detail))
   // Used by tests and the map: walk to a building's door and enter it.
-  window.addEventListener('mzansi-walk-to', (event) => { if (visible) approach(event.detail) })
+  window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string' && ps.open) approach(event.detail) })
 }
 
 function resize() {
@@ -332,8 +346,38 @@ function activePlaces(district, run) {
   return ids
 }
 
+// Stop on the spot: the stick was touched, or you tapped yourself.
+function stopHere() {
+  if (!player || !ps.open) return
+  route = []
+  routeGoal = null
+  arrive = null
+  snapTo = null
+  endGoing()
+  if (player.userData.pose === 'run') player.userData.pose = 'stand'
+}
+// Is this screen point on the player (feet to head, a body's width)?
+function tappedSelf(x, y) {
+  if (!player || !camera) return false
+  const rect = renderer.domElement.getBoundingClientRect()
+  const at = (h) => {
+    const p = new THREE.Vector3(player.position.x, player.position.y + h, player.position.z).project(camera)
+    return { x: rect.left + (p.x * 0.5 + 0.5) * rect.width, y: rect.top + (-p.y * 0.5 + 0.5) * rect.height, behind: p.z > 1 }
+  }
+  const feet = at(0)
+  const head = at(1.8)
+  if (feet.behind || head.behind) return false
+  const half = Math.max(22, Math.abs(feet.y - head.y) * 0.22)
+  const top = Math.min(feet.y, head.y) - 8
+  const bottom = Math.max(feet.y, head.y) + 8
+  const mid = (feet.x + head.x) / 2
+  if (y < top || y > bottom || Math.abs(x - mid) > half) return false
+  stopHere()
+  return true
+}
+
 function walkTo(x, z, done) {
-  if (!campus || !player || actionLeft > 0) return
+  if (!campus || !player) return
   const goalCell = nearestOpen(campus.grid, { x, z })
   routeGoal = cellCenter(goalCell.c, goalCell.r)
   const start = nearestOpen(campus.grid, player.position)
@@ -343,7 +387,7 @@ function walkTo(x, z, done) {
   stuck = 0
   // A brisk walk, or a jog past 15 m (map Skip for the longest trips).
   speed = paceFor(routeLength())
-  if (player.userData.pose === 'stand' || player.userData.pose === 'run') player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
+  if (['stand', 'run', undefined].includes(player.userData.pose)) player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
   host.dataset.walkSeconds = (routeLength() / speed).toFixed(1)
 }
 
@@ -395,9 +439,12 @@ function approach(id, onArrive) {
   if (!building) return
   const door = doorPoint(building)
   const dist = Math.hypot(door.x - player.position.x, door.z - player.position.z)
-  if (dist < 2.2) { onArrive?.(); openPlace(id) }
-  else walkTo(door.x, door.z, () => { onArrive?.(); openPlace(id) })
+  const there = () => { faceTo = { x: building.x, z: building.z }; onArrive?.(); openPlace(id) }
+  if (dist < 2.2) there()
+  else walkTo(door.x, door.z, there)
 }
+// Arrived: turn on the spot to face the place (the body turns, the feet stay put).
+let faceTo = null
 
 function openPlace(id) {
   if (id === lectureVenue() && lectureArrive()) return
@@ -558,8 +605,10 @@ function overShoulder(from, to) {
 }
 
 let talk = null
+// Tapping someone: walk up to them (a walk like any other: tap elsewhere and it's off),
+// then the chat opens and the player is 'talking' until goodbye.
 function startTalk(avatar) {
-  if (!player || talk || acting || actionLeft > 0) return
+  if (!player || !ps.open) return
   const id = avatar.userData.personId
   // Vendors serve the queue: from outside the line, you are sent to the back of it.
   if ((id === 'auntie_pinky' || id === 'mam_gugu') && window.mzansiVendorReady !== id) {
@@ -567,9 +616,8 @@ function startTalk(avatar) {
     return
   }
   const walker = crowd?.people.find((p) => p.avatar === avatar)
-  if (walker) walker.talking = true
-  talk = { avatar, id, walker }
-  host.dataset.talking = id
+  // (a walker waits for you to come up; they carry on if you go elsewhere)
+  if (walker && !walker.sitting) { walker.wait = Math.max(walker.wait || 0, 4); walker.resume = Boolean(walker.route?.length) }
   // Where to stand: in front of someone who stays put (seated, behind a counter),
   // otherwise a step away on your side.
   const fixed = !walker || walker.sitting
@@ -590,25 +638,49 @@ function startTalk(avatar) {
   }
   const cell = nearestOpen(campus.grid, { x: tx, z: tz })
   if (cell) { const c = cellCenter(cell.c, cell.r); tx = c.x; tz = c.z }
-  let opened = false
-  const open = () => {
-    if (!talk || opened) return
-    opened = true
+  // The chat opens at once; if they're a few steps off, you walk up as it opens.
+  const face = () => {
     player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
     if (!fixed) avatar.rotation.y = Math.atan2(player.position.x - avatar.position.x, player.position.z - avatar.position.z)
     closeShot = overShoulder(player.position, avatar.position)
+  }
+  const open = () => {
+    if (talk || !ps.open) return
+    if (walker) walker.talking = true
+    talk = { avatar, id, walker }
+    host.dataset.talking = id
+    ps.set('talking')
+    if (!route.length) face()
     gesture(avatar, 'interact-right')
     // Talking poses: they gesture as they speak (seated people talk seated).
     talk.pose = avatar.userData.pose
     if (avatar.userData.pose !== 'sit') avatar.userData.pose = 'talk'
     window.dispatchEvent(new CustomEvent('mzansi-talk', { detail: { id } }))
   }
-  if (Math.hypot(tx - player.position.x, tz - player.position.z) < 0.5) open()
-  else {
-    walkTo(tx, tz, () => { snapTo = { x: tx, z: tz }; setTimeout(open, ms(250)) })
-    if (!route.length) open()
-    setTimeout(() => { if (talk && !opened) { route = []; arrive = null; open() } }, ms(5000))
+  if (Math.hypot(tx - player.position.x, tz - player.position.z) > 0.5) {
+    const reached = () => { snapTo = { x: tx, z: tz }; setTimeout(() => { if (talk?.avatar === avatar) face() }, ms(250)) }
+    walkTo(tx, tz, reached)
+    // (a walk up, not a jog)
+    speed = Math.min(speed, WALK)
+    if (player.userData.pose === 'run') player.userData.pose = 'stand'
+    // (held up on the way: talk from where you are)
+    setTimeout(() => { if (arrive === reached) { route = []; arrive = null; if (talk?.avatar === avatar) face() } }, ms(5000))
   }
+  open()
+}
+// The chat is over (goodbye, or an action that ends it): the camera comes back, the
+// person carries on, and the player is free.
+function endTalkHere() {
+  if (!talk) return null
+  if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
+  if (talk.pose !== undefined) talk.avatar.userData.pose = talk.pose
+  const them = talk.avatar
+  talk = null
+  closeShot = null
+  delete host.dataset.talking
+  leaveLines()
+  if (ps.state === 'talking') ps.free()
+  return them
 }
 // Tests: where someone is on screen, so a test can tap them like a player would.
 // Tests: a world point on screen, and the glowing route to the lecture.
@@ -823,18 +895,33 @@ window.mzansiHeads = (ids = []) => {
     const dist = camera.position.distanceTo(c)
     ray.set(camera.position, c.clone().sub(camera.position).normalize())
     ray.far = dist - 0.25
-    const hit = ray.intersectObjects(blockers, true).find((h) => h.object.visible && !h.object.userData.standIn && h.object.name !== 'beacon' && h.object.name !== 'badge' && h.object.type === 'Mesh')
+    const hit = ray.intersectObjects(blockers, true).find((h) => h.object.visible && !h.object.userData.standIn && !h.object.userData.seeThrough && h.object.name !== 'beacon' && h.object.name !== 'badge' && h.object.type === 'Mesh')
     out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId, inside, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
   }
   return { mode: rig.mode, close: Boolean(closeShot), heads: out }
 }
-window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.people.length), people: q.people.length, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
+window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.line.order.length), people: q.people.length, order: q.line.order.map((a) => (a.userData.isPlayer ? 'player' : a.userData.personId)), serving: q.line.serving ? (q.line.serving.userData.isPlayer ? 'player' : q.line.serving.userData.personId) : null, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
 window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.atan2(x - player.position.x, z - player.position.z); rig.facing = a; player.rotation.y = a }
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
 window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
 window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
+window.mzansiPlaceOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? { x: b.x, z: b.z, door: doorPoint(b) } : null }
+window.mzansiHomeId = () => (currentDistrict && currentRun ? homePlaceId(currentDistrict, currentRun.character?.residence) : null)
+// Tests (no mirrored text): every sign with words on it, and whether it reads back to
+// front (a mirror in its transform, or seen through a two-sided face) or upside down.
+window.mzansiSigns = () => {
+  const out = []
+  scene?.traverse((m) => {
+    if (!m.isMesh || m.isSprite || !m.material?.map?.isCanvasTexture || m.name === 'sign-back') return
+    m.updateMatrixWorld()
+    const up = new THREE.Vector3(0, 1, 0).transformDirection(m.matrixWorld)
+    const mirrored = m.matrixWorld.determinant() < 0 || (m.material.side === THREE.DoubleSide && !m.children.some((c) => c.name === 'sign-back'))
+    out.push({ name: m.name || m.parent?.name || 'mesh', at: m.getWorldPosition(new THREE.Vector3()).toArray().map((v) => +v.toFixed(1)), mirrored, upsideDown: up.y < -0.2, flat: Math.abs(up.y) < 0.2 })
+  })
+  return out
+}
 window.mzansiDoorOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? doorPoint(b) : null }
 window.mzansiRoute = () => {
   const door = lectureDoor()
@@ -878,13 +965,8 @@ window.addEventListener('mzansi-talk-react', (event) => {
   if (tone === 'good') setTimeout(() => player && gesture(player, 'emote-yes'), ms(500))
 })
 window.addEventListener('mzansi-talk-end', (event) => {
-  if (!talk) return
-  if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
-  if (talk.pose !== undefined) talk.avatar.userData.pose = talk.pose
-  const them = talk.avatar
-  talk = null
-  closeShot = null
-  delete host.dataset.talking
+  const them = endTalkHere()
+  if (!them) return
   if (event.detail?.away && player && campus) {
     // A goodbye you can see: they wave, you turn and walk a few steps off.
     gesture(them, 'emote-yes')
@@ -969,7 +1051,7 @@ let activities = null
 // Resolves once a sit-down or stand-up has finished (it starts on the next frame).
 const settledOf = (a) => new Promise((resolve) => {
   let frames = 0
-  const check = () => { if (++frames > 2 && !inTransition(a)) resolve(); else requestAnimationFrame(check) }
+  const check = () => { ps?.busy(0.3); if (++frames > 2 && !inTransition(a)) resolve(); else requestAnimationFrame(check) }
   requestAnimationFrame(check)
 })
 const BENCH_Y = 0.45
@@ -1004,7 +1086,8 @@ function activityApi() {
     get dressing() { return campus.dressing },
     spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
     // Scene walks always finish: if the path is blocked, step into place after a while.
-    walkTo: async (x, z, pace = WALK) => {
+    // (no pace given: a brisk walk, or a jog past 15 m, like any trip)
+    walkTo: async (x, z, pace) => {
       if (inTransition(player)) await settledOf(player)
       // (a walk asked for while the payment bar runs would be dropped: wait for it)
       while (actionLeft > 0) await new Promise((r) => setTimeout(r, 100))
@@ -1012,15 +1095,16 @@ function activityApi() {
       let done = false
       const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, ms(250)) }
       walkTo(x, z, finish)
-      speed = pace
+      if (pace) { speed = pace; if (player.userData.pose === 'run' && pace <= WALK * 1.4) player.userData.pose = 'stand' }
       if (!route.length) finish()
       // (ends when you stop moving for a while: blocked by something or someone; going
       // round a counter can take you further from the end for a bit, which is fine;
       // judged on movement, not a clock, so a slow phone still gets there)
       let last = { x: player.position.x, z: player.position.z }
       let since = performance.now()
+      const run = running
       const check = () => {
-        if (done) return
+        if (done || running !== run) return
         if (Math.hypot(player.position.x - last.x, player.position.z - last.z) > 0.15) { last = { x: player.position.x, z: player.position.z }; since = performance.now() }
         if (performance.now() - since > ms(2500)) { route = []; arrive = null; finish(); return }
         setTimeout(check, 300)
@@ -1029,13 +1113,17 @@ function activityApi() {
     }) },
     wait: (s) => {
       if (window.mzansiFailNextWait) { window.mzansiFailNextWait = false; return Promise.reject(new Error('test: an activity broke off inside a room')) }
+      ps.busy(s / SPEED + 0.5)
       return new Promise((resolve) => setTimeout(resolve, ms(s * 1000)))
     },
+    // What the player is doing now, for the leave button: in the queue, seated, in bed.
+    state: (name) => ps.set(name === 'base' ? running?.base || 'doing' : name),
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
     gesture: (name) => gesture(player, name),
     gestureOf: (avatar, name) => avatar && gesture(avatar, name),
     pose: (p, y = 0, floor) => {
       standUp()
+      if (running) ps.set(p === 'sit' ? 'seated' : p === 'lie' ? 'sleeping' : running.base)
       player.userData.pose = p
       if (p === 'sit') { player.position.y = y; player.userData.seatFloor = floor }
       if (p === 'lie') { layDown(player, player.rotation.y); player.position.y = 0.02 }
@@ -1045,6 +1133,7 @@ function activityApi() {
     // bed: { x, z, lieY, rot (0 = head towards -z) }; edge: the seat on its side { x, z, y, rot }.
     lieDown: async (bed, edge) => {
       standUp()
+      ps.set('sleeping')
       player.position.set(edge.x, edge.y, edge.z)
       player.rotation.y = edge.rot
       player.userData.pose = 'sit'
@@ -1055,6 +1144,7 @@ function activityApi() {
       await recline({ ...edge }, { x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, 1.1, false)
     },
     getUp: async (bed, edge) => {
+      ps.set('seated')
       await recline({ x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, { ...edge }, 1.1, true)
       standUp()
       player.position.set(edge.x, edge.y, edge.z)
@@ -1064,6 +1154,7 @@ function activityApi() {
     },
     // Sitting down and standing up play out (avatar3d); these resolve once they have.
     sitAt: (seat) => {
+      ps.set('seated')
       player.position.set(seat.x, seat.y, seat.z)
       player.rotation.y = seat.rot
       player.userData.pose = 'sit'
@@ -1071,6 +1162,7 @@ function activityApi() {
     },
     stand: () => {
       standUp()
+      if (running) ps.set(running.base)
       return settledOf(player)
     },
     freeSeat: () => {
@@ -1113,7 +1205,7 @@ function activityApi() {
     // Wait until whoever came with you has walked to their seat and sat down.
     companionSettled: () => new Promise((resolve) => {
       const start = performance.now()
-      const check = () => ((!companion?.settling && !(companion && inTransition(companion.avatar))) || performance.now() - start > 20000 ? resolve() : setTimeout(check, 100))
+      const check = () => { ps.busy(0.3); return (!companion?.settling && !(companion && inTransition(companion.avatar))) || performance.now() - start > 20000 ? resolve() : setTimeout(check, 100) }
       check()
     }),
     hideCompanion: (hidden) => {
@@ -1192,6 +1284,7 @@ function activityApi() {
       if (rot !== undefined) player.rotation.y = rot
     },
     fade: (text = '') => new Promise((resolve) => {
+      ps.busy(1.5)
       const node = host.querySelector('.scene-fade')
       node.querySelector('p').textContent = text
       node.hidden = false
@@ -1262,7 +1355,7 @@ function activityApi() {
       })
       const texture = new THREE.CanvasTexture(canvas)
       texture.colorSpace = THREE.SRGBColorSpace
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }))
+      const plane = signMesh(new THREE.PlaneGeometry(w, h), texture)
       plane.position.set(x, y, z)
       plane.rotation.y = rot
       tempGroup.add(plane)
@@ -1291,6 +1384,11 @@ function activityApi() {
       clearRoom()
       host.querySelector('.scene-fade').hidden = true
     },
+  }
+  // Leaving the activity breaks off whatever it is waiting on.
+  for (const key of ['walkTo', 'wait', 'pose', 'settled', 'lieDown', 'getUp', 'sitAt', 'stand', 'companionSettled', 'glide', 'walkToSeat', 'fade', 'unfade', 'moveNpc']) {
+    const plain = api[key]
+    api[key] = (...args) => abortable(plain(...args))
   }
   return api
 }
@@ -1539,6 +1637,7 @@ function sceneTick(dt) {
     m.avatar.rotation.y = Math.atan2(dx, dz)
     moving.add(m.avatar)
   }
+  if (npcMoves.length || scriptMove) ps.busy(0.4)
   for (const a of temps) poseAvatar(a, moving.has(a), clock)
   // The camera frames you and what you are doing, re-aimed as you move.
   if (acting && activityFocus) {
@@ -1551,8 +1650,22 @@ function sceneTick(dt) {
   }
 }
 
+// The activity playing now: leaving it (the button, the watchdog) breaks off every
+// wait and walk it is in, and it ends with nothing gained.
+let running = null
+class Left extends Error {}
+function abortable(promise) {
+  // (a scene still going after you left it gets nowhere: every call it makes fails)
+  if (!running) { promise?.catch?.(() => {}); return Promise.reject(new Left('no activity')) }
+  return Promise.race([promise, running.left])
+}
 async function runActivity(detail) {
   acting = true
+  let quit
+  running = { left: new Promise((resolve, reject) => { quit = reject }), base: detail.actionId === 'talk_queue' ? 'queueing' : 'doing' }
+  running.left.catch(() => {})
+  running.quit = () => quit(new Left('left the activity'))
+  ps.set(running.base)
   host.dataset.activity = sceneName(detail.actionId)
   host.dataset.activityStep = 'running'
   const bar = host.querySelector('.act-bar')
@@ -1567,33 +1680,85 @@ async function runActivity(detail) {
   // Doing it together: they come along (walk your trail) for the whole scene.
   const friend = detail.sceneOpt?.with
   if (friend && companion?.avatar.userData.personId !== friend) startCompanion(friend)
+  let left = false
   try {
     // What they said to your reply, as the scene starts.
     if (detail.sceneOpt?.answer) {
       activities.api.say(detail.sceneOpt.answer, detail.sceneOpt.name || 'friend')
       await activities.api.wait(1.6)
     }
-    await activities.runner.run(detail.actionId, detail.placeId, detail.sceneOpt)
+    const job = activities.runner.run(detail.actionId, detail.placeId, detail.sceneOpt)
+    job.catch(() => {})
+    await abortable(job)
   } catch (error) {
-    console.error(error)
-    reportError('activity', error, { action: detail.actionId, place: detail.placeId })
+    if (error instanceof Left) left = true
+    else {
+      console.error(error)
+      reportError('activity', error, { action: detail.actionId, place: detail.placeId })
+    }
   }
+  running = null
   if (hidden) hidden.visible = true
-  if (companion && !detail.sceneOpt?.keep) stopCompanion()
+  if (companion && (left || !detail.sceneOpt?.keep)) stopCompanion()
   activities.api.end()
   backOnCampus(detail.placeId)
   bar.hidden = true
   bar.classList.remove('small')
   acting = false
-  host.dataset.activityStep = 'done'
+  ps.free()
+  host.dataset.activityStep = left ? 'left' : 'done'
+  window.dispatchEvent(new CustomEvent('mzansi-activity-end', { detail: { actionId: detail.actionId, left } }))
+  if (left) return
   const before = currentRun ? { ...currentRun.stats } : null
   detail.commit()
   if (before && currentRun) showFloater(before, currentRun.stats)
 }
 
+// Leaving a state (its button, the watchdog, the map): whatever was playing out stops.
+function leaveState(state, why) {
+  host.dataset.leftState = `${state}:${why}`
+  if (state === 'talking') {
+    // The chat card closes too (main.js), and we're free even if it doesn't answer.
+    window.dispatchEvent(new CustomEvent('mzansi-talk-leave'))
+    endTalkHere()
+    return
+  }
+  if (running) { running.quit(); ps.free(); return }
+  if (actionLeft > 0) {
+    actionLeft = 0
+    actionCommit = null
+    host.querySelector('.act-bar').hidden = true
+  }
+  player.userData.pose = 'stand'
+  ps.free()
+}
+// Is something visibly happening in this state (beyond the waits that say so)?
+function stateAlive(state) {
+  if (!player) return false
+  if (inTransition(player)) return true
+  if (state === 'talking') return Boolean(talk && document.querySelector('.g-talk'))
+  if (state === 'queueing') return queueBusy()
+  return false
+}
+// Out of every counter's line (your order is done, or you walked off).
+function leaveLines() {
+  for (const q of Object.values(campus?.dressing?.queue || {})) if (q?.line?.hasPlayer()) q.line.leave(player)
+}
+// Still in a line with nothing to do with it (free, no chat with her coming): out of it.
+let lineIdle = 0
+function lineTick(dt) {
+  const inLine = Object.values(campus?.dressing?.queue || {}).some((q) => q?.line?.hasPlayer())
+  lineIdle = inLine && (ps.state === 'free' || ps.state === 'running') && !acting ? lineIdle + dt / SPEED : 0
+  if (lineIdle > 3) { lineIdle = 0; leaveLines() }
+}
+function queueBusy() {
+  const qs = campus?.dressing?.queue || {}
+  return Object.values(qs).some((q) => q?.line?.hasPlayer?.() && q.line.active())
+}
+
 function beginAction(detail) {
   if (!visible || !detail?.commit) return
-  if (actionLeft > 0 || pendingAction || acting) return
+  if (!ps.open || acting) return
   if (detail.actionId && campus) {
     runActivity(detail)
     return
@@ -1602,14 +1767,13 @@ function beginAction(detail) {
   if (building && player) {
     const door = doorPoint(building)
     if (Math.hypot(door.x - player.position.x, door.z - player.position.z) > 0.6) {
-      pendingAction = detail
       host.dataset.walk = 'walking'
       host.dataset.doorx = door.x.toFixed(2)
       host.dataset.doorz = door.z.toFixed(2)
+      // (a walk like any other: tap somewhere else on the way and it's off)
       walkTo(door.x, door.z, () => {
         // Finish on the door anchor itself, not just the nearest grid cell.
         snapTo = { x: door.x, z: door.z }
-        pendingAction = null
         host.dataset.walk = 'arrived'
         startBar(detail)
       })
@@ -1626,6 +1790,7 @@ function startBar(detail) {
   if (player) gesture(player, 'interact-right')
   actionLeft = 1.2
   actionCommit = detail.commit
+  ps.set('doing')
   const bar = host.querySelector('.act-bar')
   bar.hidden = false
   bar.querySelector('span').style.width = '0%'
@@ -1758,7 +1923,7 @@ function pin(node, x, y, z, lift = 0) {
 function promptDoor() {
   const node = host.querySelector('.door-prompt')
   const near = nearestDoor()
-  if (!near || near.dist > 2.2 || mapUi.isOpen() || acting || talk) {
+  if (!near || near.dist > 2.2 || mapUi.isOpen() || !ps.open) {
     node.hidden = true
     return
   }
@@ -1813,6 +1978,44 @@ function tryStep(dx, dz) {
   }
   if (!hitsSolid(x, player.position.z)) player.position.x = x
   else if (!hitsSolid(player.position.x, z)) player.position.z = z
+}
+
+// Nothing hides the player: a sign, a menu board, a wall or a tree between the camera
+// and you turns see-through, and solid again once it's out of the way.
+const seeRay = new THREE.Raycaster()
+const faded = new Map() // mesh -> frames left see-through
+function seeThrough() {
+  const hits = new Set()
+  if (rig.mode !== 'eye' || closeShot) {
+    for (const y of [1.65, 1.1, 0.5]) {
+      const to = new THREE.Vector3(player.position.x, player.position.y + y, player.position.z)
+      const dir = to.clone().sub(camera.position)
+      const far = dir.length() - 0.4
+      seeRay.set(camera.position, dir.normalize())
+      seeRay.far = far
+      for (const hit of seeRay.intersectObject(campus.group, true)) {
+        const m = hit.object
+        if (!m.isMesh || m.isSprite || m.name === 'ground' || !m.visible || isPart(m)) continue
+        hits.add(m)
+      }
+    }
+  }
+  for (const m of hits) {
+    if (!faded.has(m)) {
+      m.userData.solidMat = m.material
+      const see = (mat) => { const c = mat.clone(); c.transparent = true; c.opacity = Math.min(mat.opacity ?? 1, 0.22); c.depthWrite = false; return c }
+      m.material = Array.isArray(m.material) ? m.material.map(see) : see(m.material)
+      m.userData.seeThrough = true
+    }
+    faded.set(m, 12)
+  }
+  for (const [m, left] of faded) {
+    if (hits.has(m)) continue
+    if (left > 1) { faded.set(m, left - 1); continue }
+    m.material = m.userData.solidMat
+    m.userData.seeThrough = false
+    faded.delete(m)
+  }
 }
 
 // The place you are heading for keeps its name tag at any distance.
@@ -1929,18 +2132,20 @@ function frameBody(now) {
   const dt = (Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)) * SPEED
   tick.last = now
   steering = null
-  if (actionLeft <= 0) input.stick()
-  if (forcedSteer && actionLeft <= 0) steering = forcedSteer
+  if (ps.open) input.stick()
+  if (forcedSteer && ps.open) steering = forcedSteer
   walking = false
   if (player && campus) {
     if (actionLeft > 0) {
       actionLeft -= dt
       const bar = host.querySelector('.act-bar span')
       if (bar) bar.style.width = `${Math.min(100, (1.2 - Math.max(actionLeft, 0)) / 1.2 * 100)}%`
+      ps.busy(0.3)
       if (actionLeft <= 0) {
         host.querySelector('.act-bar').hidden = true
         const commit = actionCommit
         actionCommit = null
+        ps.free()
         const before = currentRun ? { ...currentRun.stats } : null
         commit?.()
         if (before && currentRun) showFloater(before, currentRun.stats)
@@ -1960,7 +2165,11 @@ function frameBody(now) {
         walking = true
       }
     } else if (steering) {
-      tryStep(steering.x * WALK * dt, steering.z * WALK * dt)
+      // The stick pushed all the way (or Shift): a run; otherwise a brisk walk.
+      const pace = steering.run ? JOG : WALK
+      speed = pace
+      if (['stand', 'run', undefined].includes(player.userData.pose)) player.userData.pose = steering.run ? 'run' : 'stand'
+      tryStep(steering.x * pace * dt, steering.z * pace * dt)
       player.rotation.y = Math.atan2(steering.x, steering.z)
       walking = true
     } else if (follow(dt)) {
@@ -1975,10 +2184,25 @@ function frameBody(now) {
       player.position.z += sz * k
       if (d > 0.02) { walking = true; player.rotation.y = Math.atan2(sx, sz) } else snapTo = null
     }
+    // The player's state follows what they're doing when nothing else holds it.
+    if (walking) ps.busy(0.5)
+    else if (!route.length && !steering && player.userData.pose === 'run') player.userData.pose = 'stand'
+    pad?.lock(!ps.open)
+    if (pad && frames % 20 === 0) placeMinimap()
+    if (ps.open) {
+      const now = walking ? (player.userData.pose === 'run' ? 'running' : 'walking') : 'free'
+      if (ps.state !== now) ps.set(now)
+    }
     // Eye view: standing, you turn to where you look; walking, you look where you go
     // (the body leads, so you never walk sideways). Seated, lying, mid-activity or in a
     // chat, the body keeps the way it was put (looking round never swivels you on a chair).
-    const free = !acting && !talk && (player.userData.pose || 'stand') === 'stand' && !inTransition(player)
+    if (faceTo && (walking || steering)) faceTo = null
+    if (faceTo && !walking) {
+      player.rotation.y = Math.atan2(faceTo.x - player.position.x, faceTo.z - player.position.z)
+      if (rig.mode === 'eye') rig.facing = player.rotation.y
+      faceTo = null
+    }
+    const free = ps.open && (player.userData.pose || 'stand') === 'stand' && !inTransition(player)
     if (rig.mode === 'eye' && !walking && free) {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
@@ -1997,6 +2221,7 @@ function frameBody(now) {
     crowd?.update(dt, player.position)
     for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
+    lineTick(dt)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
     // (only while walking: standing still, you never slide; the crowd steps round you)
     // Nobody goes through anything or anyone (bodies.js), the player included.
@@ -2026,6 +2251,7 @@ function frameBody(now) {
     // that first-person camera: a close shot of a chat or a meal shows you whole).
     for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(closeShot)
     camera.updateMatrixWorld()
+    if (frames % 3 === 0) seeThrough()
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
     swingDoors(dt)
     sun.position.set(player.position.x + 22, 34, player.position.z + 12)
@@ -2053,6 +2279,14 @@ function frameBody(now) {
     frames = 0
     fpsStamp = now
   }
+}
+
+// With the thumbstick bottom left, the minimap sits top right, under the goal chip.
+function placeMinimap() {
+  const mini = host.querySelector('.minimap')
+  if (!mini) return
+  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].filter((el) => el.offsetParent).map((el) => el.getBoundingClientRect().bottom)
+  mini.style.top = `${Math.round((bars.length ? Math.max(...bars) : 110) + 8)}px`
 }
 
 function start() {

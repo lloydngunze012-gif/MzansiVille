@@ -691,6 +691,13 @@ function endTalk({ away = false, keepFriend = false } = {}) {
   window.dispatchEvent(new CustomEvent('mzansi-talk-end', { detail: { away } }))
 }
 
+// The world's Goodbye button (or its watchdog) ends the chat: the card closes too.
+window.addEventListener('mzansi-talk-leave', () => {
+  if (!ui.talk) return
+  endTalk()
+  paint()
+})
+
 window.addEventListener('mzansi-lecture-arrive', () => {
   if (save.run) delete save.run.lectureCard
   persist()

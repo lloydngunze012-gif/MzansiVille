@@ -4,6 +4,7 @@
 import * as THREE from 'three'
 import STORY from '../../data/campusville/place_story.json'
 import { createScenes, SCENE_OF } from './scenes.js'
+import { waitInLine } from './queue.js'
 
 // action id -> script name. Anything unlisted at a dressed place uses 'stand'.
 export const SCRIPTS = {
@@ -52,25 +53,13 @@ export function createActivities(api) {
     async queueFood() {
       const q = api.dressing.queue?.stall
       if (!q) return scripts.stand()
-      q.busy = true // the line waits for you (no one leaves while you join)
-      while (q.cycling) await api.wait(0.3)
-      const end = q.slot(q.people.length)
-      api.frame(q.front)
-      await api.walkTo(end.x, end.z)
-      api.face(q.front.x, q.front.z)
       api.say('The queue for vetkoek. Worth it.')
-      for (let i = q.people.length; i > 0; i--) {
-        api.progress(1 - i / (q.people.length + 1))
-        await api.wait(0.9)
-        await q.serveFront()
-        const next = q.slot(i - 1)
-        await api.walkTo(next.x, next.z)
-        api.face(q.front.x, q.front.z)
-      }
+      await waitInLine(api, q, { say: (i) => { if (i) api.say(`The queue for vetkoek. ${i} ahead.`) } })
       api.gesture('interact-right')
       q.vendorServes()
       await api.wait(0.9)
       api.hold(holdable('food'))
+      q.line.leave(api.player)
       api.say('One vetkoek, extra polony. Sharp!')
       const away = quadSpot('benches')
       api.frame({ x: away.x + 2, z: away.z + 2 })
@@ -78,7 +67,6 @@ export function createActivities(api) {
       api.gesture('emote-yes')
       await api.wait(1.2)
       api.hold(null)
-      q.rejoin()
     },
 
     // Sit next to someone on a bench and chat.

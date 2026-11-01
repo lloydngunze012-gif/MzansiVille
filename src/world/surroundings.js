@@ -3,6 +3,7 @@
 // with minibus taxis, and the edge of town (houses and shops with signs).
 // Cars and town buildings are Kenney Car Kit and City Kits (CC0).
 import * as THREE from 'three'
+import { signMesh } from './text.js'
 import { loadModel } from './models.js'
 
 const FENCE_R = 103
@@ -35,7 +36,7 @@ function textPlane(text, { w = 2, h = 0.5, bg = '#22143b', fg = '#fff6e6', font 
   ctx.fillText(text, 256, canvas.height / 2 + 2, 490)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }))
+  return signMesh(new THREE.PlaneGeometry(w, h), texture)
 }
 
 export function addSurroundings(parent) {

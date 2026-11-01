@@ -4,11 +4,13 @@
 // Returns night lights for the day/night cycle, people to animate, blockers for
 // the walk grid, and the walkable spots the place sheet lists.
 import * as THREE from 'three'
+import { signMesh } from './text.js'
 import STORY from '../../data/campusville/place_story.json'
 import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { lookForPerson } from './cast.js'
 import { CHAIR_SEAT, makeChair } from './furniture.js'
 import { ms } from '../speed.js'
+import { createLine } from './queue.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
@@ -68,7 +70,7 @@ function sign(parent, lines, { x, y, z, rot = 0, w = 3, h = 0.8, bg = '#22143b',
   })
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }))
+  const plane = signMesh(new THREE.PlaneGeometry(w, h), texture)
   plane.position.set(x, y, z)
   plane.rotation.y = rot
   plane.name = 'sign'
@@ -280,45 +282,18 @@ export function dressPlaces(layout, floor) {
     const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y)
     const front = { x: stx + up.x * 2.1, z: stz + up.z * 2.1 }
     const slot = (i) => ({ x: front.x + up.x * i * 1.0, z: front.z + up.z * i * 1.0 })
-    const waiting = [
-      person('kea', slot(0).x, slot(0).z, stall.rotation.y + Math.PI),
-      person('amir', slot(1).x, slot(1).z, stall.rotation.y + Math.PI),
-    ]
-    const aside = []
-    const pause = (t) => new Promise((r) => setTimeout(r, ms(t)))
-    queue.stall = {
-      front,
+    const stallLine = createLine({
       slot,
-      aside: { x: front.x + side.x * 3 + up.x * 1.5, z: front.z + side.z * 3 + up.z * 1.5 },
       face: stall.rotation.y + Math.PI,
-      vendor,
-      get people() { return waiting },
-      vendorServes() { gesture(vendor, 'interact-right') },
-      async serveFront() {
-        const served = waiting.shift()
-        if (!served) return
-        gesture(vendor, 'interact-right')
-        gesture(served, 'pick-up')
-        await pause(700)
-        const spot = { x: front.x + side.x * (3 + aside.length * 1.2) + up.x * 1.5, z: front.z + side.z * (3 + aside.length * 1.2) + up.z * 1.5 }
-        aside.push(served)
-        moveAvatar(served, spot.x, spot.z).then(() => gesture(served, 'emote-yes'))
-        await Promise.all(waiting.map((p, i) => moveAvatar(p, slot(i).x, slot(i).z, 1.6)))
-        waiting.forEach((p) => { p.rotation.y = stall.rotation.y + Math.PI })
-      },
-      rejoin() {
-        setTimeout(() => {
-          while (aside.length) {
-            const p = aside.shift()
-            waiting.push(p)
-            const s = slot(waiting.length - 1)
-            // (round the outside of the line, not along it through the people waiting)
-            moveAvatar(p, s.x + side.x * 1.1, s.z + side.z * 1.1).then(() => moveAvatar(p, s.x, s.z)).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
-          }
-          queue.stall.busy = false
-        }, ms(6000))
-      },
-    }
+      server: vendor,
+      aside: (n) => ({ x: front.x + side.x * (3 + n * 1.2) + up.x * 1.5, z: front.z + side.z * (3 + n * 1.2) + up.z * 1.5 }),
+      outside: (i) => ({ x: slot(i).x + side.x * 1.1, z: slot(i).z + side.z * 1.1 }),
+      move: moveAvatar,
+      gesture,
+      isPlayer: (a) => Boolean(a.userData.isPlayer),
+    })
+    for (const [i, id] of ['kea', 'amir'].entries()) stallLine.join(person(id, slot(i).x, slot(i).z, stall.rotation.y + Math.PI))
+    queue.stall = { front, slot, face: stall.rotation.y + Math.PI, vendor, line: stallLine, get people() { return stallLine.people }, vendorServes() { gesture(vendor, 'interact-right') } }
     const sl = new THREE.PointLight(0xffcf8a, 0, 7, 1.6)
     sl.position.set(stx, 2.2, stz)
     group.add(sl)
@@ -423,37 +398,22 @@ export function dressPlaces(layout, floor) {
     cafQueue.front = { x: cx + 2.8, z: front + 2.05 }
     // One straight line facing the counter, evenly spaced.
     cafQueue.slot = (i) => ({ x: cx + 2.8, z: front + 2.05 + i * 0.95 })
-    cafQueue.aside = { x: cx + 2.8 - 3.2, z: front + 4.2 }
     cafQueue.face = Math.PI
-    // Serve the front person (they step aside to eat), the line moves up; rejoin later.
-    const cafAside = []
-    cafQueue.serveFront = async () => {
-      const line = cafQueue.people
-      const served = line.shift()
-      if (!served) return
-      gesture(auntie, 'interact-right')
-      gesture(served, 'pick-up')
-      await new Promise((r) => setTimeout(r, ms(700)))
-      cafAside.push(served)
-      moveAvatar(served, cafQueue.aside.x - cafAside.length * 0.9, cafQueue.aside.z, 1.4).then(() => gesture(served, 'emote-yes'))
-      await Promise.all(line.map((p, i) => moveAvatar(p, cafQueue.slot(i).x, cafQueue.slot(i).z, 1.6)))
-      line.forEach((p) => { p.rotation.y = cafQueue.face })
-    }
-    cafQueue.rejoin = () => {
-      setTimeout(() => {
-        while (cafAside.length) {
-          const p = cafAside.shift()
-          cafQueue.people.push(p)
-          const s = cafQueue.slot(cafQueue.people.length - 1)
-          // (round the outside of the line, the side they stepped aside to)
-          moveAvatar(p, s.x - 1.1, s.z).then(() => moveAvatar(p, s.x, s.z)).then(() => { p.rotation.y = cafQueue.face })
-        }
-        cafQueue.busy = false
-      }, ms(5000))
-    }
-    cafQueue.people = ['thandi', 'jordan', 'priya', 'noah'].map((id, i) => {
+    cafQueue.vendor = auntie
+    cafQueue.line = createLine({
+      slot: cafQueue.slot,
+      face: Math.PI,
+      server: auntie,
+      aside: (n) => ({ x: cx + 2.8 - 3.2 - n * 0.9, z: front + 4.2 }),
+      outside: (i) => ({ x: cafQueue.slot(i).x - 1.1, z: cafQueue.slot(i).z }),
+      move: moveAvatar,
+      gesture,
+      isPlayer: (a) => Boolean(a.userData.isPlayer),
+    })
+    Object.defineProperty(cafQueue, 'people', { get: () => cafQueue.line.people })
+    ;['thandi', 'jordan', 'priya', 'noah'].forEach((id, i) => {
       const s = cafQueue.slot(i)
-      return person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' })
+      cafQueue.line.join(person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' }))
     })
     block(cx + 2.8, front + 1.15, 3.2, 0.6)
     // Terrace on the west side: deck, tables, chairs, two people eating, lights.
@@ -495,37 +455,11 @@ export function dressPlaces(layout, floor) {
     for (const { material, base } of glows) material.emissiveIntensity = 0.15 + base * n
   }
 
-  // Queues keep moving on their own: the front person is served and steps out to
-  // eat, the line shuffles up, and later they rejoin at the back. Paused while
-  // the player is in that queue (busy).
-  let queueClock = 0
-  async function cycleQueue(q, line, server) {
-    if (!q || q.busy || q.cycling || line.length < 2) return
-    q.cycling = true
-    const served = line.shift()
-    gesture(server, 'interact-right')
-    gesture(served, 'pick-up')
-    await new Promise((r) => setTimeout(r, ms(900)))
-    await Promise.all([moveAvatar(served, q.aside.x, q.aside.z, 1.4), ...line.map((p, i) => moveAvatar(p, q.slot(i).x, q.slot(i).z, 1.2))])
-    line.forEach((p) => { p.rotation.y = q.face })
-    gesture(served, 'emote-yes')
-    await new Promise((r) => setTimeout(r, ms(4000)))
-    if (!q.busy) {
-      const s = q.slot(line.length)
-      await moveAvatar(served, s.x, s.z, 1.4)
-      served.rotation.y = q.face
-      line.push(served)
-    } else line.push(served)
-    q.cycling = false
-  }
-
+  // The lines keep moving on their own (queue.js): one served at a time, first come
+  // first served, the player included.
   function update(dt) {
-    queueClock += dt
-    if (queueClock > 6) {
-      queueClock = 0
-      cycleQueue(cafQueue.people ? cafQueue : null, cafQueue.people || [], cafQueue.auntie)
-      if (queue.stall) cycleQueue(queue.stall, queue.stall.people, queue.stall.vendor)
-    }
+    cafQueue.line?.update(dt)
+    queue.stall?.line.update(dt)
     const moving = new Set()
     for (let i = movers.length - 1; i >= 0; i--) {
       const m = movers[i]

@@ -4,6 +4,7 @@
 import * as THREE from 'three'
 import { CHAIR_SEAT } from './furniture.js'
 import { VENUES } from '../venues.js'
+import { waitInLine } from './queue.js'
 
 // action id -> [scene, options]. Every action in activities.csv is listed (a check
 // in scripts/sim-check.mjs keeps it that way).
@@ -197,42 +198,27 @@ export function createScenes(api) {
   const scenes = {
     // Join the queue, shuffle forward as people are served, get your food, eat or walk off.
     async queueBuy(place, opt) {
-      let q
-      let restore = null
-      if (place.id === 'cafeteria' && api.dressing.queue?.caf?.people) {
-        // The caf queue: everyone ahead is served, steps aside, the line moves up.
-        const c = api.dressing.queue.caf
-        c.busy = true
-        while (c.cycling) await api.wait(0.3)
-        const home = c.people.map((p) => ({ p, x: p.position.x, z: p.position.z, r: p.rotation.y }))
-        restore = () => home.forEach(({ p, x, z, r }) => { p.position.set(x, 0, z); p.rotation.y = r })
-        const line = c.people.slice()
-        q = {
-          vendor: c.auntie, slot: c.slot, people: line, front: c.front,
-          async serveFront() {
-            const p = line.shift()
-            api.gestureOf(c.auntie, 'interact-right')
-            api.gestureOf(p, 'pick-up')
-            await api.wait(0.6)
-            api.moveNpc(p, c.front.x - 3.5 - line.length * 0.9, c.front.z + 2.5)
-            await Promise.all(line.map((o, i) => api.moveNpc(o, c.slot(i).x, c.slot(i).z, 2)))
-            line.forEach((o) => { o.rotation.y = Math.PI })
-          },
-        }
-      } else q = tempStall(place, opt.stall)
-      const end = q.slot(q.people.length)
-      api.frame(q.vendor)
-      await api.walkTo(end.x, end.z)
-      api.face(q.front.x, q.front.z - 2)
-      api.say(`The queue for ${opt.food}.`)
-      const n = q.people.length
-      for (let i = n; i > 0; i--) {
-        api.progress(1 - i / (n + 2))
-        await api.wait(0.8)
-        await q.serveFront()
-        const next = q.slot(i - 1)
-        await api.walkTo(next.x, next.z, 1.6)
+      const caf = place.id === 'cafeteria' && api.dressing.queue?.caf?.line
+      const q = caf ? api.dressing.queue.caf : tempStall(place, opt.stall)
+      if (caf) {
+        // The caf's one line (queue.js): served in turn, then out of the line.
+        api.frame(q.vendor)
+        await waitInLine(api, q, { frame: false, say: (i) => api.say(i ? `The queue for ${opt.food}. ${i} ahead.` : `One ${opt.food}, please.`) })
+      } else {
+        const end = q.slot(q.people.length)
+        api.frame(q.vendor)
+        await api.walkTo(end.x, end.z)
         api.face(q.front.x, q.front.z - 2)
+        api.say(`The queue for ${opt.food}.`)
+        const n = q.people.length
+        for (let i = n; i > 0; i--) {
+          api.progress(1 - i / (n + 2))
+          await api.wait(0.8)
+          await q.serveFront()
+          const next = q.slot(i - 1)
+          await api.walkTo(next.x, next.z, 1.6)
+          api.face(q.front.x, q.front.z - 2)
+        }
       }
       api.gestureOf(q.vendor, 'interact-right')
       api.say(`One ${opt.food}, please.`)
@@ -240,6 +226,7 @@ export function createScenes(api) {
       api.gesture('pick-up')
       await api.wait(0.5)
       api.hold(holdable('food'))
+      if (caf) q.line.leave(api.player)
       api.say(opt.food === 'muffin' ? 'Muffin secured. Walking.' : `${opt.food[0].toUpperCase()}${opt.food.slice(1)}. Sharp, thank you!`)
       api.progress(0.8)
       await api.wait(0.9)
@@ -259,8 +246,6 @@ export function createScenes(api) {
         await api.wait(0.8)
       }
       api.hold(null)
-      if (restore) restore()
-      if (api.dressing.queue?.caf) api.dressing.queue.caf.busy = false
     },
 
     // Sit somewhere (steps, grass, fountain edge) and eat.
@@ -386,27 +371,13 @@ export function createScenes(api) {
     async queueOrder(place, opt) {
       const q = opt.vendor === 'mam_gugu' ? api.dressing.queue?.stall : api.dressing.queue?.caf
       if (!q) return
-      q.busy = true
-      while (q.cycling) await api.wait(0.3)
-      const end = q.slot(q.people.length)
-      api.frame(q.front)
       api.say(opt.told ? 'Back of the line, baby!' : 'Joining the queue.', opt.told ? opt.vendorName : 'you')
-      await api.walkTo(end.x, end.z)
-      api.face(q.front.x, q.front.z - 3)
-      const n = q.people.length
-      for (let i = n; i > 0; i--) {
-        api.progress(1 - i / (n + 1))
-        api.say(i === 1 ? 'Nearly there\u2026' : `${i} people ahead.`)
-        await api.wait(0.7)
-        await q.serveFront()
-        const next = q.slot(i - 1)
-        await api.walkTo(next.x, next.z, 1.6)
-        api.face(q.front.x, q.front.z - 3)
-      }
+      // (her "back of the line" stays up until the line first moves)
+      let first = Boolean(opt.told)
+      await waitInLine(api, q, { say: (i) => { if (first) { first = false; return } api.say(i === 0 ? 'My turn!' : i === 1 ? 'Nearly there…' : `${i} people ahead.`) } })
       api.say('My turn!')
-      api.progress(1)
       await api.wait(0.6)
-      q.rejoin()
+      // (still at the front: she serves you in the chat; you leave the line when it ends)
     },
 
     // After ordering in a chat: the vendor hands it over, then you sit and eat, or take it to go.

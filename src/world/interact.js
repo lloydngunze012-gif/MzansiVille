@@ -1,4 +1,7 @@
-export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onPerson, onVendor, onStick, worldOn, blocked }) {
+import { RUN_AT } from './stick.js'
+
+// pad: the phone thumbstick (stick.js); onSelf(x, y): a tap on the player (stop).
+export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onPerson, onVendor, onStick, onSelf, worldOn, blocked, pad }) {
   let pointerId = null
   let startX = 0
   let startY = 0
@@ -22,6 +25,8 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
 
   function walkAt(event) {
     if (blocked()) return
+    // Tapping yourself: stop where you are.
+    if (onSelf?.(event.clientX, event.clientY)) { window.mzansiLastTap = { kind: 'self' }; return }
     const point = ndc(event)
     raycaster.setFromCamera(point, camera)
     const lists = pickables()
@@ -127,7 +132,7 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
     if (event.metaKey || event.ctrlKey || event.altKey) return
     if (typing(event)) return
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
-    const move = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
+    const move = ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Shift']
     if (!move.includes(key)) return
     if (blocked()) return
     event.preventDefault()
@@ -152,10 +157,19 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
       if (!live()) return null
       let x = 0
       let z = 0
-      if (keys.has('w') || keys.has('ArrowUp')) z -= 1
-      if (keys.has('s') || keys.has('ArrowDown')) z += 1
-      if (keys.has('a') || keys.has('ArrowLeft')) x -= 1
-      if (keys.has('d') || keys.has('ArrowRight')) x += 1
+      // Shift (or the stick pushed all the way) runs.
+      let run = keys.has('Shift')
+      const push = pad?.read()
+      if (push) {
+        x = push.x
+        z = push.y
+        run = push.m >= RUN_AT
+      } else {
+        if (keys.has('w') || keys.has('ArrowUp')) z -= 1
+        if (keys.has('s') || keys.has('ArrowDown')) z += 1
+        if (keys.has('a') || keys.has('ArrowLeft')) x -= 1
+        if (keys.has('d') || keys.has('ArrowRight')) x += 1
+      }
       if (!x && !z) return null
       const forward = cameraRig.moveForward()
       const right = cameraRig.moveRight()
@@ -163,6 +177,7 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
       onStick(
         (right.x * x + forward.x * -z) / len,
         (right.z * x + forward.z * -z) / len,
+        run,
       )
       return true
     },
