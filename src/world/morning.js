@@ -1,7 +1,7 @@
 // Day 1 morning slice: wake in the O Block room, noodles at the kettle, walk to the
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
-import { loop as soundLoop, sfx } from '../audio.js'
+import { loop as soundLoop, sfx, water } from '../audio.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
@@ -919,8 +919,13 @@ async function play() {
     await walkTo(player, -0.9, 0.9)
     face(player, -2.2, 1.5)
     bubble('Quick shower, get dressed…', player)
-    await Promise.all([tween(1.2, (k) => { player.rotation.y = Math.PI * 4 * k }), addMinutes(15, 1.2), tapNext(uiq('.mm-bubble'))])
+    await tapNext(uiq('.mm-bubble'))
     bubble('')
+    // The shower: a short fade with the sound of water (no spinning on the spot).
+    water(2.4)
+    await fadeOut('\u{1F6BF} Shower…')
+    await Promise.all([wait(1.4), addMinutes(15, 1.4)])
+    await fadeIn()
     await walkTo(player, 2.3, 1.2)
     sfx('door')
     await tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })

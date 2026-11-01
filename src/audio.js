@@ -107,6 +107,31 @@ export function sfx(name) {
   source.start()
 }
 
+// Running water (the shower): filtered noise, swelling in and out over `seconds`.
+export function water(seconds = 2) {
+  if (!ctx || !master || !soundOn()) return
+  try {
+    const length = Math.ceil(ctx.sampleRate * seconds)
+    const buffer = ctx.createBuffer(1, length, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < length; i++) data[i] = Math.random() * 2 - 1
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    const band = ctx.createBiquadFilter()
+    band.type = 'bandpass'
+    band.frequency.value = 1800
+    band.Q.value = 0.6
+    const gain = ctx.createGain()
+    const t = ctx.currentTime
+    gain.gain.setValueAtTime(0, t)
+    gain.gain.linearRampToValueAtTime(0.28, t + 0.3)
+    gain.gain.setValueAtTime(0.28, t + seconds - 0.4)
+    gain.gain.linearRampToValueAtTime(0, t + seconds)
+    source.connect(band).connect(gain).connect(master)
+    source.start()
+  } catch { /* a missing sound never breaks the game */ }
+}
+
 export function setMuted(muted) {
   if (!ctx) return
   master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.05)
