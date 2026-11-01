@@ -651,6 +651,7 @@ create table if not exists public.client_errors (
 );
 
 alter table public.client_errors enable row level security;
+grant insert on public.client_errors to anon, authenticated;
 
 drop policy if exists "anyone can report an error" on public.client_errors;
 create policy "anyone can report an error" on public.client_errors
