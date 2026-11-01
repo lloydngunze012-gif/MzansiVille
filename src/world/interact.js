@@ -1,4 +1,4 @@
-export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onPerson, onStick, worldOn, blocked }) {
+export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickables, onGround, onBuilding, onPerson, onVendor, onStick, worldOn, blocked }) {
   let pointerId = null
   let startX = 0
   let startY = 0
@@ -30,7 +30,14 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
     if (person) {
       let node = person.object
       while (node && !node.userData?.personId) node = node.parent
-      if (node) { onPerson(node); return }
+      if (node) { window.mzansiLastTap = { kind: 'person', id: node.userData.personId }; onPerson(node); return }
+    }
+    // A vendor's stall or counter: join her queue (as if you had tapped her).
+    const stall = onVendor && raycaster.intersectObjects(lists.vendors || [], true)[0]
+    if (stall) {
+      let node = stall.object
+      while (node && !node.userData?.vendor) node = node.parent
+      if (node) { window.mzansiLastTap = { kind: 'vendor', id: node.userData.vendor }; onVendor(node.userData.vendor); return }
     }
     const buildings = raycaster.intersectObjects(lists.buildings || [], true)[0]
     const ground = raycaster.intersectObjects(lists.ground || [], true)[0]
@@ -38,11 +45,12 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
       let node = buildings.object
       while (node && !node.userData?.placeId) node = node.parent
       if (node?.userData?.placeId) {
+        window.mzansiLastTap = { kind: 'building', id: node.userData.placeId }
         onBuilding(node.userData.placeId, buildings.point)
         return
       }
     }
-    if (ground) onGround(ground.point.x, ground.point.z)
+    if (ground) { window.mzansiLastTap = { kind: 'ground', x: ground.point.x, z: ground.point.z }; onGround(ground.point.x, ground.point.z) }
   }
 
   function onPointerDown(event) {

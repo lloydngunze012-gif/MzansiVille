@@ -262,3 +262,47 @@ test('M2 up and down the SMIG steps: feet on each step', async ({ page }) => {
   expect(bad).toEqual([])
   await saveVideo(page, 'M2-stairs')
 })
+
+test("M5 Eye view: tap Mam' Gugu's tuck shop, straight to the back of the queue, stop cleanly", async ({ page }) => {
+  await campus(page, 'quad')
+  await page.getByRole('button', { name: /Eye/ }).tap()
+  const q = await page.evaluate(() => window.mzansiQueue('stall'))
+  // Look at the stall, then tap the stall itself (its counter).
+  const counter = { x: q.front.x + (q.vendor.x - q.front.x) * 0.6, z: q.front.z + (q.vendor.z - q.front.z) * 0.6 }
+  await page.evaluate(([x, z]) => window.mzansiLookAt(x, z), [counter.x, counter.z])
+  await page.waitForTimeout(1500)
+  const at = await page.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0.6), [counter.x, counter.z])
+  console.log('queue', JSON.stringify(q), 'stall on screen', JSON.stringify(at))
+  await page.screenshot({ path: `${OUT}/M5-1-eye-view.png` })
+  await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'] }))
+  await page.mouse.click(at.x, at.y)
+  await page.waitForTimeout(2000)
+  console.log('tap', JSON.stringify(await page.evaluate(() => window.mzansiLastTap)))
+  await page.screenshot({ path: `${OUT}/M5-2-walking.png` })
+  // Arrived: standing at the back of the line (the line then moves up to the counter).
+  const back = await page.evaluate(() => window.mzansiQueue('stall').back)
+  await expect.poll(async () => { const p = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiQueue('stall'), document.getElementById('world').dataset.activity]); if (process.env.DEBUG_T) console.log('m5', JSON.stringify(p)); return Math.hypot(p[0].x - q.back.x, p[0].z - q.back.z) }, { timeout: 90000, intervals: [1000] }).toBeLessThan(0.5)
+  await page.screenshot({ path: `${OUT}/M5-3-arrived.png` })
+  await page.waitForTimeout(4000)
+  const frames = await page.evaluate(() => window.mzansiRecordStop())
+  const rows = frames.map((f) => ({ t: f.t, ...f.people[0] })).filter((r) => r.id)
+  // The walk: from the tap to the queue, how far it strays from the straight line.
+  const start = rows[0]
+  const reach = rows.findIndex((r) => Math.hypot(r.x - q.back.x, r.z - q.back.z) < 0.5)
+  const path = rows.slice(0, reach + 1)
+  const L = Math.hypot(q.back.x - start.x, q.back.z - start.z)
+  const stray = Math.max(...path.map((r) => Math.abs(((q.back.x - start.x) * (start.z - r.z) - (start.x - r.x) * (q.back.z - start.z)) / L)))
+  // After stopping: no sliding while standing (until the line moves).
+  let slide = 0
+  for (let i = reach + 1; i < rows.length; i++) {
+    if (rows[i].walking || rows[i - 1].walking) continue
+    slide = Math.max(slide, Math.hypot(rows[i].x - rows[i - 1].x, rows[i].z - rows[i - 1].z))
+  }
+  const crabs5 = crabs(frames, 'player')
+  const worst = crabs5.reduce((m, c) => Math.max(m, c.deg), 0)
+  console.log('walk', JSON.stringify({ length: +L.toFixed(2), frames: path.length, strayFromLine: +stray.toFixed(2), endGap: +Math.hypot(rows[reach].x - q.back.x, rows[reach].z - q.back.z).toFixed(2), slideAfterStop: +slide.toFixed(3), worstCrab: +worst.toFixed(1), back, activity: await page.evaluate(() => document.getElementById('world').dataset.activity) }))
+  expect(reach).toBeGreaterThan(0)
+  expect(slide).toBeLessThan(0.02)
+  expect(worst).toBeLessThan(15)
+  await saveVideo(page, 'M5-eye-tuckshop')
+})

@@ -260,8 +260,10 @@ function ensureRenderer() {
       buildings: campus ? [campus.buildings] : [],
       ground: campus ? [campus.ground] : [],
       people: everyone(),
+      vendors: campus?.dressing.vendorTaps || [],
     }),
     onPerson: (avatar) => startTalk(avatar),
+    onVendor: (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a) },
     onGround: (x, z) => walkTo(x, z),
     onBuilding: (id) => approach(id),
     onStick: (x, z) => {
@@ -598,6 +600,8 @@ window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(.
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.people.length), people: q.people.length, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
+window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.atan2(x - player.position.x, z - player.position.z); rig.facing = a; player.rotation.y = a }
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
 window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
@@ -1674,7 +1678,8 @@ function tick(now) {
     for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
-    if (!acting && !talk) crowd?.pushOut(player.position)
+    // (only while walking: standing still, you never slide; the crowd steps round you)
+    if (!acting && !talk && walking) crowd?.pushOut(player.position)
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)

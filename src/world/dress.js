@@ -84,6 +84,7 @@ export function dressPlaces(layout, floor) {
   const glows = [] // { material, base }
   const people = [] // { avatar, clock, every, move, next }
   const obstacles = []
+  const vendorTaps = [] // stalls and counters: tapping them joins that vendor's queue
   const spots = {}
   const benches = []
   const queue = {}
@@ -264,6 +265,8 @@ export function dressPlaces(layout, floor) {
     loadProp('radio').then((src) => { const m = src.clone(true); m.scale.setScalar(2); m.position.set(-0.8, 1, -0.1); stall.add(m) }).catch(() => {})
     const vendorAt = new THREE.Vector3(0, 0, -0.9).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y).add(stall.position)
     const vendor = person('mam_gugu', vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
+    stall.userData.vendor = 'mam_gugu'
+    vendorTaps.push(stall)
     // The stall queue: two students waiting at the counter. They get served,
     // step aside to eat, then rejoin the back of the line.
     const up = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y)
@@ -384,6 +387,8 @@ export function dressPlaces(layout, floor) {
     const front = b.maxZ + 0.03
     // Serving window with a counter and a striped awning, right of the door.
     const glass = box(group, 3, 1.2, 0.08, mat(0x1d2a33, { emissive: 0xffc870, emissiveIntensity: 0.2 }), cx + 2.8, 1.9, front)
+    glass.userData.vendor = 'auntie_pinky'
+    vendorTaps.push(glass)
     glows.push({ material: glass.material, base: 1.2 })
     box(group, 3.2, 0.12, 0.55, 0xb0b0b0, cx + 2.8, 1.25, front + 0.27)
     for (let i = 0; i < 7; i++) {
@@ -399,8 +404,10 @@ export function dressPlaces(layout, floor) {
     lights.push({ light: winLight, base: 14 })
     // The queue at the window.
     // Serving counter under the awning; Auntie Pinky behind it, the queue in front.
-    box(group, 3.2, 1.05, 0.6, 0xc9c9c9, cx + 2.8, 0.52, front + 1.15)
-    box(group, 3.3, 0.06, 0.7, 0x8a8a8a, cx + 2.8, 1.07, front + 1.15)
+    for (const m of [box(group, 3.2, 1.05, 0.6, 0xc9c9c9, cx + 2.8, 0.52, front + 1.15), box(group, 3.3, 0.06, 0.7, 0x8a8a8a, cx + 2.8, 1.07, front + 1.15)]) {
+      m.userData.vendor = 'auntie_pinky'
+      vendorTaps.push(m)
+    }
     const auntie = person('auntie_pinky', cx + 2.8, front + 0.5, 0, { every: 5 })
     cafQueue.auntie = auntie
     cafQueue.front = { x: cx + 2.8, z: front + 2.05 }
@@ -533,5 +540,5 @@ export function dressPlaces(layout, floor) {
   }
 
   queue.caf = cafQueue
-  return { group, obstacles, spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, vendorTaps, spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }
