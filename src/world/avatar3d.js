@@ -248,6 +248,12 @@ function solePoints(model, bones) {
   // Heel to toe on each foot: spread the picks along the foot's length.
   lowest.sort((a, b) => a.z - b.z)
   const picks = lowest.filter((_, i) => i % Math.max(1, Math.floor(lowest.length / 24)) === 0)
+  // ...and the toe caps and heels (up to 10 cm high), so a shoe never pushes into the
+  // riser of a step.
+  for (const side of [1, -1]) {
+    const shoe = all.filter((v) => Math.sign(v.x) === side && v.y < all[0].y + 0.1).sort((a, b) => b.z - a.z)
+    picks.push(...shoe.slice(0, 80).filter((_, i) => i % 5 === 0), ...shoe.slice(-30).filter((_, i) => i % 6 === 0))
+  }
   const inv = new THREE.Matrix4()
   return picks.map((v) => {
     const foot = feet.reduce((best, f) => (worldOf(f).distanceTo(v) < worldOf(best).distanceTo(v) ? f : best))
@@ -1075,9 +1081,22 @@ export function measureBody(group) {
   }
   // On a floor map: each shoe's lowest point against what's under that shoe.
   const floorAt = floorOf(group)
+  // (the smallest clearance under any point of the shoes: a foot resting on a step's
+  // edge, heel over the step below, is on that step)
   if (floorAt && out.pose !== 'sit' && out.pose !== 'lie') {
-    const gap = Math.min(...feetNow(group).map((f) => f[3] - Math.max(ground, floorAt(f[0], f[2]))))
+    let gap = Infinity
+    group.traverse((node) => {
+      if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'feet') return
+      const count = node.geometry.attributes.position.count
+      const step = Math.max(1, Math.floor(count / 400))
+      for (let i = 0; i < count; i += step) {
+        node.getVertexPosition(i, vtx)
+        node.localToWorld(vtx)
+        gap = Math.min(gap, vtx.y - Math.max(ground, floorAt(vtx.x, vtx.z)))
+      }
+    })
     if (Number.isFinite(gap)) out.ground = +(out.sole - gap).toFixed(3)
+    out.floor = +floorAt(out.x, out.z).toFixed(3)
   }
   // Sitting: the seat of the trousers vs the seat, the soles vs the floor under it.
   if (out.pose === 'sit' && out.seatOfPants !== null) {
@@ -1117,7 +1136,7 @@ if (typeof window !== 'undefined') {
       const row = { id, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', phase: d.sitMove ? d.sitPhase : null, walking: d.current === CLIP.walk || d.current === CLIP.sprint }
       if (full || rec.feet?.includes(id)) {
         const m = measureBody(g)
-        Object.assign(row, { sole: m.sole, ground: m.ground, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
+        Object.assign(row, { sole: m.sole, ground: m.ground, floor: m.floor, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
         if (rec.feet?.includes(id)) row.feet = feetNow(g)
       }
       people.push(row)

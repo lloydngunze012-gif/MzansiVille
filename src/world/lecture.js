@@ -8,6 +8,7 @@ import { sfx, loop as soundLoop } from '../audio.js'
 import { createAvatar, CROWD_MODELS, gesture, poseAvatar } from './avatar3d.js'
 import { venueFor } from '../venues.js'
 import { lookForPerson } from './cast.js'
+import { createFloor } from './floor.js'
 import { SPEED as FAST, ms } from '../speed.js'
 
 const LECTURE = 9 * 60
@@ -33,6 +34,8 @@ let students = []
 let walkers = []
 let clipboard = null
 let hallDoor = null
+// Along a row: the gap between the bench and the desks in front of it.
+const rowGap = (r) => rowZ(r) - 0.25
 // Up (or down) the stepped aisle one row at a time, never through the tiers.
 function aisleTo(r) {
   const pts = [[AISLE_X, 0, 7]]
@@ -71,8 +74,11 @@ function tween(s, fn) {
   let t = 0
   return task((dt) => { t = Math.min(s, t + dt); const k = t / s; fn(k * k * (3 - 2 * k)); return t >= s })
 }
+// Walks follow the floor: the body stays at y 0 and each sole stands on the step under
+// it (the hall's floor map, avatar3d), so feet land on every step of the aisle.
 function walk(who, pts, speed = SPEED) {
-  const path = pts.map(([x, y, z]) => new THREE.Vector3(x, y, z))
+  const path = pts.map(([x, , z]) => new THREE.Vector3(x, 0, z))
+  who.position.y = 0
   who.userData.walking = true
   return task((dt) => {
     let left = speed * dt
@@ -300,8 +306,30 @@ function build() {
   box(5, 0.5, 2, 0x6b4a33, -1, 0.25, -5)         // stage
   box(1.2, 1.1, 0.6, 0x5a3c28, 1.2, 1.05, -4.6)  // lectern
   // Tiered rows: a step, a desk and a bench per row.
+  // The floor people stand on (rows, aisle steps, the stairs up from the door).
+  const floor = createFloor()
+  scene.userData.floorAt = floor.at
+  const step = (x0, x1, z0, z1, top, color = 0x7a5a3e) => {
+    if (top <= 0) return
+    box(x1 - x0, top, z1 - z0, color, (x0 + x1) / 2, top / 2, (z0 + z1) / 2)
+    floor.box((x0 + x1) / 2, (z0 + z1) / 2, (x1 - x0) / 2, (z1 - z0) / 2, 0, top)
+  }
+  const aisle = [AISLE_X - 0.55, AISLE_X + 0.55]
+  // Stairs from the door up to the back row: six steps of 19 cm.
+  const RISE = rowY(ROWS - 1) / 6
+  const RUN = (7 - (rowZ(ROWS - 1) + ROW_GAP / 2)) / 6
+  for (let k = 1; k <= 6; k++) step(aisle[0], aisle[1], 7 - k * RUN, 7 - (k - 1) * RUN, k * RISE, k % 2 ? 0x8a6a4c : 0x7a5a3e)
   for (let r = 0; r < ROWS; r++) {
-    if (r) box(12, rowY(r), ROW_GAP, 0x7a5a3e, -0.6, rowY(r) / 2, rowZ(r))
+    const z0 = rowZ(r) - ROW_GAP / 2
+    const z1 = rowZ(r) + ROW_GAP / 2
+    if (r) {
+      // The tier, either side of the aisle...
+      step(-6.6, aisle[0], z0, z1, rowY(r))
+      step(aisle[1], 5.4, z0, z1, rowY(r))
+      // ...and in the aisle, each tier is two steps.
+      step(aisle[0], aisle[1], z0 + 0.5, z1, rowY(r), 0x8a6a4c)
+      step(aisle[0], aisle[1], z0, z0 + 0.5, rowY(r) - RISE, 0x7a5a3e)
+    }
     box(8, 0.08, 0.5, 0xb88a5a, -0.6, rowY(r) + 0.95, rowZ(r) - 0.75)
     box(8, 0.12, 0.55, 0x4a3426, -0.6, rowY(r) + 0.5, rowZ(r) + 0.05)
   }
@@ -459,7 +487,7 @@ async function play() {
   const v = late ? LINES.walk_in.late : LINES.walk_in.on_time
   hallDoor.rotation.y = 0
   await doorTo(true)
-  await walk(player, [[AISLE_X, 0, 6.5]])
+  await walk(player, [[AISLE_X, 0, 7.4]]) // (at the foot of the stairs)
   doorTo(false)
   setStep('walk-in')
   setShot('board')
@@ -487,7 +515,8 @@ async function play() {
   say(null)
   setShot(null)
   // Up the stepped aisle, along the gap behind your row, then into the seat.
-  await walk(player, [...aisleTo(r), [AISLE_X, rowY(r), z + 0.6], [x, rowY(r), z + 0.6], [x, y, z]])
+  await walk(player, [...aisleTo(r), [AISLE_X, rowY(r), rowGap(r)], [x, rowY(r), rowGap(r)]])
+  player.position.set(x, y, z)
   player.rotation.y = Math.PI
   player.userData.pose = 'sit'
   // Seated: over your shoulder, up toward the board and the lecturer.
@@ -547,7 +576,8 @@ async function play() {
     const sx = student.position.x
     const sz = student.position.z
     const y = rowY(r2)
-    wait(i * 0.9).then(() => walk(student, [[sx, y, sz + 0.6], [AISLE_X, y, sz + 0.6], ...aisleTo(r2).reverse(), [AISLE_X, 0, 9.6], [AISLE_X, 0, 11]], 2.2))
+    void sx; void sz
+    wait(1.4 + i * 0.9).then(() => walk(student, [[AISLE_X, y, rowGap(r2)], ...aisleTo(r2).reverse(), [AISLE_X, 0, 9.6], [AISLE_X, 0, 11]], 1.4))
   })
   await tapNext(uiq('.lc-say'))
   const end = roomieLine(seat.id === 'zanele' ? 'end' : 'end_alone')

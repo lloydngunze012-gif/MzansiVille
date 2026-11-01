@@ -108,7 +108,7 @@ test('M1 zig-zag across the Quad: no sideways sliding', async ({ page }) => {
 
 // Everyone's soles, sampled from the skinned vertices every few frames.
 function soleGaps(frames) {
-  return frames.flatMap((f) => f.people.filter((p) => p.sole !== undefined && p.pose !== 'sit' && p.pose !== 'lie').map((p) => ({ id: p.id, clip: p.clip, gap: +(p.sole - p.ground).toFixed(3), x: p.x, z: p.z, y: p.y })))
+  return frames.flatMap((f) => f.people.filter((p) => p.sole !== undefined && p.pose !== 'sit' && p.pose !== 'lie' && !p.phase).map((p) => ({ id: p.id, clip: p.clip, gap: +(p.sole - p.ground).toFixed(3), floor: p.floor, x: p.x, z: p.z, y: p.y })))
 }
 
 test('M0 feet: everyone on the ground, Quad and cafeteria', async ({ page }) => {
@@ -205,4 +205,60 @@ test('M4a sit and stand: caf chair (queue at Auntie Pinky, sit and eat)', async 
   await page.screenshot({ path: `${OUT}/M4-caf-up.png` })
   expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'caf chair')
   await saveVideo(page, 'M4-caf-chair')
+})
+
+test('M2 up and down the SMIG steps: feet on each step', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await page.waitForURL(/#\/play/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { phase: 'lecture', minutes: 8 * 60 + 45, morningDone: true, queue: [], lectureResolved: false, lectureRoute: true })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
+  const host = page.locator('#lecture3d')
+  await expect(host).toHaveAttribute('data-step', 'seat', { timeout: 90000 })
+  await page.evaluate(() => window.mzansiRecord({ where: 'lecture', every: 2 }))
+  // The front row: up the stairs from the door, then down the aisle steps to row 1.
+  const choices = page.locator('[data-lc="choice"]')
+  const n = await choices.count()
+  let pick = 0
+  for (let i = 0; i < n; i++) if (/front/i.test(await choices.nth(i).innerText())) pick = i
+  await choices.nth(pick).tap()
+  await page.waitForTimeout(2500)
+  await page.screenshot({ path: `${OUT}/M2-1-stairs-up.png` })
+  await expect.poll(() => page.evaluate(() => window.mzansiBodies('lecture').find((b) => b.id === 'player')?.pose), { timeout: 120000 }).toBe('sit')
+  await page.screenshot({ path: `${OUT}/M2-2-seated.png` })
+  // The bell: students stand up and walk up the aisle steps and out.
+  // (answer the lecture's choice and tap through its lines until the bell)
+  for (let i = 0; i < 120; i++) {
+    const step = await host.getAttribute('data-step')
+    if (/end|done/.test(step || '')) break
+    const choice = page.locator('[data-lc="choice"]:visible').first()
+    if (await choice.count()) await choice.tap().catch(() => {})
+    else await page.locator('.lc-say:visible').first().tap().catch(() => {})
+    await page.waitForTimeout(1500)
+  }
+  await expect(host).toHaveAttribute('data-step', /end|done/, { timeout: 10000 })
+  await page.waitForTimeout(4000)
+  await page.screenshot({ path: `${OUT}/M2-3-leaving.png` })
+  await page.waitForTimeout(6000)
+  const frames = await page.evaluate(() => window.mzansiRecordStop())
+  const gaps = soleGaps(frames)
+  const onSteps = gaps.filter((g) => g.floor > 0.05)
+  const heights = new Set(onSteps.map((g) => Math.round(g.floor * 100)))
+  const bad = gaps.filter((g) => Math.abs(g.gap) > 0.02)
+  console.log('sole samples', gaps.length, 'on steps', onSteps.length, 'step heights', [...heights].sort((a, b) => a - b).map((h) => h / 100).join(','), 'off', bad.length, JSON.stringify(bad.slice(0, 10)))
+  expect(onSteps.length).toBeGreaterThan(20)
+  expect(heights.size).toBeGreaterThan(5)
+  expect(bad).toEqual([])
+  await saveVideo(page, 'M2-stairs')
 })
