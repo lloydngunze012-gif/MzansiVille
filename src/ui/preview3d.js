@@ -65,18 +65,26 @@ function tick(now) {
 // so the same canvas is moved into it.
 export function showPreview(stage, look) {
   if (!stage) return
-  if (!renderer) setup()
+  // (no 3D here: the flat drawing is the preview)
+  if (!renderer) { try { setup() } catch { stage.classList.add('cc-no3d'); return } }
   const next = JSON.stringify(lookOf(look))
   if (next !== key) {
-    if (avatar) { avatar.userData.disposed = true; scene.remove(avatar) }
+    // The new look loads beside the old one, which stays until the new one is in
+    // (no empty stage, no flash of anything else between outfits).
+    const old = avatar
     avatar = createAvatar(look)
-    avatar.addEventListener('rigged', () => stage.isConnected && stage.classList.add('cc-has3d'))
+    const fresh = avatar
+    fresh.addEventListener('rigged', () => {
+      if (old && old !== avatar) { old.userData.disposed = true; scene.remove(old) }
+      if (fresh === avatar) document.querySelectorAll('.cc-stage').forEach((s) => s.classList.add('cc-has3d'))
+    })
+    if (old && !old.userData.rigged) { old.userData.disposed = true; scene.remove(old) }
     scene.add(avatar)
     key = next
     nextMove = 0
   }
   if (renderer.domElement.parentElement !== stage) stage.append(renderer.domElement)
-  if (avatar.userData.rigged) stage.classList.add('cc-has3d')
+  if (avatar.userData.rigged || scene.children.some((c) => c !== avatar && c.userData?.rigged && !c.userData.disposed)) stage.classList.add('cc-has3d')
   stage.dataset.look = next
   if (!frame) frame = requestAnimationFrame(tick)
 }

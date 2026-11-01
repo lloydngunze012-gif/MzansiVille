@@ -212,3 +212,40 @@ test('K4 the Quad benches: seated people sit (hips on the seat, feet on the floo
   }
   await saveVideo(page, 'K4-bench-sitters')
 })
+
+test('K5 the creator: a loading shimmer while the 3D student loads, never the old flat character', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  // (the character models held back 2.5 s, like a slow phone connection)
+  await page.route('**/models/people2/**', async (route) => { await new Promise((r) => setTimeout(r, 2500)); await route.continue() })
+  await page.goto('/#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/#/new')
+  const stage = page.locator('.cc-stage').first()
+  await expect(stage).toBeVisible({ timeout: 20000 })
+  const look = () => page.evaluate(() => {
+    const s = document.querySelector('.cc-stage')
+    const bob = s?.querySelector('.cc-bob')
+    const load = s?.querySelector('.cc-loading')
+    return { has3d: s?.classList.contains('cc-has3d'), flat: bob ? getComputedStyle(bob).visibility !== 'hidden' : false, shimmer: load ? getComputedStyle(load).display !== 'none' : false }
+  })
+  const early = await look()
+  await page.screenshot({ path: `${OUT}/K5-1-loading.png` })
+  await expect.poll(async () => (await look()).has3d, { timeout: 60000 }).toBe(true)
+  await page.waitForTimeout(800)
+  const loaded = await look()
+  await page.screenshot({ path: `${OUT}/K5-2-loaded.png` })
+  // A new outfit: the flat character never shows while the new look loads.
+  const outfits = page.locator('[data-act="avatar"][data-part="outfit"]')
+  const seen = []
+  if (await outfits.count()) {
+    await outfits.nth(1).tap().catch(() => {})
+    for (let i = 0; i < 12; i++) { seen.push(await look()); await page.waitForTimeout(250) }
+  }
+  await page.screenshot({ path: `${OUT}/K5-3-new-outfit.png` })
+  console.log('creator', JSON.stringify({ early, loaded, changing: seen }))
+  expect(early.flat, 'no flat character while loading').toBe(false)
+  expect(early.shimmer, 'a shimmer while loading').toBe(true)
+  expect(loaded.shimmer, 'no shimmer once the student is in').toBe(false)
+  expect(seen.every((s) => !s.flat), 'no flat character while a new outfit loads').toBe(true)
+  await saveVideo(page, 'K5-creator')
+})
