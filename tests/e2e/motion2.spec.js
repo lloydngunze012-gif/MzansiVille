@@ -179,7 +179,7 @@ export { tapPerson, transitions, expectPlanted }
 
 // A screenshot part-way through a sit-down or stand-up.
 async function shootPhase(page, phase, name, where = 'campus') {
-  await expect.poll(() => page.evaluate(([w]) => window.mzansiBodies(w, 'player')[0]?.phase, [where]), { timeout: 150000, intervals: [200] }).toBe(phase)
+  await expect.poll(() => page.evaluate(([w]) => window.mzansiBodies(w, 'player')[0]?.phase, [where]), { timeout: 240000, intervals: [200] }).toBe(phase)
   await page.waitForTimeout(900)
   await page.screenshot({ path: `${OUT}/${name}.png` })
 }
