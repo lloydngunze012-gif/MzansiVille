@@ -1,4 +1,5 @@
 import { createFloor } from './floor.js'
+import { collidersOf } from './colliders.js'
 import * as THREE from 'three'
 import { buildingLayout } from './layout.js'
 import { buildGrid } from './nav.js'
@@ -270,7 +271,10 @@ export function createCampus(district, homeId) {
 
   const grid = buildGrid(layout.obstacles.concat(dressing.obstacles))
   upgrade(buildings, layout.buildings)
-  return { group, ground: lawn, buildings, grid, layout, dressing, surroundings, floor }
+  const result = { group, ground: lawn, buildings, grid, layout, dressing, surroundings, floor, colliders: collidersOf(dressing.group) }
+  // (and again once every prop model has loaded: benches' neighbours, bins, plants, speakers)
+  dressing.ready().then(() => { result.colliders = collidersOf(dressing.group) })
+  return result
 }
 
 // n: 0 day, 1 night. Windows across campus plus the dressed places' lights.

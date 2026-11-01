@@ -20,6 +20,7 @@ function part(group, w, h, d, material, x, y, z) {
 export function makeChair() {
   const g = new THREE.Group()
   g.name = 'chair'
+  g.userData.kind = 'chair'
   part(g, 0.46, 0.05, 0.44, wood, 0, CHAIR_SEAT - 0.025, 0)
   part(g, 0.46, 0.42, 0.05, wood, 0, CHAIR_SEAT + 0.24, -0.2)
   for (const sx of [-0.2, 0.2]) for (const sz of [-0.19, 0.19]) part(g, 0.04, CHAIR_SEAT - 0.05, 0.04, legs, sx, (CHAIR_SEAT - 0.05) / 2, sz)

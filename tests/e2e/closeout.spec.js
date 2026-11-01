@@ -78,3 +78,59 @@ test('K1 walking pace: a brisk walk for short trips, a jog past 15 m, feet keepi
   for (const s of [summary(walk), summary(jog)]) expect(Math.abs(s.medianMatch - 1), 'stride keeps up with the ground').toBeLessThan(0.12)
   await saveVideo(page, 'K1-pace')
 })
+
+// Walks the player with the stick straight into one of each kind of solid thing, from
+// 2 m away, for a few seconds: the body (every skinned vertex) never more than 3 cm
+// into anything, and every kind has a collider.
+async function intoEach(page, kinds, tag) {
+  const all = await page.evaluate(() => window.mzansiColliders())
+  const results = []
+  for (const kind of kinds) {
+    const cands = all.filter((c) => c.kind === kind)
+    if (!cands.length) { results.push({ kind, colliders: 0 }); continue }
+    const c = cands[0]
+    // A start 2 m out from its side, on a clear spot.
+    let start = null
+    for (let k = 0; k < 12 && !start; k++) {
+      const a = (k / 12) * Math.PI * 2
+      const r = Math.max(c.hx, c.hz) + 2
+      const p = { x: c.cx + Math.sin(a) * r, z: c.cz + Math.cos(a) * r }
+      const clear = all.every((o) => Math.hypot(o.cx - p.x, o.cz - p.z) > Math.max(o.hx, o.hz) + 0.6)
+      if (clear) start = p
+    }
+    if (!start) { results.push({ kind, colliders: cands.length, start: 'none clear' }); continue }
+    await page.evaluate(([s, t]) => window.mzansiPlace(s.x, s.z, t.cx, t.cz), [start, c])
+    await page.waitForTimeout(600)
+    const d = Math.hypot(c.cx - start.x, c.cz - start.z)
+    await page.evaluate(([x, z]) => window.mzansiSteer(x, z), [(c.cx - start.x) / d, (c.cz - start.z) / d])
+    let worst = { inside: 0 }
+    for (let i = 0; i < 14; i++) {
+      await page.waitForTimeout(400)
+      const r = (await page.evaluate(() => window.mzansiInside(['player'])))[0]
+      if (r && r.inside > worst.inside) worst = r
+    }
+    await page.screenshot({ path: `${OUT}/K2-${tag}-${kind.replace(/[^a-z]+/gi, '-')}.png` })
+    if (process.env.DEBUG_T && worst.inside > 0.03) console.log('near', kind, JSON.stringify(await page.evaluate(() => window.mzansiNear())))
+    await page.evaluate(() => window.mzansiSteer(0, 0))
+    const end = await page.evaluate(() => window.mzansiPlayerPos())
+    results.push({ kind, colliders: cands.length, gotTo: +Math.hypot(c.cx - end.x, c.cz - end.z).toFixed(2), inside: worst.inside, what: worst.what || null })
+  }
+  return results
+}
+
+test('K2 everything solid: the stick straight into every kind of thing at the Quad and the cafeteria', async ({ page }) => {
+  await campus(page, 'quad')
+  await page.waitForTimeout(3000) // (the prop models in, their colliders built)
+  const kinds = await page.evaluate(() => [...new Set(window.mzansiColliders().map((c) => c.kind))])
+  console.log('collider kinds at the Quad', JSON.stringify(kinds))
+  const quad = await intoEach(page, ['bench', 'lamp post', 'stage', 'stage step', 'speaker', 'tree_oak', 'tree_palmTall', 'plant_bushLarge', 'stall', 'SRC table', 'notice board'], 'quad')
+  await page.evaluate(() => window.mzansiGoTo('cafeteria'))
+  await page.waitForTimeout(15000)
+  const caf = await intoEach(page, ['caf counter', 'table', 'chair', 'trashcan'], 'caf')
+  for (const r of [...quad, ...caf]) console.log('into', JSON.stringify(r))
+  for (const r of [...quad, ...caf]) {
+    expect(r.colliders, `${r.kind} has a collider`).toBeGreaterThan(0)
+    expect(r.inside, `${r.kind}: the body never in it (${r.what})`).toBeLessThan(0.03)
+  }
+  await saveVideo(page, 'K2-everything-solid')
+})

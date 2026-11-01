@@ -98,27 +98,21 @@ export function dressPlaces(layout, floor) {
     return new Promise((resolve) => movers.push({ avatar, x, z, speed, resolve }))
   }
 
-  // (center: the furniture models have their origin at a corner; a table is placed by
-  // its middle, so the chairs around it line up with its sides)
-  function prop(name, x, z, { rot = 0, s = 2.2, y = 0, center = false } = {}) {
+  // (kind: what it is, for its collider, colliders.js; loading is tracked so the
+  // colliders are built once every model is in)
+  const loading = []
+  function prop(name, x, z, { rot = 0, s = 2.2, y = 0 } = {}) {
     const holder = new THREE.Group()
     holder.position.set(x, y, z)
     holder.rotation.y = rot
+    holder.userData.kind = name
     group.add(holder)
-    loadProp(name).then((src) => {
+    loading.push(loadProp(name).then((src) => {
       const model = src.clone(true)
       model.scale.setScalar(s)
-      if (center) { const c = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3()); model.position.set(-c.x, 0, -c.z) }
-      if (!/flower|grass|rug|tree/.test(name) && y < 0.5) { // (trees: their trunks are blocked above, not the canopy)
-        holder.add(model)
-        holder.updateMatrixWorld(true)
-        const box = new THREE.Box3().setFromObject(model)
-        holder.remove(model)
-        if (box.max.y > 0.3) obstacles.push({ minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z })
-      }
       model.traverse((node) => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = true } })
       holder.add(model)
-    }).catch(() => {})
+    }).catch(() => {}))
     return holder
   }
 
@@ -128,6 +122,7 @@ export function dressPlaces(layout, floor) {
     const g = new THREE.Group()
     g.position.set(x, 0, z)
     g.rotation.y = rot
+    g.userData.kind = 'bench'
     group.add(g)
     const wood = mat(0xa0703c)
     const steel = mat(0x2b2b30)
@@ -156,7 +151,7 @@ export function dressPlaces(layout, floor) {
   }
 
   function lamp(x, z) {
-    box(group, 0.14, 3.4, 0.14, 0x2b2b30, x, 1.7, z)
+    box(group, 0.14, 3.4, 0.14, 0x2b2b30, x, 1.7, z).userData.kind = 'lamp post'
     const headMat = mat(0x3a3020, { emissive: 0xffd28a, emissiveIntensity: 0.2 })
     box(group, 0.5, 0.28, 0.5, headMat, x, 3.45, z)
     glows.push({ material: headMat, base: 2.2 })
@@ -220,14 +215,14 @@ export function dressPlaces(layout, floor) {
 
     // Open-mic stage on the north side (its footprint is the place's "building").
     const sz = cz - 6.5
-    box(group, 5, 0.6, 3, 0x8a5a3a, cx, 0.3, sz)
-    box(group, 1.6, 0.3, 0.6, 0x7a4e30, cx, 0.15, sz + 1.75)
+    box(group, 5, 0.6, 3, 0x8a5a3a, cx, 0.3, sz).userData.kind = 'stage'
+    box(group, 1.6, 0.3, 0.6, 0x7a4e30, cx, 0.15, sz + 1.75).userData.kind = 'stage step'
     for (const side of [-1, 1]) box(group, 0.2, 3.6, 0.2, 0x2b2b30, cx + side * 2.4, 1.8, sz - 1.3)
     box(group, 5, 0.22, 0.22, 0x2b2b30, cx, 3.6, sz - 1.3)
     box(group, 4.6, 2.3, 0.1, 0x5b23c9, cx, 1.85, sz - 1.4)
     sign(group, [story.stage_sign], { x: cx, y: 2.75, z: sz - 1.33, w: 4.2, h: 0.7, bg: '#22143b', fg: '#f0c400' })
     stringLights(new THREE.Vector3(cx - 2.4, 3.5, sz - 1.3), new THREE.Vector3(cx + 2.4, 3.5, sz - 1.3), 12, 0.15, false)
-    box(group, 0.05, 1.3, 0.05, 0x1c1915, cx, 1.25, sz + 0.9) // mic stand
+    box(group, 0.05, 1.3, 0.05, 0x1c1915, cx, 1.25, sz + 0.9).userData.kind = 'mic stand'
     box(group, 0.12, 0.14, 0.12, 0x444444, cx, 1.95, sz + 0.9)
     prop('speaker', cx - 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
     prop('speaker', cx + 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
@@ -262,6 +257,7 @@ export function dressPlaces(layout, floor) {
     const stx = cx + Math.cos(sa) * 7.4
     const stz = cz + Math.sin(sa) * 7.4
     const stall = new THREE.Group()
+    stall.userData.kind = 'stall'
     stall.position.set(stx, 0, stz)
     stall.rotation.y = facing(stx, stz, cx, cz)
     group.add(stall)
@@ -272,7 +268,7 @@ export function dressPlaces(layout, floor) {
     const stallMat = mat(0xfff0c0, { emissive: 0xffc870, emissiveIntensity: 0.2 })
     box(stall, 2.2, 0.06, 0.06, stallMat, 0, 2.38, 0.75)
     glows.push({ material: stallMat, base: 2 })
-    loadProp('kitchenCoffeeMachine').then((src) => { const m = src.clone(true); m.scale.setScalar(1.8); m.position.set(0.7, 1, -0.1); stall.add(m) }).catch(() => {})
+    loading.push(loadProp('kitchenCoffeeMachine').then((src) => { const m = src.clone(true); m.scale.setScalar(1.8); m.position.set(0.7, 1, -0.1); stall.add(m) }).catch(() => {}))
     loadProp('radio').then((src) => { const m = src.clone(true); m.scale.setScalar(2); m.position.set(-0.8, 1, -0.1); stall.add(m) }).catch(() => {})
     const vendorAt = new THREE.Vector3(0, 0, -0.9).applyAxisAngle(new THREE.Vector3(0, 1, 0), stall.rotation.y).add(stall.position)
     const vendor = person('mam_gugu', vendorAt.x, vendorAt.z, stall.rotation.y, { every: 7 })
@@ -354,8 +350,9 @@ export function dressPlaces(layout, floor) {
       const t = new THREE.Group()
       t.position.set(x, 0, z)
       t.rotation.y = facing(x, z, cx, cz)
+      t.userData.kind = 'SRC table'
       group.add(t)
-      loadProp('table').then((src) => { const m = src.clone(true); m.scale.setScalar(2.4); m.position.set(0, 0, -0.1); t.add(m) }).catch(() => {})
+      loading.push(loadProp('table').then((src) => { const m = src.clone(true); m.scale.setScalar(2.4); m.position.set(0, 0, -0.1); t.add(m) }).catch(() => {}))
       for (const side of [-1, 1]) box(t, 0.08, 2.3, 0.08, 0xdddddd, side * 1.1, 1.15, -0.8)
       const [c1, c2, c3] = slate.colors
       box(t, 2.4, 0.08, 1.8, c1, 0, 2.3, -0.1)
@@ -375,7 +372,7 @@ export function dressPlaces(layout, floor) {
     const nx = cx + Math.cos(na) * 8.6
     const nz = cz + Math.sin(na) * 8.6
     const nrot = facing(nx, nz, cx, cz)
-    for (const side of [-1, 1]) box(group, 0.1, 2.2, 0.1, 0x4a3426, nx + Math.cos(nrot) * side * 1.1, 1.1, nz - Math.sin(nrot) * side * 1.1)
+    for (const side of [-1, 1]) box(group, 0.1, 2.2, 0.1, 0x4a3426, nx + Math.cos(nrot) * side * 1.1, 1.1, nz - Math.sin(nrot) * side * 1.1).userData.kind = 'notice board'
     sign(group, story.posters, { x: nx, y: 1.55, z: nz, rot: nrot, w: 2.4, h: 1.3, bg: '#c9a66b', fg: '#22143b', font: 34, align: 'left' })
     block(nx, nz, 2.4, 0.6)
 
@@ -418,6 +415,7 @@ export function dressPlaces(layout, floor) {
     // Serving counter under the awning; Auntie Pinky behind it, the queue in front.
     for (const m of [box(group, 3.2, 1.05, 0.6, 0xc9c9c9, cx + 2.8, 0.52, front + 1.15), box(group, 3.3, 0.06, 0.7, 0x8a8a8a, cx + 2.8, 1.07, front + 1.15)]) {
       m.userData.vendor = 'auntie_pinky'
+      m.userData.kind = 'caf counter'
       vendorTaps.push(m)
     }
     const auntie = person('auntie_pinky', cx + 2.8, front + 0.5, 0, { every: 5 })
@@ -463,7 +461,7 @@ export function dressPlaces(layout, floor) {
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
     floor?.box(tx, cz, 2.2, 3.2, 0, 0.08)
     for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
-      prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08, center: true })
+      prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
       // (chairs 0.6 m out from the table's sides: room to stand in front and sit)
       for (const [cx2, r] of [[tx - TERRACE_CHAIR, Math.PI / 2], [tx + TERRACE_CHAIR, -Math.PI / 2]]) {
         const c = makeChair()
@@ -554,5 +552,5 @@ export function dressPlaces(layout, floor) {
   }
 
   queue.caf = cafQueue
-  return { group, obstacles, vendorTaps, isMoving: (a) => movers.some((m) => m.avatar === a), spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, ready: () => Promise.all(loading), vendorTaps, isMoving: (a) => movers.some((m) => m.avatar === a), spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }

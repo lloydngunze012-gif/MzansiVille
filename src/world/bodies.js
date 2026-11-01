@@ -4,7 +4,7 @@
 // standing up, stay put and count as obstacles. People who can't be moved (a vendor
 // at her counter, someone in a queue) push others but are never pushed.
 export const RADIUS = 0.25 // a body's half-width (from another body)
-export const REACH = 0.34 // how far hands swing out from the middle (from furniture and walls)
+export const REACH = 0.38 // how far hands swing out from the middle (from furniture and walls)
 export const STRIDE = 0.46 // how far the front foot lands ahead (from something straight ahead)
 export const APART = 0.5 // the closest two standing people get (centre to centre)
 
@@ -13,28 +13,58 @@ const settled = (a) => {
   return d.pose === 'sit' || d.pose === 'lie' || Boolean(d.sitMove)
 }
 
-// How far to move a point out of a list of boxes (minX..maxZ), widened by r: along the
-// shortest way out of each box it is in.
+// A box in its own frame: the axis-aligned boxes (minX..maxZ) are boxes with no turn;
+// the colliders (colliders.js) are turned boxes (cx, cz, hx, hz, rot).
+function frameOf(b) {
+  if (b.rot === undefined) return { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, hx: (b.maxX - b.minX) / 2, hz: (b.maxZ - b.minZ) / 2, cs: 1, sn: 0 }
+  return { cx: b.cx, cz: b.cz, hx: b.hx, hz: b.hz, cs: Math.cos(b.rot), sn: Math.sin(b.rot) }
+}
+// How far inside a box (widened by r) a point is: 0 outside.
+export function depthIn(x, z, b, r) {
+  const f = frameOf(b)
+  const dx = x - f.cx
+  const dz = z - f.cz
+  const u = dx * f.cs - dz * f.sn
+  const v = dx * f.sn + dz * f.cs
+  return Math.max(0, Math.min(f.hx + r - Math.abs(u), f.hz + r - Math.abs(v)))
+}
+
+// How far to move a point out of a list of boxes, widened by r: along the shortest way
+// out of each box it is in (in the box's own turn).
 export function pushOutOfBoxes(x, z, r, boxes, facing = null) {
   let px = x
   let pz = z
-  for (let round = 0; round < 3; round++) {
+  // (a few rounds: out of one box can be into the next, a stage and its step)
+  for (let round = 0; round < 6; round++) {
     let moved = false
     for (const b of boxes) {
+      if (px <= b.minX - STRIDE || px >= b.maxX + STRIDE || pz <= b.minZ - STRIDE || pz >= b.maxZ + STRIDE) continue
+      const f = frameOf(b)
+      const dx = px - f.cx
+      const dz = pz - f.cz
+      const u = dx * f.cs - dz * f.sn
+      const v = dx * f.sn + dz * f.cs
       // (something straight ahead is kept a stride away: the front foot and hand reach
       // further forward than the body does to the side)
       let rr = r
       if (facing !== null) {
-        const cx = Math.max(b.minX, Math.min(px, b.maxX)) - px
-        const cz = Math.max(b.minZ, Math.min(pz, b.maxZ)) - pz
-        const d = Math.hypot(cx, cz)
-        if (d > 1e-4 && (cx * Math.sin(facing) + cz * Math.cos(facing)) / d > 0.6) rr = STRIDE
+        const qu = Math.max(-f.hx, Math.min(u, f.hx)) - u
+        const qv = Math.max(-f.hz, Math.min(v, f.hz)) - v
+        const wx = qu * f.cs + qv * f.sn
+        const wz = -qu * f.sn + qv * f.cs
+        const d = Math.hypot(wx, wz)
+        // (more of a stride the more it's ahead: a corner half ahead while sliding round it)
+        if (d > 1e-4) rr = r + (STRIDE - r) * Math.min(1, Math.max(0, ((wx * Math.sin(facing) + wz * Math.cos(facing)) / d - 0.2) / 0.5))
       }
-      if (px <= b.minX - rr || px >= b.maxX + rr || pz <= b.minZ - rr || pz >= b.maxZ + rr) continue
-      const out = [[b.minX - rr - px, 0], [b.maxX + rr - px, 0], [0, b.minZ - rr - pz], [0, b.maxZ + rr - pz]]
-      out.sort((m, n) => Math.abs(m[0] + m[1]) - Math.abs(n[0] + n[1]))
-      px += out[0][0]
-      pz += out[0][1]
+      const ou = f.hx + rr - Math.abs(u)
+      const ov = f.hz + rr - Math.abs(v)
+      if (ou <= 0 || ov <= 0) continue
+      let du = 0
+      let dv = 0
+      if (ou < ov) du = (u >= 0 ? 1 : -1) * ou
+      else dv = (v >= 0 ? 1 : -1) * ov
+      px += du * f.cs + dv * f.sn
+      pz += -du * f.sn + dv * f.cs
       moved = true
     }
     if (!moved) break
@@ -53,8 +83,8 @@ export function resolveBodies(bodies, boxesNear) {
     if (!dx && !dz) return
     a.position.x = x
     a.position.z = z
-    // (a push is not a step: the walk and the turn-first rule don't count it)
-    a.userData.lastPos?.set(a.userData.lastPos.x + dx, a.userData.lastPos.y, a.userData.lastPos.z + dz)
+    // (the push counts in the speed: someone walking into a wall is held still, and the
+    // walk turns to standing, so the legs don't stride into it)
     if (a.userData.standAt) { a.userData.standAt.x += dx; a.userData.standAt.z += dz }
   }
   const free = (b) => !b.fixed && !settled(b.avatar)
@@ -120,14 +150,16 @@ export function bodyReport(bodies, boxesNear) {
   }
   let deepest = 0
   let who = null
+  let what = null
   for (const b of live) {
     if (b.fixed || settled(b.avatar) || b.avatar.userData.noCollide) continue
     const boxes = boxesNear(b.avatar.position.x, b.avatar.position.z) || []
     for (const x of boxes) {
-      const { x: px, z: pz } = b.avatar.position
-      const depth = Math.min(px - (x.minX - REACH), x.maxX + REACH - px, pz - (x.minZ - REACH), x.maxZ + REACH - pz)
-      if (depth > deepest) { deepest = depth; who = b.avatar.userData.personId || (b.avatar.userData.isPlayer ? 'player' : 'extra') }
+      // (how far the body's middle is inside the box widened by a body's half-width: a
+      // body actually in the thing, not just its hands near it)
+      const depth = depthIn(b.avatar.position.x, b.avatar.position.z, x, RADIUS)
+      if (depth > deepest) { deepest = depth; who = b.avatar.userData.personId || (b.avatar.userData.isPlayer ? 'player' : 'extra'); what = x.kind || 'box' }
     }
   }
-  return { closest: +closest.toFixed(3), pair, deepest: +deepest.toFixed(3), who }
+  return { closest: +closest.toFixed(3), pair, deepest: +deepest.toFixed(3), who, what }
 }

@@ -15,7 +15,8 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
-import { bodyReport, resolveBodies } from './bodies.js'
+import { bodyReport, depthIn, resolveBodies } from './bodies.js'
+import { collidersOf } from './colliders.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
@@ -675,7 +676,10 @@ window.mzansiInside = (ids = ['player']) => {
     const size = bb.getSize(new THREE.Vector3())
     if (size.y <= 0.09 && m.position.y < 0.12) return // (floors, rugs, the plaza, the deck: the feet checks cover those)
     m.updateMatrixWorld()
-    boxes.push({ m, bb, inv: inv.clone().copy(m.matrixWorld).invert(), name: m.parent?.name || m.name || 'mesh', exact: m.geometry.type === 'BoxGeometry', scale: m.getWorldScale(new THREE.Vector3()).x })
+    let kind = ''
+    for (let k = m; k && !kind; k = k.parent) kind = k.userData?.kind || ''
+    // (a tree's leaves are soft and the soil at its foot is ground: its trunk is what you walk into)
+    boxes.push({ m, bb, inv: inv.clone().copy(m.matrixWorld).invert(), name: kind || m.parent?.name || m.name || 'mesh', exact: m.geometry.type === 'BoxGeometry', scale: m.getWorldScale(new THREE.Vector3()).x, trunkOnly: /tree/.test(kind) })
   })
   const out = []
   const v = new THREE.Vector3()
@@ -694,6 +698,7 @@ window.mzansiInside = (ids = ['player']) => {
         node.getVertexPosition(i, v)
         node.localToWorld(v)
         for (const b of near) {
+          if (b.trunkOnly && (v.y > 0.8 || v.y < 0.3)) continue // (trunk: above the mound of soil at its foot)
           l.copy(v).applyMatrix4(b.inv)
           const d = Math.min(l.x - b.bb.min.x, b.bb.max.x - l.x, l.y - b.bb.min.y, b.bb.max.y - l.y, l.z - b.bb.min.z, b.bb.max.z - l.z)
           if (d <= 0) continue
@@ -1146,9 +1151,8 @@ function activityApi() {
       loadModel(url).then((src) => {
         const m = src.clone(true)
         m.scale.setScalar(s)
-        // (furniture models have their origin at a corner: a table goes by its middle)
-        if (/table/.test(url)) { const c = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()); m.position.set(-c.x, 0, -c.z) }
         holder.add(m)
+        tempSolidsDirty = true
       }).catch(() => {})
       return holder
     },
@@ -1157,6 +1161,7 @@ function activityApi() {
       c.position.set(x, 0, z)
       c.rotation.y = rot
       tempGroup.add(c)
+      tempSolidsDirty = true
       return c
     },
     box: (w, h, d, color, x, y, z, extra = {}) => {
@@ -1165,8 +1170,7 @@ function activityApi() {
       mesh.castShadow = true
       mesh.receiveShadow = true
       tempGroup.add(mesh)
-      // (anything from the shins up to the waist is something you'd walk into)
-      if (y - h / 2 < 1.2 && y + h / 2 > 0.15 && w > 0.1 && d > 0.1) tempSolids.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 })
+      tempSolidsDirty = true // (solid from its shape: colliders.js)
       return mesh
     },
     sign: (lines, x, y, z, rot = 0, w = 2.4, h = 1.4) => {
@@ -1197,6 +1201,10 @@ function activityApi() {
       clearRoom()
       room = buildRoom(kind)
       scene.add(room.group)
+      // (the room's furniture from its shapes, and again once its models have loaded)
+      roomSolids = collidersOf(room.group)
+      const built = room
+      setTimeout(() => { if (room === built) roomSolids = collidersOf(room.group) }, 2500)
       return room
     },
     clearTemps: () => { clearTemps(); clearRoom() },
@@ -1220,7 +1228,9 @@ function activityApi() {
 const tempGroup = new THREE.Group()
 tempGroup.name = 'scene-temps'
 let temps = []
-let tempSolids = [] // boxes an activity built (benches, steps, stalls): solid like the rest
+let tempSolids = [] // colliders of what an activity built (benches, steps, stalls, props)
+let tempSolidsDirty = false
+let roomSolids = []
 let npcMoves = []
 let room = null
 let scriptMove = null
@@ -1247,6 +1257,7 @@ function clearTemps() {
   for (const a of temps) a.userData.disposed = true
   temps = []
   tempSolids = []
+  tempSolidsDirty = false
   npcMoves = []
   tempGroup.clear()
 }
@@ -1690,8 +1701,9 @@ function promptDoor() {
 // buildings, the places' tables, counters, benches and stalls, and an activity's own.
 function boxesNear(x, z) {
   if (!campus) return null
-  if (room && x > room.bounds.minX - 1 && x < room.bounds.maxX + 1 && z > room.bounds.minZ - 1 && z < room.bounds.maxZ + 1) return room.blocks
-  const all = campus.layout.obstacles.concat(campus.dressing?.obstacles || [], tempSolids)
+  if (room && x > room.bounds.minX - 1 && x < room.bounds.maxX + 1 && z > room.bounds.minZ - 1 && z < room.bounds.maxZ + 1) return room.blocks.concat(roomSolids)
+  if (tempSolidsDirty) { tempSolids = collidersOf(tempGroup); tempSolidsDirty = false }
+  const all = campus.layout.obstacles.concat(campus.dressing?.obstacles || [], campus.colliders || [], tempSolids)
   return all.filter((b) => x > b.minX - 1.5 && x < b.maxX + 1.5 && z > b.minZ - 1.5 && z < b.maxZ + 1.5)
 }
 // Everyone in the campus scene, for the collision pass: the people who can be pushed and
@@ -1706,6 +1718,11 @@ function campusBodies() {
   return list.filter((b, i) => b.avatar && list.findIndex((c) => c.avatar === b.avatar) === i)
 }
 window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
+window.mzansiNear = () => { const p = player.position; return { at: [+p.x.toFixed(2), +p.z.toFixed(2)], nc: player.userData.noCollide || null, pose: player.userData.pose, boxes: (boxesNear(p.x, p.z) || []).map((b) => ({ kind: b.kind || 'aabb', depth: +depthIn(p.x, p.z, b, 0.25).toFixed(3), b: b.rot === undefined ? [b.minX, b.maxX, b.minZ, b.maxZ].map((v) => +v.toFixed(2)) : [b.cx, b.cz, b.hx, b.hz, b.rot].map((v) => +v.toFixed(2)) })).filter((b) => b.depth > 0 || /step|stage|tree/.test(b.kind)) } }
+// Tests: every collider (kind, middle, half-size, turn) and how many of each kind.
+window.mzansiColliders = () => (campus?.colliders || []).map((c) => ({ kind: c.kind, cx: +c.cx.toFixed(2), cz: +c.cz.toFixed(2), hx: +c.hx.toFixed(2), hz: +c.hz.toFixed(2), rot: +c.rot.toFixed(2) }))
+// Tests: stand the player somewhere, facing a point.
+window.mzansiPlace = (x, z, fx, fz) => { if (!player) return; route = []; arrive = null; snapTo = null; player.position.set(x, 0, z); player.rotation.y = Math.atan2(fx - x, fz - z); player.userData.lastPos?.set(x, 0, z) }
 const BODY = 0.3
 function hitsSolid(x, z, r = BODY) {
   const solids = campus.layout.obstacles.concat(campus.dressing?.obstacles || [])
