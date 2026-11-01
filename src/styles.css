@@ -709,6 +709,13 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 /* The 3D student is the preview: while it loads a soft shimmer stands in its place; the
    flat drawing shows only where 3D can't run. */
 .cc-stage:not(.cc-no3d) .cc-bob { visibility: hidden; }
+/* The reload card: the 3D view failed; never an empty field. */
+.world-fail { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: rgba(27,16,48,.92); color: #fff; text-align: center; padding: 24px; }
+.world-fail p { font-size: 22px; font-weight: 800; margin: 0; }
+.world-fail small { opacity: .8; }
+.err-log { padding-left: 18px; font-size: 13px; word-break: break-word; }
+.err-log li { margin: 10px 0; }
+.err-log pre { white-space: pre-wrap; font-size: 11px; opacity: .8; }
 .cc-loading { position: absolute; left: 50%; bottom: 16px; width: 70px; height: 150px; transform: translateX(-50%); z-index: 1; border-radius: 35px 35px 16px 16px;
   background: linear-gradient(100deg, rgba(255,255,255,.07) 30%, rgba(255,255,255,.26) 50%, rgba(255,255,255,.07) 70%); background-size: 220% 100%; animation: cc-shimmer 1.3s linear infinite; }
 .cc-loading::before { content: ''; position: absolute; left: 50%; top: -44px; width: 40px; height: 40px; margin-left: -20px; border-radius: 50%; background: inherit; background-size: 220% 100%; animation: inherit; }

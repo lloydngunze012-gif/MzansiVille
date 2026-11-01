@@ -17,7 +17,8 @@ import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
-import { doorPoint } from './layout.js'
+import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
+import { reportError } from '../errors.js'
 import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
@@ -622,6 +623,73 @@ window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(.
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+// Tests (reliability): break the next scene wait inside an activity, lose the campus.
+window.mzansiFailNextWait = false
+window.mzansiBreakCampus = () => { if (campus) scene.remove(campus.group) }
+
+// ---------- Never stuck: back on campus, the watchdog, the reload card ----------
+// On the campus map (not lost where a room was, or nowhere at all)?
+function onCampus(p) {
+  return Number.isFinite(p.x) && Number.isFinite(p.z) && p.x > WORLD_MIN + 2 && p.x < WORLD_MAX - 2 && p.z > WORLD_MIN + 2 && p.z < WORLD_MAX - 2
+}
+function nearestPlace() {
+  let best = null
+  for (const b of campus?.layout.buildings || []) {
+    const d = doorPoint(b)
+    const dist = Math.hypot(d.x - player.position.x, d.z - player.position.z)
+    if (!best || dist < best.dist || !Number.isFinite(best.dist)) best = { b, dist: Number.isFinite(dist) ? dist : 1e9 }
+  }
+  return best?.b
+}
+// Put the player back at a place's door, standing, nothing half-done.
+function respawnAt(b) {
+  const door = b ? doorPoint(b) : { x: 0, z: 6 }
+  route = []
+  arrive = null
+  snapTo = null
+  scriptMove = null
+  player.rotation.x = 0
+  player.userData.pose = 'stand'
+  player.userData.sitMove = null
+  player.userData.noCollide = false
+  player.position.set(door.x, 0, door.z)
+  player.userData.lastPos?.set(door.x, 0, door.z)
+}
+// After an activity (one that broke off inside a room too): back on campus at the
+// place, never left where a room used to be, and never behind a black fade.
+function backOnCampus(placeId) {
+  if (!player || !campus) return
+  const fade = host.querySelector('.scene-fade')
+  if (fade && !fade.hidden) { fade.hidden = true; fade.classList.remove('out') }
+  if (onCampus(player.position)) return
+  respawnAt(campus.layout.buildings.find((x) => x.id === placeId) || nearestPlace())
+}
+// The scene itself has failed (the campus gone, the 3D view broken): a card offers a
+// reload (the save is kept), never an empty field.
+let failedShown = false
+function failed(reason, error) {
+  if (failedShown) return
+  failedShown = true
+  reportError('watchdog', error || reason, { reason })
+  const card = document.createElement('div')
+  card.className = 'world-fail'
+  card.innerHTML = '<p>Something went wrong.</p><button type="button" class="btn">Tap to reload</button><small>Your progress is saved.</small>'
+  card.querySelector('button').addEventListener('click', () => location.reload())
+  host.append(card)
+}
+// Every few seconds: the campus is built and the player is on it (or in the room of
+// the activity they're doing). Lost: back at the nearest place.
+function watch() {
+  if (!visible || document.hidden || failedShown) return
+  if (!campus || !campus.group?.parent || !campus.layout?.buildings?.length) { failed('the campus is missing'); return }
+  if (!player) return
+  if (lastFrame && performance.now() - lastFrame > 8000) { failed('the 3D view stopped'); return }
+  const inRoom = acting && room && player.position.x > room.bounds.minX - 2 && player.position.x < room.bounds.maxX + 2 && player.position.z > room.bounds.minZ - 2 && player.position.z < room.bounds.maxZ + 2
+  if (inRoom || onCampus(player.position)) return
+  reportError('watchdog', 'player outside the map', { at: [player.position.x, player.position.z].map((v) => Number.isFinite(v) ? +v.toFixed(1) : String(v)), acting })
+  respawnAt(nearestPlace())
+}
+setInterval(watch, 3000)
 window.mzansiWalkTo = (x, z) => walkTo(x, z)
 window.mzansiWalkPace = () => ({ speed: +speed.toFixed(2), route: +routeLength().toFixed(1), pose: player?.userData.pose })
 // Tests (nobody inside furniture): how deep any part of a body is inside a chair,
@@ -946,20 +1014,23 @@ function activityApi() {
       walkTo(x, z, finish)
       speed = pace
       if (!route.length) finish()
-      // (ends when it stops getting any closer for a while: blocked by something or
-      // someone; judged on progress, not a clock, so a slow phone still gets there)
-      let best = Infinity
+      // (ends when you stop moving for a while: blocked by something or someone; going
+      // round a counter can take you further from the end for a bit, which is fine;
+      // judged on movement, not a clock, so a slow phone still gets there)
+      let last = { x: player.position.x, z: player.position.z }
       let since = performance.now()
       const check = () => {
         if (done) return
-        const d = Math.hypot(x - player.position.x, z - player.position.z)
-        if (d < best - 0.05) { best = d; since = performance.now() }
+        if (Math.hypot(player.position.x - last.x, player.position.z - last.z) > 0.15) { last = { x: player.position.x, z: player.position.z }; since = performance.now() }
         if (performance.now() - since > ms(2500)) { route = []; arrive = null; finish(); return }
         setTimeout(check, 300)
       }
       check()
     }) },
-    wait: (s) => new Promise((resolve) => setTimeout(resolve, ms(s * 1000))),
+    wait: (s) => {
+      if (window.mzansiFailNextWait) { window.mzansiFailNextWait = false; return Promise.reject(new Error('test: an activity broke off inside a room')) }
+      return new Promise((resolve) => setTimeout(resolve, ms(s * 1000)))
+    },
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
     gesture: (name) => gesture(player, name),
     gestureOf: (avatar, name) => avatar && gesture(avatar, name),
@@ -1505,10 +1576,12 @@ async function runActivity(detail) {
     await activities.runner.run(detail.actionId, detail.placeId, detail.sceneOpt)
   } catch (error) {
     console.error(error)
+    reportError('activity', error, { action: detail.actionId, place: detail.placeId })
   }
   if (hidden) hidden.visible = true
   if (companion && !detail.sceneOpt?.keep) stopCompanion()
   activities.api.end()
+  backOnCampus(detail.placeId)
   bar.hidden = true
   bar.classList.remove('small')
   acting = false
@@ -1838,8 +1911,21 @@ function quadSound() {
   if (near) setGrooveLevel(Math.max(0.08, 1 - d / 24) * 0.7)
 }
 
+let frameErrors = 0
+let lastFrame = 0
 function tick(now) {
   frame = requestAnimationFrame(tick)
+  lastFrame = performance.now()
+  try {
+    frameBody(now)
+    frameErrors = 0
+  } catch (error) {
+    frameErrors += 1
+    if (frameErrors === 1) { console.error(error); reportError('frame', error) }
+    if (frameErrors > 90) failed('the 3D view keeps failing', error)
+  }
+}
+function frameBody(now) {
   const dt = (Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)) * SPEED
   tick.last = now
   steering = null

@@ -88,34 +88,39 @@ export function resolveBodies(bodies, boxesNear) {
     if (a.userData.standAt) { a.userData.standAt.x += dx; a.userData.standAt.z += dz }
   }
   const free = (b) => !b.fixed && !settled(b.avatar)
-  // People out of each other (two rounds), then everyone out of the furniture.
-  for (let round = 0; round < 2; round++) {
+  // People out of each other (two rounds), then everyone out of the furniture, then
+  // once more out of each other where that doesn't push anyone into the furniture
+  // (someone held between a counter and a person).
+  const peoplePass = (careful) => {
     for (let i = 0; i < live.length; i++) {
-      for (let j = i + 1; j < live.length; j++) {
-        const A = live[i]
-        const B = live[j]
-        if (settled(A.avatar) && settled(B.avatar)) continue
-        const pa = A.avatar.position
-        const pb = B.avatar.position
-        const dx = pb.x - pa.x
-        const dz = pb.z - pa.z
-        const d = Math.hypot(dx, dz)
-        // (seated people are on their seat: a standing person keeps a body's width from them)
-        const need = settled(A.avatar) || settled(B.avatar) ? RADIUS * 1.6 : APART
-        if (d >= need) continue
-        const ux = d > 1e-4 ? dx / d : 1
-        const uz = d > 1e-4 ? dz / d : 0
-        const fa = free(A)
-        const fb = free(B)
-        if (!fa && !fb) continue
-        const gap = need - d
-        const sa = fa && fb ? gap / 2 : fa ? gap : 0
-        const sb = gap - sa
-        if (fa) move(A, pa.x - ux * sa, pa.z - uz * sa)
-        if (fb) move(B, pb.x + ux * sb, pb.z + uz * sb)
-      }
+      for (let j = i + 1; j < live.length; j++) apart(live[i], live[j], careful)
     }
   }
+  const clear = (x, z, a) => { const boxes = boxesNear(x, z) || []; return !boxes.some((bx) => depthIn(x, z, bx, a.userData.noCollide ? 0 : RADIUS) > 0.001) }
+  const apart = (A, B, careful) => {
+    if (settled(A.avatar) && settled(B.avatar)) return
+    const pa = A.avatar.position
+    const pb = B.avatar.position
+    const dx = pb.x - pa.x
+    const dz = pb.z - pa.z
+    const d = Math.hypot(dx, dz)
+    const need = settled(A.avatar) || settled(B.avatar) ? RADIUS * 1.6 : APART
+    if (d >= need) return
+    const ux = d > 1e-4 ? dx / d : 1
+    const uz = d > 1e-4 ? dz / d : 0
+    const fa = free(A)
+    const fb = free(B)
+    if (!fa && !fb) return
+    const gap = need - d
+    const sa = fa && fb ? gap / 2 : fa ? gap : 0
+    const sb = gap - sa
+    const na = { x: pa.x - ux * sa, z: pa.z - uz * sa }
+    const nb = { x: pb.x + ux * sb, z: pb.z + uz * sb }
+    if (careful && ((fa && !clear(na.x, na.z, A.avatar)) || (fb && !clear(nb.x, nb.z, B.avatar)))) return
+    if (fa) move(A, na.x, na.z)
+    if (fb) move(B, nb.x, nb.z)
+  }
+  for (let round = 0; round < 2; round++) peoplePass(false)
   for (const b of live) {
     const a = b.avatar
     if (b.fixed || settled(a)) continue
@@ -134,6 +139,7 @@ export function resolveBodies(bodies, boxesNear) {
     const p = pushOutOfBoxes(a.position.x, a.position.z, REACH, boxes, a.userData.yaw ?? a.rotation.y)
     move(b, p.x, p.z)
   }
+  peoplePass(true)
 }
 
 // Tests: the closest any two standing people are, and the deepest anyone stands inside a box.

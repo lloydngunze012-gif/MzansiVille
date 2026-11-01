@@ -68,7 +68,7 @@ The owner played it: "I either sit facing the wrong direction and my body is lit
 | Problem found | Fix |
 |---|---|
 | In Eye view the game turned your body to the camera's facing every frame, even seated: you swivelled on the chair and your back went through the backrest. | Seated, lying, busy or in a chat, looking round no longer turns the body. Seated facing vs the chair: 0 degrees. |
-| The caf terrace tables were placed by a model corner, about 1 m off their chairs: you sat at the table's end, half under it. | Tables are centred; the terrace chairs sit 0.68 m clear of the table's sides. |
+| The caf terrace chairs were only 0.44 m from the table's sides: standing in front of one to sit, you were in the table. (Corrected: an earlier note said the tables were placed by a model corner; the loader already centres every model.) | The terrace chairs sit 0.68 m clear of the table's sides. |
 | Room chairs (library, res desk, kitchen, classroom) were 0.1-0.35 m from their desks: standing in front of one to sit, you were in the desk. | Pulled out to 0.6 m. |
 | Scene seats didn't match what you sit on (the bench 2 cm in, the fountain seat in mid-air beside the rim, the steps 4 cm above). | Each sits on the top of its seat, walked up to and sat on like any other. |
 | After paying Auntie Pinky the walk to a table was dropped and the last step cut straight through the serving counter. | Scene walks wait for the payment, end on progress (not a clock), and only the final short step goes in among the furniture. |

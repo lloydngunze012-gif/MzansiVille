@@ -1,4 +1,5 @@
 import { avatarSvg, bodies, genderOf, genders, hairs, outfits, skins } from '../avatar.js'
+import { readErrors } from '../errors.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
 import { actionState, actionsAt, createRun } from '../engine/sim.js'
@@ -649,6 +650,7 @@ function settings(state) {
     <div class="stack set-list">
       <button class="btn block" type="button" data-act="sound">Sound: <b>${state.sound ? 'On' : 'Off'}</b></button>
       ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
+      <a class="btn ghost block" href="#/errors">Error log</a>
       <a class="btn ghost block" href="#/rules">Community rules</a>
       <a class="btn ghost block" href="#/privacy">Privacy</a>
       <a class="btn ghost block" href="#/terms">Terms</a>
@@ -661,9 +663,25 @@ function settings(state) {
   </main>`
 }
 
+// The error log on this phone (src/errors.js): newest first, with a copy button.
+function errorLog() {
+  const list = readErrors()
+  const rows = list.map((e) => `<li><b>${esc(e.kind)}</b> ${esc(e.at)}<br>${esc(e.message)}<br><small>${esc(e.screen)} · ${esc(e.step || '-')} · build ${esc(e.build || '-')}</small><br><small>${esc(e.device)}</small>${e.stack ? `<pre>${esc(e.stack)}</pre>` : ''}</li>`).join('')
+  return `<main class="screen pad set" data-screen="errors">
+    <h1 style="margin-top:44px">Error log</h1>
+    <p>${list.length ? `${list.length} on this phone, newest first.` : 'No errors on this phone.'}</p>
+    <div class="stack set-list">
+      ${list.length ? '<button class="btn block" type="button" data-act="errors-copy">Copy them all</button><button class="btn ghost block" type="button" data-act="errors-clear">Clear</button>' : ''}
+      <a class="btn ghost block" href="#/settings">Back</a>
+    </div>
+    <ol class="err-log">${rows}</ol>
+  </main>`
+}
+
 export function view(state) {
   const screen = state.screen
   if (screen === 'settings') return settings(state)
+  if (screen === 'errors') return errorLog()
   if (screen === 'title') return title(state)
   if (screen === 'rules') return rules()
   if (screen === 'privacy') {

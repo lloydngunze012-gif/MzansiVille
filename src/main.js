@@ -51,6 +51,9 @@ import { toMinutes } from './engine/format.js'
 import { MENUS, itemOf } from './menus.js'
 import { LECTURERS } from './venues.js'
 import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
+import { clearErrors, installErrorReporting, readErrors } from './errors.js'
+
+installErrorReporting()
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -1116,6 +1119,16 @@ app.addEventListener('click', async (event) => {
     draft = emptyDraft()
     persist()
     go('title')
+    return
+  }
+  // The error log: copy it all (to send to the owner), or clear it.
+  if (act === 'errors-copy') {
+    navigator.clipboard?.writeText(JSON.stringify(readErrors(), null, 2)).then(() => toast('Copied'), () => toast('Copy failed'))
+    return
+  }
+  if (act === 'errors-clear') {
+    clearErrors()
+    paint()
     return
   }
   if (act === 'sound' && (route().name === 'settings' || route().name === 'new')) {

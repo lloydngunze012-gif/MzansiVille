@@ -724,7 +724,9 @@ function sitRig(group, model, fit) {
   restLegs(group)
   model.position.set(0, 0, 0)
   model.updateMatrixWorld(true)
-  const stand = { x: 0, y: standY, z: seated.z - rest.L.z }
+  // (a few cm further out than the seated feet: standing in front of the seat, the
+  // calves clear its front edge)
+  const stand = { x: 0, y: standY, z: seated.z - rest.L.z + 0.08 }
   const plant = (v) => new THREE.Vector3(v.x + stand.x, v.y + stand.y, v.z + stand.z)
   fit.rig = { stand, ankles: { L: plant(rest.L), R: plant(rest.R) }, lift: { L: new THREE.Vector3(), R: new THREE.Vector3() } }
   group.userData.standReach = stand.z

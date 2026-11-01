@@ -631,3 +631,31 @@ alter table public.reports add constraint reports_status_check
 -- One report per reporter per message.
 create unique index if not exists reports_once_idx
   on public.reports (reporter_id, message_id) where message_id is not null;
+
+-- ---------------------------------------------------------------------------
+-- Error log (src/errors.js): errors the game hits on players' phones, with the
+-- screen, step, device and build. Anyone playing can add a row; only admins read.
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.client_errors (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  kind text,
+  message text,
+  stack text,
+  screen text,
+  step text,
+  device text,
+  build text,
+  detail text
+);
+
+alter table public.client_errors enable row level security;
+
+drop policy if exists "anyone can report an error" on public.client_errors;
+create policy "anyone can report an error" on public.client_errors
+  for insert to anon, authenticated with check (true);
+
+drop policy if exists "admins read errors" on public.client_errors;
+create policy "admins read errors" on public.client_errors
+  for select using (public.is_admin());
