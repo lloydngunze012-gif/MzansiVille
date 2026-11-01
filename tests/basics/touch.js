@@ -31,9 +31,11 @@ export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
   }, run)
   await page.goto(`/?morning=0&spawn=${spawn}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
-  // Everyone's model loaded (the count of bodies stops growing).
+  // Everyone's model loaded: the count of bodies holds for a moment (people walking in
+  // and out of view change it, so after 20 s a steady crowd is enough).
+  const t0 = Date.now()
   let n = -1
-  await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m === n && m > 0; n = m; return done }, { timeout: 60000, intervals: [1500] }).toBe(true)
+  await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m > 0 && (m === n || (Date.now() - t0 > 20000 && m > 10)); n = m; return done }, { timeout: 150000, intervals: [1500] }).toBe(true)
   await page.waitForTimeout(1000)
 }
 

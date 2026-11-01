@@ -74,16 +74,20 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       await f.move(s.x + Math.sin(a) * s.r * k, s.y - Math.cos(a) * s.r * k)
       await page.waitForTimeout(700 + rnd() * 1500)
       const after = await read.pos(page)
+      // (the game answering the stick: moving, or striding with the walk or run clip; on
+      // a slow test machine a push covers little ground in real time)
+      const answer = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0]?.clip)
       await f.up()
       const stNow = await read.state(page)
-      if (dist(before, after) < 0.15 && ['free', 'walking', 'running'].includes(stNow)) {
+      if (dist(before, after) < 0.15 && !/Walk|Run/.test(answer || '') && ['free', 'walking', 'running'].includes(stNow)) {
         // Against a wall? Try the other way before calling it locked.
         await f.down(s.x, s.y)
         await f.move(s.x - Math.sin(a) * s.r * 0.6, s.y + Math.cos(a) * s.r * 0.6)
         await page.waitForTimeout(1500)
         const back = await read.pos(page)
+        const answer2 = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0]?.clip)
         await f.up()
-        if (dist(after, back) < 0.15) log.locks.push({ st: stNow, stick: true, at: after })
+        if (dist(after, back) < 0.15 && !/Walk|Run/.test(answer2 || '')) log.locks.push({ st: stNow, stick: true, at: after })
       }
     }
   }

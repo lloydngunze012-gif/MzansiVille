@@ -650,12 +650,13 @@ function startTalk(avatar) {
     talk = { avatar, id, walker }
     host.dataset.talking = id
     ps.set('talking')
-    if (!route.length) face()
     gesture(avatar, 'interact-right')
     // Talking poses: they gesture as they speak (seated people talk seated).
     talk.pose = avatar.userData.pose
     if (avatar.userData.pose !== 'sit') avatar.userData.pose = 'talk'
+    // The card first; the camera shot (a few dozen sight lines) on the next frame.
     window.dispatchEvent(new CustomEvent('mzansi-talk', { detail: { id } }))
+    if (!route.length) requestAnimationFrame(() => { if (talk?.avatar === avatar && !route.length) face() })
   }
   if (Math.hypot(tx - player.position.x, tz - player.position.z) > 0.5) {
     const reached = () => { snapTo = { x: tx, z: tz }; setTimeout(() => { if (talk?.avatar === avatar) face() }, ms(250)) }
@@ -1902,7 +1903,10 @@ function pinAbove(node, x, y, z) {
   // Below the HUD and the chips under it (the right-now row, the goal line).
   const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].map((el) => el.getBoundingClientRect().bottom)
   const top = (bars.length ? Math.max(...bars) : 120) + node.offsetHeight + 8
-  node.style.left = `${Math.min(host.clientWidth - half, Math.max(half, sx))}px`
+  // (never over the minimap, top right on phones: keep left of it)
+  const mini = pad && host.querySelector('.minimap')?.getBoundingClientRect()
+  const right = mini && mini.width ? Math.min(host.clientWidth, mini.left - 6) : host.clientWidth
+  node.style.left = `${Math.min(right - half, Math.max(half, sx))}px`
   node.style.top = `${Math.max(top, sy)}px`
 }
 
@@ -1972,7 +1976,10 @@ function hitsSolid(x, z, r = BODY) {
 function tryStep(dx, dz) {
   const x = player.position.x + dx
   const z = player.position.z + dz
-  if (!hitsSolid(x, z)) {
+  // Already inside a solid's outline (pushed there in a crowd, or up from a seat): any
+  // step goes, so the stick walks you out instead of refusing every way. (The collision
+  // pass, bodies.js, still keeps you out of the furniture itself.)
+  if (!hitsSolid(x, z) || hitsSolid(player.position.x, player.position.z)) {
     player.position.x = x
     player.position.z = z
     return
