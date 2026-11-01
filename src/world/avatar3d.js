@@ -252,7 +252,7 @@ function solePoints(model, bones) {
   // riser of a step.
   for (const side of [1, -1]) {
     const shoe = all.filter((v) => Math.sign(v.x) === side && v.y < all[0].y + 0.1).sort((a, b) => b.z - a.z)
-    picks.push(...shoe.slice(0, 80).filter((_, i) => i % 5 === 0), ...shoe.slice(-30).filter((_, i) => i % 6 === 0))
+    picks.push(...shoe.slice(0, 90).filter((_, i) => i % 3 === 0), ...shoe.slice(-60).filter((_, i) => i % 3 === 0))
   }
   const inv = new THREE.Matrix4()
   return picks.map((v) => {
@@ -583,8 +583,8 @@ function fitSeat(group, model, seatY, onGround) {
   if (Number.isFinite(back)) fit.z += Math.max(-0.15, Math.min(0.2, SIT.backrest - back))
   for (let round = 0; round < 4; round++) {
     pose()
-    // The seat of the trousers on the seat (across its width: the sides of the hips too).
-    const butt = Math.min(lowest(group, isCloth, worldOf(bones.Hips || model)), lowest(group, (n) => n.userData.part === 'legs', worldOf(bones.Hips || model), 0.22))
+    // The seat of the trousers on the seat.
+    const butt = lowest(group, isCloth, worldOf(bones.Hips || model))
     if (Number.isFinite(butt)) fit.y -= butt - seatY
     pose()
     if (!legs) break
@@ -659,9 +659,7 @@ function sitRig(group, model, fit) {
   restLegs(group)
   model.position.set(0, 0, 0)
   model.updateMatrixWorld(true)
-  // (6 cm further out than the seated feet: standing, the calves clear the seat's
-  // front edge, and seated the shins lean forward a touch)
-  const stand = { x: 0, y: standY, z: seated.z - rest.L.z + 0.06 }
+  const stand = { x: 0, y: standY, z: seated.z - rest.L.z }
   const plant = (v) => new THREE.Vector3(v.x + stand.x, v.y + stand.y, v.z + stand.z)
   fit.rig = { stand, ankles: { L: plant(rest.L), R: plant(rest.R) }, lift: { L: new THREE.Vector3(), R: new THREE.Vector3() } }
   group.userData.standReach = stand.z
@@ -676,8 +674,8 @@ function sitRig(group, model, fit) {
   for (let round = 0; round < 6; round++) {
     sitBetween(group, model, 1)
     model.updateMatrixWorld(true)
-    const hipsAt = worldOf(bones.Hips || model)
-    const butt = Math.min(lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', hipsAt), lowest(group, (n) => n.userData.part === 'legs', hipsAt, 0.22))
+    // (right under the hips only: a skirt's hem hangs lower than the seat of it)
+    const butt = lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(bones.Hips || model))
     if (Number.isFinite(butt)) fit.y -= butt - fit.seatY
     const seatedShoes = shoesBySide(group)
     for (const side of ['L', 'R']) {
@@ -774,18 +772,6 @@ function sitBetween(group, model, k) {
   // (the sag comes early, with the first bend of the knee)
   for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
   carryFeet(model, data.bones, data.footInShin)
-  // (on the way down, the seat of the trousers never goes below the seat: a low bench's
-  // front edge would cut in before the hips are back over it)
-  if (k > 0.25 && k < 1) {
-    model.updateMatrixWorld(true)
-    const butt = Math.min(lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(data.bones.Hips || model), 0.24), overSeat(group))
-    if (Number.isFinite(butt) && butt < fit.seatY) {
-      model.position.y += fit.seatY - butt
-      model.updateMatrixWorld(true)
-      for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
-      carryFeet(model, data.bones, data.footInShin)
-    }
-  }
   flatFeet(group, model)
   // The hands come to the lap as the hips go down (and leave it standing up).
   if (k > 0 && k < 1) seatedArms(group, model, data.lastTime || 0, Math.min(1, Math.max(0, (k - 0.15) / 0.6)))
@@ -794,24 +780,6 @@ function sitBetween(group, model, k) {
     sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
     turnWorld(data.bones.Abdomen, sideways, SIT_MOVE.lean * Math.sin(Math.PI * k))
   }
-}
-// The lowest point of the trousers over the seat itself (its width, back to front edge
-// about 0.2 m ahead of its middle): the thighs as well as the seat of the trousers.
-const seatVtx = new THREE.Vector3()
-function overSeat(group) {
-  let min = Infinity
-  group.traverse((node) => {
-    if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'legs') return
-    const count = node.geometry.attributes.position.count
-    const step = Math.max(1, Math.floor(count / 500))
-    for (let i = 0; i < count; i += step) {
-      node.getVertexPosition(i, vtx)
-      node.localToWorld(vtx)
-      group.worldToLocal(seatVtx.copy(vtx))
-      if (Math.abs(seatVtx.x) < 0.3 && seatVtx.z > -0.3 && seatVtx.z < 0.18 && vtx.y < min) min = vtx.y
-    }
-  })
-  return min
 }
 // Is this person sitting down or standing up right now?
 export function inTransition(group) { return Boolean(group.userData.sitMove) }
@@ -1067,7 +1035,8 @@ export function poseAvatar(group, walking, time) {
 const live = new Set()
 const vtx = new THREE.Vector3()
 // near: only vertices within that horizontal distance of a point (the seat of the trousers).
-function lowest(group, test, near = null, radius = 0.1) {
+// above: only vertices higher than this (the seat of the trousers, not the hems below it).
+function lowest(group, test, near = null, radius = 0.1, above = -Infinity) {
   let min = Infinity
   group.traverse((node) => {
     if (!node.isSkinnedMesh || !node.visible || !test(node)) return
@@ -1077,6 +1046,7 @@ function lowest(group, test, near = null, radius = 0.1) {
       node.getVertexPosition(i, vtx)
       node.localToWorld(vtx)
       if (near && Math.hypot(vtx.x - near.x, vtx.z - near.z) > radius) continue
+      if (vtx.y < above) continue
       if (vtx.y < min) min = vtx.y
     }
   })

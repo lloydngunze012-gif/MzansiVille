@@ -316,7 +316,8 @@ export function dressPlaces(layout, floor) {
             const p = aside.shift()
             waiting.push(p)
             const s = slot(waiting.length - 1)
-            moveAvatar(p, s.x, ms(s.z)).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
+            // (round the outside of the line, not along it through the people waiting)
+            moveAvatar(p, s.x + side.x * 1.1, s.z + side.z * 1.1).then(() => moveAvatar(p, s.x, s.z)).then(() => { p.rotation.y = stall.rotation.y + Math.PI })
           }
           queue.stall.busy = false
         }, ms(6000))
@@ -446,7 +447,8 @@ export function dressPlaces(layout, floor) {
           const p = cafAside.shift()
           cafQueue.people.push(p)
           const s = cafQueue.slot(cafQueue.people.length - 1)
-          moveAvatar(p, s.x, s.z).then(() => { p.rotation.y = cafQueue.face })
+          // (round the outside of the line, the side they stepped aside to)
+          moveAvatar(p, s.x - 1.1, s.z).then(() => moveAvatar(p, s.x, s.z)).then(() => { p.rotation.y = cafQueue.face })
         }
         cafQueue.busy = false
       }, ms(5000))

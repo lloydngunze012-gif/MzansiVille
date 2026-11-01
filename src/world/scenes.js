@@ -515,7 +515,7 @@ export function createScenes(api) {
         }
       }
       api.box(1.8, 0.08, 0.5, 0x9a6a40, s.x, 0.41, s.z) // (seat top at 0.45: where they sit)
-      api.box(1.8, 0.4, 0.08, 0x9a6a40, s.x, 0.68, s.z - 0.25)
+      api.box(1.8, 0.4, 0.08, 0x9a6a40, s.x, 0.68, s.z - 0.36) // (backrest just behind the seat: the back leans on it, not into it)
       const friend = api.npc(opt.who, s.x + 0.45, s.z, 0, { pose: 'sit', y: 0.45 })
       // From the front of the bench, a little above: both of you, head to feet.
       api.shot([s.x + 0.9, 1.9, s.z + 3.6], [s.x, 0.75, s.z])

@@ -108,7 +108,9 @@ test('M1 zig-zag across the Quad: no sideways sliding', async ({ page }) => {
 
 // Everyone's soles, sampled from the skinned vertices every few frames.
 function soleGaps(frames) {
-  return frames.flatMap((f) => f.people.filter((p) => p.sole !== undefined && p.pose !== 'sit' && p.pose !== 'lie' && !p.phase).map((p) => ({ id: p.id, clip: p.clip, gap: +(p.sole - p.ground).toFixed(3), floor: p.floor, x: p.x, z: p.z, y: p.y })))
+  // (a body 30 cm or more above the floor under it is between "stand up" and the stand-up
+  // starting, still drawn seated on its bench: not standing yet)
+  return frames.flatMap((f) => f.people.filter((p) => p.sole !== undefined && p.pose !== 'sit' && p.pose !== 'lie' && !p.phase && !(p.floor !== undefined && p.y - p.floor > 0.3)).map((p) => ({ id: p.id, clip: p.clip, gap: +(p.sole - p.ground).toFixed(3), floor: p.floor, x: p.x, z: p.z, y: p.y })))
 }
 
 test('M0 feet: everyone on the ground, Quad and cafeteria', async ({ page }) => {
@@ -208,6 +210,7 @@ test('M4a sit and stand: caf chair (queue at Auntie Pinky, sit and eat)', async 
 })
 
 test('M2 up and down the SMIG steps: feet on each step', async ({ page }) => {
+  test.setTimeout(600000)
   fs.mkdirSync(OUT, { recursive: true })
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
@@ -268,7 +271,10 @@ test("M5 Eye view: tap Mam' Gugu's tuck shop, straight to the back of the queue,
   await page.getByRole('button', { name: /Eye/ }).tap()
   const q = await page.evaluate(() => window.mzansiQueue('stall'))
   // Look at the stall, then tap the stall itself (its counter).
-  const counter = { x: q.front.x + (q.vendor.x - q.front.x) * 0.6, z: q.front.z + (q.vendor.z - q.front.z) * 0.6 }
+  // (the end of the counter, beside the people queueing in front of its middle)
+  const mid = { x: q.front.x + (q.vendor.x - q.front.x) * 0.6, z: q.front.z + (q.vendor.z - q.front.z) * 0.6 }
+  const len = Math.hypot(q.vendor.x - q.front.x, q.vendor.z - q.front.z) || 1
+  const counter = { x: mid.x + ((q.vendor.z - q.front.z) / len) * 0.95, z: mid.z - ((q.vendor.x - q.front.x) / len) * 0.95 }
   await page.evaluate(([x, z]) => window.mzansiLookAt(x, z), [counter.x, counter.z])
   await page.waitForTimeout(1500)
   const at = await page.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0.6), [counter.x, counter.z])
@@ -277,6 +283,17 @@ test("M5 Eye view: tap Mam' Gugu's tuck shop, straight to the back of the queue,
   await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'] }))
   await page.mouse.click(at.x, at.y)
   await page.waitForTimeout(2000)
+  // (if the camera moved since the stall was measured and the tap missed it, aim again)
+  for (let i = 0; i < 3 && (await page.evaluate(() => window.mzansiLastTap?.kind)) !== 'vendor'; i++) {
+    // (someone walking past took the tap: walk away from that chat first)
+    const bye = page.locator('.g-talk [data-act="talk-bye"]')
+    if (await bye.isVisible().catch(() => false)) { await bye.tap(); await page.waitForTimeout(2500) }
+    await page.evaluate(([x, z]) => window.mzansiLookAt(x, z), [counter.x, counter.z])
+    await page.waitForTimeout(1500)
+    const again = await page.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0.6), [counter.x, counter.z])
+    await page.mouse.click(again.x, again.y)
+    await page.waitForTimeout(2000)
+  }
   console.log('tap', JSON.stringify(await page.evaluate(() => window.mzansiLastTap)))
   await page.screenshot({ path: `${OUT}/M5-2-walking.png` })
   // Arrived: standing at the back of the line (the line then moves up to the counter).

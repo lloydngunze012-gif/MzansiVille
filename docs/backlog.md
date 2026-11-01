@@ -17,7 +17,8 @@ Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in 
 
 - Quad bench sit (1 Nov, time-boxed): on the low Quad bench (seat 0.45 m on the 6 cm plaza) one foot can't reach where it should rest when seated, so it slides ~11 cm while sitting down (caf chair, library chair, bus bench and res bed all stay under 2 cm). Next: pick the standing spot so both seated ankles are within reach (use the nearer of the two), or lower the hips less on low seats.
 
-- Quad bench sit (1 Nov, round 3): seated is clean, but for a moment while lowering onto the low "Sit with them" bench a point (likely a hand coming to the lap) brushes ~4 cm into the bench's front edge. Next: keep the hands above the seat top while they blend to the lap.
+- Quad bench sit (1 Nov, round 3): on the low "Sit with them" bench, standing in front of it to sit, the shins press ~3.5 cm into the seat's front edge (seated is clean). Tried: standing 6 cm further out (broke the planted feet elsewhere), keeping the hips above the seat while lowering (threw the body up on high seats). Next: a per-seat stand distance from the seat's own depth.
+- Stairs (1 Nov): walking up onto the first SMIG step, a toe can catch the riser for a single frame (up to 17 cm in one sample out of ~300); other runs measure 0-3 samples just over 2 cm. Next: lift the swing foot over a riser ahead instead of the whole body.
 
 ## World & looks (high priority)
 - World: the player's room is a box in an empty void; build the res around it (corridor, window views, the building outside).
