@@ -35,6 +35,37 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# CURRENT: CORE REBUILD + BASICS (owner, 1 Nov). FEATURE FREEZE. Crowds is paused.
+Owner's verdict: we are going in circles. Code review findings:
+1. No thumbstick on phones: the stick is keyboard-only (interact.js). Phone players can only tap.
+2. Controls are locked by six separate flags in scene.js (map open, actionLeft, acting, talk, pendingAction, the tour). If any one sticks, ground taps are silently ignored while the HTML gold markers still work. That is the "can only walk by tapping the yellow circle" bug and the frozen grey-bar bug.
+3. Tests don't play like a player: movement is driven by window.mzansiSteer, mzansi-walk-to and other hooks (43 window.mzansi* hooks). No test does a real touch tap or drag, so tests pass while the phone fails.
+4. scene.js is 2,100 lines with 61 top-level variables; fixes in one place break another (the queue now serves the player and an NPC at the same time).
+
+FEATURE FREEZE until the basics checklist below passes on the owner's phone. No new content, places or systems.
+
+CORE REBUILD (push after each step):
+1. ONE PLAYER STATE: replace the six lock flags with one state machine in its own module (src/world/player-state.js): free, walking, running, queueing, talking, doing, seated, sleeping. Every state has one exit back to free. In any non-free state the screen shows how to leave it (Leave queue, Goodbye, Stand up). Watchdog: if the player is in a non-free state with nothing happening for 3 s, return to free.
+2. PHONE CONTROLS: a thumbstick bottom-left on touch devices (move the minimap top-right, under the goal chip). Push a little = walk, push fully = run, let go = stop. Tap the ground anywhere = walk there; tap again = change course; touching the stick or tapping yourself = stop instantly. Keyboard: WASD, Shift to run.
+3. ONE QUEUE SYSTEM for every counter (Cafeteria/Auntie Pinky, Mam' Gugu, any future counter): one ordered line, one person served at a time, first come first served, nobody cuts in. The player joins at the back and is served within 30 s.
+4. ARRIVING: walk to a place and stop facing it. No slant, no shuffle.
+5. TESTS THAT PLAY LIKE A PERSON: new tests in tests/basics/ use only real touch input (touchscreen taps and drags on the canvas and buttons). window.mzansi* hooks may be used only to READ positions for measuring, never to move anyone or trigger anything.
+
+BASICS CHECKLIST (touch-only tests, normal speed, a video each in docs/sprints/basics/):
+K1. Thumbstick: walk a circle around the Quad, run across it, let go: you stop on the spot.
+K2. Tap 5 ground spots in a row, including mid-walk: you change course each time. Tap yourself: you stop.
+K3. Tap the Quad from the cafeteria: you jog there and stop facing it, no slant.
+K4. Talk to 5 different people: the chat opens within 1 s, every reply leads somewhere, and after goodbye the stick works immediately.
+K5. Cafeteria with 4 NPCs queueing: join the back, one person served at a time, you're served within 30 s, buy, sit, eat, stand up and walk away.
+K6. Sit on a Quad bench and stand up; sleep in your bed and get up.
+K7. Camera in Top, Sims and Eye: nothing (signs, menu boards, walls, trees) blocks the view of the player; heads in frame.
+K8. 10 minutes of random real taps and stick moves across campus: the controls never lock for more than 3 s.
+K9. No mirrored or upside-down text anywhere (the taxi rank numbers are currently inverted).
+
+Deploy to mzansiville.vercel.app, then STOP and report with the K1-K9 videos at the top. The owner tests the same nine on his phone. Nothing new is built until all nine pass for him.
+
+---
+
 # ONE FOCUS PER SPRINT (owner's standing rule, from the Actions sprint on)
 Each sprint has one focus. Any problem noticed outside the focus (bodies, feet, sitting posture, crowds, looks...) goes into docs/backlog.md as a one-line description. Do NOT fix it during the sprint.
 
