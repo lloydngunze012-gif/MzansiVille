@@ -42,7 +42,8 @@ function aisleTo(r) {
   for (let i = ROWS - 1; i >= r; i--) pts.push([AISLE_X, rowY(i), rowZ(i) + 0.95])
   return pts
 }
-const doorTo = (open) => tween(0.5, (k) => { hallDoor.rotation.y = open ? -1.6 * k : -1.6 * (1 - k) })
+// (it swings into the hall, ahead of whoever is coming in)
+const doorTo = (open) => tween(0.5, (k) => { hallDoor.rotation.y = open ? 1.6 * k : 1.6 * (1 - k) })
 const camTarget = new THREE.Vector3()
 const camWant = new THREE.Vector3()
 // A set shot (position + look) overrides the follow camera: board, lecturer, you.
@@ -63,6 +64,7 @@ function setShot(name, custom) {
 const camLook = new THREE.Vector3()
 // Tests: look anywhere in the hall (seating look-tests); null hands the camera back.
 window.mzansiLectureShot = (pos, look) => { setShot(null, pos ? { pos, look } : null) }
+window.mzansiHallDoor = () => hallDoor?.rotation.y ?? null
 window.mzansiLectureStudents = () => students.map((a) => ({ y: +a.position.y.toFixed(2), pose: a.userData.pose }))
 
 // ---------- tiny task runner (same idea as the morning) ----------
@@ -335,6 +337,11 @@ function build() {
   }
   // Door at the back right, on a hinge: it opens before anyone walks through.
   hallDoor = new THREE.Group()
+  // The back wall, door height, with the doorway at the top of the aisle (the camera
+  // looks over it as you come in).
+  for (const [x0, x1] of [[-7, AISLE_X - 0.75], [AISLE_X + 0.75, 7]]) box(x1 - x0, 2.7, 0.2, 0xeadcc2, (x0 + x1) / 2, 1.35, 9.1)
+  box(1.7, 0.12, 0.3, 0x5a3c28, AISLE_X, 2.66, 9.1) // door frame: lintel
+  for (const side of [-1, 1]) box(0.08, 2.6, 0.3, 0x5a3c28, AISLE_X + side * 0.75, 1.3, 9.1)
   hallDoor.position.set(AISLE_X - 0.7, 0, 9)
   scene.add(hallDoor)
   const leaf = box(1.4, 2.6, 0.12, 0x6b3f22, 0.7, 1.3, 0)
@@ -472,11 +479,11 @@ async function play() {
   player = createAvatar(run.character?.avatar)
   player.userData.isPlayer = true
   host.dataset.look = JSON.stringify(player.userData.look)
-  player.position.set(AISLE_X, 0, 8.4)
+  player.position.set(AISLE_X, 0, 10.6) // outside the door
   player.rotation.y = Math.PI
   scene.add(player)
   camTarget.set(AISLE_X, 1.2, 6)
-  camera.position.set(AISLE_X + 1, 3.5, 12)
+  camera.position.set(AISLE_X + 1, 5, 12.5)
   camLook.copy(camTarget)
 
   // 1. walk in
@@ -487,7 +494,7 @@ async function play() {
   const v = late ? LINES.walk_in.late : LINES.walk_in.on_time
   hallDoor.rotation.y = 0
   await doorTo(true)
-  await walk(player, [[AISLE_X, 0, 7.4]]) // (at the foot of the stairs)
+  await walk(player, [[AISLE_X, 0, 7.4]]) // through the doorway to the foot of the stairs
   doorTo(false)
   setStep('walk-in')
   setShot('board')

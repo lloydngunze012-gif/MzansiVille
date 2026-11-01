@@ -3,7 +3,7 @@
 import * as THREE from 'three'
 import { loop as soundLoop, sfx, water } from '../audio.js'
 import { genderOf, roommateOf } from '../avatar.js'
-import { createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
+import { inTransition, createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 import { CRUSHES, newCrush } from '../crush.js'
 import { addIdentity } from '../engine/identity.js'
@@ -16,6 +16,8 @@ const RIDE = 20
 const BUS_DELAY = 25
 const MEET_DELAY = 5 // the bus is always a little late: time for the meet-cute
 const CRUSH_AT = [16.5, 5.6]
+// The bus stop bench's seat (its top, the middle of its depth), facing the road.
+const STOP_SEAT = { x: 15.4, y: 0.55, z: 4.9 }
 function busAfter(m, delay) {
   const due = Math.max(BUS_FIRST, BUS_FIRST + Math.ceil((m - BUS_FIRST) / BUS_EVERY) * BUS_EVERY)
   return { due, missed: m > BUS_FIRST && due > BUS_FIRST, next: due + delay }
@@ -465,12 +467,13 @@ function buildRoom() {
   const rug = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), mat(0xf0c400))
   rug.rotation.x = -Math.PI / 2; rug.position.set(0, 0.01, 0.2)
   scene.add(rug)
-  // door on a hinge at x=3, z=0.6..1.8
+  // door in the wall at x=3, z=0.6..1.8, hinged at z=1.8 so it swings out into the
+  // corridor (opening, it never sweeps through whoever is walking up to it)
   door = new THREE.Group()
-  door.position.set(3, 0, 0.6)
-  const leaf = box(0.08, 2.1, 1.2, 0x6b3fa0, 0, 1.05, 0.6, door)
+  door.position.set(3, 0, 1.8)
+  const leaf = box(0.08, 2.1, 1.2, 0x6b3fa0, 0, 1.05, -0.6, door)
   leaf.userData.tap = true
-  box(0.05, 0.05, 0.12, 0xf0c400, -0.06, 1.0, 1.05, door)
+  box(0.05, 0.05, 0.12, 0xf0c400, -0.06, 1.0, -1.05, door)
   scene.add(door)
 }
 
@@ -926,9 +929,9 @@ async function play() {
     await fadeOut('\u{1F6BF} Shower…')
     await Promise.all([wait(1.4), addMinutes(15, 1.4)])
     await fadeIn()
-    await walkTo(player, 2.3, 1.2)
+    // The door opens as you walk up to it, then you walk through the middle of the doorway.
     sfx('door')
-    await tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })
+    await Promise.all([walkTo(player, 2.3, 1.2), tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })])
     camOffset.set(0, 6, 7)
     await walkTo(player, 3.7, 1.2)
     // Someone is already at the stop.
@@ -936,8 +939,13 @@ async function play() {
     face(crushAv, CRUSH_AT[0] + 0.4, ANCHORS.bus_lane[1])
     crushAv.visible = true
     setStep('walk-stop')
-    await Promise.all([walk(player, [[5.5, 1.2], [9, 1.2], [15.4, 1.6], ANCHORS.waiting], 3.6), addMinutes(8, 3.2)])
-    face(player, CRUSH_AT[0], CRUSH_AT[1])
+    // Round the end of the shelter (never through the bench) to the bench, and sit down.
+    await Promise.all([walk(player, [[5.5, 1.2], [9, 1.2], [13.9, 1.6], [13.9, 6.0], [STOP_SEAT.x, STOP_SEAT.z + 0.32]], 3.6), addMinutes(8, 3.2)])
+    player.position.set(STOP_SEAT.x, STOP_SEAT.y, STOP_SEAT.z)
+    player.rotation.y = 0
+    player.userData.seatFloor = 0
+    player.userData.pose = 'sit'
+    await task(() => !inTransition(player) && player.userData.prevPose === 'sit')
     // 4. The bus stop: the meet-cute.
     setStep('stop')
     const { due, missed, next } = busAfter(run.minutes, delay)
@@ -957,6 +965,10 @@ async function play() {
     signNode.hidden = true
     if (lateBus) await talk(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
     await talk('Oh. Someone’s here already.', player)
+    // Up off the bench to talk (standing up plays out, avatar3d).
+    player.userData.pose = 'stand'
+    await task(() => !inTransition(player) && player.userData.prevPose === 'stand')
+    player.userData.seatFloor = undefined
     // Two people talking face each other.
     face(crushAv, player.position.x, player.position.z)
     face(player, crushAv.position.x, crushAv.position.z)

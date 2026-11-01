@@ -600,6 +600,34 @@ window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(.
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+// Tests (heads in frame): for the player and the given people, is each head's box fully
+// on screen, not hidden behind a building or prop, and not around the camera itself?
+window.mzansiHeads = (ids = []) => {
+  const out = []
+  const ray = new THREE.Raycaster()
+  const blockers = campus ? [campus.buildings, campus.dressing.group, ...(room ? [room.group] : []), tempGroup] : []
+  for (const a of [player, ...everyone().filter((x) => ids.includes(x.userData.personId))]) {
+    if (!a?.visible) continue
+    const head = a.getObjectByName('Head')
+    if (!head) continue
+    const c = head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0))
+    let inside = true
+    for (const dx of [-0.13, 0.13]) for (const dy of [-0.14, 0.16]) for (const dz of [-0.13, 0.13]) {
+      const p = c.clone().add(new THREE.Vector3(dx, dy, dz)).project(camera)
+      if (p.z > 1 || p.z < -1 || Math.abs(p.x) > 1 || Math.abs(p.y) > 1) inside = false
+    }
+    // (the HUD covers the top of the screen: a head under it counts as out of view)
+    const top = c.clone().add(new THREE.Vector3(0, 0.16, 0)).project(camera)
+    const hud = document.querySelector('.g-hud')?.getBoundingClientRect().bottom || 0
+    const underHud = (1 - top.y) / 2 * window.innerHeight < hud
+    const dist = camera.position.distanceTo(c)
+    ray.set(camera.position, c.clone().sub(camera.position).normalize())
+    ray.far = dist - 0.25
+    const hit = ray.intersectObjects(blockers, true).find((h) => h.object.visible && !h.object.userData.standIn && h.object.name !== 'beacon' && h.object.name !== 'badge' && h.object.type === 'Mesh')
+    out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId, inside, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
+  }
+  return { mode: rig.mode, close: Boolean(closeShot), heads: out }
+}
 window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.people.length), people: q.people.length, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
 window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.atan2(x - player.position.x, z - player.position.z); rig.facing = a; player.rotation.y = a }
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
@@ -1701,8 +1729,9 @@ function tick(now) {
       shotBlend = 0
       closeLook.copy(player.position)
     }
-    // Eye view looks out of the player's eyes: hide their own head and hair.
-    for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye'
+    // Eye view looks out of the player's eyes: hide their own head and hair (only for
+    // that first-person camera: a close shot of a chat or a meal shows you whole).
+    for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(closeShot)
     camera.updateMatrixWorld()
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
     swingDoors(dt)

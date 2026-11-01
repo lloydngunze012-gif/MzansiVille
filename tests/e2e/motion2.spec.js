@@ -306,3 +306,199 @@ test("M5 Eye view: tap Mam' Gugu's tuck shop, straight to the back of the queue,
   expect(worst).toBeLessThan(15)
   await saveVideo(page, 'M5-eye-tuckshop')
 })
+
+// Through a doorway: sampled every 100 ms, the door must be open before the body
+// reaches it, and the body must pass through the gap, never the wall or the frame.
+function doorPass(samples, { axis, plane, gap, open }) {
+  const across = axis === 'x' ? 'z' : 'x'
+  const crossings = []
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1]
+    const b = samples[i]
+    if ((a[axis] - plane) * (b[axis] - plane) > 0 || a[axis] === b[axis]) continue
+    // Where the body's middle crossed the door line, and whether the door was open by then.
+    const t = (plane - a[axis]) / (b[axis] - a[axis])
+    crossings.push({ at: +(a[across] + (b[across] - a[across]) * t).toFixed(2), door: +Math.max(Math.abs(a.door), Math.abs(b.door)).toFixed(2), doorBefore: +Math.abs(a.door).toFixed(2) })
+  }
+  const near = samples.filter((s) => Math.abs(s[axis] - plane) < 0.45)
+  return {
+    crossings,
+    inFrame: crossings.filter((c) => c.at < gap[0] + 0.25 || c.at > gap[1] - 0.25).length + near.filter((s) => s[across] < gap[0] + 0.25 || s[across] > gap[1] - 0.25).length,
+    shutWhileNear: crossings.filter((c) => c.doorBefore < open).length + near.filter((s) => Math.abs(s.door) < open).length,
+  }
+}
+
+test('M6 through the res door and a lecture venue door: the door opens, no clipping', async ({ page }) => {
+  test.setTimeout(600000)
+  fs.mkdirSync(OUT, { recursive: true })
+  // The res door: day 1 morning, walking to the bus.
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await expect(page).toHaveURL(/#\/morning/)
+  await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto&meet=bus#/morning')
+  const host = page.locator('#morning3d')
+  const samples = []
+  for (let i = 0; i < 600; i++) {
+    const step = await host.getAttribute('data-step')
+    if (samples.some((q) => q.x > 3.6)) break
+    const walkChoice = page.locator('.mm-choice:visible', { hasText: 'Walk to the bus' })
+    if (await walkChoice.count()) await walkChoice.first().tap().catch(() => {})
+    else if (await page.locator('.mm-choice:visible').count()) await page.locator('.mm-choice:visible').first().tap().catch(() => {})
+    else if (await page.locator('.mm-bar:not([hidden]) .mm-go').count()) await page.locator('.mm-bar:not([hidden]) .mm-go').first().tap().catch(() => {})
+    else await page.locator('.mm-bubble:visible').first().tap({ timeout: 500 }).catch(() => {})
+    // Walking out: sample the doorway every 50 ms until they're through.
+    if (step === 'exit') {
+      for (let k = 0; k < 300; k++) {
+        const q = await page.evaluate(() => { const h = document.getElementById('morning3d').dataset; return { x: Number(h.px), z: Number(h.pz), door: Number(h.door), step: h.step } })
+        samples.push(q)
+        if (Math.abs(q.x - 2.6) < 0.15) await page.screenshot({ path: `${OUT}/M6-1-res-door.png` })
+        if (q.x > 3.6 || q.step !== 'exit') break
+        await page.waitForTimeout(50)
+      }
+    }
+    const p = { x: Number(await host.getAttribute('data-px')), z: Number(await host.getAttribute('data-pz')) }
+    await page.waitForTimeout(100)
+  }
+  const res = doorPass(samples, { axis: 'x', plane: 3, gap: [0.6, 1.8], open: 1.2 })
+  console.log('res door', JSON.stringify(res))
+  expect(res.crossings.length).toBeGreaterThan(0)
+  expect(res.inFrame).toBe(0)
+  expect(res.shutWhileNear).toBe(0)
+  await saveVideo(page, 'M6-res-door')
+})
+
+test('M6b through a lecture venue door: the door opens, no clipping', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await page.waitForURL(/#\/play/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { phase: 'lecture', minutes: 8 * 60 + 45, morningDone: true, queue: [], lectureResolved: false, lectureRoute: true })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?morning=0&lecture=1&talk=auto#/lecture')
+  const hall = []
+  for (let i = 0; i < 400; i++) {
+    const p = await page.evaluate(() => { const b = window.mzansiBodies?.('lecture', 'player')[0]; return b && { x: b.x, z: b.z, door: window.mzansiHallDoor() } })
+    if (p) hall.push(p)
+    if (p && Math.abs(p.z - 9.1) < 0.25) await page.screenshot({ path: `${OUT}/M6-2-lecture-door.png` })
+    if ((await page.locator('#lecture3d').getAttribute('data-step')) === 'seat') break
+    await page.waitForTimeout(100)
+  }
+  const lec = doorPass(hall, { axis: 'z', plane: 9.1, gap: [4.6 - 0.75, 4.6 + 0.75], open: 1.2 })
+  console.log('lecture door', JSON.stringify(lec))
+  expect(lec.crossings.length).toBeGreaterThan(0)
+  expect(lec.inFrame).toBe(0)
+  expect(lec.shutWhileNear).toBe(0)
+  await saveVideo(page, 'M6-lecture-door')
+})
+
+test('M4b sit and stand: the bus stop bench (day 1 morning)', async ({ page }) => {
+  test.setTimeout(600000)
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
+  await page.locator('#name').fill('Thandi')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await expect(page).toHaveURL(/#\/morning/)
+  await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto&meet=bus#/morning')
+  const host = page.locator('#morning3d')
+  let recording = false
+  for (let i = 0; i < 900; i++) {
+    const step = await host.getAttribute('data-step')
+    if (step === 'walk-stop' && !recording) { await page.evaluate(() => window.mzansiRecord({ where: 'morning', ids: ['player'], feet: ['player'] })); recording = true }
+    if (recording && step !== 'walk-stop' && step !== 'stop') break
+    const walkChoice = page.locator('.mm-choice:visible', { hasText: 'Walk to the bus' })
+    if (await walkChoice.count()) await walkChoice.first().tap().catch(() => {})
+    else if (await page.locator('.mm-choice:visible').count()) await page.locator('.mm-choice:visible').first().tap().catch(() => {})
+    else if (await page.locator('.mm-bar:not([hidden]) .mm-go').count()) await page.locator('.mm-bar:not([hidden]) .mm-go').first().tap().catch(() => {})
+    else await page.locator('.mm-bubble:visible').first().tap({ timeout: 500 }).catch(() => {})
+    const b = recording && await page.evaluate(() => window.mzansiBodies('morning', 'player')[0])
+    if (b?.phase === 'lower') await page.screenshot({ path: `${OUT}/M4-bus-bench-lowering.png` })
+    if (b?.pose === 'sit' && !b.phase) await page.screenshot({ path: `${OUT}/M4-bus-bench-seated.png` })
+    await page.waitForTimeout(150)
+  }
+  const frames = await page.evaluate(() => window.mzansiRecordStop())
+  // The walk there never passes through the bench (x 14.9..17.1, z 4.7..5.1): the body's
+  // middle never over the bench (standing at its front edge, about to sit, is fine).
+  const through = frames.map((f) => f.people[0]).filter((p) => p && p.pose !== 'sit' && !p.phase && p.x > 14.9 && p.x < 17.1 && p.z > 4.7 && p.z < 5.1)
+  console.log('through the bench', through.length)
+  expect(through.length).toBe(0)
+  expectPlanted(transitions(frames), 'bus stop bench')
+  await saveVideo(page, 'M4-bus-bench')
+})
+
+// Each framing in Top, Sims and Eye: every framed head fully on screen (not under the
+// HUD), not hidden behind anything, the camera not inside a head, the player's head shown.
+async function headsInThreeViews(page, ids, name) {
+  const results = []
+  for (const mode of ['top', 'sims', 'eye']) {
+    await page.evaluate((m) => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: m })), mode)
+    await page.waitForTimeout(1800)
+    const r = await page.evaluate((list) => window.mzansiHeads(list), ids)
+    await page.screenshot({ path: `${OUT}/M7-${name}-${mode}.png` })
+    console.log(name, mode, JSON.stringify(r))
+    results.push(r)
+  }
+  for (const r of results) {
+    expect(r.heads.length, `${name} ${r.mode}: people framed`).toBeGreaterThanOrEqual(ids.length + 1)
+    for (const h of r.heads) {
+      expect(h.inside && !h.underHud, `${name} ${r.mode}: ${h.id}'s head on screen`).toBe(true)
+      expect(h.hidden, `${name} ${r.mode}: ${h.id}'s head not hidden`).toBeNull()
+      expect(h.dist, `${name} ${r.mode}: camera not inside ${h.id}'s head`).toBeGreaterThan(0.4)
+      expect(h.shown, `${name} ${r.mode}: ${h.id}'s head drawn`).toBe(true)
+    }
+  }
+}
+
+test('M7a heads in frame: a conversation in Top, Sims and Eye', async ({ page }) => {
+  await campus(page, 'quad', '&a=21')
+  await tapPerson(page, 'x12')
+  await expect(page.locator('.g-talk')).toBeVisible({ timeout: 30000 })
+  await headsInThreeViews(page, ['x12'], 'talk')
+  await saveVideo(page, 'M7-talk')
+})
+
+test('M7b heads in frame: studying together in Top, Sims and Eye', async ({ page }) => {
+  await campus(page, 'quad', '&a=23')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await card.locator('[data-kind="study"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 150000 }).toBe('sit')
+  await page.waitForTimeout(2500)
+  await headsInThreeViews(page, ['x12'], 'study')
+  await saveVideo(page, 'M7-study')
+})
+
+test('M7c heads in frame: eating in Top, Sims and Eye', async ({ page }) => {
+  await campus(page, 'cafeteria', '&a=22')
+  await tapPerson(page, 'auntie_pinky')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 120000 })
+  await expect(card).toHaveAttribute('data-phase', 'menu')
+  await card.locator('[data-item="bunny"]').tap()
+  await card.locator('[data-size="quarter"]').tap()
+  await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 150000 }).toBe('sit')
+  await page.waitForTimeout(1500)
+  await headsInThreeViews(page, [], 'eat')
+  await saveVideo(page, 'M7-eat')
+})
