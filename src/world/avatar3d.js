@@ -707,7 +707,13 @@ function sitRig(group, model, fit) {
   model.position.set(0, 0, 0)
   model.rotation.set(0, 0, 0)
   model.updateMatrixWorld(true)
-  const rest = { L: toLocal(group, bones.FootL), R: toLocal(group, bones.FootR) }
+  // (the model's rest pose is mid-stride, one foot well ahead: the feet plant side by
+  // side, hip-width apart, at the middle of the two)
+  const raw = { L: toLocal(group, bones.FootL), R: toLocal(group, bones.FootR) }
+  const half = Math.max(0.08, Math.abs(raw.L.x - raw.R.x) / 2)
+  const sign = Math.sign(raw.L.x - raw.R.x) || 1
+  const midZ = (raw.L.z + raw.R.z) / 2
+  const rest = { L: new THREE.Vector3(sign * half, raw.L.y, midZ), R: new THREE.Vector3(-sign * half, raw.R.y, midZ) }
   // Standing on the floor with the rest legs: how high the model sits.
   const floor = fit.floorY - fit.seatY
   const standY = floor - group.worldToLocal(new THREE.Vector3(0, lowest(group, (n) => n.userData.part === 'feet'), 0)).y
@@ -906,6 +912,17 @@ function sitMotion(group, model, move, dt) {
     const e = move.turn * move.turn * (3 - 2 * move.turn)
     model.rotation.y = move.from.yaw * (1 - e)
     model.position.set(move.from.x + (rig.stand.x - move.from.x) * e, rig.stand.y, move.from.z + (rig.stand.z - move.from.z) * e)
+    // (the feet step onto their spots, side by side, as the body comes round)
+    const w = Math.min(1, Math.max(0, (move.turn - 0.25) / 0.6))
+    if (w > 0) {
+      model.updateMatrixWorld(true)
+      for (const side of ['L', 'R']) {
+        const low = data.bones[`LowerLeg${side}`]
+        if (!low || !data.footInShin?.[side]) continue
+        const now = low.localToWorld(data.footInShin[side].clone())
+        legTo(group, side, now.lerp(group.localToWorld(rig.ankles[side].clone()), w * w * (3 - 2 * w)))
+      }
+    }
     aimKnees(group, model)
     carryFeet(model, data.bones, data.footInShin)
     aimFeet(group, model)
@@ -1220,6 +1237,8 @@ if (typeof window !== 'undefined') {
     rec.frames.push({ t: performance.now(), people })
     requestAnimationFrame(record)
   }
+  window.mzansiRig = () => { for (const g of live) if (g.userData.isPlayer && sceneOf(g)) { const r = g.userData.sitFit?.rig; return r && { stand: r.stand, ankles: Object.fromEntries(Object.entries(r.ankles).map(([k, v]) => [k, v.toArray().map((n) => +n.toFixed(3))])), lift: Object.fromEntries(Object.entries(r.lift).map(([k, v]) => [k, v.toArray().map((n) => +n.toFixed(3))])), fit: { y: g.userData.sitFit.y, z: g.userData.sitFit.z, thigh: g.userData.sitFit.thigh, knee: g.userData.sitFit.knee, seatY: g.userData.sitFit.seatY, floorY: g.userData.sitFit.floorY } } } return null }
+  window.mzansiLegs = (id) => { for (const g of live) if ((g.userData.isPlayer ? 'player' : g.userData.personId) === id && sceneOf(g)) return measureLegs(g); return null }
   window.mzansiRecord = (opts = {}) => { rec = { where: opts.where, ids: opts.ids, feet: opts.feet, legs: opts.legs, every: opts.every ?? 0, frame: 0, frames: [] }; requestAnimationFrame(record) }
   window.mzansiRecordStop = () => { const r = rec; rec = null; return r?.frames || [] }
 }

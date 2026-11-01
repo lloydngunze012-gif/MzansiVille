@@ -581,6 +581,7 @@ test('M4c sit and stand: a Quad bench (Sit with them)', async ({ page }) => {
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/M4-quad-bench-seated.png` })
+  if (process.env.DEBUG_T) console.log('rig', JSON.stringify(await page.evaluate(() => window.mzansiRig())))
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).not.toBe('sit')
   await page.waitForTimeout(2500)
   expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'Quad bench')

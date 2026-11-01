@@ -183,3 +183,32 @@ test('K3 natural legs: knees ahead, feet straight, walking, standing, sitting an
   }
   await saveVideo(page, 'K3-legs')
 })
+
+test('K4 the Quad benches: seated people sit (hips on the seat, feet on the floor, knees ahead)', async ({ page }) => {
+  await campus(page, 'quad')
+  const sitters = (await page.evaluate(() => window.mzansiBodies('campus'))).filter((b) => b.pose === 'sit' && b.id !== 'player')
+  const out = []
+  for (const b of sitters) {
+    const legs = await page.evaluate((id) => window.mzansiLegs(id), b.id)
+    const pos = await page.evaluate((id) => window.mzansiPersonPos(id), b.id)
+    out.push({ id: b.id, seat: b.y, seatGap: b.seatGap, footGap: b.footGap, legs })
+    if (pos && out.length <= 4) {
+      // From the side (square to the body), then three-quarters from the front.
+      for (const [tag, turn, dist] of [['side', Math.PI / 2, 2.2], ['front', 0.6, 2.6]]) {
+        const s2 = Math.sin(pos.rot + turn)
+        const c2 = Math.cos(pos.rot + turn)
+        await page.evaluate(([v, s, c, d]) => window.mzansiCam([v.x + s * d, v.y + 0.75, v.z + c * d], [v.x, v.y + 0.2, v.z]), [b, s2, c2, dist])
+        await page.waitForTimeout(1500)
+        await page.screenshot({ path: `${OUT}/K4-${b.id}-${tag}.png` })
+      }
+    }
+  }
+  await page.evaluate(() => window.mzansiCam(null))
+  for (const r of out) console.log('sitter', JSON.stringify(r))
+  for (const r of out) {
+    expect(Math.abs(r.seatGap), `${r.id}: hips on the seat`).toBeLessThan(0.03)
+    expect(Math.abs(r.footGap), `${r.id}: feet on the floor`).toBeLessThan(0.05)
+    for (const side of ['L', 'R']) if (r.legs?.[side]?.knee !== null && r.legs?.[side]) expect(Math.abs(r.legs[side].knee), `${r.id} ${side}: knee ahead, not kneeling`).toBeLessThan(35)
+  }
+  await saveVideo(page, 'K4-bench-sitters')
+})
