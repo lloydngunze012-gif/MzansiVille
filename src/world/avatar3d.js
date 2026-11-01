@@ -286,6 +286,65 @@ function floorOf(group) {
   return null
 }
 
+// The rig's legs were made to be aimed by a knee target (an IK pole) that three.js
+// doesn't run, and the left one comes out turned well outwards. Turn each thigh about
+// its hip-to-ankle line so the knee points ahead: the ankle stays put (the feet keep
+// their place), only the knee comes round.
+const poleAxis = new THREE.Vector3()
+const poleOff = new THREE.Vector3()
+const poleWant = new THREE.Vector3()
+const poleFwd = new THREE.Vector3()
+function aimKnees(group, model) {
+  const { bones, footInShin } = group.userData
+  if (!footInShin) return
+  model.updateMatrixWorld(true)
+  poleFwd.set(0, 0, 1).applyQuaternion(model.getWorldQuaternion(groupQ))
+  for (const side of ['L', 'R']) {
+    const up = bones[`UpperLeg${side}`]
+    const low = bones[`LowerLeg${side}`]
+    if (!up || !low || !footInShin[side]) continue
+    const H = worldOf(up)
+    const K = worldOf(low)
+    const A = low.localToWorld(footInShin[side].clone())
+    poleAxis.subVectors(A, H)
+    const len = poleAxis.length()
+    if (len < 1e-4) continue
+    poleAxis.divideScalar(len)
+    poleOff.subVectors(K, H)
+    poleOff.addScaledVector(poleAxis, -poleOff.dot(poleAxis))
+    if (poleOff.length() < 0.01) continue // (a straight leg has no knee to aim)
+    poleWant.copy(poleFwd).addScaledVector(poleAxis, -poleFwd.dot(poleAxis))
+    if (poleWant.lengthSq() < 1e-6) continue
+    poleOff.normalize()
+    poleWant.normalize()
+    const angle = Math.atan2(poleAxis.dot(new THREE.Vector3().crossVectors(poleOff, poleWant)), poleOff.dot(poleWant))
+    if (Math.abs(angle) > 0.02) turnWorld(up, poleAxis, angle)
+  }
+}
+
+// ...and the feet: each turned to at most a natural toe-out from straight ahead (the
+// left one comes out turned well outwards too), keeping the clip's heel and toe lift.
+const TOE_OUT = 15 * Math.PI / 180
+const footFwd = new THREE.Vector3()
+const footUp = new THREE.Vector3()
+function aimFeet(group, model) {
+  const { bones, footFlat } = group.userData
+  if (!footFlat) return
+  const mq = model.getWorldQuaternion(new THREE.Quaternion())
+  const inv = mq.clone().invert()
+  footUp.set(0, 1, 0).applyQuaternion(mq)
+  for (const side of ['L', 'R']) {
+    const foot = bones[`Foot${side}`]
+    if (!foot || !footFlat[side]) continue
+    legQ.copy(inv).multiply(foot.getWorldQuaternion(new THREE.Quaternion())).multiply(footFlat[side].clone().invert())
+    footFwd.set(0, 0, 1).applyQuaternion(legQ)
+    if (Math.hypot(footFwd.x, footFwd.z) < 0.35) continue // (pointing down mid-stride)
+    const turn = Math.atan2(footFwd.x, footFwd.z)
+    const keep = Math.max(-TOE_OUT, Math.min(TOE_OUT, turn))
+    if (Math.abs(turn - keep) > 0.01) turnWorld(foot, footUp, keep - turn)
+  }
+}
+
 // Put each foot back at the end of its shin (see footInShin in attachModel).
 function carryFeet(model, bones, footInShin) {
   model.updateMatrixWorld(true)
@@ -771,6 +830,7 @@ function sitBetween(group, model, k) {
   model.updateMatrixWorld(true)
   // (the sag comes early, with the first bend of the knee)
   for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
+  aimKnees(group, model)
   carryFeet(model, data.bones, data.footInShin)
   flatFeet(group, model)
   // The hands come to the lap as the hips go down (and leave it standing up).
@@ -846,7 +906,9 @@ function sitMotion(group, model, move, dt) {
     const e = move.turn * move.turn * (3 - 2 * move.turn)
     model.rotation.y = move.from.yaw * (1 - e)
     model.position.set(move.from.x + (rig.stand.x - move.from.x) * e, rig.stand.y, move.from.z + (rig.stand.z - move.from.z) * e)
+    aimKnees(group, model)
     carryFeet(model, data.bones, data.footInShin)
+    aimFeet(group, model)
     data.sitPhase = 'turn'
     return
   }
@@ -998,7 +1060,7 @@ export function poseAvatar(group, walking, time) {
   else if (!data.steered) data.yaw += wrap(group.rotation.y - data.yaw) * Math.min(1, dt * TURN)
   model.position.set(0, 0, 0)
   model.rotation.y = settled ? 0 : wrap(data.yaw - group.rotation.y)
-  if (data.pose !== 'sit' && data.pose !== 'lie') carryFeet(model, data.bones, data.footInShin)
+  if (data.pose !== 'sit' && data.pose !== 'lie') { aimKnees(group, model); carryFeet(model, data.bones, data.footInShin); aimFeet(group, model) }
   // Standing on the soles: the lowest sole point rests on the ground (the group's y).
   if (!settled && data.soles?.length) {
     const ground = group.getWorldPosition(seatAt).y
@@ -1147,20 +1209,55 @@ if (typeof window !== 'undefined') {
       if (rec.ids && !rec.ids.includes(id)) continue
       const p = g.parent ? g.parent.localToWorld(g.position.clone()) : g.position.clone()
       const row = { id, clock: d.lastTime, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', phase: d.sitMove ? d.sitPhase : null, walking: d.current === CLIP.walk || d.current === CLIP.sprint }
-      if (full || rec.feet?.includes(id)) {
+      if (full || rec.feet?.includes(id) || rec.legs?.includes(id)) {
         const m = measureBody(g)
         Object.assign(row, { rate: m.rate, natural: m.natural, sole: m.sole, ground: m.ground, floor: m.floor, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
         if (rec.feet?.includes(id)) row.feet = feetNow(g)
+        if (rec.legs?.includes(id)) row.legs = measureLegs(g)
       }
       people.push(row)
     }
     rec.frames.push({ t: performance.now(), people })
     requestAnimationFrame(record)
   }
-  window.mzansiRecord = (opts = {}) => { rec = { where: opts.where, ids: opts.ids, feet: opts.feet, every: opts.every ?? 0, frame: 0, frames: [] }; requestAnimationFrame(record) }
+  window.mzansiRecord = (opts = {}) => { rec = { where: opts.where, ids: opts.ids, feet: opts.feet, legs: opts.legs, every: opts.every ?? 0, frame: 0, frames: [] }; requestAnimationFrame(record) }
   window.mzansiRecordStop = () => { const r = rec; rec = null; return r?.frames || [] }
 }
 
+// Tests (natural legs): for each leg, which way the knee points against the body's
+// forward (degrees in the body's own frame; a bent knee points ahead, not out or in),
+// and how far the foot is turned from straight ahead (its rest turn).
+const legQ = new THREE.Quaternion()
+export function measureLegs(group) {
+  const data = group.userData
+  const model = group.getObjectByName('rig')
+  if (!model || !data.bones) return null
+  model.updateMatrixWorld(true)
+  const inv = model.getWorldQuaternion(new THREE.Quaternion()).invert()
+  const out = {}
+  for (const side of ['L', 'R']) {
+    const up = data.bones[`UpperLeg${side}`]
+    const low = data.bones[`LowerLeg${side}`]
+    const foot = data.bones[`Foot${side}`]
+    if (!up || !low || !foot) continue
+    const H = worldOf(up).applyQuaternion(inv)
+    const K = worldOf(low).applyQuaternion(inv)
+    const A = low.localToWorld(data.footInShin[side].clone()).applyQuaternion(inv)
+    // (the knee's offset from the hip-to-ankle line, seen from above, in the body's frame)
+    const along = A.clone().sub(H)
+    const t = along.lengthSq() > 1e-6 ? K.clone().sub(H).dot(along) / along.lengthSq() : 0
+    const off = K.clone().sub(H.clone().addScaledVector(along, t))
+    const bent = off.length()
+    const knee = bent > 0.025 ? Math.atan2(off.x, off.z) * 180 / Math.PI : null
+    // (the foot's turn about the body's up axis, against its rest turn)
+    legQ.copy(inv).multiply(foot.getWorldQuaternion(new THREE.Quaternion())).multiply(data.footFlat?.[side]?.clone().invert() || new THREE.Quaternion())
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(legQ)
+    // (a toe pointing down mid-stride has no turn to speak of)
+    const footTurn = Math.abs(fwd.y) < 0.6 ? Math.atan2(fwd.x, fwd.z) * 180 / Math.PI : null
+    out[side] = { knee: knee === null ? null : +knee.toFixed(1), bend: +bent.toFixed(3), foot: footTurn === null ? null : +footTurn.toFixed(1) }
+  }
+  return out
+}
 // Where the two feet are in the world (the middle of each shoe, and its lowest
 // point), for the planted-feet checks.
 function feetNow(group) {

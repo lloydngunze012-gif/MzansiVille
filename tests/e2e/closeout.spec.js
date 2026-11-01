@@ -134,3 +134,52 @@ test('K2 everything solid: the stick straight into every kind of thing at the Qu
   }
   await saveVideo(page, 'K2-everything-solid')
 })
+
+// Knees point ahead (within the normal outward turn) and feet stay near straight, for
+// each leg, every frame: walking, standing, sitting down, seated and getting up.
+function legReport(frames) {
+  const rows = frames.map((f) => f.people.find((p) => p.id === 'player')).filter((r) => r?.legs)
+  const by = {}
+  for (const r of rows) {
+    const state = r.phase || (r.pose === 'sit' ? 'seated' : r.walking ? 'walking' : 'standing')
+    for (const side of ['L', 'R']) {
+      const l = r.legs[side]
+      if (!l) continue
+      const k = (by[`${state}.${side}`] ||= { frames: 0, kneeWorst: 0, footWorst: 0 })
+      k.frames++
+      if (l.knee !== null) k.kneeWorst = Math.max(k.kneeWorst, Math.abs(l.knee))
+      if (l.foot !== null) k.footWorst = Math.max(k.footWorst, Math.abs(l.foot))
+    }
+  }
+  return by
+}
+
+test('K3 natural legs: knees ahead, feet straight, walking, standing, sitting and getting up', async ({ page }) => {
+  await campus(page, 'cafeteria', '&a=22')
+  await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'], legs: ['player'] }))
+  await page.evaluate(() => window.mzansiSteer(0.6, 0.8))
+  await page.waitForTimeout(4000)
+  await page.evaluate(() => window.mzansiSteer(0, 0))
+  await page.waitForTimeout(2500)
+  await page.screenshot({ path: `${OUT}/K3-1-standing.png` })
+  // Sit down at the caf and get up (queue at Auntie Pinky, sit and eat).
+  await page.evaluate(() => window.mzansiTalkTo('auntie_pinky'))
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 150000 })
+  await expect(card).toHaveAttribute('data-phase', 'menu', { timeout: 150000 })
+  await card.locator('[data-item="bunny"]').tap()
+  await card.locator('[data-size="quarter"]').tap()
+  await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 180000 }).toBe('sit')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/K3-2-seated.png` })
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 180000 }).not.toBe('sit')
+  await page.waitForTimeout(3000)
+  const report = legReport(await page.evaluate(() => window.mzansiRecordStop()))
+  console.log('legs', JSON.stringify(report))
+  for (const [k, v] of Object.entries(report)) {
+    expect(v.kneeWorst, `${k}: knee points ahead (not twisted out or in)`).toBeLessThan(35)
+    expect(v.footWorst, `${k}: foot near straight`).toBeLessThan(35)
+  }
+  await saveVideo(page, 'K3-legs')
+})
