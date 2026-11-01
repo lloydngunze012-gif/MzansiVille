@@ -142,15 +142,24 @@ as $$
   );
 $$;
 
+-- Players (the anon and authenticated roles, i.e. the game) can't give
+-- themselves a role or lift a suspension; an admin in the game can. The SQL
+-- Editor and other database roles (postgres, service_role) aren't players, so
+-- they can set roles directly.
 create or replace function public.touch_profile()
 returns trigger
 language plpgsql
 as $$
 begin
   new.updated_at := now();
-  if tg_op = 'UPDATE' and not public.is_admin() then
-    new.role := old.role;
-    new.suspended := old.suspended;
+  if current_user in ('anon', 'authenticated') and not public.is_admin() then
+    if tg_op = 'INSERT' then
+      new.role := 'player';
+      new.suspended := false;
+    else
+      new.role := old.role;
+      new.suspended := old.suspended;
+    end if;
   end if;
   return new;
 end;
@@ -158,7 +167,7 @@ $$;
 
 drop trigger if exists profiles_touch on public.profiles;
 create trigger profiles_touch
-  before update on public.profiles
+  before insert or update on public.profiles
   for each row execute function public.touch_profile();
 
 create or replace function public.handle_new_user()
