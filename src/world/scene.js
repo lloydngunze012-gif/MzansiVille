@@ -1923,7 +1923,8 @@ function pin(node, x, y, z, lift = 0) {
 function promptDoor() {
   const node = host.querySelector('.door-prompt')
   const near = nearestDoor()
-  if (!near || near.dist > 2.2 || mapUi.isOpen() || !ps.open) {
+  // (only standing still: while you walk it would catch taps meant for the ground)
+  if (!near || near.dist > 2.2 || mapUi.isOpen() || ps.state !== 'free') {
     node.hidden = true
     return
   }

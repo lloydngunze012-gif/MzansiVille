@@ -61,6 +61,9 @@ export function bindCampusInput(canvas, { camera, cameraRig, raycaster, pickable
   function onPointerDown(event) {
     if (!worldOn()) return
     if (event.pointerType === 'mouse' && event.button === 1) return
+    // A first finger down means no other finger is: forget any lost to a missed pointerup
+    // (one stale pointer would turn every later tap into a pinch and swallow it).
+    if (event.isPrimary) { pointers.clear(); pinching = false }
     pointers.add(event.pointerId)
     if (pointers.size > 1) {
       pinching = true
