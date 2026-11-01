@@ -683,6 +683,9 @@ function sitRig(group, model, fit) {
       if (!a || !b) continue
       fit.rig.lift[side].add(group.worldToLocal(a.mid.clone()).sub(group.worldToLocal(b.mid.clone())).setY(0))
       fit.rig.lift[side].y += fit.floorY - b.low
+      // (a small correction only: past that the seated foot is out of reach, and
+      // chasing it would swing the foot about)
+      if (fit.rig.lift[side].length() > 0.05) fit.rig.lift[side].setLength(0.05)
     }
   }
   restLegs(group)
@@ -758,8 +761,9 @@ function sitBetween(group, model, k) {
   const fit = data.sitFit
   const rig = sitRig(group, model, fit)
   const e = k * k * (3 - 2 * k)
-  // The hips go back a little sooner than they go down.
-  const back = Math.min(1, e * 1.25)
+  // The hips go down first, then back: standing, the legs are straight, so moving the
+  // hips back before they drop would stretch the legs past their length.
+  const back = e * e * (3 - 2 * e)
   restLegs(group)
   model.rotation.y = 0
   model.position.set(rig.stand.x * (1 - back), rig.stand.y + (fit.y - rig.stand.y) * e, rig.stand.z + (fit.z - rig.stand.z) * back)

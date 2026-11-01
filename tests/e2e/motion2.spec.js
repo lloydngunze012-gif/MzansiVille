@@ -151,7 +151,7 @@ function transitions(frames, id = 'player') {
     if (!phase) cur = null
     if (cur) cur.rows.push(r)
   }
-  if (process.env.DEBUG_T) for (const c of out) console.log(c.phase, c.rows.map((r) => `${JSON.stringify(r.feet)} h${r.hips} y${r.y}`).join(' | '))
+  if (process.env.DEBUG_T) for (const c of out) console.log(c.phase, c.rows.map((r) => `${JSON.stringify(r.feet)} h${r.hips} g${r.x},${r.y},${r.z} ry${r.ry}`).join(' | '))
   return out.map((c) => {
     const first = c.rows[0].feet || []
     let drift = 0
@@ -505,4 +505,84 @@ test('M7c heads in frame: eating in Top, Sims and Eye', async ({ page }) => {
   await page.waitForTimeout(1500)
   await headsInThreeViews(page, [], 'eat')
   await saveVideo(page, 'M7-eat')
+})
+
+test('M3 into bed, sleep, get up next morning (res), planted', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?fast=1&morning=0#/new')
+  await page.locator('#name').fill('Thandeka')
+  await page.locator('#residence').selectOption({ index: 1 })
+  await page.locator('#course').selectOption({ index: 1 })
+  await page.locator('[data-act="begin"]').tap()
+  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await page.waitForURL(/#\/play/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { morningDone: true, queue: [], phase: 'night', minutes: 22 * 60, lectureResolved: true, eventSeen: true, dailyEventId: null })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+    localStorage.setItem('mzansiville.mapHint', '1')
+  })
+  await page.goto('/?morning=0&m=3#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await page.waitForTimeout(1500)
+  await page.locator('.g-cta [data-act="place-open"]').tap()
+  await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'], feet: ['player'] }))
+  await page.locator('[data-act="do"][data-id="sleep"]').tap()
+  await shootPhase(page, 'lower', 'M3-1-sitting-on-bed')
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('lie')
+  await page.waitForTimeout(1500)
+  await page.screenshot({ path: `${OUT}/M3-2-lying.png` })
+  const lying = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0])
+  console.log('lying', JSON.stringify({ bedGap: lying.bedGap }))
+  expect(Math.abs(lying.bedGap)).toBeLessThan(0.03)
+  // The night passes: the day's summary, then Start day 2 wakes you in the same bed.
+  await expect.poll(async () => {
+    if (await page.getByRole('button', { name: /Start day 2/ }).first().isVisible()) return true
+    const next = page.locator('.g-result button[data-act="dismiss"], [data-screen-card] button[data-act="dismiss"]').first()
+    if (await next.isVisible()) await next.tap({ timeout: 2000 }).catch(() => {})
+    return false
+  }, { timeout: 90000, intervals: [1500] }).toBe(true)
+  await page.getByRole('button', { name: /Start day 2/ }).tap()
+  await shootPhase(page, 'rise', 'M3-3-getting-up')
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).toBe('stand')
+  await page.waitForTimeout(2000)
+  await page.screenshot({ path: `${OUT}/M3-4-up.png` })
+  expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'res bed')
+  await saveVideo(page, 'M3-bed')
+})
+
+test('M4c sit and stand: a Quad bench (Sit with them)', async ({ page }) => {
+  await campus(page, 'quad', '&a=21')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'], feet: ['player'] }))
+  await card.locator('[data-kind="sit"]').tap()
+  await shootPhase(page, 'lower', 'M4-quad-bench-lowering')
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/M4-quad-bench-seated.png` })
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).not.toBe('sit')
+  await page.waitForTimeout(2500)
+  expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'Quad bench')
+  await saveVideo(page, 'M4-quad-bench')
+})
+
+test('M4d sit and stand: a library chair (Let\'s study)', async ({ page }) => {
+  await campus(page, 'quad', '&a=23')
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await page.evaluate(() => window.mzansiRecord({ where: 'campus', ids: ['player'], feet: ['player'] }))
+  await card.locator('[data-kind="study"]').tap()
+  await shootPhase(page, 'lower', 'M4-library-lowering')
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 150000 }).toBe('sit')
+  await page.waitForTimeout(1200)
+  await page.screenshot({ path: `${OUT}/M4-library-seated.png` })
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 150000 }).not.toBe('sit')
+  await page.waitForTimeout(2500)
+  expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'library chair')
+  await saveVideo(page, 'M4-library-chair')
 })

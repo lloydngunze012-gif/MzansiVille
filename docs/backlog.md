@@ -15,6 +15,8 @@ Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in 
 
 - Talk (1 Nov): tapping a Quad student can open the chat while you're still ~5 m away (the walk up stops short), so the two talk across a gap. The shot now fits both heads above the card, but you should walk up to them first.
 
+- Quad bench sit (1 Nov, time-boxed): on the low Quad bench (seat 0.45 m on the 6 cm plaza) one foot can't reach where it should rest when seated, so it slides ~11 cm while sitting down (caf chair, library chair, bus bench and res bed all stay under 2 cm). Next: pick the standing spot so both seated ankles are within reach (use the nearer of the two), or lower the hips less on low seats.
+
 ## World & looks (high priority)
 - World: the player's room is a box in an empty void; build the res around it (corridor, window views, the building outside).
 - World: the bus stop is empty; give it a shelter, a timetable, people waiting, and a road with taxis.

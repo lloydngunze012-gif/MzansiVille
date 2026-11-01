@@ -849,7 +849,9 @@ function activityApi() {
       player.rotation.y = edge.rot
       player.userData.pose = 'sit'
       player.userData.seatFloor = 0
-      await new Promise((resolve) => setTimeout(resolve, ms(600)))
+      // Sit down on the edge first (it plays out: turn round, lower), then lie back.
+      await settledOf(player)
+      await new Promise((resolve) => setTimeout(resolve, ms(300)))
       await recline({ ...edge }, { x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, 1.1, false)
     },
     getUp: async (bed, edge) => {
