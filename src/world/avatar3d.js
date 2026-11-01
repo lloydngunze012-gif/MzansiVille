@@ -635,6 +635,10 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 // Walks slower than this play the walk clip, faster ones the run (metres a second).
 const RUN_FROM = 2.3
 const TURN = 10 // how quickly the body turns to face where it's going (per second)
+const TURN_MIN = 3 // ...but never slower than this, or faster than TURN_MAX (radians a second)
+const TURN_MAX = 9
+const CRAB = 0.2 // a step may point at most this far from the body (radians, about 11 degrees)
+const SHARP = 1 // turns sharper than this (about 57 degrees) turn on the spot first
 
 // pose: 'stand' (idle or walk), 'sit', 'talk', 'run', 'dance' or 'lie'
 // (the caller tilts the group to lie down).
@@ -646,7 +650,27 @@ export function poseAvatar(group, walking, time) {
   data.lastTime = time
   // Real ground speed, smoothed (teleports and seat placements don't count).
   const last = data.lastPos
-  const moved = last ? Math.hypot(group.position.x - last.x, group.position.z - last.z) : 0
+  let moved = last ? Math.hypot(group.position.x - last.x, group.position.z - last.z) : 0
+  // Never sideways: a walker's body turns towards where they're going, and they only
+  // move along the way they face. On a sharp turn they slow down or turn on the spot
+  // first, so the step never points more than CRAB away from the body.
+  const upright = data.pose !== 'sit' && data.pose !== 'lie' && data.pose !== 'dance'
+  data.crab = 0
+  if (data.rigged && upright && walking && last && moved > 1e-4 && moved < 2 && dt > 0) {
+    const want = Math.atan2(group.position.x - last.x, group.position.z - last.z)
+    if (data.yaw === undefined) data.yaw = want
+    const off = wrap(want - data.yaw)
+    const rate = Math.min(TURN_MAX, Math.max(TURN_MIN, Math.abs(off) * TURN))
+    data.yaw += Math.sign(off) * Math.min(Math.abs(off), rate * dt)
+    const left = Math.abs(wrap(want - data.yaw))
+    if (left > CRAB) {
+      const along = Math.max(0, moved * Math.cos(left) * Math.min(1, Math.max(0, (SHARP - left) / (SHARP - CRAB))))
+      group.position.x = last.x + Math.sin(data.yaw) * along
+      group.position.z = last.z + Math.cos(data.yaw) * along
+      moved = along
+    } else data.crab = left
+    data.steered = true
+  } else data.steered = false
   if (!last) data.lastPos = new THREE.Vector3()
   data.lastPos.copy(group.position)
   if (dt > 0) {
@@ -684,7 +708,7 @@ export function poseAvatar(group, walking, time) {
   if (!model) return
   // Turn smoothly: the body lags the facing a little instead of snapping.
   if (settled || data.yaw === undefined) data.yaw = group.rotation.y
-  else data.yaw += wrap(group.rotation.y - data.yaw) * Math.min(1, dt * TURN)
+  else if (!data.steered) data.yaw += wrap(group.rotation.y - data.yaw) * Math.min(1, dt * TURN)
   model.position.set(0, 0, 0)
   model.rotation.y = settled ? 0 : wrap(data.yaw - group.rotation.y)
   if (data.pose !== 'sit' && data.pose !== 'lie') carryFeet(model, data.bones, data.footInShin)
@@ -757,6 +781,7 @@ export function measureBody(group) {
     t: +(data.actions?.[data.current]?.time ?? 0).toFixed(3),
     natural: +(data.gait?.[data.current]?.speed ?? 0).toFixed(2),
     yaw: +(data.yaw ?? group.rotation.y).toFixed(3),
+    crab: +((data.crab || 0) * 180 / Math.PI).toFixed(1),
     lastPosed: data.lastTime,
     speed: +(data.speed || 0).toFixed(2),
     x: +group.position.x.toFixed(2), y: +group.position.y.toFixed(3), z: +group.position.z.toFixed(2),
@@ -787,4 +812,56 @@ if (typeof window !== 'undefined') {
     const idOf = (g) => (g.userData.isPlayer ? 'player' : g.userData.personId || 'extra')
     return [...live].filter((g) => sceneOf(g) && (!where || sceneOf(g).name === where) && (!id || idOf(g) === id)).map((g) => ({ ...measureBody(g), scene: sceneOf(g).name }))
   }
+  // Every rendered frame: where each person is and which way their body faces (the
+  // tests work out sideways sliding from consecutive frames). Every `every` frames,
+  // also everyone's soles, hips and lowest point from the skinned vertices.
+  let rec = null
+  const record = () => {
+    if (!rec) return
+    rec.frame++
+    const full = rec.every > 0 && rec.frame % rec.every === 0
+    const people = []
+    for (const g of live) {
+      const sc = sceneOf(g)
+      if (!sc || g.userData.disposed || (rec.where && sc.name !== rec.where)) continue
+      const d = g.userData
+      const id = d.isPlayer ? 'player' : d.personId || 'extra'
+      if (rec.ids && !rec.ids.includes(id)) continue
+      const p = g.parent ? g.parent.localToWorld(g.position.clone()) : g.position.clone()
+      const row = { id, x: +p.x.toFixed(3), y: +p.y.toFixed(3), z: +p.z.toFixed(3), yaw: +(d.yaw ?? g.rotation.y).toFixed(4), ry: +g.rotation.y.toFixed(4), rx: +g.rotation.x.toFixed(4), clip: d.current, pose: d.pose || 'stand', walking: d.current === CLIP.walk || d.current === CLIP.sprint }
+      if (full || rec.feet?.includes(id)) {
+        const m = measureBody(g)
+        Object.assign(row, { sole: m.sole, ground: m.ground, low: m.low, hips: m.hips, seatGap: m.seatGap ?? null, bedGap: m.bedGap ?? null })
+        if (rec.feet?.includes(id)) row.feet = feetNow(g)
+      }
+      people.push(row)
+    }
+    rec.frames.push({ t: performance.now(), people })
+    requestAnimationFrame(record)
+  }
+  window.mzansiRecord = (opts = {}) => { rec = { where: opts.where, ids: opts.ids, feet: opts.feet, every: opts.every ?? 0, frame: 0, frames: [] }; requestAnimationFrame(record) }
+  window.mzansiRecordStop = () => { const r = rec; rec = null; return r?.frames || [] }
+}
+
+// Where the two feet are in the world (the lowest sole point of each), for the
+// planted-feet checks.
+function feetNow(group) {
+  const out = []
+  for (const side of ['L', 'R']) {
+    let best = null
+    group.traverse((node) => {
+      if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'feet') return
+      const count = node.geometry.attributes.position.count
+      const step = Math.max(1, Math.floor(count / 300))
+      for (let i = 0; i < count; i += step) {
+        node.getVertexPosition(i, vtx)
+        node.localToWorld(vtx)
+        const local = group.worldToLocal(vtx.clone())
+        if ((side === 'L') !== (local.x > 0)) continue
+        if (!best || vtx.y < best.y) best = vtx.clone()
+      }
+    })
+    if (best) out.push([+best.x.toFixed(3), +best.y.toFixed(3), +best.z.toFixed(3)])
+  }
+  return out
 }

@@ -1636,13 +1636,18 @@ function tick(now) {
       player.position.z += sz * k
       if (d > 0.02) { walking = true; player.rotation.y = Math.atan2(sx, sz) } else snapTo = null
     }
-    if (rig.mode === 'eye') {
+    // Eye view: standing, you turn to where you look; walking, you look where you go
+    // (the body leads, so you never walk sideways).
+    if (rig.mode === 'eye' && !walking) {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }
     clock += dt
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
+    if (rig.mode === 'eye' && walking && player.userData.yaw !== undefined) {
+      rig.facing += Math.atan2(Math.sin(player.userData.yaw - rig.facing), Math.cos(player.userData.yaw - rig.facing)) * Math.min(1, dt * 6)
+    }
     applyTime()
     campus.dressing?.update(dt)
     quadSound()
