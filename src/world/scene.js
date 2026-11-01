@@ -15,6 +15,7 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { bindCampusInput } from './interact.js'
+import { bodyReport, resolveBodies } from './bodies.js'
 import { doorPoint } from './layout.js'
 import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
@@ -614,6 +615,107 @@ window.mzansiCam = (pos, look) => { closeShot = pos ? { pos: new THREE.Vector3(.
 window.mzansiPersonPos = (id) => { const a = everyone().find((x) => x.userData.personId === id); return a ? { x: a.position.x, y: a.position.y, z: a.position.z, rot: a.rotation.y, pose: a.userData.pose } : null }
 window.mzansiPlayerRot = () => player?.rotation.y ?? 0
 window.mzansiFloorAt = (x, z) => campus?.floor.at(x, z) ?? 0
+// Tests (nobody inside furniture): how deep any part of a body is inside a chair,
+// table, bench, counter or wall near them (box parts exactly, model parts by their
+// boxes), and for a seated body, which way it faces against the chair under it.
+// How deep a point (in a mesh's own space) is inside the mesh's closed surface: straight
+// up from it, the first face it meets faces up (it's inside) at that distance; 0 if not.
+const upRay = new THREE.Ray()
+const triA = new THREE.Vector3()
+const triB = new THREE.Vector3()
+const triC = new THREE.Vector3()
+const hitAt = new THREE.Vector3()
+function insideModel(b, p) {
+  // (inside only if, straight down too, the first face below faces down: a table top
+  // with no underside doesn't make the space under it "inside")
+  return Math.min(firstFace(b, p, 1), firstFace(b, p, -1))
+}
+function firstFace(b, p, dir) {
+  const pos = b.m.geometry.attributes.position
+  const index = b.m.geometry.index
+  const n = index ? index.count : pos.count
+  upRay.set(p, new THREE.Vector3(0, dir, 0))
+  let best = Infinity
+  let facesUp = false
+  for (let i = 0; i < n; i += 3) {
+    const ia = index ? index.getX(i) : i
+    const ib = index ? index.getX(i + 1) : i + 1
+    const ic = index ? index.getX(i + 2) : i + 2
+    triA.fromBufferAttribute(pos, ia)
+    triB.fromBufferAttribute(pos, ib)
+    triC.fromBufferAttribute(pos, ic)
+    if (!upRay.intersectTriangle(triA, triB, triC, false, hitAt)) continue
+    const d = (hitAt.y - p.y) * dir
+    if (d < best) {
+      best = d
+      facesUp = triB.clone().sub(triA).cross(triC.clone().sub(triA)).y * dir > 0
+    }
+  }
+  return facesUp && Number.isFinite(best) ? best : 0
+}
+window.mzansiInside = (ids = ['player']) => {
+  const groups = campus ? [campus.dressing.group, tempGroup, ...(room ? [room.group] : [])] : []
+  const boxes = []
+  const inv = new THREE.Matrix4()
+  for (const g of groups) g.traverse((m) => {
+    if (!m.isMesh || !m.visible || m.isSkinnedMesh || m.isSprite || m.material?.transparent) return
+    let n = m
+    while (n && !n.userData?.personId && !n.userData?.isPlayer && n.name !== 'player') n = n.parent
+    if (n) return // (people)
+    if (!m.geometry.boundingBox) m.geometry.computeBoundingBox()
+    const bb = m.geometry.boundingBox
+    const size = bb.getSize(new THREE.Vector3())
+    if (size.y <= 0.09 && m.position.y < 0.12) return // (floors, rugs, the plaza, the deck: the feet checks cover those)
+    m.updateMatrixWorld()
+    boxes.push({ m, bb, inv: inv.clone().copy(m.matrixWorld).invert(), name: m.parent?.name || m.name || 'mesh', exact: m.geometry.type === 'BoxGeometry', scale: m.getWorldScale(new THREE.Vector3()).x })
+  })
+  const out = []
+  const v = new THREE.Vector3()
+  const l = new THREE.Vector3()
+  for (const a of [player, ...everyone(), ...temps].filter((x, i, all) => all.indexOf(x) === i)) {
+    const id = a.userData.isPlayer ? 'player' : a.userData.personId
+    if (!a.visible || !ids.includes(id)) continue
+    const near = boxes.filter((b) => b.m.getWorldPosition(new THREE.Vector3()).distanceTo(a.position) < 3)
+    let worst = 0
+    let what = null
+    a.traverse((node) => {
+      if (!node.isSkinnedMesh || !node.visible) return
+      const count = node.geometry.attributes.position.count
+      const step = Math.max(1, Math.floor(count / 250))
+      for (let i = 0; i < count; i += step) {
+        node.getVertexPosition(i, v)
+        node.localToWorld(v)
+        for (const b of near) {
+          l.copy(v).applyMatrix4(b.inv)
+          const d = Math.min(l.x - b.bb.min.x, b.bb.max.x - l.x, l.y - b.bb.min.y, b.bb.max.y - l.y, l.z - b.bb.min.z, b.bb.max.z - l.z)
+          if (d <= 0) continue
+          // (scaled models: depth in world units; a model counts only inside its surfaces)
+          const depth = b.exact ? d * b.scale : insideModel(b, l) * b.scale
+          if (depth > worst) {
+            worst = depth
+            const c = b.m.getWorldPosition(new THREE.Vector3())
+            const sz = b.bb.getSize(new THREE.Vector3()).multiply(b.m.getWorldScale(new THREE.Vector3()))
+            what = `${b.name}${b.exact ? '' : ' (model box)'} at ${c.x.toFixed(2)},${c.y.toFixed(2)},${c.z.toFixed(2)} size ${sz.x.toFixed(2)}x${sz.y.toFixed(2)}x${sz.z.toFixed(2)}, body point ${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)}`
+          }
+        }
+      }
+    })
+    // Seated on a chair: the body should face where the chair faces (its back behind).
+    let facing = null
+    if (a.userData.pose === 'sit') {
+      let chair = null
+      for (const g of groups) g.traverse((c) => { if (c.name === 'chair' && c.getWorldPosition(new THREE.Vector3()).distanceTo(new THREE.Vector3(a.position.x, 0, a.position.z)) < 0.35) chair = c })
+      if (chair) {
+        const body = a.getObjectByName('rig').getWorldQuaternion(new THREE.Quaternion())
+        const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(body)
+        const cf = new THREE.Vector3(0, 0, 1).applyQuaternion(chair.getWorldQuaternion(new THREE.Quaternion()))
+        facing = +(Math.acos(Math.max(-1, Math.min(1, fwd.x * cf.x + fwd.z * cf.z))) * 180 / Math.PI).toFixed(1)
+      }
+    }
+    out.push({ id, pose: a.userData.pose || 'stand', phase: a.userData.sitMove ? a.userData.sitPhase : null, inside: +worst.toFixed(3), what, facing, at: [+a.position.x.toFixed(2), +a.position.z.toFixed(2)], step: host.dataset.activityStep || host.dataset.activity || null, activity: host.dataset.activity || null, noCollide: Boolean(a.userData.noCollide), say: host.querySelector('.act-say')?.textContent?.slice(0, 40) || null })
+  }
+  return out
+}
 // Tests (heads in frame): for the player and the given people, is each head's box fully
 // on screen, not hidden behind a building or prop, and not around the camera itself?
 window.mzansiHeads = (ids = []) => {
@@ -821,14 +923,28 @@ function activityApi() {
     get dressing() { return campus.dressing },
     spot: (place, id) => campus.dressing.spots[place]?.find((s) => s.id === id) || { x: 0, z: 0 },
     // Scene walks always finish: if the path is blocked, step into place after a while.
-    walkTo: async (x, z, pace = WALK) => { if (inTransition(player)) await settledOf(player); return new Promise((resolve) => {
+    walkTo: async (x, z, pace = WALK) => {
+      if (inTransition(player)) await settledOf(player)
+      // (a walk asked for while the payment bar runs would be dropped: wait for it)
+      while (actionLeft > 0) await new Promise((r) => setTimeout(r, 100))
+      return new Promise((resolve) => {
       let done = false
       const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, ms(250)) }
       walkTo(x, z, finish)
       speed = pace
       if (!route.length) finish()
-      const far = Math.hypot(x - player.position.x, z - player.position.z)
-      setTimeout(() => { if (!done) { route = []; arrive = null; finish() } }, ms(1500 + (far / pace) * 1800))
+      // (ends when it stops getting any closer for a while: blocked by something or
+      // someone; judged on progress, not a clock, so a slow phone still gets there)
+      let best = Infinity
+      let since = performance.now()
+      const check = () => {
+        if (done) return
+        const d = Math.hypot(x - player.position.x, z - player.position.z)
+        if (d < best - 0.05) { best = d; since = performance.now() }
+        if (performance.now() - since > ms(2500)) { route = []; arrive = null; finish(); return }
+        setTimeout(check, 300)
+      }
+      check()
     }) },
     wait: (s) => new Promise((resolve) => setTimeout(resolve, ms(s * 1000))),
     face: (x, z) => { player.rotation.y = Math.atan2(x - player.position.x, z - player.position.z) },
@@ -964,13 +1080,24 @@ function activityApi() {
       const spot = spots[0]
       if (spot && Math.hypot(spot.x - player.position.x, spot.z - player.position.z) > 0.3) {
         if (inRoom) await api.glide(spot.x, spot.z)
-        else await api.walkTo(spot.x, spot.z, WALK)
+        else {
+          await api.walkTo(spot.x, spot.z, WALK)
+          if (Math.hypot(spot.x - player.position.x, spot.z - player.position.z) > 1) await api.walkTo(spot.x, spot.z, WALK)
+        }
       }
+      // Not there yet (the walk stopped short): the rest of the way by the paths first.
+      const stand = standSpotFor(player, seat)
+      if (Math.hypot(stand.x - player.position.x, stand.z - player.position.z) > 1.2) {
+        if (inRoom) await api.glide(stand.x, stand.z)
+        else await api.walkTo(stand.x, stand.z, WALK)
+      }
+      // (the last step goes in among the furniture: beside the chair, between it and the table)
+      player.userData.noCollide = 'in'
+      player.userData.noCollideAt = performance.now()
       // (the last walk's pull onto its exact end point would hold you back from the seat)
       snapTo = null
       route = []
       // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
-      const stand = standSpotFor(player, seat)
       await new Promise((resolve) => { scriptMove = { x: stand.x, z: stand.z, pace: 0.9, resolve } })
     },
     teleport: (x, z, rot) => {
@@ -1008,7 +1135,13 @@ function activityApi() {
       holder.position.set(x, y, z)
       holder.rotation.y = rot
       tempGroup.add(holder)
-      loadModel(url).then((src) => { const m = src.clone(true); m.scale.setScalar(s); holder.add(m) }).catch(() => {})
+      loadModel(url).then((src) => {
+        const m = src.clone(true)
+        m.scale.setScalar(s)
+        // (furniture models have their origin at a corner: a table goes by its middle)
+        if (/table/.test(url)) { const c = new THREE.Box3().setFromObject(m).getCenter(new THREE.Vector3()); m.position.set(-c.x, 0, -c.z) }
+        holder.add(m)
+      }).catch(() => {})
       return holder
     },
     chair: (x, z, rot = 0) => {
@@ -1024,6 +1157,8 @@ function activityApi() {
       mesh.castShadow = true
       mesh.receiveShadow = true
       tempGroup.add(mesh)
+      // (anything from the shins up to the waist is something you'd walk into)
+      if (y - h / 2 < 1.2 && y + h / 2 > 0.15 && w > 0.1 && d > 0.1) tempSolids.push({ minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 })
       return mesh
     },
     sign: (lines, x, y, z, rot = 0, w = 2.4, h = 1.4) => {
@@ -1077,6 +1212,7 @@ function activityApi() {
 const tempGroup = new THREE.Group()
 tempGroup.name = 'scene-temps'
 let temps = []
+let tempSolids = [] // boxes an activity built (benches, steps, stalls): solid like the rest
 let npcMoves = []
 let room = null
 let scriptMove = null
@@ -1102,6 +1238,7 @@ function roomShot(from, to) {
 function clearTemps() {
   for (const a of temps) a.userData.disposed = true
   temps = []
+  tempSolids = []
   npcMoves = []
   tempGroup.clear()
 }
@@ -1231,6 +1368,7 @@ function companionTick(dt) {
     }
     // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
     const stand = st.pose === 'sit' ? standSpotFor(a, st) : st
+    if (!st.via && a.userData.noCollide !== 'in') { a.userData.noCollide = 'in'; a.userData.noCollideAt = performance.now() } // (stepping in to the seat)
     if (stepAvatar(a, stand.x, stand.z, 0.9, dt, true) > 0.05) { poseAvatar(a, true, clock); return }
     a.position.set(st.x, st.y || 0, st.z)
     a.rotation.y = st.rot
@@ -1540,6 +1678,26 @@ function promptDoor() {
 // Walking with the stick: up to the real outline of buildings, tables and stalls
 // (a body's half-width away), sliding along them; never through. (The route grid is
 // coarser: it would stop you a metre or two short, like an invisible wall.)
+// Solid boxes around a point (bodies.js): in a room its furniture and walls, outside the
+// buildings, the places' tables, counters, benches and stalls, and an activity's own.
+function boxesNear(x, z) {
+  if (!campus) return null
+  if (room && x > room.bounds.minX - 1 && x < room.bounds.maxX + 1 && z > room.bounds.minZ - 1 && z < room.bounds.maxZ + 1) return room.blocks
+  const all = campus.layout.obstacles.concat(campus.dressing?.obstacles || [], tempSolids)
+  return all.filter((b) => x > b.minX - 1.5 && x < b.maxX + 1.5 && z > b.minZ - 1.5 && z < b.maxZ + 1.5)
+}
+// Everyone in the campus scene, for the collision pass: the people who can be pushed and
+// those who can't (the places' own people at their posts, an activity's people).
+function campusBodies() {
+  const list = [{ avatar: player, fixed: false }]
+  for (const p of crowd?.people || []) list.push({ avatar: p.avatar, fixed: false })
+  for (const a of campus?.dressing?.statics || []) list.push({ avatar: a, fixed: !campus.dressing.isMoving?.(a) })
+  for (const a of temps) list.push({ avatar: a, fixed: true })
+  if (companion) list.push({ avatar: companion.avatar, fixed: false })
+  for (const r of returners) list.push({ avatar: r.avatar, fixed: false })
+  return list.filter((b, i) => b.avatar && list.findIndex((c) => c.avatar === b.avatar) === i)
+}
+window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
 const BODY = 0.3
 function hitsSolid(x, z, r = BODY) {
   const solids = campus.layout.obstacles.concat(campus.dressing?.obstacles || [])
@@ -1682,7 +1840,9 @@ function tick(now) {
       const dz = m.z - player.position.z
       const d = Math.hypot(dx, dz)
       const step = m.pace * dt
-      if (d <= step) { player.position.x = m.x; player.position.z = m.z; scriptMove = null; m.resolve() } else {
+      // (a step that someone or something holds back ends where it is)
+      if (d < (m.best ?? Infinity) - 0.01) { m.best = d; m.stall = 0 } else m.stall = (m.stall || 0) + dt
+      if (m.stall > 0.8) { scriptMove = null; m.resolve() } else if (d <= step) { player.position.x = m.x; player.position.z = m.z; scriptMove = null; m.resolve() } else {
         player.position.x += (dx / d) * step
         player.position.z += (dz / d) * step
         player.rotation.y = Math.atan2(dx, dz)
@@ -1705,8 +1865,10 @@ function tick(now) {
       if (d > 0.02) { walking = true; player.rotation.y = Math.atan2(sx, sz) } else snapTo = null
     }
     // Eye view: standing, you turn to where you look; walking, you look where you go
-    // (the body leads, so you never walk sideways).
-    if (rig.mode === 'eye' && !walking) {
+    // (the body leads, so you never walk sideways). Seated, lying, mid-activity or in a
+    // chat, the body keeps the way it was put (looking round never swivels you on a chair).
+    const free = !acting && !talk && (player.userData.pose || 'stand') === 'stand' && !inTransition(player)
+    if (rig.mode === 'eye' && !walking && free) {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }
@@ -1726,7 +1888,8 @@ function tick(now) {
     companionTick(dt)
     // While playing an activity (queueing, sitting beside someone) you stand close on purpose.
     // (only while walking: standing still, you never slide; the crowd steps round you)
-    if (!acting && !talk && walking) crowd?.pushOut(player.position)
+    // Nobody goes through anything or anyone (bodies.js), the player included.
+    resolveBodies(campusBodies(), boxesNear)
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)

@@ -266,18 +266,24 @@ export function createScenes(api) {
     // Sit somewhere (steps, grass, fountain edge) and eat.
     async sitEat(place, opt) {
       const s = side(place, -3.5, 0.5)
+      // (the seat is the top of what you sit on, facing out from it)
+      let rot = 0
+      let top = opt.seat === 'grass' ? 0.05 : 0.4
       if (opt.seat === 'fountain') {
         const f = side(place, -5.5, 1.5)
         api.box(2.2, 0.5, 2.2, 0xb8c0c8, f.x, 0.25, f.z)
         api.box(1.8, 0.06, 1.8, 0x5aa8e0, f.x, 0.52, f.z, { emissive: 0x5aa8e0, emissiveIntensity: 0.2 })
-        s.x = f.x + 1.4
+        s.x = f.x + 0.92 // on the rim, facing out
         s.z = f.z
+        rot = Math.PI / 2
+        top = 0.5
       }
-      if (opt.seat === 'steps') api.box(3.2, 0.36, 1.2, 0xc9c0b0, s.x, 0.18, s.z - 0.2)
+      if (opt.seat === 'steps') { api.box(3.2, 0.36, 1.2, 0xc9c0b0, s.x, 0.18, s.z - 0.2); top = 0.36 }
       api.frame(s)
-      await api.walkTo(s.x, s.z + 0.9)
-      api.teleport(s.x, s.z, 0)
-      api.pose('sit', opt.seat === 'grass' ? 0.05 : 0.4)
+      await api.walkTo(s.x + Math.sin(rot) * 0.9, s.z + Math.cos(rot) * 0.9)
+      if (top > 0.2) await api.walkToSeat({ x: s.x, z: s.z, rot, y: top })
+      api.teleport(s.x, s.z, rot)
+      await api.pose('sit', top)
       api.hold(holdable('food'))
       api.say(`Lunch: ${opt.food}.`)
       await steps(3, 1.1, () => api.gesture('interact-right'))
@@ -288,12 +294,13 @@ export function createScenes(api) {
     async eatTogether(place, opt) {
       const s = side(place, -4, 0.5)
       api.prop('/models/props/table.glb', s.x, s.z, { s: 2.3, rot: Math.PI / 2 })
-      api.chair(s.x - 0.95, s.z, Math.PI / 2)
-      const a = api.npc(opt.who[0], s.x + 0.95, s.z, -Math.PI / 2, { pose: 'sit', y: CHAIR_SEAT })
-      api.chair(s.x + 0.95, s.z, -Math.PI / 2)
+      // (chairs 0.6 m clear of the table's sides)
+      api.chair(s.x - 1.2, s.z, Math.PI / 2)
+      const a = api.npc(opt.who[0], s.x + 1.2, s.z, -Math.PI / 2, { pose: 'sit', y: CHAIR_SEAT })
+      api.chair(s.x + 1.2, s.z, -Math.PI / 2)
       api.frame(s)
-      await api.walkTo(s.x - 1.8, s.z + 0.5)
-      await sitOn({ x: s.x - 0.95, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
+      await api.walkTo(s.x - 2, s.z + 0.5)
+      await sitOn({ x: s.x - 1.2, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
       api.hold(holdable('food'))
       const lines = [['Can I sit here?', 'you'], ['Sure! Everyone squeezes in.', 'friend'], ['The caf is so full today.', 'you']]
       for (const [i, [text, who]] of lines.entries()) { api.progress((i + 1) / 4); api.say(text, who); api.gestureOf(who === 'you' ? null : a, 'emote-yes'); if (who === 'you') api.gesture('interact-right'); await api.wait(1.3) }
@@ -330,8 +337,11 @@ export function createScenes(api) {
       if (opt.seat === 'stoep') api.box(4, 0.4, 1, 0xb09070, s.x, 0.2, s.z - 0.2)
       api.frame(s)
       await api.walkTo(s.x, s.z + 1)
-      api.teleport(s.x, s.z, 0)
-      api.pose('sit', opt.seat === 'wall' ? 0.62 : 0.42)
+      const top = opt.seat === 'wall' ? 0.6 : opt.seat === 'stoep' ? 0.4 : 0.42
+      const sz = opt.seat === 'wall' ? s.z - 0.2 : s.z // (on the wall, not its front edge)
+      await api.walkToSeat({ x: s.x, z: sz, rot: 0, y: top })
+      api.teleport(s.x, sz, 0)
+      await api.pose('sit', top)
       api.say(opt.lines[0])
       await steps(3, 1.2)
       api.pose('stand')
@@ -504,7 +514,7 @@ export function createScenes(api) {
           if (ground && api.clearView([c.x + 0.9, 1.9, c.z + 3.6], [[c.x - 0.45, 1.1, c.z], [c.x + 0.45, 1.1, c.z]])) { s = c; break search }
         }
       }
-      api.box(1.8, 0.08, 0.5, 0x9a6a40, s.x, 0.43, s.z)
+      api.box(1.8, 0.08, 0.5, 0x9a6a40, s.x, 0.41, s.z) // (seat top at 0.45: where they sit)
       api.box(1.8, 0.4, 0.08, 0x9a6a40, s.x, 0.68, s.z - 0.25)
       const friend = api.npc(opt.who, s.x + 0.45, s.z, 0, { pose: 'sit', y: 0.45 })
       // From the front of the bench, a little above: both of you, head to feet.

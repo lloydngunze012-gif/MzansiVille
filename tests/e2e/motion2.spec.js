@@ -586,3 +586,139 @@ test('M4d sit and stand: a library chair (Let\'s study)', async ({ page }) => {
   expectPlanted(transitions(await page.evaluate(() => window.mzansiRecordStop())), 'library chair')
   await saveVideo(page, 'M4-library-chair')
 })
+
+// ---------- Sitting, round 3: facing the right way, nobody inside the furniture ----------
+// Samples the player every 300 ms from the tap to standing up again: how deep any part
+// of the body is inside a chair, table, bench or wall, and seated, the angle between
+// the body and the chair it sits on.
+async function sampleSeat(page, until, ms = 300) {
+  const rows = []
+  const end = Date.now() + 240000
+  let sat = false
+  while (Date.now() < end) {
+    const r = (await page.evaluate(() => window.mzansiInside(['player'])))[0]
+    if (r) rows.push(r)
+    if (r?.pose === 'sit') sat = true
+    if (sat && await until()) break
+    await page.waitForTimeout(ms)
+  }
+  return rows
+}
+function expectSeatClean(rows, what) {
+  if (process.env.DEBUG_T) rows.forEach((r, i) => { if (i % 3 === 0 || r.inside > 0.03) console.log('row', JSON.stringify({ at: r.at, pose: r.pose, phase: r.phase, inside: r.inside, what: r.inside > 0.03 ? r.what : null, nc: r.noCollide })) })
+  const worst = rows.reduce((m, r) => (r.inside > m.inside ? r : m), { inside: 0 })
+  const facings = rows.filter((r) => r.pose === 'sit' && !r.phase && r.facing !== null).map((r) => r.facing)
+  console.log(what, JSON.stringify({ samples: rows.length, worstInside: worst, seatedFacing: facings.length ? Math.max(...facings) : null }))
+  expect(rows.some((r) => r.pose === 'sit'), `${what}: sat down`).toBe(true)
+  expect(worst.inside, `${what}: never inside ${worst.what}`).toBeLessThan(0.03)
+  if (facings.length) expect(Math.max(...facings), `${what}: facing the way the chair faces`).toBeLessThan(20)
+}
+const eye = (page) => page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: 'eye' })))
+
+test('S1 caf chair in Eye view: facing out of the chair, never inside it or the table', async ({ page }) => {
+  await campus(page, 'cafeteria', '&a=22')
+  await eye(page)
+  await tapPerson(page, 'auntie_pinky')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 120000 })
+  await expect(card).toHaveAttribute('data-phase', 'menu')
+  await card.locator('[data-item="bunny"]').tap()
+  await card.locator('[data-size="quarter"]').tap()
+  await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
+  const rows = await sampleSeat(page, async () => (await page.evaluate(() => window.mzansiPlayerPose())) !== 'sit')
+  await page.screenshot({ path: `${OUT}/S1-caf.png` })
+  expectSeatClean(rows, 'caf chair (Eye)')
+  await saveVideo(page, 'S1-caf-chair')
+})
+
+test('S2 library chair in Eye view (Let\'s study)', async ({ page }) => {
+  await campus(page, 'quad', '&a=23')
+  await eye(page)
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await card.locator('[data-kind="study"]').tap()
+  let shot = false
+  const rows = await sampleSeat(page, async () => {
+    if (!shot && (await page.evaluate(() => window.mzansiPlayerPose())) === 'sit') { shot = true; await page.screenshot({ path: `${OUT}/S2-library.png` }) }
+    return (await page.evaluate(() => window.mzansiPlayerPose())) !== 'sit'
+  })
+  expectSeatClean(rows, 'library chair (Eye)')
+  await saveVideo(page, 'S2-library-chair')
+})
+
+test('S3 Quad bench in Eye view (Sit with them)', async ({ page }) => {
+  await campus(page, 'quad', '&a=21')
+  await eye(page)
+  await tapPerson(page, 'x12')
+  const card = page.locator('.g-talk')
+  await expect(card).toBeVisible({ timeout: 30000 })
+  await card.locator('[data-kind="sit"]').tap()
+  let shot = false
+  const rows = await sampleSeat(page, async () => {
+    if (!shot && (await page.evaluate(() => window.mzansiPlayerPose())) === 'sit') { shot = true; await page.screenshot({ path: `${OUT}/S3-quad-bench.png` }) }
+    return (await page.evaluate(() => window.mzansiPlayerPose())) !== 'sit'
+  })
+  expectSeatClean(rows, 'Quad bench (Eye)')
+  await saveVideo(page, 'S3-quad-bench')
+})
+
+// ---------- Nobody through anything, nobody through anyone ----------
+// Everyone in the scene, every 250 ms for 30 s: the closest two standing people get,
+// and the deepest anyone stands inside a wall, table, counter, bench or stall. And the
+// player walked with the stick straight at a person, a table and the counter.
+async function collisionWatch(page, seconds, during = async () => {}) {
+  const rows = []
+  const end = Date.now() + seconds * 1000
+  let started = false
+  while (Date.now() < end) {
+    if (!started) { started = true; during() }
+    rows.push(await page.evaluate(() => window.mzansiCollisions()))
+    await page.waitForTimeout(250)
+  }
+  const closest = rows.reduce((m, r) => (r.closest < m.closest ? r : m), { closest: Infinity })
+  const deepest = rows.reduce((m, r) => (r.deepest > m.deepest ? r : m), { deepest: 0 })
+  return { samples: rows.length, closest, deepest }
+}
+
+test('C1 nobody through anyone or anything: crowded Quad, the stick into people and a table', async ({ page }) => {
+  await campus(page, 'quad')
+  const quad = await collisionWatch(page, 30)
+  console.log('quad crowd', JSON.stringify(quad))
+  await page.screenshot({ path: `${OUT}/C1-quad.png` })
+  // Straight at the nearest standing person, then at the stall, holding the stick.
+  const p = await page.evaluate(() => window.mzansiPlayerPos())
+  const person = (await page.evaluate(() => window.mzansiPeople())).filter((x) => x.pose !== 'sit' && x.id).sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0]
+  const at = (t) => { const d = Math.hypot(t.x - p.x, t.z - p.z) || 1; return [(t.x - p.x) / d, (t.z - p.z) / d] }
+  const intoPerson = await collisionWatch(page, 8, async () => { await page.evaluate(([x, z]) => window.mzansiSteer(x, z), at(person)) })
+  await page.screenshot({ path: `${OUT}/C1-into-person.png` })
+  const q = await page.evaluate(() => window.mzansiQueue('stall'))
+  const p2 = await page.evaluate(() => window.mzansiPlayerPos())
+  const d2 = Math.hypot(q.vendor.x - p2.x, q.vendor.z - p2.z) || 1
+  const intoStall = await collisionWatch(page, 10, async () => { await page.evaluate(([x, z]) => window.mzansiSteer(x, z), [(q.vendor.x - p2.x) / d2, (q.vendor.z - p2.z) / d2]) })
+  await page.evaluate(() => window.mzansiSteer(0, 0))
+  await page.screenshot({ path: `${OUT}/C1-into-stall.png` })
+  console.log('into a person', person.id, JSON.stringify(intoPerson), 'into the stall', JSON.stringify(intoStall))
+  for (const [what, r] of [['quad', quad], ['into a person', intoPerson], ['into the stall', intoStall]]) {
+    expect(r.closest.closest, `${what}: two people too close (${r.closest.pair})`).toBeGreaterThan(0.45)
+    expect(r.deepest.deepest, `${what}: ${r.deepest.who} inside something`).toBeLessThan(0.03)
+  }
+  await saveVideo(page, 'C1-quad')
+})
+
+test('C2 nobody through anyone or anything: the cafeteria queue, the stick into the counter', async ({ page }) => {
+  await campus(page, 'cafeteria')
+  const caf = await collisionWatch(page, 25)
+  const p = await page.evaluate(() => window.mzansiPlayerPos())
+  const q = await page.evaluate(() => window.mzansiQueue('caf'))
+  const d = Math.hypot(q.front.x - p.x, q.front.z - 1 - p.z) || 1
+  const intoCounter = await collisionWatch(page, 12, async () => { await page.evaluate(([x, z]) => window.mzansiSteer(x, z), [(q.front.x - p.x) / d, (q.front.z - 1 - p.z) / d]) })
+  await page.evaluate(() => window.mzansiSteer(0, 0))
+  await page.screenshot({ path: `${OUT}/C2-into-counter.png` })
+  console.log('caf', JSON.stringify(caf), 'into the counter', JSON.stringify(intoCounter))
+  for (const [what, r] of [['caf', caf], ['into the counter', intoCounter]]) {
+    expect(r.closest.closest, `${what}: two people too close (${r.closest.pair})`).toBeGreaterThan(0.45)
+    expect(r.deepest.deepest, `${what}: ${r.deepest.who} inside something`).toBeLessThan(0.03)
+  }
+  await saveVideo(page, 'C2-caf')
+})

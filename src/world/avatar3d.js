@@ -583,8 +583,8 @@ function fitSeat(group, model, seatY, onGround) {
   if (Number.isFinite(back)) fit.z += Math.max(-0.15, Math.min(0.2, SIT.backrest - back))
   for (let round = 0; round < 4; round++) {
     pose()
-    // The seat of the trousers on the seat.
-    const butt = lowest(group, isCloth, worldOf(bones.Hips || model))
+    // The seat of the trousers on the seat (across its width: the sides of the hips too).
+    const butt = Math.min(lowest(group, isCloth, worldOf(bones.Hips || model)), lowest(group, (n) => n.userData.part === 'legs', worldOf(bones.Hips || model), 0.22))
     if (Number.isFinite(butt)) fit.y -= butt - seatY
     pose()
     if (!legs) break
@@ -626,7 +626,7 @@ function sitPose(group, onGround) {
   model.position.y = fit.y
   model.position.z = fit.z
   restLegs(group)
-  if (!onGround && data.bones.FootR && data.footInShin?.R) { sitBetween(group, model, 1); return }
+  if (!onGround && data.bones.FootR && data.footInShin?.R) { sitBetween(group, model, 1); seatedArms(group, model, data.lastTime || 0); return }
   bendLegs(group, model, fit.thigh, fit.knee, onGround)
 }
 
@@ -637,7 +637,7 @@ function sitPose(group, onGround) {
 // forward a little on the way, like a person lowering themselves. Standing up is
 // the same in reverse. poseAvatar starts one when the pose changes between 'stand'
 // and 'sit' (callers just set the pose and the seat position).
-export const SIT_MOVE = { turn: 3, lower: 1.0, lean: 0.4, reach: 1.6 }
+export const SIT_MOVE = { turn: 3, lower: 1.0, lean: 0.22, reach: 1.6 } // (lean: forward over the knees, not into a desk)
 const toLocal = (group, bone) => group.worldToLocal(worldOf(bone))
 // The standing stance for this seat (kept with the seat fit): where the ankles
 // plant, in group space, so that seated they rest where the fit put them.
@@ -659,7 +659,9 @@ function sitRig(group, model, fit) {
   restLegs(group)
   model.position.set(0, 0, 0)
   model.updateMatrixWorld(true)
-  const stand = { x: 0, y: standY, z: seated.z - rest.L.z }
+  // (6 cm further out than the seated feet: standing, the calves clear the seat's
+  // front edge, and seated the shins lean forward a touch)
+  const stand = { x: 0, y: standY, z: seated.z - rest.L.z + 0.06 }
   const plant = (v) => new THREE.Vector3(v.x + stand.x, v.y + stand.y, v.z + stand.z)
   fit.rig = { stand, ankles: { L: plant(rest.L), R: plant(rest.R) }, lift: { L: new THREE.Vector3(), R: new THREE.Vector3() } }
   group.userData.standReach = stand.z
@@ -674,7 +676,8 @@ function sitRig(group, model, fit) {
   for (let round = 0; round < 6; round++) {
     sitBetween(group, model, 1)
     model.updateMatrixWorld(true)
-    const butt = lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(bones.Hips || model))
+    const hipsAt = worldOf(bones.Hips || model)
+    const butt = Math.min(lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', hipsAt), lowest(group, (n) => n.userData.part === 'legs', hipsAt, 0.22))
     if (Number.isFinite(butt)) fit.y -= butt - fit.seatY
     const seatedShoes = shoesBySide(group)
     for (const side of ['L', 'R']) {
@@ -771,12 +774,44 @@ function sitBetween(group, model, k) {
   // (the sag comes early, with the first bend of the knee)
   for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
   carryFeet(model, data.bones, data.footInShin)
+  // (on the way down, the seat of the trousers never goes below the seat: a low bench's
+  // front edge would cut in before the hips are back over it)
+  if (k > 0.25 && k < 1) {
+    model.updateMatrixWorld(true)
+    const butt = Math.min(lowest(group, (n) => n.userData.part === 'legs' || n.userData.part === 'body', worldOf(data.bones.Hips || model), 0.24), overSeat(group))
+    if (Number.isFinite(butt) && butt < fit.seatY) {
+      model.position.y += fit.seatY - butt
+      model.updateMatrixWorld(true)
+      for (const side of ['L', 'R']) legTo(group, side, group.localToWorld(rig.ankles[side].clone().addScaledVector(rig.lift[side], Math.sqrt(e))))
+      carryFeet(model, data.bones, data.footInShin)
+    }
+  }
   flatFeet(group, model)
+  // The hands come to the lap as the hips go down (and leave it standing up).
+  if (k > 0 && k < 1) seatedArms(group, model, data.lastTime || 0, Math.min(1, Math.max(0, (k - 0.15) / 0.6)))
   // Leaning forward over the knees on the way down (and up).
   if (data.bones.Abdomen && k > 0 && k < 1) {
     sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
     turnWorld(data.bones.Abdomen, sideways, SIT_MOVE.lean * Math.sin(Math.PI * k))
   }
+}
+// The lowest point of the trousers over the seat itself (its width, back to front edge
+// about 0.2 m ahead of its middle): the thighs as well as the seat of the trousers.
+const seatVtx = new THREE.Vector3()
+function overSeat(group) {
+  let min = Infinity
+  group.traverse((node) => {
+    if (!node.isSkinnedMesh || !node.visible || node.userData.part !== 'legs') return
+    const count = node.geometry.attributes.position.count
+    const step = Math.max(1, Math.floor(count / 500))
+    for (let i = 0; i < count; i += step) {
+      node.getVertexPosition(i, vtx)
+      node.localToWorld(vtx)
+      group.worldToLocal(seatVtx.copy(vtx))
+      if (Math.abs(seatVtx.x) < 0.3 && seatVtx.z > -0.3 && seatVtx.z < 0.18 && vtx.y < min) min = vtx.y
+    }
+  })
+  return min
 }
 // Is this person sitting down or standing up right now?
 export function inTransition(group) { return Boolean(group.userData.sitMove) }
@@ -801,9 +836,12 @@ function startSitMove(group) {
       const c = Math.cos(group.rotation.y)
       const s = Math.sin(group.rotation.y)
       data.sitMove = { dir: 1, k: 0, turn: 0, from: { x: dx * c - dz * s, z: dx * s + dz * c, yaw: wrap(data.standAt.yaw - group.rotation.y) } }
+      data.noCollide = 'in'
+      data.noCollideAt = typeof performance !== 'undefined' ? performance.now() : 0
     }
   } else if (isStanding(pose) && prev === 'sit' && (ualReady ? data.clipSeat : data.sitFit && !data.sitFit.onGround) && data.seatAt && !data.sitMove) {
     data.sitMove = { dir: -1, k: 1, seat: { ...data.seatAt } }
+    data.noCollide = 'out' // (standing up in front of the seat, among the furniture)
   }
   if (pose === 'sit') data.seatAt = { x: group.position.x, y: group.position.y, z: group.position.z, rot: group.rotation.y }
   if (pose === 'lie') { data.sitMove = null; data.seatAt = null }
@@ -854,7 +892,8 @@ function sitMotion(group, model, move, dt) {
     const s = Math.sin(move.seat.rot)
     const fit = data.sitFit
     group.position.set(move.seat.x + rig.stand.x * c + rig.stand.z * s, fit.floorY, move.seat.z - rig.stand.x * s + rig.stand.z * c)
-    model.position.set(0, 0, 0)
+    // (this frame still standing at the stand height; the soles take over next frame)
+    model.position.set(0, rig.stand.y + move.seat.y - fit.floorY, 0)
     data.sitMove = null
     data.sitPhase = 'up'
     data.yaw = move.seat.rot
@@ -1227,7 +1266,8 @@ function rigRest(group, model) {
 const srcQ = new THREE.Quaternion()
 const delta = new THREE.Quaternion()
 // Pose this person from a UAL clip at time t (seconds).
-function poseFromUal(group, model, src, clipName, t) {
+// only: just these of our bones (the arms of a seated person, say); hips stay put.
+function poseFromUal(group, model, src, clipName, t, only = null) {
   const data = group.userData
   const clip = src.clips[clipName]
   if (!clip) return
@@ -1243,7 +1283,7 @@ function poseFromUal(group, model, src, clipName, t) {
   for (const [from, to] of Object.entries(UAL_MAP)) {
     const s = src.bones[from]
     const b = bones[to]
-    if (!s || !b || !rest[to]) continue
+    if (!s || !b || !rest[to] || (only && !only.has(to))) continue
     // The source bone's turn from its rest, in the source's own frame...
     delta.copy(srcRootInv).multiply(s.getWorldQuaternion(srcQ)).multiply(src.rest[from].q.clone().invert().multiply(srcRootInv.clone().invert()))
     // ...applied to ours, in the model's frame.
@@ -1251,6 +1291,7 @@ function poseFromUal(group, model, src, clipName, t) {
     b.quaternion.copy(b.parent.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(want))
     b.updateMatrixWorld(true)
   }
+  if (only) return
   // The hips rise and drop with the clip (scaled to our height).
   const p = src.bones.pelvis.getWorldPosition(new THREE.Vector3()).sub(src.rest.pelvis.p).applyQuaternion(srcRootInv)
   const k = (data.hipHeight || 0.9) / src.hipHeight
@@ -1265,6 +1306,23 @@ function poseFromUal(group, model, src, clipName, t) {
 // clip's own chair. Until the clips have loaded, the hand-made sit stands in.
 let ualReady = null
 export function preloadSitClips() { loadUal().then((src) => { ualReady = src }).catch(() => {}) }
+// Seated arms: hands resting on the lap, from the clip's seated idle (the standing idle
+// left them hanging straight down beside the seat, into a wide bench). Loaded the first
+// time anyone sits.
+const ARMS = new Set(['ShoulderL', 'UpperArmL', 'LowerArmL', 'WristL', 'ShoulderR', 'UpperArmR', 'LowerArmR', 'WristR'])
+let ualArms = null
+let ualArmsAsked = false
+// w: how far the hands have come to the lap (sitting down and standing up blend them).
+function seatedArms(group, model, time, w = 1) {
+  if (!ualArmsAsked) { ualArmsAsked = true; loadUal().then((src) => { ualArms = src }).catch(() => {}) }
+  if (!ualArms || w <= 0) return
+  const { bones } = rigRest(group, model)
+  const before = w < 1 ? [...ARMS].map((n) => [bones[n], bones[n]?.quaternion.clone()]) : null
+  model.updateMatrixWorld(true)
+  poseFromUal(group, model, ualArms, 'Sitting_Idle_Loop', time % ualArms.clips.Sitting_Idle_Loop.duration, ARMS)
+  if (before) for (const [bone, q] of before) if (bone && q) bone.quaternion.copy(q.slerp(bone.quaternion, w))
+  model.updateMatrixWorld(true)
+}
 function pelvisAt(src, name, t) {
   const clip = src.clips[name]
   const action = src.mixer.clipAction(clip)

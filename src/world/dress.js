@@ -12,6 +12,7 @@ import { ms } from '../speed.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
+const TERRACE_CHAIR = 1.2 // the terrace chairs' distance from the table's middle (0.68 m clear of its side: turning round to sit, hands miss the table)
 
 // Kenney furniture has its origin at a corner; every prop is re-centred on x/z
 // with its base on the ground, so positions here mean the middle of the thing.
@@ -97,7 +98,9 @@ export function dressPlaces(layout, floor) {
     return new Promise((resolve) => movers.push({ avatar, x, z, speed, resolve }))
   }
 
-  function prop(name, x, z, { rot = 0, s = 2.2, y = 0 } = {}) {
+  // (center: the furniture models have their origin at a corner; a table is placed by
+  // its middle, so the chairs around it line up with its sides)
+  function prop(name, x, z, { rot = 0, s = 2.2, y = 0, center = false } = {}) {
     const holder = new THREE.Group()
     holder.position.set(x, y, z)
     holder.rotation.y = rot
@@ -105,6 +108,14 @@ export function dressPlaces(layout, floor) {
     loadProp(name).then((src) => {
       const model = src.clone(true)
       model.scale.setScalar(s)
+      if (center) { const c = new THREE.Box3().setFromObject(model).getCenter(new THREE.Vector3()); model.position.set(-c.x, 0, -c.z) }
+      if (!/flower|grass|rug|tree/.test(name) && y < 0.5) { // (trees: their trunks are blocked above, not the canopy)
+        holder.add(model)
+        holder.updateMatrixWorld(true)
+        const box = new THREE.Box3().setFromObject(model)
+        holder.remove(model)
+        if (box.max.y > 0.3) obstacles.push({ minX: box.min.x, maxX: box.max.x, minZ: box.min.z, maxZ: box.max.z })
+      }
       model.traverse((node) => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = true } })
       holder.add(model)
     }).catch(() => {})
@@ -450,18 +461,19 @@ export function dressPlaces(layout, floor) {
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
     floor?.box(tx, cz, 2.2, 3.2, 0, 0.08)
     for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
-      prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
-      for (const [cx2, r] of [[tx - 0.95, Math.PI / 2], [tx + 0.95, -Math.PI / 2]]) {
+      prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08, center: true })
+      // (chairs 0.6 m out from the table's sides: room to stand in front and sit)
+      for (const [cx2, r] of [[tx - TERRACE_CHAIR, Math.PI / 2], [tx + TERRACE_CHAIR, -Math.PI / 2]]) {
         const c = makeChair()
         c.position.set(cx2, 0.08, cz + dz)
         c.rotation.y = r
         group.add(c)
       }
-      const sitter = person(who, tx - 0.95, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
+      const sitter = person(who, tx - TERRACE_CHAIR, cz + dz, Math.PI / 2, { pose: 'sit', y: 0.08 + CHAIR_SEAT })
       // The chair opposite is free: sit there to eat (the table top is about 0.78 m up).
       // other: the sitter's chair, for a friend eating with you.
-      freeTables.push({ seat: { x: tx + 0.95, z: cz + dz, rot: -Math.PI / 2, y: 0.08 + CHAIR_SEAT }, table: { x: tx + 0.25, y: 0.08 + 0.8, z: cz + dz }, sitter, other: { x: tx - 0.95, z: cz + dz, rot: Math.PI / 2, y: 0.08 + CHAIR_SEAT } })
-      block(tx, cz + dz, 2.6, 1.4)
+      freeTables.push({ seat: { x: tx + TERRACE_CHAIR, z: cz + dz, rot: -Math.PI / 2, y: 0.08 + CHAIR_SEAT }, table: { x: tx + 0.25, y: 0.08 + 0.8, z: cz + dz }, sitter, other: { x: tx - TERRACE_CHAIR, z: cz + dz, rot: Math.PI / 2, y: 0.08 + CHAIR_SEAT } })
+      block(tx, cz + dz, 2 * TERRACE_CHAIR + 0.5, 2.0)
     }
     prop('pottedPlant', tx - 1.9, cz - 3, { s: 2.4 })
     prop('pottedPlant', tx + 1.9, cz + 3, { s: 2.4 })
@@ -540,5 +552,5 @@ export function dressPlaces(layout, floor) {
   }
 
   queue.caf = cafQueue
-  return { group, obstacles, vendorTaps, spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, vendorTaps, isMoving: (a) => movers.some((m) => m.avatar === a), spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }
