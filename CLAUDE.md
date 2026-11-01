@@ -64,6 +64,20 @@ TESTS: automatic checks (foot vs ground, hip vs seat, body vs mattress, no overl
 FINISH LINE (412x915, normal speed): M1 Quad walk 20 s; M2 sit on Quad bench, caf chair, lecture bench, library chair; M3 bed, sleep, get up; M4 walk into wall, bed, table; M5 eat together (beside you, sits, walks back); M6 every outfit has shoes; M7 crowded Quad 30 s. Save screenshots + videos in docs/sprints/motion/ with report.md, push, STOP.
 Status: the Motion sprint is DONE and pushed (M1-M7 all pass). Report: docs/sprints/motion/report.md. Wait for the owner's next focus; don't start one. Where motion lives: src/world/avatar3d.js (gait calibration and clip rate, carryFeet, live sole points, fitSeat, liePose/layDown, slump, mzansiBodies test hook), companion/returners/hitsSolid in src/world/scene.js, room furniture blocks in src/world/rooms.js, boxPath in src/world/nav.js. Motion tests: tests/e2e/motion.spec.js with --workers=1.
 
+# CURRENT SPRINT: MOTION, ROUND 2 (owner, 1 Nov). Motion and camera framing of bodies only. Everything else goes to docs/backlog.md.
+The owner played it: motion does NOT pass yet.
+1. SIDEWAYS MOONWALKING: the body never moves more than ~15 degrees from where it faces. On sharp turns, slow down or turn on the spot first. Player, NPCs and friends.
+2. FEET: every person's soles on the ground at all times, including NPCs far from the camera.
+3. STAIRS: walking up and down the lecture venue steps, feet land on each step. No sinking into steps.
+4. TRANSITIONS: sitting down, standing up, getting into and out of bed, and showering use real animations with feet planted. Sitting is unhurried: approach, turn, lower onto the seat. No floating, no spinning in the shower (shower animation, or a short fade with the sound of water).
+5. ARRIVING: walking to a tapped place, especially in Eye view, goes straight there and stops cleanly. No drifting, no sliding away on arrival.
+6. TAP PRECISION: tapping a place takes you exactly to it: Mam' Gugu's tuck shop -> the back of her queue; the Quad -> the Quad. Only taps clearly beside a place go elsewhere.
+7. COLLISIONS: outdoor furniture and doors too. The bus stop bench is a seat (walk up, sit or stand beside it), doors open before you pass, nobody clips through frames.
+8. HEADS IN FRAME: whenever the camera frames people (talking, sitting, studying, eating, the lecture), all heads fully visible in every view, especially Eye. The camera is never inside a head, a tree or a wall. Fix the bench shot where a seated student looks headless.
+AUTOMATIC CHECKS every frame: crab angle < 15 deg while walking; soles within 2 cm of ground or step for everyone visible; sit/stand/bed/shower transitions: feet move < 3 cm, no unanimated rise or spin; arrival within 0.5 m of the tapped target, no sliding after stopping; head box fully inside the view in every framing shot, in Top, Sims and Eye.
+FINISH LINE (412x915, normal speed, a video for each, all videos at the top of report.md): M1 zig-zag across the Quad with sharp turns, no sideways sliding. M2 up and down the SMIG steps, feet on each step. M3 into bed, sleep, get up, shower: natural and planted. M4 sit and stand at a caf chair, library chair, Quad bench and the bus stop bench: unhurried. M5 Eye view, tap Mam' Gugu's tuck shop: straight to the back of the queue, stop cleanly. M6 through the res door and a lecture venue door: the door opens, no clipping. M7 a conversation, studying and eating, each in Top, Sims and Eye: all heads visible.
+Save everything in docs/sprints/motion2/, push, then STOP and report.
+
 # START HERE (handoff for a new session, 31 Oct 2026)
 State: Sprint 1 is DONE and pushed (up to 3d7a85b). Report and screenshots: docs/sprints/sprint1/report.md. Do NOT start Sprint 2 until the owner sends it; wait for the owner's next message.
 Every list below is finished (newest first): Sprint 1 completion, speed rules, owner + player test (items 1-7), the Quaternius list (items 1-10, spec section 7 a-h), and the earlier plans. Only the "ON HOLD" item (off-campus residence names) and the "Still open" notes in the sprint report remain.
