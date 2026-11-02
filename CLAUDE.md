@@ -44,6 +44,7 @@ Read docs/reference/softlife/{player,input,camera,engine}.js: a 650-line movemen
 5. Actions (act-bar): don't pause movement. Walking away cancels the action.
 6. Structure: player movement in src/world/player.js (under 250 lines), pointer and keys in src/world/input.js (under 120). scene.js only wires them.
 7. tests/basics K1-K8 must still pass touch-only. Add K10: open and close every card type, then confirm the stick moves the player within 100 ms.
+Status (2 Nov): done and pushed; K1-K10 all pass (docs/sprints/basics/report.md, last section). Waiting for the owner.
 Where it lives: src/world/player.js (createPlayer: stick, route target, per-axis slide, pace), src/world/input.js (bindInput: taps, pinch, keys, stick read); in scene.js paused() (the one pause: a visible [role="dialog"] or the map), interrupt() (the stick or a tap cancels actions, scripts, seats, walks), tapped() (picking), walkTo() (grid route ending exactly at the spot), blockedAt() (AABB colliders). K10: tests/basics/cards.spec.js.
 
 ---

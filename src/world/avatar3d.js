@@ -1020,10 +1020,11 @@ export function poseAvatar(group, walking, time) {
   let moved = last ? Math.hypot(group.position.x - last.x, group.position.z - last.z) : 0
   // Never sideways: a walker's body turns towards where they're going, and they only
   // move along the way they face. On a sharp turn they slow down or turn on the spot
-  // first, so the step never points more than CRAB away from the body.
+  // first, so the step never points more than CRAB away from the body. (Not the
+  // player, data.leads: player.js moves them at once and turns them as they go.)
   const upright = data.pose !== 'sit' && data.pose !== 'lie' && data.pose !== 'dance'
   data.crab = 0
-  if (data.rigged && upright && walking && !data.sitMove && last && moved > 1e-4 && moved < 2 && dt > 0) {
+  if (data.rigged && upright && walking && !data.leads && !data.sitMove && last && moved > 1e-4 && moved < 2 && dt > 0) {
     const want = Math.atan2(group.position.x - last.x, group.position.z - last.z)
     if (data.yaw === undefined) data.yaw = want
     const off = wrap(want - data.yaw)

@@ -61,7 +61,7 @@ export function createPlayer({ blocked }) {
   }
 
   return {
-    attach(group) { body = group; finish('cancelled'); stick = null },
+    attach(group) { body = group; group.userData.leads = true; finish('cancelled'); stick = null },
     // A walk through points (a route from the grid, ending where you tapped).
     // opts: pace (m/s, default by trip length), near (arrival distance), solid (collide
     // with props; scripted walks onto seats pass false), done(how).

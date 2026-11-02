@@ -42,3 +42,5 @@ Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in 
 - Collisions are plain axis-aligned boxes now (src/world/player.js): a bench or table at an angle blocks its whole square, so the player stops or slides a little further from it than before. The oriented-box pass in bodies.js still keeps bodies out of the real shapes.
 - A scripted walk (onto a seat, a queue spot) goes through props (solid: false) and ends within 5 cm of its mark instead of being pulled onto it.
 - Standing up by pushing the stick while seated or in bed snaps to standing (no stand-up animation); the Stand up button still plays it.
+- The player no longer turns on the spot before a sharp turn (Motion round 2, M1): player.js moves at once and the body turns at dt*12, so for a fraction of a second on a sharp turn the player walks a little sideways. NPCs still turn first. Motion round 2's crab check (< 15 degrees) will fail for the player on sharp turns.
+- On a slow machine (5-7 fps) a long frame can still swallow a tap now and then (K4 counted 1 in 5 chats); a phone at 60 fps shouldn't.

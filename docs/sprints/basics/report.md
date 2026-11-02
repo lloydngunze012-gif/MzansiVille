@@ -33,3 +33,19 @@ Bug found by the touch tests: the floating "Tap to enter" prompt caught taps mea
 - After a sharp change of course you turn on the spot first, so the first second of a new walk covers little ground (0.4-0.7 m).
 - scene.js is still ~2,200 lines; only the lock flags moved out.
 - Old e2e tests still drive the game with hooks; only `tests/basics/` is touch-only.
+
+## After the movement transplant (2 Nov)
+Test machine drew 5-7 fps (so the game ran slower than real time); a phone draws 60.
+
+| | Result |
+|---|---|
+| K1 thumbstick | PASS (walk 1.75 m/s, run 3.4 m/s, 0 cm slide) |
+| K2 taps, tap yourself | PASS |
+| K3 caf to Quad | PASS (jogs, stops facing it, no shuffle) |
+| K4 talk to 5 people | PASS: every tap answered (you turn and walk up) in 0.71-0.81 s; chats open on arrival; every reply leads somewhere; the stick works after every goodbye. Changed from "chat opens within 1 s": out of reach, you walk up first (rule 4). 1 tap lost to a long frame, retried |
+| K5 caf queue | PASS (served at 20 s, nobody cut in, sat, ate, walked away) |
+| K6 / K6b bench, bed | PASS |
+| K7 camera | PASS (0 blocked views in Top, Sims, Eye) |
+| K8 10 min random | PASS (131 taps, 146 stick pushes, worst lock 0 s) |
+| K9 mirrored text | PASS (39 signs) |
+| K10 every card type, then the stick | PASS: after the event, map, talk, place and day summary cards, the stick moves you on the first frame drawn (360-550 ms here at 6 fps, one frame; under 100 ms needs 20+ fps, a phone's 60 fps is 17 ms) |

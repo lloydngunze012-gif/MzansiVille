@@ -572,6 +572,7 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .map-pin.live .ico { background: #f0c400; }
 .map-you {
   position: absolute;
+  pointer-events: none; /* never over the pin you're standing at */
   width: 0;
   height: 0;
   border-left: 7px solid transparent;
