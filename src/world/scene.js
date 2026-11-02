@@ -15,7 +15,8 @@ import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
-import { bindCampusInput } from './interact.js'
+import { bindInput } from './input.js'
+import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
 import { createStick, touchDevice } from './stick.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
@@ -23,19 +24,10 @@ import { collidersOf } from './colliders.js'
 import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
 import { reportError } from '../errors.js'
 import { createCampusMap } from './map.js'
-import { boxBlocked, boxPath, cellCenter, cellOf, findPath, followStep, nearestOpen, pointBlocked } from './nav.js'
+import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { SPEED, ms } from '../speed.js'
 
-// A brisk walk (m/s): the walk clip plays at the speed you really move. Trips longer
-// than JOG_FROM are a jog (the run clip, played slower), up to JOG_MAX.
-const WALK = 1.75
-const JOG = 3.4
-const JOG_FROM = 15
-const JOG_MAX = 4.5
-// How fast to go for a trip this long: a brisk walk, or a jog for anything past 15 m
-// (Skip is there for the longest trips).
-const paceFor = (len) => (len <= JOG_FROM ? WALK : Math.min(JOG_MAX, Math.max(JOG, len / 14)))
 const host = document.getElementById('world')
 
 let renderer
@@ -55,11 +47,6 @@ let frame = 0
 let visible = false
 let builtId = ''
 let spawnedKey = ''
-let route = []
-let routeGoal = null
-let arrive = null
-let stuck = 0
-let steering = null
 let forcedSteer = null // tests: hold the stick in one direction (mzansiSteer)
 let walking = false
 let clock = 0
@@ -72,7 +59,6 @@ let actionCommit = null
 let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
 let pad = null // the phone thumbstick (stick.js)
-let snapTo = null
 let gateDay = ''
 let guide = null
 let guideFrom = null
@@ -140,9 +126,7 @@ function lectureArrive() {
   currentRun.lectureRoute = false
   currentRun.lectureCard = true
   clearGuide()
-  route = []
-  routeGoal = null
-  arrive = null
+  mover.stop()
   window.dispatchEvent(new CustomEvent('mzansi-lecture-arrive'))
   return true
 }
@@ -150,7 +134,7 @@ function lectureArrive() {
 function updateGuide() {
   if (!player || !campus) return
   const door = lectureDoor()
-  if (lectureDue() && ps.open && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
+  if (lectureDue() && !paused() && !acting && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
   if (!currentRun?.lectureRoute) { if (guide) clearGuide(); return }
   if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide()
   for (const item of guide.children) {
@@ -160,7 +144,6 @@ function updateGuide() {
   const ring = guide.getObjectByName('lecture-marker')
   if (ring) ring.material.opacity = 0.6 + Math.sin(clock * 4) * 0.3
 }
-let speed = WALK
 const raycaster = new THREE.Raycaster()
 const screenPoint = new THREE.Vector3()
 
@@ -245,8 +228,8 @@ function ensureRenderer() {
   ps = createPlayerState({ host, onExit: leaveState, alive: stateAlive })
   mapUi = createCampusMap(host)
   // (the map is an order: whatever you were doing, you leave it and go)
-  mapUi.setHandler((x, z) => { ps.leave('map'); walkTo(x, z) })
-  mapUi.setGo((id) => { ps.leave('map'); goTo(id) })
+  mapUi.setHandler((x, z) => { interrupt(); walkTo(x, z) })
+  mapUi.setGo((id) => { interrupt(); goTo(id) })
 
   hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
   ambient = new THREE.AmbientLight(0xfff1dc, 0.25)
@@ -270,32 +253,7 @@ function ensureRenderer() {
     pad = createStick(host, { onPress: stopHere })
     document.body.classList.add('has-stick')
   }
-  input = bindCampusInput(renderer.domElement, {
-    camera,
-    cameraRig: rig,
-    raycaster,
-    pad,
-    onSelf: tappedSelf,
-    worldOn: () => visible && host.dataset.on === '1',
-    blocked: () => !ps.open,
-    pickables: () => ({
-      buildings: campus ? [campus.buildings] : [],
-      ground: campus ? [campus.ground] : [],
-      people: everyone(),
-      vendors: campus?.dressing.vendorTaps || [],
-    }),
-    onPerson: (avatar) => startTalk(avatar),
-    onVendor: (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a) },
-    onGround: (x, z) => walkTo(x, z),
-    onBuilding: (id) => approach(id),
-    onStick: (x, z, run) => {
-      route = []
-      routeGoal = null
-      arrive = null
-      snapTo = null
-      steering = { x, z, run }
-    },
-  })
+  input = bindInput(renderer.domElement, { cameraRig: rig, pad, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
   window.addEventListener('keydown', onWorldKey)
@@ -305,7 +263,7 @@ function ensureRenderer() {
   window.addEventListener('mzansi-help', () => { if (visible) showTour(true) })
   window.addEventListener('mzansi-act', (event) => beginAction(event.detail))
   // Used by tests and the map: walk to a building's door and enter it.
-  window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string' && ps.open) approach(event.detail) })
+  window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string') approach(event.detail) })
 }
 
 function resize() {
@@ -346,18 +304,49 @@ function activePlaces(district, run) {
   return ids
 }
 
+// The one pause: movement stops only while a card or sheet is open (a chat, a place,
+// an event, the map, the day summary). Nothing else ever holds the stick or taps.
+function paused() {
+  if (mapUi?.isOpen()) return true
+  // (on screen: a sheet slid away below the screen as its action starts doesn't count)
+  for (const el of document.querySelectorAll('[role="dialog"]')) {
+    const r = el.getBoundingClientRect()
+    if (r.width && r.height && r.top < window.innerHeight - 4 && r.bottom > 4) return true
+  }
+  return false
+}
+// The player moves (the stick, a tap somewhere): whatever was playing out stops. An
+// action, a scripted move, a walk to a place or a person, a seat: all cancelled.
+function interrupt() {
+  if (actionLeft > 0) {
+    actionLeft = 0
+    actionCommit = null
+    host.querySelector('.act-bar').hidden = true
+  }
+  scriptMove?.resolve()
+  scriptMove = null
+  if (running) running.quit()
+  if (!ps.open) ps.leave('moved')
+  endGoing()
+  const d = player?.userData
+  if (d && (d.pose === 'sit' || d.pose === 'lie' || d.sitMove)) {
+    d.pose = 'stand'
+    d.sitMove = null
+    d.recline = 1
+    d.seatFloor = undefined
+    player.rotation.x = 0
+    player.position.y = 0
+  }
+}
 // Stop on the spot: the stick was touched, or you tapped yourself.
 function stopHere() {
-  if (!player || !ps.open) return
-  route = []
-  routeGoal = null
-  arrive = null
-  snapTo = null
+  if (!player) return
+  mover.stop()
   endGoing()
   if (player.userData.pose === 'run') player.userData.pose = 'stand'
 }
 // Is this screen point on the player (feet to head, a body's width)?
-function tappedSelf(x, y) {
+function onSelf(x, y) {
   if (!player || !camera) return false
   const rect = renderer.domElement.getBoundingClientRect()
   const at = (h) => {
@@ -371,35 +360,67 @@ function tappedSelf(x, y) {
   const top = Math.min(feet.y, head.y) - 8
   const bottom = Math.max(feet.y, head.y) + 8
   const mid = (feet.x + head.x) / 2
-  if (y < top || y > bottom || Math.abs(x - mid) > half) return false
-  stopHere()
-  return true
+  return y >= top && y <= bottom && Math.abs(x - mid) <= half
 }
-
-function walkTo(x, z, done) {
-  if (!campus || !player) return
-  const goalCell = nearestOpen(campus.grid, { x, z })
-  routeGoal = cellCenter(goalCell.c, goalCell.r)
-  const start = nearestOpen(campus.grid, player.position)
-  route = findPath(campus.grid, start, goalCell)
-  if (route.length && Math.hypot(route[0].x - player.position.x, route[0].z - player.position.z) < 0.8) route.shift()
-  arrive = done || null
-  stuck = 0
-  // A brisk walk, or a jog past 15 m (map Skip for the longest trips).
-  speed = paceFor(routeLength())
-  if (['stand', 'run', undefined].includes(player.userData.pose)) player.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'
-  host.dataset.walkSeconds = (routeLength() / speed).toFixed(1)
-}
-
-function routeLength() {
-  let len = 0
-  let from = player.position
-  for (const p of route) {
-    len += Math.hypot(p.x - from.x, p.z - from.z)
-    from = p
+// A tap on the world: yourself (stop), a person (talk), a vendor's stall (her queue),
+// a building (go in), or the ground (walk there).
+function tapped(point, x, y) {
+  if (!player || !campus) return
+  const hitOf = (hits, key) => {
+    for (let node = hits[0]?.object; node; node = node.parent) if (node.userData?.[key]) return node
+    return null
   }
-  return len
+  if (onSelf(x, y)) { window.mzansiLastTap = { kind: 'self' }; stopHere(); return }
+  raycaster.setFromCamera(point, camera)
+  const person = hitOf(raycaster.intersectObjects(everyone(), true).filter((hit) => hit.object.name === 'hit'), 'personId')
+  if (person) { window.mzansiLastTap = { kind: 'person', id: person.userData.personId }; startTalk(person); return }
+  const stall = hitOf(raycaster.intersectObjects(campus.dressing?.vendorTaps || [], true), 'vendor')
+  if (stall) {
+    window.mzansiLastTap = { kind: 'vendor', id: stall.userData.vendor }
+    const a = everyone().find((p) => p.userData.personId === stall.userData.vendor)
+    if (a) startTalk(a)
+    return
+  }
+  const building = raycaster.intersectObjects([campus.buildings], true)[0]
+  const ground = raycaster.intersectObjects([campus.ground], true)[0]
+  const place = building && (!ground || building.distance <= ground.distance + 0.05) && hitOf([building], 'placeId')
+  if (place) { window.mzansiLastTap = { kind: 'building', id: place.userData.placeId }; interrupt(); approach(place.userData.placeId); return }
+  if (ground) { window.mzansiLastTap = { kind: 'ground', x: ground.point.x, z: ground.point.z }; interrupt(); walkTo(ground.point.x, ground.point.z) }
 }
+
+// Walk to a spot: a route round the buildings on the grid, ending exactly where asked.
+// done() runs on arrival (or held up close by: within a metre and a half of it; held
+// up anywhere with opts.always); the stick or another tap on the way cancels it. The
+// other opts go to the mover (pace, near, solid).
+function walkTo(x, z, done, opts = {}) {
+  if (!campus || !player) return
+  const start = nearestOpen(campus.grid, player.position)
+  const goal = nearestOpen(campus.grid, { x, z })
+  const points = findPath(campus.grid, start, goal)
+  if (points.length && Math.hypot(points[0].x - player.position.x, points[0].z - player.position.z) < 0.8) points.shift()
+  points.pop()
+  points.push(pointBlocked(campus.grid, x, z) ? cellCenter(goal.c, goal.r) : { x, z })
+  const pace = mover.walkTo(points, {
+    ...opts,
+    done: (how) => {
+      if (how === 'arrived' || (how === 'stalled' && (opts.always || Math.hypot(x - player.position.x, z - player.position.z) < 1.5))) done?.()
+    },
+  })
+  host.dataset.walkSeconds = (mover.remaining() / pace).toFixed(1)
+}
+// Is a body standing here inside something? Solid: every prop's outline, as a plain
+// box; otherwise only the map's edge and the buildings (scripted walks onto seats).
+// (BODY, a body's half-width, is defined with hitsSolid below)
+function blockedAt(x, z, solid = true) {
+  if (room && x > room.bounds.minX - 1 && x < room.bounds.maxX + 1 && z > room.bounds.minZ - 1 && z < room.bounds.maxZ + 1) {
+    return solid && room.blocks.concat(roomSolids).some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)
+  }
+  if (!solid) return pointBlocked(campus.grid, x, z)
+  if ((boxesNear(x, z) || []).some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)) return true
+  const cell = cellOf(x, z)
+  return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
+}
+const mover = createPlayer({ blocked: blockedAt })
 
 // Go to a place (from either map): walk there and open its sheet on arrival.
 // While you walk, "Skip there" jumps you to the door; the clock moves on.
@@ -416,8 +437,7 @@ function goTo(id) {
     if (!going) return
     const far = Math.hypot(going.door.x - player.position.x, going.door.z - player.position.z)
     window.dispatchEvent(new CustomEvent('mzansi-travel-skip', { detail: { minutes: Math.max(1, Math.round(far / 12)) } }))
-    route = []
-    arrive = null
+    mover.stop()
     player.position.set(going.door.x, player.position.y, going.door.z)
     const id2 = going.id
     endGoing()
@@ -441,7 +461,8 @@ function approach(id, onArrive) {
   const dist = Math.hypot(door.x - player.position.x, door.z - player.position.z)
   const there = () => { faceTo = { x: building.x, z: building.z }; onArrive?.(); openPlace(id) }
   if (dist < 2.2) there()
-  else walkTo(door.x, door.z, there)
+  // (held up on the way: the place opens where you stopped, never nothing)
+  else walkTo(door.x, door.z, there, { always: true })
 }
 // Arrived: turn on the spot to face the place (the body turns, the feet stay put).
 let faceTo = null
@@ -465,46 +486,6 @@ function nearestDoor() {
 function enterNearest() {
   const near = nearestDoor()
   if (near && near.dist < 2.2) openPlace(near.building.id)
-}
-
-function repath() {
-  if (!routeGoal) {
-    route = []
-    return
-  }
-  const start = nearestOpen(campus.grid, player.position)
-  const goal = nearestOpen(campus.grid, routeGoal)
-  route = findPath(campus.grid, start, goal)
-  if (route.length) route.shift()
-}
-
-function follow(dt) {
-  if (!route.length) {
-    if (player.userData.pose === 'run') player.userData.pose = 'stand'
-    if (arrive) {
-      const done = arrive
-      arrive = null
-      done()
-    }
-    return false
-  }
-  const step = followStep(campus.grid, { x: player.position.x, z: player.position.z }, route, speed * dt)
-  if (step.blocked) {
-    stuck += 1
-    if (stuck >= 6) {
-      stuck = 0
-      repath()
-    }
-    return true
-  }
-  stuck = 0
-  const dx = step.position.x - player.position.x
-  const dz = step.position.z - player.position.z
-  player.position.x = step.position.x
-  player.position.z = step.position.z
-  route = step.route
-  if (dx || dz) player.rotation.y = Math.atan2(dx, dz)
-  return true
 }
 
 // ---------- Talking to people ----------
@@ -608,13 +589,14 @@ let talk = null
 // Tapping someone: walk up to them (a walk like any other: tap elsewhere and it's off),
 // then the chat opens and the player is 'talking' until goodbye.
 function startTalk(avatar) {
-  if (!player || !ps.open) return
+  if (!player || talk) return
   const id = avatar.userData.personId
   // Vendors serve the queue: from outside the line, you are sent to the back of it.
   if ((id === 'auntie_pinky' || id === 'mam_gugu') && window.mzansiVendorReady !== id) {
     window.dispatchEvent(new CustomEvent('mzansi-vendor-tap', { detail: { id } }))
     return
   }
+  interrupt()
   const walker = crowd?.people.find((p) => p.avatar === avatar)
   // (a walker waits for you to come up; they carry on if you go elsewhere)
   if (walker && !walker.sitting) { walker.wait = Math.max(walker.wait || 0, 4); walker.resume = Boolean(walker.route?.length) }
@@ -645,7 +627,7 @@ function startTalk(avatar) {
     closeShot = overShoulder(player.position, avatar.position)
   }
   const open = () => {
-    if (talk || !ps.open) return
+    if (talk) return
     if (walker) walker.talking = true
     talk = { avatar, id, walker }
     host.dataset.talking = id
@@ -656,19 +638,17 @@ function startTalk(avatar) {
     if (avatar.userData.pose !== 'sit') avatar.userData.pose = 'talk'
     // The card first; the camera shot (a few dozen sight lines) on the next frame.
     window.dispatchEvent(new CustomEvent('mzansi-talk', { detail: { id } }))
-    if (!route.length) requestAnimationFrame(() => { if (talk?.avatar === avatar && !route.length) face() })
+    requestAnimationFrame(() => { if (talk?.avatar === avatar) face() })
   }
-  if (Math.hypot(tx - player.position.x, tz - player.position.z) > 0.5) {
-    const reached = () => { snapTo = { x: tx, z: tz }; setTimeout(() => { if (talk?.avatar === avatar) face() }, ms(250)) }
-    walkTo(tx, tz, reached)
-    // (a walk up, not a jog)
-    speed = Math.min(speed, WALK)
-    if (player.userData.pose === 'run') player.userData.pose = 'stand'
-    // (held up on the way: talk from where you are)
-    setTimeout(() => { if (arrive === reached) { route = []; arrive = null; if (talk?.avatar === avatar) face() } }, ms(5000))
+  // Out of reach: walk up to them (a walk, not a jog) and the chat opens on arrival
+  // (or wherever something holds you up). The stick or another tap calls it off.
+  if (Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z) > TALK_REACH) {
+    walkTo(tx, tz, open, { pace: WALK, near: 0.3, always: true })
+    return
   }
   open()
 }
+const TALK_REACH = 2.6
 // The chat is over (goodbye, or an action that ends it): the camera comes back, the
 // person carries on, and the player is free.
 function endTalkHere() {
@@ -717,9 +697,7 @@ function nearestPlace() {
 // Put the player back at a place's door, standing, nothing half-done.
 function respawnAt(b) {
   const door = b ? doorPoint(b) : { x: 0, z: 6 }
-  route = []
-  arrive = null
-  snapTo = null
+  mover.stop()
   scriptMove = null
   player.rotation.x = 0
   player.userData.pose = 'stand'
@@ -764,7 +742,7 @@ function watch() {
 }
 setInterval(watch, 3000)
 window.mzansiWalkTo = (x, z) => walkTo(x, z)
-window.mzansiWalkPace = () => ({ speed: +speed.toFixed(2), route: +routeLength().toFixed(1), pose: player?.userData.pose })
+window.mzansiWalkPace = () => ({ speed: +mover.pace.toFixed(2), route: +mover.remaining().toFixed(1), pose: player?.userData.pose })
 // Tests (nobody inside furniture): how deep any part of a body is inside a chair,
 // table, bench, counter or wall near them (box parts exactly, model parts by their
 // boxes), and for a seated body, which way it faces against the chair under it.
@@ -983,10 +961,8 @@ window.addEventListener('mzansi-talk-end', (event) => {
     }
     host.dataset.walkAway = 'walking'
     if (goal) {
-      walkTo(goal.x, goal.z, () => { host.dataset.walkAway = 'done'; rig.turnBehind(player.rotation.y) })
-      speed = WALK * 0.6
-      if (player.userData.pose === 'run') player.userData.pose = 'stand'
-      if (!route.length) host.dataset.walkAway = 'done'
+      walkTo(goal.x, goal.z, () => { host.dataset.walkAway = 'done'; rig.turnBehind(player.rotation.y) }, { pace: WALK * 0.6 })
+      if (!mover.hasTarget) host.dataset.walkAway = 'done'
     } else host.dataset.walkAway = 'done'
     return
   }
@@ -1094,10 +1070,10 @@ function activityApi() {
       while (actionLeft > 0) await new Promise((r) => setTimeout(r, 100))
       return new Promise((resolve) => {
       let done = false
-      const finish = () => { if (done) return; done = true; snapTo = { x, z }; setTimeout(resolve, ms(250)) }
-      walkTo(x, z, finish)
-      if (pace) { speed = pace; if (player.userData.pose === 'run' && pace <= WALK * 1.4) player.userData.pose = 'stand' }
-      if (!route.length) finish()
+      const finish = () => { if (done) return; done = true; resolve() }
+      // (onto the exact spot, through the props: a scene's walk ends on a seat or a mark)
+      walkTo(x, z, finish, { pace, near: 0.05, solid: false })
+      if (!mover.hasTarget) finish()
       // (ends when you stop moving for a while: blocked by something or someone; going
       // round a counter can take you further from the end for a bit, which is fine;
       // judged on movement, not a clock, so a slow phone still gets there)
@@ -1107,7 +1083,7 @@ function activityApi() {
       const check = () => {
         if (done || running !== run) return
         if (Math.hypot(player.position.x - last.x, player.position.z - last.z) > 0.15) { last = { x: player.position.x, z: player.position.z }; since = performance.now() }
-        if (performance.now() - since > ms(2500)) { route = []; arrive = null; finish(); return }
+        if (performance.now() - since > ms(2500)) { mover.stop(); finish(); return }
         setTimeout(check, 300)
       }
       check()
@@ -1243,7 +1219,7 @@ function activityApi() {
     glide: async (x, z, pace = 1.6) => {
       const inside = (p) => room && p.x > room.bounds.minX && p.x < room.bounds.maxX && p.z > room.bounds.minZ && p.z < room.bounds.maxZ
       const pts = inside(player.position) && inside({ x, z }) ? boxPath(room.blocks, room.bounds, player.position, { x, z }) : [{ x, z }]
-      snapTo = null
+      mover.stop()
       for (const p of pts) await new Promise((resolve) => { scriptMove = { x: p.x, z: p.z, pace, resolve } })
     },
     // Walk up to a seat (beside it if a table is in front), then settle into it.
@@ -1271,16 +1247,12 @@ function activityApi() {
       // (the last step goes in among the furniture: beside the chair, between it and the table)
       player.userData.noCollide = 'in'
       player.userData.noCollideAt = performance.now()
-      // (the last walk's pull onto its exact end point would hold you back from the seat)
-      snapTo = null
-      route = []
+      mover.stop()
       // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
       await new Promise((resolve) => { scriptMove = { x: stand.x, z: stand.z, pace: 0.9, resolve } })
     },
     teleport: (x, z, rot) => {
-      route = []
-      arrive = null
-      snapTo = null
+      mover.stop()
       player.position.set(x, 0, z)
       if (rot !== undefined) player.rotation.y = rot
     },
@@ -1577,7 +1549,7 @@ function companionTick(dt) {
   const fz = Math.cos(player.rotation.y)
   if (companion.side === undefined) companion.side = (a.position.x - player.position.x) * fz - (a.position.z - player.position.z) * fx > 0 ? 1 : -1
   // (aimed a moment ahead while you walk, so they keep level instead of trailing)
-  const lead = walking ? Math.max(speed, WALK) * 0.3 : 0
+  const lead = walking ? Math.max(mover.speed, WALK) * 0.3 : 0
   let target = { x: player.position.x + fz * 0.85 * companion.side + fx * lead, z: player.position.z - fx * 0.85 * companion.side + fz * lead }
   if (hitsSolid(target.x, target.z)) {
     let gap = 1.2
@@ -1599,7 +1571,7 @@ function companionTick(dt) {
   if (moving) {
     // Keep pace with you, a little quicker to close a gap, easing in as they arrive.
     // Something in the way (a counter, a table): take the route grid round it.
-    const pace = Math.min(Math.max(speed, WALK) * 1.5, 0.8 + d * 2.2)
+    const pace = Math.min(Math.max(mover.speed, WALK) * 1.5, 0.8 + d * 2.2)
     if (lineBlocked(a.position, target)) {
       companion.reroute = (companion.reroute || 0) - dt
       if (!companion.route?.length || companion.reroute <= 0) {
@@ -1759,7 +1731,7 @@ function queueBusy() {
 
 function beginAction(detail) {
   if (!visible || !detail?.commit) return
-  if (!ps.open || acting) return
+  if (acting) return
   if (detail.actionId && campus) {
     runActivity(detail)
     return
@@ -1771,15 +1743,11 @@ function beginAction(detail) {
       host.dataset.walk = 'walking'
       host.dataset.doorx = door.x.toFixed(2)
       host.dataset.doorz = door.z.toFixed(2)
-      // (a walk like any other: tap somewhere else on the way and it's off)
+      // (a walk like any other: the stick or a tap somewhere else on the way calls it off)
       walkTo(door.x, door.z, () => {
-        // Finish on the door anchor itself, not just the nearest grid cell.
-        snapTo = { x: door.x, z: door.z }
         host.dataset.walk = 'arrived'
         startBar(detail)
       })
-      // Action walks: a brisk walk, or a jog past 15 m, like any trip.
-      speed = paceFor(routeLength())
       return
     }
   }
@@ -1868,9 +1836,7 @@ function respawn(district, run) {
   host.dataset.spawn = gate ? 'gate' : 'home'
   host.dataset.facing = player.rotation.y.toFixed(2)
   scene.add(player)
-  route = []
-  routeGoal = null
-  arrive = null
+  mover.attach(player)
   clearGuide()
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'
@@ -1965,7 +1931,7 @@ window.mzansiNear = () => { const p = player.position; return { at: [+p.x.toFixe
 // Tests: every collider (kind, middle, half-size, turn) and how many of each kind.
 window.mzansiColliders = () => (campus?.colliders || []).map((c) => ({ kind: c.kind, cx: +c.cx.toFixed(2), cz: +c.cz.toFixed(2), hx: +c.hx.toFixed(2), hz: +c.hz.toFixed(2), rot: +c.rot.toFixed(2) }))
 // Tests: stand the player somewhere, facing a point.
-window.mzansiPlace = (x, z, fx, fz) => { if (!player) return; route = []; arrive = null; snapTo = null; player.position.set(x, 0, z); player.rotation.y = Math.atan2(fx - x, fz - z); player.userData.lastPos?.set(x, 0, z) }
+window.mzansiPlace = (x, z, fx, fz) => { if (!player) return; mover.stop(); player.position.set(x, 0, z); player.rotation.y = Math.atan2(fx - x, fz - z); player.userData.lastPos?.set(x, 0, z) }
 const BODY = 0.3
 function hitsSolid(x, z, r = BODY) {
   const solids = campus.layout.obstacles.concat(campus.dressing?.obstacles || [])
@@ -1973,21 +1939,6 @@ function hitsSolid(x, z, r = BODY) {
   const cell = cellOf(x, z)
   return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
 }
-function tryStep(dx, dz) {
-  const x = player.position.x + dx
-  const z = player.position.z + dz
-  // Already inside a solid's outline (pushed there in a crowd, or up from a seat): any
-  // step goes, so the stick walks you out instead of refusing every way. (The collision
-  // pass, bodies.js, still keeps you out of the furniture itself.)
-  if (!hitsSolid(x, z) || hitsSolid(player.position.x, player.position.z)) {
-    player.position.x = x
-    player.position.z = z
-    return
-  }
-  if (!hitsSolid(x, player.position.z)) player.position.x = x
-  else if (!hitsSolid(player.position.x, z)) player.position.z = z
-}
-
 // Nothing hides the player: a sign, a menu board, a wall or a tree between the camera
 // and you turns see-through, and solid again once it's out of the way.
 const seeRay = new THREE.Raycaster()
@@ -2029,8 +1980,9 @@ function seeThrough() {
 // The place you are heading for keeps its name tag at any distance.
 function destination() {
   if (currentRun?.lectureRoute) return lectureVenue()
-  if (!routeGoal || !campus) return ''
-  const hit = campus.layout.buildings.find((b) => Math.hypot(routeGoal.x - b.x, routeGoal.z - (b.maxZ + 5)) < 4)
+  const goal = mover.target
+  if (!goal || !campus) return ''
+  const hit = campus.layout.buildings.find((b) => Math.hypot(goal.x - b.x, goal.z - (b.maxZ + 5)) < 4)
   return hit?.id || ''
 }
 
@@ -2136,14 +2088,32 @@ function tick(now) {
     if (frameErrors > 90) failed('the 3D view keeps failing', error)
   }
 }
+// An activity's own step (onto a seat, round a room's furniture): straight there; a step
+// someone or something holds back ends where it is.
+function scripted(m, dt) {
+  const dx = m.x - player.position.x
+  const dz = m.z - player.position.z
+  const d = Math.hypot(dx, dz)
+  const step = m.pace * dt
+  if (d < (m.best ?? Infinity) - 0.01) { m.best = d; m.stall = 0 } else m.stall = (m.stall || 0) + dt
+  if (m.stall > 0.8 || d <= step) {
+    if (d <= step) { player.position.x = m.x; player.position.z = m.z }
+    scriptMove = null
+    m.resolve()
+    return false
+  }
+  player.position.x += (dx / d) * step
+  player.position.z += (dz / d) * step
+  player.rotation.y = Math.atan2(dx, dz)
+  return true
+}
 function frameBody(now) {
   const dt = (Math.min(0.05, (now - (tick.last || now)) / 1000 || 0)) * SPEED
   tick.last = now
-  steering = null
-  if (ps.open) input.stick()
-  if (forcedSteer && ps.open) steering = forcedSteer
+  const hold = paused()
   walking = false
   if (player && campus) {
+    // The act bar is only a timer: it never holds you, and walking off calls it off.
     if (actionLeft > 0) {
       actionLeft -= dt
       const bar = host.querySelector('.act-bar span')
@@ -2158,44 +2128,19 @@ function frameBody(now) {
         commit?.()
         if (before && currentRun) showFloater(before, currentRun.stats)
       }
-    } else if (scriptMove) {
-      const m = scriptMove
-      const dx = m.x - player.position.x
-      const dz = m.z - player.position.z
-      const d = Math.hypot(dx, dz)
-      const step = m.pace * dt
-      // (a step that someone or something holds back ends where it is)
-      if (d < (m.best ?? Infinity) - 0.01) { m.best = d; m.stall = 0 } else m.stall = (m.stall || 0) + dt
-      if (m.stall > 0.8) { scriptMove = null; m.resolve() } else if (d <= step) { player.position.x = m.x; player.position.z = m.z; scriptMove = null; m.resolve() } else {
-        player.position.x += (dx / d) * step
-        player.position.z += (dz / d) * step
-        player.rotation.y = Math.atan2(dx, dz)
-        walking = true
-      }
-    } else if (steering) {
-      // The stick pushed all the way (or Shift): a run; otherwise a brisk walk.
-      const pace = steering.run ? JOG : WALK
-      speed = pace
-      if (['stand', 'run', undefined].includes(player.userData.pose)) player.userData.pose = steering.run ? 'run' : 'stand'
-      tryStep(steering.x * pace * dt, steering.z * pace * dt)
-      player.rotation.y = Math.atan2(steering.x, steering.z)
-      walking = true
-    } else if (follow(dt)) {
-      walking = true
     }
-    if (snapTo) {
-      const sx = snapTo.x - player.position.x
-      const sz = snapTo.z - player.position.z
-      const d = Math.hypot(sx, sz)
-      const k = Math.min(1, (speed * dt) / Math.max(d, 1e-6))
-      player.position.x += sx * k
-      player.position.z += sz * k
-      if (d > 0.02) { walking = true; player.rotation.y = Math.atan2(sx, sz) } else snapTo = null
+    // Two inputs: the stick (it wins, and calls off whatever was playing out), then a
+    // tap target. Only an open card or sheet pauses them.
+    if (!hold) {
+      const push = input.stick() || forcedSteer
+      if (push) interrupt()
+      mover.setStick(push?.x, push?.z, push?.run)
+      if (scriptMove && !push) walking = scripted(scriptMove, dt)
+      else walking = mover.update(dt)
     }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) ps.busy(0.5)
-    else if (!route.length && !steering && player.userData.pose === 'run') player.userData.pose = 'stand'
-    pad?.lock(!ps.open)
+    else if (player.userData.pose === 'run') player.userData.pose = 'stand'
     if (pad && frames % 20 === 0) placeMinimap()
     if (ps.open) {
       const now = walking ? (player.userData.pose === 'run' ? 'running' : 'walking') : 'free'
@@ -2204,7 +2149,7 @@ function frameBody(now) {
     // Eye view: standing, you turn to where you look; walking, you look where you go
     // (the body leads, so you never walk sideways). Seated, lying, mid-activity or in a
     // chat, the body keeps the way it was put (looking round never swivels you on a chair).
-    if (faceTo && (walking || steering)) faceTo = null
+    if (faceTo && walking) faceTo = null
     if (faceTo && !walking) {
       player.rotation.y = Math.atan2(faceTo.x - player.position.x, faceTo.z - player.position.z)
       if (rig.mode === 'eye') rig.facing = player.rotation.y

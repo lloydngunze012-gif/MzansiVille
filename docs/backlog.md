@@ -37,3 +37,8 @@ Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in 
 
 ## People (later)
 - People: conversation actions should unlock with closeness. Strangers get directions / walk with me; acquaintances get eat / study together; friends get everything.
+
+## Movement transplant (2 Nov): logged, not fixed
+- Collisions are plain axis-aligned boxes now (src/world/player.js): a bench or table at an angle blocks its whole square, so the player stops or slides a little further from it than before. The oriented-box pass in bodies.js still keeps bodies out of the real shapes.
+- A scripted walk (onto a seat, a queue spot) goes through props (solid: false) and ends within 5 cm of its mark instead of being pulled onto it.
+- Standing up by pushing the stick while seated or in bed snaps to standing (no stand-up animation); the Stand up button still plays it.

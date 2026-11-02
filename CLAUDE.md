@@ -35,7 +35,20 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
-# CURRENT: CORE REBUILD + BASICS (owner, 1 Nov). FEATURE FREEZE. Crowds is paused.
+# CURRENT SPRINT: MOVEMENT TRANSPLANT (owner, 2 Nov). Time-box 2 hours. Push after each rule. Report lines removed from scene.js and K-results, then STOP and wait.
+Read docs/reference/softlife/{player,input,camera,engine}.js: a 650-line movement core from a prototype that feels clean on a phone. Make MzansiVille's movement work the same way. Nothing new; this is removal and simplification. Rules, in priority order:
+1. Exactly one pause condition. Player movement pauses only while a card or sheet is open (talk, place card, event, map, summary). Delete pad.lock, the ps.open gate on input.stick(), and every other lock on movement. Actions, scripted moves, snaps, tours and pending actions never block the stick or ground taps; stick input cancels them instead.
+2. Player.update has two inputs: stick, then tap target, else idle. Stick wins and clears the target. Target speed min(WALK, max(1.2, d*4)), arrive at d < 0.2, heading lerps toward travel direction at dt*12. If a frame moves the player under 0.5 mm toward a target, drop the target (never walks in place).
+3. Collision: per-axis slide (try X, then Z) against the existing colliders as plain axis-aligned boxes. Sliding along walls beats millimetre precision; log any regression in backlog, don't fix now.
+4. Tap: pointer up within 16 px and 420 ms of pointer down, nothing else. Marker or person out of range: walk there and remember it; open on arrival. Tap self: stop. Remove camera drag on touch; keep pinch zoom.
+5. Actions (act-bar): don't pause movement. Walking away cancels the action.
+6. Structure: player movement in src/world/player.js (under 250 lines), pointer and keys in src/world/input.js (under 120). scene.js only wires them.
+7. tests/basics K1-K8 must still pass touch-only. Add K10: open and close every card type, then confirm the stick moves the player within 100 ms.
+Where it lives: src/world/player.js (createPlayer: stick, route target, per-axis slide, pace), src/world/input.js (bindInput: taps, pinch, keys, stick read); in scene.js paused() (the one pause: a visible [role="dialog"] or the map), interrupt() (the stick or a tap cancels actions, scripts, seats, walks), tapped() (picking), walkTo() (grid route ending exactly at the spot), blockedAt() (AABB colliders). K10: tests/basics/cards.spec.js.
+
+---
+
+# CORE REBUILD + BASICS (owner, 1 Nov). FEATURE FREEZE. Crowds is paused.
 Owner's verdict: we are going in circles. Code review findings:
 1. No thumbstick on phones: the stick is keyboard-only (interact.js). Phone players can only tap.
 2. Controls are locked by six separate flags in scene.js (map open, actionLeft, acting, talk, pendingAction, the tour). If any one sticks, ground taps are silently ignored while the HTML gold markers still work. That is the "can only walk by tapping the yellow circle" bug and the frozen grey-bar bug.

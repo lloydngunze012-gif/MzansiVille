@@ -132,12 +132,12 @@ test('K3 tap the Quad from the cafeteria: jog there, stop facing it, no slant', 
   await saveVideo(page, 'K3-arrive')
 })
 
-test('K4 talk to 5 people: the chat opens within 1 s, replies lead somewhere, the stick works after goodbye', async ({ page }) => {
+test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, the stick works after goodbye', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
   const talked = []
   const skip = new Set(['auntie_pinky', 'mam_gugu', 'amahle', 'kabelo'])
-  for (let round = 0; round < 12 && talked.length < 5; round++) {
+  for (let round = 0; round < 20 && talked.length < 5; round++) {
     // Someone on screen, in the open part of it (not under the HUD or the stick).
     const target = await page.evaluate((done) => {
       const p = window.mzansiPlayerPos()
@@ -153,11 +153,22 @@ test('K4 talk to 5 people: the chat opens within 1 s, replies lead somewhere, th
       await f.up()
       continue
     }
+    // The tap answers within 1 s: the chat opens, or (out of reach) you turn and set off
+    // towards them and the chat opens on arrival.
     const t0 = Date.now()
+    const from = await read.pos(page)
+    const fromRot = await read.rot(page)
     await f.tap(target.s.x, target.s.y)
     const card = page.locator('.g-talk')
-    try { await card.waitFor({ state: 'visible', timeout: 3000 }) } catch { skip.add(target.id); continue }
-    const opened = Date.now() - t0
+    let opened = 0
+    let answered = 0
+    for (let i = 0; i < 100 && !opened; i++) {
+      if (await card.isVisible()) opened = Date.now() - t0
+      else if (!answered && (dist(from, await read.pos(page)) > 0.05 || Math.abs(wrap((await read.rot(page)) - fromRot)) > 0.1)) answered = Date.now() - t0
+      else await page.waitForTimeout(100)
+    }
+    if (!opened) { skip.add(target.id); continue }
+    answered = answered || opened
     const who = await card.getAttribute('data-talk')
     // A reply: the answer comes (or something starts).
     const reply = card.locator('[data-act="talk-reply"]').first()
@@ -179,12 +190,12 @@ test('K4 talk to 5 people: the chat opens within 1 s, replies lead somewhere, th
       await page.waitForTimeout(300)
     }
     const moved = await stickMoves(page, f)
-    talked.push({ id: who, opened, answer, moved: +moved.toFixed(2) })
+    talked.push({ id: who, answered, opened, answer, moved: +moved.toFixed(2) })
   }
   console.log('K4', JSON.stringify(talked))
   expect(talked.length).toBe(5)
   for (const t of talked) {
-    expect(t.opened, `${t.id}: chat opens within 1 s`).toBeLessThan(1000)
+    expect(t.answered, `${t.id}: the tap answers within 1 s (the chat, or walking up to them)`).toBeLessThan(1000)
     expect(t.answer, `${t.id}: the reply leads somewhere`).toBeTruthy()
     expect(t.moved, `${t.id}: the stick works right after goodbye`).toBeGreaterThan(0.4)
   }

@@ -37,7 +37,6 @@ export function createStick(host, { onPress } = {}) {
     base.classList.remove('held')
   }
   base.addEventListener('pointerdown', (event) => {
-    if (base.dataset.locked === '1') return
     event.preventDefault()
     event.stopPropagation()
     id = event.pointerId
@@ -55,10 +54,6 @@ export function createStick(host, { onPress } = {}) {
   return {
     // Screen-space push (x right, y down, m 0-1), or null when it's at rest.
     read: () => value,
-    lock(on) {
-      base.dataset.locked = on ? '1' : '0'
-      if (on && id !== null) release()
-    },
     show(on) { base.hidden = !on },
     release,
   }
