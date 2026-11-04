@@ -871,7 +871,10 @@ function sitPose(group, onGround) {
 // forward a little on the way, like a person lowering themselves. Standing up is
 // the same in reverse. poseAvatar starts one when the pose changes between 'stand'
 // and 'sit' (callers just set the pose and the seat position).
-export const SIT_MOVE = { turn: 3, lower: 1.0, lean: 0.22, reach: 1.6 } // (lean: forward over the knees, not into a desk)
+// turn: rad/s turning round in front of the seat (plus `settle` s); lower / rise: seconds
+// onto the seat / back up (owner, 4 Nov: sitting and getting up were too slow at 3 rad/s,
+// 1 s and 1 s). lean: forward over the knees, not into a desk.
+export const SIT_MOVE = { turn: 5, settle: 0.12, lower: 0.6, rise: 0.55, lean: 0.22, reach: 1.6 }
 const toLocal = (group, bone) => group.worldToLocal(worldOf(bone))
 // The standing stance for this seat (kept with the seat fit): where the ankles
 // plant, in group space, so that seated they rest where the fit put them.
@@ -1084,7 +1087,7 @@ function sitMotion(group, model, move, dt) {
       restLegs(group)
     }
     const rig = sitRig(group, model, data.sitFit)
-    const span = 0.2 + Math.abs(move.from.yaw) / SIT_MOVE.turn
+    const span = SIT_MOVE.settle + Math.abs(move.from.yaw) / SIT_MOVE.turn
     move.turn = Math.min(1, move.turn + dt / span)
     const e = move.turn * move.turn * (3 - 2 * move.turn)
     model.rotation.y = move.from.yaw * (1 - e)
@@ -1106,7 +1109,7 @@ function sitMotion(group, model, move, dt) {
     data.sitPhase = 'turn'
     return
   }
-  move.k = Math.max(0, Math.min(1, move.k + (move.dir * dt) / SIT_MOVE.lower))
+  move.k = Math.max(0, Math.min(1, move.k + (move.dir * dt) / (move.dir > 0 ? SIT_MOVE.lower : SIT_MOVE.rise)))
   data.sitPhase = move.dir > 0 ? 'lower' : 'rise'
   sitBetween(group, model, move.k)
   if (move.dir > 0 && move.k >= 1) { data.sitMove = null; data.sitPhase = 'seated' }
@@ -1666,7 +1669,7 @@ function clipSitMotion(group, model, move, dt) {
   const c = clipSeat(group, model)
   if (move.dir > 0 && move.turn < 1) {
     // Turn round on the spot, shuffling onto the clip's starting spot.
-    const span = 0.2 + Math.abs(move.from.yaw) / SIT_MOVE.turn
+    const span = SIT_MOVE.settle + Math.abs(move.from.yaw) / SIT_MOVE.turn
     move.turn = Math.min(1, move.turn + dt / span)
     const e = move.turn * move.turn * (3 - 2 * move.turn)
     clipSit(group, model, 'Sitting_Enter', 0, 0, { x: move.from.x + (c.stand.x - move.from.x) * e, z: move.from.z + (c.stand.z - move.from.z) * e, yaw: move.from.yaw * (1 - e) })

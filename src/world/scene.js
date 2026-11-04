@@ -1166,12 +1166,12 @@ function activityApi() {
       player.userData.seatFloor = 0
       // Sit down on the edge first (it plays out: turn round, lower), then lie back.
       await settledOf(player)
-      await new Promise((resolve) => setTimeout(resolve, ms(300)))
-      await recline({ ...edge }, { x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, 1.1, false)
+      await new Promise((resolve) => setTimeout(resolve, ms(150)))
+      await recline({ ...edge }, { x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, 0.8, false)
     },
     getUp: async (bed, edge) => {
       ps.set('seated')
-      await recline({ x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, { ...edge }, 1.1, true)
+      await recline({ x: bed.x, y: bed.lieY, z: bed.z, rot: bed.rot }, { ...edge }, 0.8, true)
       standUp()
       player.position.set(edge.x, edge.y, edge.z)
       player.rotation.y = edge.rot
@@ -1297,8 +1297,9 @@ function activityApi() {
       player.userData.noCollide = 'in'
       player.userData.noCollideAt = performance.now()
       mover.stop()
-      // Up to the spot in front of the seat; sitting down turns round and lowers (avatar3d).
-      await new Promise((resolve) => { scriptMove = { x: stand.x, z: stand.z, pace: 0.9, resolve } })
+      // Up to the spot in front of the seat (a step, not a shuffle); sitting down turns
+      // round and lowers (avatar3d).
+      await new Promise((resolve) => { scriptMove = { x: stand.x, z: stand.z, pace: 1.4, resolve } })
     },
     teleport: (x, z, rot) => {
       mover.stop()
