@@ -2,6 +2,8 @@
 
 A mobile-first life sim in the browser, set at the University of Mzansi (UMzansi), a fictional South African university anyone can enrol in. Students live in seven houses (Thekwini, Peak, Oakwinds, Braam, Jakaranda, Kingsway and Mzansi House, the international house), defined in `data/campusville/houses.json`. A district is a folder of data; the character keeps their stats and identity when a later district opens. UMzansi (`/data/campusville`, the folder keeps its old name) is the only district in this build. It is near Durban, dialling code 031.
 
+Live at https://softlifeza.vercel.app (the old address, mzansiville.vercel.app, redirects there).
+
 Play starts as a guest. Progress sits in `localStorage` under `mzansiville.v1`. On day 3 the game asks you to save with Google or an email magic link and merges that guest into the account.
 
 ## Play
@@ -37,7 +39,7 @@ Open http://localhost:5173. Guest play works with the Supabase variables empty.
 ## Supabase
 
 1. Create a project.
-2. Authentication → Providers: turn on Email (magic link) and Google. Add `http://localhost:5173` and the Vercel origin as redirect URLs.
+2. Authentication → Providers: turn on Email (magic link) and Google. Add `http://localhost:5173`, `https://softlifeza.vercel.app` and `https://mzansiville.vercel.app` as redirect URLs; the Site URL is `https://softlifeza.vercel.app`.
 3. SQL editor: run `supabase/schema.sql`, then `supabase/seed.sql`.
 4. Copy the project URL and the anon key into `.env`:
 

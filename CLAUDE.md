@@ -44,6 +44,8 @@ Status (4 Nov): done and pushed; all 8 presence checks pass (docs/sprints/presen
 
 ---
 
+# DOMAIN (owner, 4 Nov): the game is at https://softlifeza.vercel.app (softlife.vercel.app was taken). mzansiville.vercel.app is kept on the Vercel project as a 308 redirect to it (project domain setting), so old links work. The URL lives in index.html (og:url, og:image, twitter:image) and src/config.js PUBLIC_URL (share cards and share links). Deploy as before: `npx vercel deploy --prod --yes`.
+
 # REPO SIZE (owner, 4 Nov): test videos and screenshots (docs/sprints/**/*.webm, *.png) are never committed: they stay on this machine and reports name them by file. History was rewritten without them (git-filter-repo). dist/ is ignored.
 
 # BUILD PLAN (owner, 4 Nov): docs/design/build-plan.md, read with the retention spec. One piece per sprint, in order; stop after each piece for the owner's phone verdict. Done = works on the owner's phone, measured fps reported, nothing earlier broke. No feature outside the current piece (anything else to docs/backlog.md); no movement pass/fail below 20 fps.
