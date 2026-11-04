@@ -1,16 +1,34 @@
 // Creator icons drawn from the real 3D models (the same clothes, hair and body as
-// in the game): one small offscreen renderer, one picture per look, cached.
+// in the game): one small offscreen renderer, one picture per look, cached in memory
+// and on the phone (so the creator opens with its pictures already there).
 // Outfits and bodies show the whole student; hair shows head and shoulders.
 import * as THREE from 'three'
-import { createAvatar, poseAvatar } from '../world/avatar3d.js'
+import { appearNow, createAvatar, poseAvatar } from '../world/avatar3d.js'
 
 const W = 120
 const H = 200
+const STORE = 'mzansiville.thumbs.v2' // (v2: v1 pictures were drawn mid fade-in, see-through)
+const KEEP = 60 // pictures kept on the phone
 let renderer = null
 let scene = null
 let camera = null
 const cache = new Map()
 let chain = Promise.resolve()
+let stored = null
+
+function storedPictures() {
+  if (stored) return stored
+  try { stored = JSON.parse(localStorage.getItem(STORE) || '{}') } catch { stored = {} }
+  return stored
+}
+function keep(key, url) {
+  const all = storedPictures()
+  delete all[key]
+  all[key] = url
+  const keys = Object.keys(all)
+  for (const old of keys.slice(0, Math.max(0, keys.length - KEEP))) delete all[old]
+  try { localStorage.setItem(STORE, JSON.stringify(all)) } catch { /* full or blocked: memory only */ }
+}
 
 function setup() {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })
@@ -33,6 +51,8 @@ async function render(avatar, kind) {
   av.userData.pose = 'stand'
   poseAvatar(av, false, 0.4)
   poseAvatar(av, false, 0.45)
+  // (people fade in as they arrive in the world; a picture shows them solid)
+  appearNow(av)
   scene.add(av)
   av.updateMatrixWorld(true)
   // Frame it: the whole student (feet to the top of the hair) or head and shoulders.
@@ -50,13 +70,28 @@ async function render(avatar, kind) {
   return url
 }
 
-// One at a time (they share the renderer).
-export function thumbFor(avatar, kind) {
+// A picture already made (memory or the phone), or null.
+export function thumbNow(avatar, kind) {
+  return storedPictures()[`${kind}|${JSON.stringify(avatar)}`] || null
+}
+
+// One at a time (they share the renderer). wanted(): still on screen when its turn
+// comes? (A look nobody on screen wants any more, the player having changed away from
+// it, is skipped, not drawn.)
+export function thumbFor(avatar, kind, wanted) {
   const k = `${kind}|${JSON.stringify(avatar)}`
+  const done = storedPictures()[k]
+  if (done) return Promise.resolve(done)
   if (!cache.has(k)) {
-    const job = chain.then(() => render(avatar, kind))
-    chain = job.catch(() => null)
-    cache.set(k, job)
+    const entry = { wants: [] }
+    entry.job = chain.then(() => {
+      if (entry.wants.length && !entry.wants.some((w) => w())) { cache.delete(k); return null }
+      return render(avatar, kind).then((url) => { keep(k, url); return url })
+    })
+    chain = entry.job.catch(() => null)
+    cache.set(k, entry)
   }
-  return cache.get(k)
+  const entry = cache.get(k)
+  if (wanted) entry.wants.push(wanted)
+  return entry.job
 }

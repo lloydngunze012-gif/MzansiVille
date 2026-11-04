@@ -527,6 +527,11 @@ function fadeIn(group, dt) {
   }
 }
 
+// Fully there now, no fade (a still picture of them: the creator's icons).
+export function appearNow(group) {
+  if (group.userData.materials) fadeIn(group, 1)
+}
+
 // Hide the stand-in parts that other code bolted on (Zanele's arms) once rigged.
 // (Hidden like the stand-in itself: shown only if the model never loads.)
 export function markStandIn(node) {

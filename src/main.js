@@ -286,22 +286,32 @@ function syncPreview(viewState) {
 }
 
 // Creator icons: outfit, hair and body pictures rendered from the real 3D models.
+// A picture made before shows at once; while a new one is drawn, the chip keeps the
+// last picture it had (never blank); the selected chips are drawn first.
 let thumbsPromise = null
+const lastThumb = new Map() // part|id -> the last picture that chip showed
 function hydrateThumbs() {
   const chips = [...app.querySelectorAll('.cc-chip.th[data-part]')].filter((chip) => ['outfit', 'hair', 'body'].includes(chip.dataset.part))
   if (!chips.length) return
   if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
-  thumbsPromise.then(({ thumbFor }) => {
-    for (const chip of chips) {
+  const show = (chip, url) => {
+    const box = chip.isConnected && chip.querySelector('.cc-thumb')
+    if (!box || !url) return
+    box.innerHTML = `<img src="${url}" alt="">`
+    box.classList.add('is3d')
+    chip.dataset.thumb = '3d'
+  }
+  for (const chip of chips) show(chip, lastThumb.get(`${chip.dataset.part}|${chip.dataset.id}`))
+  thumbsPromise.then(({ thumbFor, thumbNow }) => {
+    const order = [...chips].sort((a, b) => Number(b.classList.contains('on') || b.getAttribute('aria-pressed') === 'true') - Number(a.classList.contains('on') || a.getAttribute('aria-pressed') === 'true'))
+    for (const chip of order) {
       const part = chip.dataset.part
       const look = { ...draft.avatar, [part]: chip.dataset.id }
-      thumbFor(look, part === 'hair' ? 'hair' : 'body').then((url) => {
-        const box = chip.isConnected && chip.querySelector('.cc-thumb')
-        if (!box || !url) return
-        box.innerHTML = `<img src="${url}" alt="">`
-        box.classList.add('is3d')
-        chip.dataset.thumb = '3d'
-      })
+      const kind = part === 'hair' ? 'hair' : 'body'
+      const ready = thumbNow(look, kind)
+      const put = (url) => { if (!url) return; lastThumb.set(`${part}|${chip.dataset.id}`, url); show(chip, url) }
+      if (ready) { put(ready); continue }
+      thumbFor(look, kind, () => chip.isConnected).then(put)
     }
   }).catch((error) => console.error(error))
 }
