@@ -2,7 +2,7 @@
 // A video of each in docs/sprints/basics/. K8 (10 minutes of random play) is random.spec.js.
 // npx playwright test tests/basics --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
-import { PHONE, OUT, student, finger, nearMe, fingerWalk, read, saveVideo, tapOn, dist, wrap, DEG } from './touch.js'
+import { PHONE, OUT, student, finger, nearMe, fingerWalk, groundAhead, read, saveVideo, tapOn, dist, wrap, DEG } from './touch.js'
 
 test.use(PHONE)
 test.describe.configure({ timeout: 300000 })
@@ -17,44 +17,51 @@ async function touchMoves(page, f) {
   return dist(a, b)
 }
 
-test('K1 touch: a finger on the ground walks you at once, held and slid it steers, let go and you stop there', async ({ page }) => {
+test('K1 tap to move: tap the ground and walk there, tap again on the way without a stutter, stop on the spot', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
-  const start = await read.pos(page)
-  // The finger goes down on the ground ahead and stays down: you set off before it lifts.
-  const p0 = await nearMe(page, 0, -200)
-  await f.down(p0.x, p0.y)
-  await page.waitForTimeout(900)
-  const setOff = dist(start, await read.pos(page))
-  const walkPose = await read.pose(page)
-  const speeds = [(await body(page)).speed]
-  // Slide it round in an arc: the walk follows the finger.
-  const track = [start]
-  const arc = [[140, -120], [160, 60], [40, 180], [-120, 120], [-150, -60]]
-  for (const [dx, dy] of arc) {
-    await f.move(Math.min(392, Math.max(20, p0.x + dx)), Math.min(760, Math.max(300, p0.y + 200 + dy)))
-    await page.waitForTimeout(700)
-    speeds.push((await body(page)).speed)
-    track.push(await read.pos(page))
-  }
-  await f.up()
-  const goal = await page.evaluate(() => window.mzansiLastTap)
-  // Let go: you walk on to where the finger was and stop there.
+  // In the page: when the finger lands, and the first frame at full walking speed.
+  await page.evaluate(() => {
+    const k = { down: 0, full: 0 }
+    window.__k1 = k
+    document.querySelector('#world canvas').addEventListener('pointerdown', () => { if (!k.down) k.down = performance.now() }, { once: true })
+    const watch = () => {
+      if (k.down && !k.full && window.mzansiWalkPace().now >= 0.95 * 2.3) k.full = performance.now()
+      if (!k.full) requestAnimationFrame(watch)
+    }
+    requestAnimationFrame(watch)
+  })
+  const first = await groundAhead(page, 6)
+  await f.tap(first.s.x, first.s.y)
+  await page.waitForTimeout(1500)
+  const walkClip = await page.evaluate(() => { const b = window.mzansiBodies('campus', 'player')[0]; return { clip: b.clip, rate: b.rate, natural: b.natural, speed: b.speed } })
+  // Tap a new spot on the way: the walk carries on to it (no stop and start).
+  const second = await groundAhead(page, 4)
+  await page.evaluate(() => {
+    const k = window.__k1
+    k.min = 99
+    k.watching = true
+    const tick = () => { if (!k.watching) return; k.min = Math.min(k.min, window.mzansiWalkPace().now); requestAnimationFrame(tick) }
+    requestAnimationFrame(tick)
+  })
+  await f.tap(second.s.x, second.s.y)
+  await page.waitForTimeout(300)
+  // (where the walk ends: the tapped spot, or the nearest open one if it's against a prop)
+  const goal = (await page.evaluate(() => window.mzansiWalkPace().goal)) || second
+  await page.waitForTimeout(700)
+  const retarget = await page.evaluate(() => { window.__k1.watching = false; return window.__k1.min })
   await expect.poll(() => state(page), { timeout: 20000, intervals: [100] }).toBe('free')
   const stopped = await read.pos(page)
   await page.waitForTimeout(1200)
   const after = await read.pos(page)
-  const spread = Math.max(...track.map((p) => dist(p, start)))
-  const turns = track.slice(2).map((p, i) => Math.atan2(p.x - track[i + 1].x, p.z - track[i + 1].z))
-  console.log('K1', JSON.stringify({ setOff: +setOff.toFixed(2), walkPose, speeds, spread: +spread.toFixed(2), headings: turns.map((t) => Math.round(t * DEG)), slide: +dist(stopped, after).toFixed(3), state: await state(page) }))
-  expect(setOff, 'walking before the finger lifts').toBeGreaterThan(0.2)
-  expect(walkPose).toBe('stand') // (walking: the walk clip, not the run)
-  expect(spread, 'the finger took you round').toBeGreaterThan(1)
-  expect(new Set(turns.map((t) => Math.round(t * 2))).size, 'the walk turned with the finger').toBeGreaterThan(2)
+  const k = await page.evaluate(() => window.__k1)
+  const toFull = Math.round(k.full - k.down)
+  console.log('K1', JSON.stringify({ toFullMs: toFull, walkClip, retargetMinSpeed: retarget, tapOff: +dist(goal, second).toFixed(2), arrivedOff: +dist(stopped, goal).toFixed(2), slide: +dist(stopped, after).toFixed(3), state: await state(page) }))
+  expect(k.full, 'reached full walking speed').toBeGreaterThan(0)
+  expect(retarget, 'no stutter on a new tap').toBeGreaterThan(1.2)
+  expect(dist(stopped, goal), 'stopped where the walk was going').toBeLessThan(0.3)
   expect(dist(stopped, after), 'stopped on the spot').toBeLessThan(0.05)
-  expect(await state(page)).toBe('free')
-  void goal
-  await saveVideo(page, 'K1-touch')
+  await saveVideo(page, 'K1-tap')
 })
 
 test('K2 tap 5 ground spots in a row (mid-walk too), then tap yourself to stop', async ({ page }) => {

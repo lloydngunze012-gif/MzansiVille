@@ -1005,7 +1005,7 @@ function liftOf(data) {
 }
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 // Walks slower than this play the walk clip, faster ones the run (metres a second).
-const RUN_FROM = 2.3
+const RUN_FROM = 2.9 // (faster than this: the run clip; the walk is 2.3, the jog 4.0)
 const TURN = 10 // how quickly the body turns to face where it's going (per second)
 const TURN_MIN = 3 // ...but never slower than this, or faster than TURN_MAX (radians a second)
 const TURN_MAX = 9
@@ -1071,7 +1071,8 @@ export function poseAvatar(group, walking, time) {
   const idle = data.actions[CLIP.idle]
   if (idle) idle.timeScale = data.pose === 'lie' ? 0.25 : 1
   // The feet keep pace with the ground: the clip rate follows the real speed.
-  for (const [name, most] of [[CLIP.walk, 2], [CLIP.sprint, 3.4]]) {
+  // (the caps leave room for the 2.3 m/s walk and the jog up to 5.2 m/s)
+  for (const [name, most] of [[CLIP.walk, 3], [CLIP.sprint, 4.5]]) {
     const action = data.actions[name]
     const natural = data.gait?.[name]?.speed
     if (action && natural > 0.2) action.timeScale = moving ? Math.min(most, Math.max(0.55, data.speed / natural)) : 1

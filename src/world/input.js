@@ -5,10 +5,6 @@
 // building talks to them or goes in. Two fingers pinch to zoom; a mouse drag turns the
 // camera. WASD or the arrow keys walk, Shift runs.
 
-export function touchDevice() {
-  return window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0
-}
-
 const TAP_PX = 16
 const TAP_MS = 420
 const MOVE = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift']

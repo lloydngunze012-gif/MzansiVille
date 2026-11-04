@@ -15,7 +15,7 @@ import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
-import { bindInput, touchDevice } from './input.js'
+import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
@@ -57,7 +57,10 @@ let actionLeft = 0
 let actionCommit = null
 let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
-let touch = false // a phone: the minimap sits top right
+let stopButton = null // shown while you move: tap it and you stop, whatever was going on
+let frameFrom = null // where the player was before this frame's step
+let against = 0 // seconds walking at something without going anywhere
+let againstFrames = 0
 let gateDay = ''
 let guide = null
 let guideFrom = null
@@ -248,10 +251,23 @@ function ensureRenderer() {
   scene.add(sun)
 
   // Phones get a thumbstick (the minimap moves up to the top right).
-  if (touchDevice()) {
-    touch = true
-    document.body.classList.add('has-stick')
-  }
+  // The Stop button: bottom right while you move, above everything. It stops you from
+  // any state, a scene's walk or a queue walk too (that scene ends).
+  stopButton = document.createElement('button')
+  stopButton.type = 'button'
+  stopButton.className = 'stop-btn'
+  stopButton.setAttribute('aria-label', 'Stop')
+  stopButton.innerHTML = '<span>■</span>Stop'
+  stopButton.hidden = true
+  host.append(stopButton)
+  stopButton.addEventListener('pointerdown', (event) => {
+    event.preventDefault()
+    event.stopPropagation()
+    interrupt()
+    stopHere()
+    stopButton.hidden = true
+  })
+  stopButton.addEventListener('click', (event) => event.stopPropagation())
   input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, onTouch: touched, onSteer: steered, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
@@ -769,7 +785,7 @@ function watch() {
 }
 setInterval(watch, 3000)
 window.mzansiWalkTo = (x, z) => walkTo(x, z)
-window.mzansiWalkPace = () => ({ speed: +mover.pace.toFixed(2), route: +mover.remaining().toFixed(1), pose: player?.userData.pose })
+window.mzansiWalkPace = () => ({ goal: mover.target, now: +mover.speed.toFixed(2), speed: +mover.pace.toFixed(2), route: +mover.remaining().toFixed(1), pose: player?.userData.pose })
 // Tests (nobody inside furniture): how deep any part of a body is inside a chair,
 // table, bench, counter or wall near them (box parts exactly, model parts by their
 // boxes), and for a seated body, which way it faces against the chair under it.
@@ -1896,9 +1912,7 @@ function pinAbove(node, x, y, z) {
   // Below the HUD and the chips under it (the right-now row, the goal line).
   const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].map((el) => el.getBoundingClientRect().bottom)
   const top = (bars.length ? Math.max(...bars) : 120) + node.offsetHeight + 8
-  // (never over the minimap, top right on phones: keep left of it)
-  const mini = touch && host.querySelector('.minimap')?.getBoundingClientRect()
-  const right = mini && mini.width ? Math.min(host.clientWidth, mini.left - 6) : host.clientWidth
+  const right = host.clientWidth
   node.style.left = `${Math.min(right - half, Math.max(half, sx))}px`
   node.style.top = `${Math.max(top, sy)}px`
 }
@@ -2162,13 +2176,14 @@ function frameBody(now) {
       const push = input.stick() || forcedSteer
       if (push) interrupt()
       mover.setStick(push?.x, push?.z, push?.run, push?.mag)
+      frameFrom = { x: player.position.x, z: player.position.z }
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
     }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) ps.busy(0.5)
     else if (player.userData.pose === 'run') player.userData.pose = 'stand'
-    if (touch && frames % 20 === 0) placeMinimap()
+    if (stopButton) stopButton.hidden = !walking
     if (ps.open) {
       const now = walking ? (player.userData.pose === 'run' ? 'running' : 'walking') : 'free'
       if (ps.state !== now) ps.set(now)
@@ -2207,6 +2222,15 @@ function frameBody(now) {
     // (only while walking: standing still, you never slide; the crowd steps round you)
     // Nobody goes through anything or anyone (bodies.js), the player included.
     resolveBodies(campusBodies(), boxesNear)
+    // Walking to a spot but going nowhere once the collision pass has had its say
+    // (pressed against a stage or a counter): give up after half a second, never jog on
+    // the spot against it. (Half a second, or six frames on a phone that draws few.)
+    const gone = frameFrom ? Math.hypot(player.position.x - frameFrom.x, player.position.z - frameFrom.z) : 1
+    const pressed = mover.hasTarget && mover.speed > 0.3 && gone < mover.speed * dt * 0.2
+    against = pressed ? against + dt : 0
+    againstFrames = pressed ? againstFrames + 1 : 0
+    if (against > 0.5 || againstFrames >= 6) { mover.stop(); against = 0; againstFrames = 0 }
+    frameFrom = null
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
@@ -2260,14 +2284,6 @@ function frameBody(now) {
     frames = 0
     fpsStamp = now
   }
-}
-
-// With the thumbstick bottom left, the minimap sits top right, under the goal chip.
-function placeMinimap() {
-  const mini = host.querySelector('.minimap')
-  if (!mini) return
-  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].filter((el) => el.offsetParent).map((el) => el.getBoundingClientRect().bottom)
-  mini.style.top = `${Math.round((bars.length ? Math.max(...bars) : 110) + 8)}px`
 }
 
 function start() {

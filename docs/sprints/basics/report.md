@@ -69,3 +69,13 @@ Pushed and deployed one item at a time. Test laptop on battery (5-7 fps, the gam
 | 5 Camera | follow lag 4 (was 8) in Sims and Eye; Eye only turns with you while you cover ground (> 0.5 m/s), at half its old rate |
 | K1 | PASS | K11 / K7 | PASS |
 | K2 (taps) | not judged: on battery this laptop delivers a 60 ms tap 470-750 ms late, over the 420 ms tap limit, so every tap is dropped. Needs mains power or your phone |
+
+## Tap-to-move (4 Nov)
+Laptop on battery, 4-6 fps (the game runs at about a quarter of real time here).
+| | Result |
+|---|---|
+| K1 tap to move | PASS: full walking speed 1.36-1.48 s after the tap here (about 0.26 s of game time: 2.3 m/s at 9 m/s per second); a new tap on the way kept 2.2 m/s (no stutter); stopped 0.14 m from where the walk was going, 0 m slide |
+| K12 Stop | PASS: tapped at 3.3 m/s, standing still on the same frame (0 ms), 0.00 m from where Stop was tapped; the button hides |
+| K13 behind the stage | PASS: gives up after 1.25 s here (0.5 s or 6 frames), never pushes into it |
+| K2, K5, K10, K11b | PASS |
+| Walk clip | plays at 2.1-2.2x at 2.3 m/s (natural 1.0 m/s), no longer capped at 2x |

@@ -80,6 +80,21 @@ export async function fingerWalk(page, f, dx, dy, ms) {
   await page.waitForTimeout(ms)
 }
 
+// A ground point on screen this far (m) from the player, in an open direction the
+// camera can see (read only: where the finger should go).
+export async function groundAhead(page, metres) {
+  return page.evaluate((m) => {
+    const p = window.mzansiPlayerPos()
+    for (const a of [0, 0.4, -0.4, 0.8, -0.8, 1.3, -1.3, 2, -2, 2.7, -2.7, 3.1]) {
+      const x = p.x + Math.sin(Math.PI + a) * m
+      const z = p.z + Math.cos(Math.PI + a) * m
+      const s = window.mzansiScreenOf(x, z, 0)
+      if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 170 && s.y < 780) return { x, z, s }
+    }
+    return null
+  }, metres)
+}
+
 // Reads only.
 export const read = {
   pos: (page) => page.evaluate(() => window.mzansiPlayerPos()),

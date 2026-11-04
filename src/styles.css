@@ -616,7 +616,7 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
   }
   .toasts { width: min(280px, 70%); top: calc(52px + var(--safe-t)); }
   .summary-panel { max-height: 30dvh; }
-  .minimap { bottom: 76px; width: 120px; height: 120px; }
+  .minimap { bottom: 116px; width: 120px; height: 120px; } /* (above the camera buttons) */
   .minimap canvas { width: 120px; height: 120px; }
   .onboard { bottom: 210px; }
 }
@@ -905,6 +905,7 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .ps-leave{position:absolute;z-index:7;left:50%;transform:translateX(-50%);top:calc(150px + env(safe-area-inset-top));min-height:44px;padding:0 20px;border-radius:999px;border:2px solid #fff6e6;background:#c4372ef0;color:#fff6e6;font:800 15px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
 .ps-leave[hidden]{display:none}
 
-/* Phones: the minimap sits top right (bottom left stays clear for the thumb). */
-body.has-stick .minimap{left:auto;right:10px;bottom:auto;top:150px;width:96px;height:96px}
-body.has-stick .minimap canvas{width:96px;height:96px}
+/* Stop: bottom right while you move, thumb-sized, above everything (above Skip there). */
+#world .stop-btn{position:absolute;z-index:60;right:14px;bottom:calc(176px + env(safe-area-inset-bottom));width:76px;height:76px;border-radius:50%;border:3px solid #fff6e6;background:#d8342c;color:#fff;font:800 14px system-ui;display:grid;place-items:center;align-content:center;gap:0;box-shadow:0 6px 18px #0008;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+#world .stop-btn span{font-size:18px;line-height:1}
+#world .stop-btn[hidden]{display:none}
