@@ -7,6 +7,9 @@
 // than JOG_FROM are a jog (the run clip, played slower), up to JOG_MAX.
 export const WALK = 1.75
 export const JOG = 2.9
+// The phone's arrow pad: forward is a quicker walk, and a double tap a real run.
+export const ARROW_WALK = 2.2
+export const ARROW_RUN = 3.4
 const JOG_FROM = 15
 const JOG_MAX = 4.5
 const ARRIVE = 0.2 // close enough to a tapped spot
@@ -25,7 +28,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 // the edges of the map and the buildings, for scripted walks onto seats and spots)
 export function createPlayer({ blocked }) {
   let body = null
-  let stick = null // { x, z, run, mag } in world space, this frame
+  let stick = null // { x, z, run, mag, pace } in world space, this frame
   let route = [] // points to walk through; the last is the target
   let pace = WALK
   let near = ARRIVE
@@ -79,10 +82,10 @@ export function createPlayer({ blocked }) {
       return pace
     },
     stop() { finish('cancelled'); stick = null; speed = 0 },
-    // The stick this frame (null: let go), and how far it's pushed (0-1). It wins and
-    // clears the target.
-    setStick(x, z, run, mag = 1) {
-      stick = x || z ? { x, z, run, mag } : null
+    // The stick this frame (null: let go), how far it's pushed (0-1) or the pace asked
+    // for. It wins and clears the target.
+    setStick(x, z, run, mag = 1, pace) {
+      stick = x || z ? { x, z, run, mag, pace } : null
       if (stick && route.length) finish('cancelled')
     },
     get hasTarget() { return route.length > 0 },
@@ -101,7 +104,7 @@ export function createPlayer({ blocked }) {
       if (stick) {
         const m = Math.hypot(stick.x, stick.z)
         // (a little push, a slow walk; further out, faster; all the way, a run)
-        if (m > 0.001) { dir = { x: stick.x / m, z: stick.z / m }; want = stick.run ? JOG : WALK * Math.min(1, Math.max(0.35, stick.mag)) }
+        if (m > 0.001) { dir = { x: stick.x / m, z: stick.z / m }; want = stick.pace ?? (stick.run ? JOG : WALK * Math.min(1, Math.max(0.35, stick.mag))) }
       } else if (route.length) {
         let next = route[0]
         let d = Math.hypot(next.x - body.position.x, next.z - body.position.z)

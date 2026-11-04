@@ -1,5 +1,5 @@
-// K11: the arrows (and K11b: WASD) move you the way they point, as seen from the
-// camera. In the follow camera (Sims), walk right for 1.5 s: you go to the
+// K11b: WASD moves you the way it's pressed, as seen from the camera (K11, the arrows,
+// steer you instead). In the follow camera (Sims), walk right for 1.5 s: you go to the
 // camera's right, not its left; then left, forward and back. The camera's right is
 // worked out here from where it sits and looks (read only), never from moveRight.
 // npx playwright test tests/basics/strafe.spec.js --config playwright.edge.config.js --workers=1
@@ -18,19 +18,41 @@ async function cameraAxes(page) {
   return { f: { x: fx / n, z: fz / n }, r: { x: -fz / n, z: fx / n } }
 }
 
-test('K11 the arrows move you right, left, forward and back as seen from the camera', async ({ page }) => {
+// K11 for the arrows: up walks you the way you face; right turns you to your right and
+// left to your left (seen from behind you), 15 degrees a tap, never a spin.
+test('K11 the arrows: up walks the way you face, left and right turn you that way', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
-  expect(await page.evaluate(() => document.querySelector('#world').dataset.cam)).toBe('sims')
-  const results = await moves(page, async (sx, sy) => {
-    await arrows.walk(page, f, sx > 0 ? 'right' : sx < 0 ? 'left' : sy < 0 ? 'up' : 'down', 1500)
-  })
-  console.log('K11', JSON.stringify(results))
-  check(results)
-  await saveVideo(page, 'K11-strafe')
+  const out = {}
+  for (const side of ['right', 'left']) {
+    const r0 = await read.rot(page)
+    await arrows.turn(page, f, side, 2)
+    await page.waitForTimeout(1200)
+    const r1 = await read.rot(page)
+    // (seen from above: your right is a smaller heading, your left a bigger one)
+    const turned = Math.atan2(Math.sin(r1 - r0), Math.cos(r1 - r0)) * 180 / Math.PI
+    const a = await read.pos(page)
+    await arrows.walk(page, f, 1500)
+    await page.waitForTimeout(400)
+    const b = await read.pos(page)
+    const along = (b.x - a.x) * Math.sin(r1) + (b.z - a.z) * Math.cos(r1)
+    const across = Math.abs((b.x - a.x) * Math.cos(r1) - (b.z - a.z) * Math.sin(r1))
+    out[side] = { turned: +turned.toFixed(1), along: +along.toFixed(2), across: +across.toFixed(2) }
+  }
+  console.log('K11', JSON.stringify(out))
+  expect(out.right.turned, 'right turns you right (about 30 degrees for two taps)').toBeLessThan(-20)
+  // (a slow machine delivers the finger lift late, so a tap can turn a little more)
+  expect(out.right.turned).toBeGreaterThan(-50)
+  expect(out.left.turned, 'left turns you left').toBeGreaterThan(20)
+  expect(out.left.turned).toBeLessThan(50)
+  for (const side of ['right', 'left']) {
+    expect(out[side].along, `after turning ${side}: up walks the way you face`).toBeGreaterThan(0.2)
+    expect(out[side].across, 'not off to the side').toBeLessThan(out[side].along * 0.5)
+  }
+  await saveVideo(page, 'K11-arrows')
 })
 
-// The same with the keys (D, A, W, S): WASD and the arrows share one path.
+// The keys (D, A, W, S) move you as seen from the camera.
 test('K11b WASD moves you right, left, forward and back as seen from the camera', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const results = await moves(page, async (sx, sy) => {

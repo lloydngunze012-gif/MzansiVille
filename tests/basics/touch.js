@@ -66,7 +66,8 @@ export async function finger(page) {
   }
 }
 
-// The arrow pad: tap an arrow (twice quickly: run), the middle button stops.
+// The arrow pad: up walks forward the way you face (twice quickly: run), left and right
+// turn you 15 degrees a tap, down turns you round, the middle button stops.
 async function middleOf(page, sel) {
   const b = await page.locator(sel).boundingBox()
   return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
@@ -82,9 +83,14 @@ export const arrows = {
     const p = await middleOf(page, '.arrow-stop')
     await f.tap(p.x, p.y)
   },
-  // Walk (or run) one way for ms, then stop.
-  async walk(page, f, dir, ms, opts) {
-    await arrows.go(page, f, dir, opts)
+  // Turn: taps on left or right (or down: round).
+  async turn(page, f, dir, times = 1) {
+    const p = await middleOf(page, `.arrow[data-dir="${dir}"]`)
+    for (let i = 0; i < times; i++) { await f.tap(p.x, p.y); await page.waitForTimeout(120) }
+  },
+  // Walk (or run) forward for ms, then stop.
+  async walk(page, f, ms, opts) {
+    await arrows.go(page, f, 'up', opts)
     await page.waitForTimeout(ms)
     await arrows.stop(page, f)
   },

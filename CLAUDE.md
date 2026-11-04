@@ -35,7 +35,7 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
-# ARROW PAD (owner, 4 Nov): the phone thumbstick is replaced by four arrows (src/world/arrows.js). Tap or hold an arrow: walk that way, and keep walking after the finger lifts. Tap the same arrow twice quickly (350 ms): run. Stop: the middle button, tapping yourself, tapping anywhere on the world, walking into something, or any card opening. Tests use the arrows helper in tests/basics/touch.js.
+# ARROW PAD (owner, 4 Nov): the phone thumbstick is replaced by four arrows (src/world/arrows.js) and the player steers themself. Left/right: turn 15 degrees a tap, keep turning while held (about 120 degrees a second); down: turn round; neither moves you. Up: walk forward the way you face (2.2 m/s, ARROW_WALK in player.js) and keep walking after the finger lifts; up twice quickly (350 ms): run (3.4 m/s, ARROW_RUN) and keep running. Stop: the middle button, tapping yourself, tapping anywhere on the world, walking into something, or any card opening. Facing is held in scene.js (heading, turnBy, padPush). WASD stays camera-relative. Tests use the arrows helper in tests/basics/touch.js; K11 checks the steering, K11b WASD.
 
 # CURRENT SPRINT: MOVEMENT TRANSPLANT (owner, 2 Nov). Time-box 2 hours. Push after each rule. Report lines removed from scene.js and K-results, then STOP and wait.
 Read docs/reference/softlife/{player,input,camera,engine}.js: a 650-line movement core from a prototype that feels clean on a phone. Make MzansiVille's movement work the same way. Nothing new; this is removal and simplification. Rules, in priority order:

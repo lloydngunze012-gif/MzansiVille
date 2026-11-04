@@ -1,15 +1,15 @@
 // Pointer and keys for the campus, after the softlife prototype. A tap is a pointer up
 // within 16 px and 420 ms of its pointer down (a slow frame between the two doesn't
 // count), nothing else. Touch never drags the camera (two fingers pinch to
-// zoom); a mouse drag turns it. WASD or arrows walk, Shift runs; on a phone the arrow
-// pad (arrows.js) walks, or runs after a double tap.
+// zoom); a mouse drag turns it. WASD or arrows walk, Shift runs. (The phone's arrow
+// pad, arrows.js, steers the player itself: scene.js reads it.)
 
 const TAP_PX = 16
 const TAP_MS = 420
 const MOVE = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift']
 
 // onTap(ndc, clientX, clientY): a tap on the canvas. live(): the world is on screen.
-export function bindInput(canvas, { cameraRig, pad, onTap, live }) {
+export function bindInput(canvas, { cameraRig, onTap, live }) {
   const keys = new Set()
   const fingers = new Map()
   let down = null
@@ -76,30 +76,21 @@ export function bindInput(canvas, { cameraRig, pad, onTap, live }) {
 
   return {
     clearKeys() { keys.clear() },
-    // This frame's push, in world space ({ x, z, run, mag }), or null.
+    // This frame's keys, in world space ({ x, z, run, mag }), or null.
     stick() {
       if (!live()) return null
       let x = 0
       let z = 0
       let run = keys.has('shift')
-      let mag = 1 // how far the stick is pushed (keys: all the way)
-      const push = pad?.read()
-      if (push) {
-        x = push.x
-        z = push.y
-        mag = push.m
-        run = push.run
-      } else {
-        if (keys.has('w') || keys.has('arrowup')) z -= 1
-        if (keys.has('s') || keys.has('arrowdown')) z += 1
-        if (keys.has('a') || keys.has('arrowleft')) x -= 1
-        if (keys.has('d') || keys.has('arrowright')) x += 1
-      }
+      if (keys.has('w') || keys.has('arrowup')) z -= 1
+      if (keys.has('s') || keys.has('arrowdown')) z += 1
+      if (keys.has('a') || keys.has('arrowleft')) x -= 1
+      if (keys.has('d') || keys.has('arrowright')) x += 1
       if (!x && !z) return null
       const f = cameraRig.moveForward()
       const r = cameraRig.moveRight()
       const len = Math.hypot(x, z) || 1
-      return { x: (r.x * x - f.x * z) / len, z: (r.z * x - f.z * z) / len, run, mag }
+      return { x: (r.x * x - f.x * z) / len, z: (r.z * x - f.z * z) / len, run, mag: 1 }
     },
   }
 }

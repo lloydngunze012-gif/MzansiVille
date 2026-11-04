@@ -64,12 +64,12 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       await f.tap(30 + rnd() * 352, 230 + rnd() * 480)
       await page.waitForTimeout(400 + rnd() * 1800)
     } else {
-      // The arrows: a tap (sometimes two: a run) some way; check it moves you.
+      // The arrows: turn a little, then up (sometimes twice: a run); check it moves you.
       log.sticks += 1
-      const dirs = ['up', 'right', 'down', 'left']
-      const i = Math.floor(rnd() * 4)
+      const turns = Math.floor(rnd() * 7)
+      await arrows.turn(page, f, rnd() < 0.5 ? 'left' : 'right', turns)
       const before = await read.pos(page)
-      await arrows.go(page, f, dirs[i], { run: rnd() < 0.3 })
+      await arrows.go(page, f, 'up', { run: rnd() < 0.3 })
       await page.waitForTimeout(700 + rnd() * 1500)
       const after = await read.pos(page)
       // (the game answering: moving, or striding with the walk or run clip; on a slow
@@ -79,7 +79,8 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       const stNow = await read.state(page)
       if (dist(before, after) < 0.15 && !/Walk|Run/.test(answer || '') && ['free', 'walking', 'running'].includes(stNow)) {
         // Against a wall? Try the other way before calling it locked.
-        await arrows.go(page, f, dirs[(i + 2) % 4])
+        await arrows.turn(page, f, 'down')
+        await arrows.go(page, f, 'up')
         await page.waitForTimeout(1500)
         const back = await read.pos(page)
         const answer2 = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0]?.clip)

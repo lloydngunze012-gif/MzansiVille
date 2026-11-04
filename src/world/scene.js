@@ -16,7 +16,7 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { bindInput } from './input.js'
-import { createPlayer, WALK } from './player.js'
+import { ARROW_RUN, ARROW_WALK, createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
 import { createArrows, touchDevice } from './arrows.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
@@ -60,6 +60,7 @@ let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
 let pad = null // the phone arrow pad (arrows.js)
 let padStuck = 0 // seconds the arrows have walked you into something
+let heading = null // where the arrows have turned you (null: they haven't)
 let gateDay = ''
 let guide = null
 let guideFrom = null
@@ -251,10 +252,10 @@ function ensureRenderer() {
 
   // Phones get a thumbstick (the minimap moves up to the top right).
   if (touchDevice()) {
-    pad = createArrows(host)
+    pad = createArrows(host, { onTurn: turnBy })
     document.body.classList.add('has-stick')
   }
-  input = bindInput(renderer.domElement, { cameraRig: rig, pad, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
+  input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
   window.addEventListener('keydown', onWorldKey)
@@ -339,6 +340,23 @@ function interrupt() {
     player.position.y = 0
   }
 }
+// The arrows: left and right turn you (a little each tap, on and on while held), down
+// turns you round; up walks you forward the way you face (twice: a run).
+const TURN_RATE = 2.1 // radians a second while left or right is held (about 120 degrees)
+function turnBy(angle) {
+  if (!player) return
+  interrupt()
+  if (!pad.read().forward) mover.stop()
+  heading = (heading ?? player.rotation.y) + angle
+}
+function padPush(dt) {
+  const p = pad?.read()
+  if (!p || !player || (!p.forward && !p.turn)) return null
+  if (heading === null) heading = player.rotation.y
+  if (p.turn) heading += p.turn * TURN_RATE * dt
+  if (!p.forward) return null
+  return { x: Math.sin(heading), z: Math.cos(heading), run: p.forward === 'run', mag: 1, pace: p.forward === 'run' ? ARROW_RUN : ARROW_WALK }
+}
 // Stop on the spot: the stick was touched, or you tapped yourself.
 function stopHere() {
   if (!player) return
@@ -369,6 +387,7 @@ function onSelf(x, y) {
 function tapped(point, x, y) {
   if (!player || !campus) return
   pad?.stop() // (a tap anywhere on the world ends an arrow walk)
+  heading = null
   const hitOf = (hits, key) => {
     for (let node = hits[0]?.object; node; node = node.parent) if (node.userData?.[key]) return node
     return null
@@ -398,6 +417,7 @@ function tapped(point, x, y) {
 function walkTo(x, z, done, opts = {}) {
   if (!campus || !player) return
   pad?.stop()
+  heading = null
   const start = nearestOpen(campus.grid, player.position)
   const goal = nearestOpen(campus.grid, { x, z })
   const points = findPath(campus.grid, start, goal)
@@ -2136,16 +2156,16 @@ function frameBody(now) {
     // Two inputs: the stick (it wins, and calls off whatever was playing out), then a
     // tap target. Only an open card or sheet pauses them.
     if (!hold) {
-      const push = input.stick() || forcedSteer
+      const push = padPush(dt) || input.stick() || forcedSteer
       if (push) interrupt()
-      mover.setStick(push?.x, push?.z, push?.run, push?.mag)
+      mover.setStick(push?.x, push?.z, push?.run, push?.mag, push?.pace)
       const bx = player.position.x
       const bz = player.position.z
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
       // An arrow walk into a wall or a counter stops (sliding along it carries on).
       const gone = Math.hypot(player.position.x - bx, player.position.z - bz)
-      padStuck = pad?.read() && mover.speed > 0.5 && gone < mover.speed * dt * 0.15 ? padStuck + dt : 0
+      padStuck = pad?.read().forward && mover.speed > 0.5 && gone < mover.speed * dt * 0.15 ? padStuck + dt : 0
       if (padStuck > 0.4) { pad.stop(); padStuck = 0 }
     } else pad?.stop() // (a card opens: you stand still, and stay still once it closes)
     // The player's state follows what they're doing when nothing else holds it.
@@ -2166,7 +2186,14 @@ function frameBody(now) {
       faceTo = null
     }
     const free = ps.open && (player.userData.pose || 'stand') === 'stand' && !inTransition(player)
-    if (rig.mode === 'eye' && !walking && free) {
+    // The arrows hold your facing: anything else that moves or turns you lets it go.
+    if (hold || acting || scriptMove || talk || mover.hasTarget) heading = null
+    if (heading !== null && !walking && free) {
+      // (turning on the spot: the body sweeps round to where the arrows point)
+      player.rotation.y += Math.atan2(Math.sin(heading - player.rotation.y), Math.cos(heading - player.rotation.y)) * Math.min(1, dt * 10)
+    }
+    if (heading !== null && rig.mode === 'eye') rig.facing = player.rotation.y
+    else if (rig.mode === 'eye' && !walking && free) {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }

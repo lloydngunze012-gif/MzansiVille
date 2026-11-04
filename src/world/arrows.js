@@ -1,32 +1,38 @@
-// The arrow pad for phones, bottom left: four arrows round a stop button. Tap (or hold)
-// an arrow and you walk that way, and keep walking after you lift your finger; tap it
-// twice quickly and you run. You stop with the middle button, by tapping yourself,
-// tapping somewhere else, walking into something, or when a card opens.
-const DOUBLE_MS = 350 // a second tap on the same arrow within this: run
-const ARROWS = { up: [0, -1, '▲'], left: [-1, 0, '◀'], right: [1, 0, '▶'], down: [0, 1, '▼'] }
+// The arrow pad for phones, bottom left: four arrows round a stop button. You steer
+// yourself: left and right turn you a little each tap (hold them to keep turning), down
+// turns you round. Up walks you forward the way you face, and you keep walking after the
+// finger lifts; tap up twice quickly and you run (and keep running). You stop with the
+// middle button, by tapping yourself, tapping somewhere else, walking into something,
+// or when a card opens.
+const DOUBLE_MS = 350 // a second tap on up within this: run
+const STEP = Math.PI / 12 // one tap on left or right: 15 degrees
+const HOLD_MS = 300 // held this long: keep turning
+const ARROWS = { up: '▲', left: '◀', right: '▶', down: '▼' }
 
 export function touchDevice() {
   return (window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !new URLSearchParams(location.search).has('nostick')
 }
 
-export function createArrows(host) {
+// onTurn(radians): turn the player by this much (left is +, as seen from above).
+export function createArrows(host, { onTurn }) {
   const pad = document.createElement('div')
   pad.className = 'arrows'
   pad.setAttribute('role', 'group')
-  pad.setAttribute('aria-label', 'Move: tap an arrow to walk, tap twice to run')
-  pad.innerHTML = Object.entries(ARROWS).map(([id, [, , icon]]) => `<button type="button" class="arrow" data-dir="${id}" aria-label="${id}">${icon}</button>`).join('')
+  pad.setAttribute('aria-label', 'Move: up walks, twice runs; left and right turn')
+  pad.innerHTML = Object.entries(ARROWS).map(([id, icon]) => `<button type="button" class="arrow" data-dir="${id}" aria-label="${id}">${icon}</button>`).join('')
     + '<button type="button" class="arrow-stop" aria-label="Stop">■</button>'
   host.append(pad)
-  let active = null // { id, x, y, run }
-  let last = { id: null, at: 0, ts: 0 }
+  let forward = null // null, 'walk' or 'run'
+  let held = null // { side: 1 left / -1 right, since, id } while a turn arrow is down
+  let last = { at: 0, ts: 0 }
 
   function show() {
-    pad.dataset.going = active ? (active.run ? 'run' : 'walk') : 'rest'
-    for (const b of pad.querySelectorAll('.arrow')) b.classList.toggle('on', b.dataset.dir === active?.id)
+    pad.dataset.going = forward || 'rest'
+    for (const b of pad.querySelectorAll('.arrow')) b.classList.toggle('on', (b.dataset.dir === 'up' && Boolean(forward)) || b.dataset.dir === held?.dir)
   }
   function stop() {
-    if (!active) return
-    active = null
+    if (!forward) return
+    forward = null
     show()
   }
   pad.addEventListener('pointerdown', (event) => {
@@ -34,22 +40,34 @@ export function createArrows(host) {
     event.stopPropagation()
     const button = event.target.closest('button')
     if (!button) return
-    if (button.classList.contains('arrow-stop')) { stop(); last = { id: null, at: 0, ts: 0 }; return }
-    const id = button.dataset.dir
-    const now = performance.now()
-    // (quick enough by either clock: a busy frame can delay one of them, never both)
-    const run = last.id === id && Math.min(now - last.at, event.timeStamp - last.ts) < DOUBLE_MS
-    last = { id, at: now, ts: event.timeStamp }
-    active = { id, x: ARROWS[id][0], y: ARROWS[id][1], run }
+    if (button.classList.contains('arrow-stop')) { stop(); last = { at: 0, ts: 0 }; return }
+    const dir = button.dataset.dir
+    if (dir === 'up') {
+      const now = performance.now()
+      // (quick enough by either clock: a busy frame can delay one of them, never both)
+      const twice = Math.min(now - last.at, event.timeStamp - last.ts) < DOUBLE_MS
+      last = { at: now, ts: event.timeStamp }
+      forward = twice ? 'run' : 'walk'
+    } else if (dir === 'down') onTurn(Math.PI)
+    else {
+      const side = dir === 'left' ? 1 : -1
+      onTurn(side * STEP)
+      held = { side, since: performance.now(), id: event.pointerId, dir }
+      button.setPointerCapture?.(event.pointerId)
+    }
     show()
   })
+  const release = (event) => { if (held && event.pointerId === held.id) { held = null; show() } }
+  pad.addEventListener('pointerup', release)
+  pad.addEventListener('pointercancel', release)
+  pad.addEventListener('lostpointercapture', release)
   // (no clicks or double-tap zoom from the pad: everything happens on pointerdown)
   pad.addEventListener('click', (event) => event.stopPropagation())
   show()
 
   return {
-    // The push this frame (x right, y down, m 1, run), or null when you're not walking.
-    read: () => active && { x: active.x, y: active.y, m: 1, run: active.run },
+    // forward: null, 'walk' or 'run'; turn: 1 (left), -1 (right) or 0, while held.
+    read: () => ({ forward, turn: held && performance.now() - held.since > HOLD_MS ? held.side : 0 }),
     stop,
     show(on) { pad.hidden = !on },
   }
