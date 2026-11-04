@@ -34,10 +34,10 @@ export const hairs = [
   { id: 'braids', label: 'Braids' },
 ]
 // What each hair looks like on the 3D student, so each choice is named after what you
-// see (braids and the fade are made in avatar3d.js; the pack has neither).
+// see (dreads and the fade are made in avatar3d.js; the pack has neither).
 const HAIR_NAMES = {
-  female: { crop: 'Bob', curls: 'Curly bun' },
-  male: { curls: 'Parted' },
+  female: { crop: 'Bob', curls: 'Curly bun', braids: 'Dreads' },
+  male: { curls: 'Parted', braids: 'Dreads' },
 }
 export function hairsFor(gender) {
   return hairs.map((h) => ({ ...h, label: HAIR_NAMES[gender]?.[h.id] || h.label }))

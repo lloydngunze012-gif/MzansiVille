@@ -7,7 +7,7 @@ import { appearNow, createAvatar, poseAvatar } from '../world/avatar3d.js'
 
 const W = 120
 const H = 200
-const STORE = 'mzansiville.thumbs.v3' // (v3: braids, the fade and the women's hoodie are new)
+const STORE = 'mzansiville.thumbs.v4' // (v4: dreads instead of braids)
 const KEEP = 60 // pictures kept on the phone
 let renderer = null
 let scene = null

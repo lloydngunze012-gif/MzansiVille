@@ -311,6 +311,8 @@ function hydrateThumbs() {
   Promise.all([thumbsPromise, stageReady]).then(([{ thumbFor, thumbNow }]) => {
     const look = draft.avatar
     const putPhoto = (url) => { const node = app.querySelector('.cc-photo'); if (url && node) { lastThumb.set('photo', url); node.innerHTML = `<img src="${url}" alt="">` } }
+    // (and the whole student, kept for the stage's still next time this look opens)
+    if (!thumbNow(look, 'body')) thumbFor(look, 'body', () => Boolean(app.querySelector('.cc-stage')))
     const ready = thumbNow(look, 'hair')
     if (ready) putPhoto(ready)
     else thumbFor(look, 'hair', () => Boolean(app.querySelector('.cc-photo'))).then(putPhoto)

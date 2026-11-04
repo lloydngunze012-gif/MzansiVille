@@ -34,13 +34,14 @@ const OUTFIT = {
     punk: { file: 'punk', top: ['Pink'] },
   },
 }
-// Creator hair -> head file, and the hair made here on top of it (HAIR_STYLE: braids
-// and a fade aren't in the pack; see hairCap and addBraids).
+// Creator hair -> head file, and the hair made here on top of it (HAIR_STYLE: locs and
+// a fade aren't in the pack; see hairCap and addLocs). ("braids" is the saved id of the
+// locs: it was braids first.)
 const HEAD = {
   female: { braids: 'bob', curls: 'bun', fade: 'bob', crop: 'bob', long: 'long', mohawk: 'mohawk' },
   male: { braids: 'short', curls: 'parted', fade: 'short', crop: 'crop', spiky: 'long' },
 }
-const HAIR_STYLE = { female: { braids: 'braids', fade: 'fade' }, male: { braids: 'braids' } }
+const HAIR_STYLE = { female: { braids: 'locs', fade: 'fade' }, male: { braids: 'locs' } }
 // Cast and crowd "model" keys: gender and head, for variety.
 const MODEL_LOOK = {
   'female-b': ['female', 'bun'], 'female-d': ['female', 'long'], 'female-f': ['female', 'bob'],
@@ -184,7 +185,7 @@ function addOrgantMark(model) {
 }
 
 // Hair the pack doesn't have, made here in the same flat low-poly style and carried by
-// the head bone: a close crop (a fade) and box braids. The head's own hair is hidden
+// the head bone: a close crop (a fade) and dreadlocks. The head's own hair is hidden
 // (its big hair meshes; the eyebrows stay) and a cap is shaped over the scalp.
 function hairCap(model, heads, look, fuller) {
   const head = model.getObjectByName('Head')
@@ -219,47 +220,61 @@ function hairCap(model, heads, look, fuller) {
   cap.scale.divide(s)
   model.add(cap)
   cap.updateMatrixWorld(true)
-  // A point on the rim, at an angle round the head (0: the back), in world space.
-  const rim = (a) => new THREE.Vector3(Math.sin(a) * Math.sin(RIM), Math.cos(RIM), -Math.cos(a) * Math.sin(RIM)).applyMatrix4(cap.matrixWorld)
+  // A point on the cap, at an angle round the head (0: the back) and down from the
+  // crown (the rim at RIM), a little proud of it with lift, in world space.
+  const on = (a, down = RIM, lift = 1) => new THREE.Vector3(Math.sin(a) * Math.sin(down) * lift, Math.cos(down) * lift, -Math.cos(a) * Math.sin(down) * lift).applyMatrix4(cap.matrixWorld)
+  const rim = (a) => on(a)
   head.attach(cap)
-  return { head, rim, radii, mid }
+  return { head, rim, on, RIM, radii, mid }
 }
 
-function addBraids(model, heads, look) {
-  // (men's braids sit on the tight, high crop; women's on a fuller cap)
+function addLocs(model, heads, look) {
+  // (men's locs sit on the tight, high crop; women's on a fuller cap)
   const base = hairCap(model, heads, look, look.gender !== 'male')
   if (!base) return
-  const { head, rim, mid } = base
-  const strands = []
-  const shoulder = mid.y - (look.gender === 'male' ? 0.2 : 0.36) // where they hang down to
-  // Round the sides and the back of the head; none across the face.
-  for (let i = 0; i < 26; i++) {
-    const a = -Math.PI * 0.6 + (i / 25) * Math.PI * 1.2
-    const root = rim(a)
-    const len = Math.max(0.08, root.y - shoulder)
-    const g = new THREE.CylinderGeometry(0.012, 0.009, len, 5, 4)
-    // (a braid's bumps: every other ring a touch wider)
+  const { head, on, RIM, mid } = base
+  const parts = []
+  const unit = new THREE.Vector3(1, 1, 1).divide(model.getWorldScale(new THREE.Vector3()))
+  // One lumpy rope segment from p to q (world space), thick r.
+  const rope = (p, q, r, seed) => {
+    const len = p.distanceTo(q)
+    const g = new THREE.CylinderGeometry(r, r * 0.85, len, 6, 3)
     const pos = g.attributes.position
     for (let v = 0; v < pos.count; v++) {
-      const ring = Math.round((pos.getY(v) / len + 0.5) * 4)
-      const w = ring % 2 ? 1.3 : 1
+      const ring = Math.round((pos.getY(v) / len + 0.5) * 3)
+      const w = 0.82 + 0.36 * (((ring + seed) * 5) % 4) / 3
       pos.setX(v, pos.getX(v) * w)
       pos.setZ(v, pos.getZ(v) * w)
     }
-    // Hanging straight down from the rim, a little out from the head.
-    const out = new THREE.Vector3(root.x - mid.x, 0, root.z - mid.z).normalize()
-    const at = root.clone().addScaledVector(out, 0.012)
-    at.y -= len / 2
-    const m = new THREE.Matrix4().compose(model.worldToLocal(at), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(out.z, 0, -out.x), 0.1), new THREE.Vector3(1, 1, 1).divide(model.getWorldScale(new THREE.Vector3())))
-    g.applyMatrix4(m)
-    strands.push(g)
+    const dir = q.clone().sub(p).normalize()
+    const at = model.worldToLocal(p.clone().lerp(q, 0.5))
+    g.applyMatrix4(new THREE.Matrix4().compose(at, new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir), unit))
+    parts.push(g)
   }
-  const braids = new THREE.Mesh(mergeGeometries(strands), new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.85, flatShading: true }))
-  braids.castShadow = true
-  braids.name = 'braids'
-  model.add(braids)
-  braids.updateMatrixWorld(true)
-  head.attach(braids)
+  const reach = look.gender === 'male' ? 0.22 : 0.34 // how far below the head they hang
+  const COUNT = 20
+  // Each loc grows from near the crown, lies over the head to the hairline, and (round
+  // the sides and back, never over the face) hangs down from there, a little out.
+  for (let i = 0; i < COUNT; i++) {
+    const a = (i / COUNT) * Math.PI * 2
+    const r = 0.016 + 0.004 * ((i * 3) % 3) / 2
+    const front = Math.cos(a) < -0.45 // (0 is the back of the head)
+    const path = [on(a, 0.12 * Math.PI, 1.04), on(a, 0.32 * Math.PI, 1.07), on(a, RIM, 1.06)]
+    if (!front) {
+      const end = path[2].clone()
+      const out = new THREE.Vector3(end.x - mid.x, 0, end.z - mid.z).normalize()
+      const len = (end.y - (mid.y - reach)) * (0.8 + 0.35 * ((i * 7) % 5) / 4)
+      path.push(end.clone().addScaledVector(out, len * 0.18).add(new THREE.Vector3(0, -len * 0.55, 0)))
+      path.push(end.clone().addScaledVector(out, len * 0.26).add(new THREE.Vector3(0, -len, 0)))
+    }
+    for (let k = 0; k + 1 < path.length; k++) rope(path[k], path[k + 1], k < 2 ? r * 1.1 : r, i + k)
+  }
+  const locs = new THREE.Mesh(mergeGeometries(parts), new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.95, flatShading: true }))
+  locs.castShadow = true
+  locs.name = 'locs'
+  model.add(locs)
+  locs.updateMatrixWorld(true)
+  head.attach(locs)
 }
 
 // The women's pack has no hoodie: the tee, with long sleeves on the arm bones, a hood
@@ -607,7 +622,7 @@ async function attachModel(group, look) {
   const gaitKey = `${g}:${look.outfitFile}`
   gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
   if (look.organt) addOrgantMark(model)
-  if (look.hairStyle === 'braids') addBraids(model, heads, look)
+  if (look.hairStyle === 'locs') addLocs(model, heads, look)
   if (look.hairStyle === 'fade') hairCap(model, heads, look, false)
   if (look.hoodie) addHoodie(model, look)
   const mixer = new THREE.AnimationMixer(model)

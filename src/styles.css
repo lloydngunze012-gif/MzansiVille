@@ -721,7 +721,11 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
   background: linear-gradient(100deg, rgba(255,255,255,.07) 30%, rgba(255,255,255,.26) 50%, rgba(255,255,255,.07) 70%); background-size: 220% 100%; animation: cc-shimmer 1.3s linear infinite; }
 .cc-loading::before { content: ''; position: absolute; left: 50%; top: -44px; width: 40px; height: 40px; margin-left: -20px; border-radius: 50%; background: inherit; background-size: 220% 100%; animation: inherit; }
 @keyframes cc-shimmer { from { background-position: 160% 0; } to { background-position: -60% 0; } }
-.cc-stage.cc-has3d .cc-loading, .cc-stage.cc-no3d .cc-loading { display: none; }
+.cc-stage.cc-has3d .cc-loading, .cc-stage.cc-no3d .cc-loading, .cc-stage:has(.cc-still) .cc-loading { display: none; }
+.cc-still { position: absolute; left: 50%; bottom: 2%; height: 94%; transform: translateX(-50%); z-index: 1; object-fit: contain; pointer-events: none; }
+/* (the live student fades in over 0.4 s: the still fades out under it, never a gap) */
+.cc-still { transition: opacity .45s ease .2s; }
+.cc-stage.cc-has3d .cc-still { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .cc-loading, .cc-loading::before { animation: none; } }
 .cc-mute { position: absolute; top: 8px; right: 8px; z-index: 3; width: 38px; height: 38px; border-radius: 50%; border: 2px solid #f0c400; background: #2a1a44; color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
 .cc-id { position: relative; background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 8px 10px 8px 14px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; box-shadow: 0 4px 0 var(--ink); }
