@@ -1,9 +1,8 @@
 // Pointer and keys for the campus, after the softlife prototype. A tap is a pointer up
 // within 16 px and 420 ms of its pointer down (a slow frame between the two doesn't
 // count), nothing else. Touch never drags the camera (two fingers pinch to
-// zoom); a mouse drag turns it. WASD or arrows walk, Shift runs; the phone thumbstick
-// (stick.js) walks or runs by how far it's pushed.
-import { RUN_AT } from './stick.js'
+// zoom); a mouse drag turns it. WASD or arrows walk, Shift runs; on a phone the arrow
+// pad (arrows.js) walks, or runs after a double tap.
 
 const TAP_PX = 16
 const TAP_MS = 420
@@ -89,7 +88,7 @@ export function bindInput(canvas, { cameraRig, pad, onTap, live }) {
         x = push.x
         z = push.y
         mag = push.m
-        run = push.m >= RUN_AT
+        run = push.run
       } else {
         if (keys.has('w') || keys.has('arrowup')) z -= 1
         if (keys.has('s') || keys.has('arrowdown')) z += 1

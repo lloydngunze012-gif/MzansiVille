@@ -66,10 +66,28 @@ export async function finger(page) {
   }
 }
 
-// The thumbstick's middle and radius on screen.
-export async function stickBox(page) {
-  const box = await page.locator('.stick').boundingBox()
-  return { x: box.x + box.width / 2, y: box.y + box.height / 2, r: box.width / 2 }
+// The arrow pad: tap an arrow (twice quickly: run), the middle button stops.
+async function middleOf(page, sel) {
+  const b = await page.locator(sel).boundingBox()
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+}
+export const arrows = {
+  at: (page, dir) => middleOf(page, `.arrow[data-dir="${dir}"]`),
+  async go(page, f, dir, { run = false } = {}) {
+    const p = await middleOf(page, `.arrow[data-dir="${dir}"]`)
+    await f.tap(p.x, p.y)
+    if (run) { await page.waitForTimeout(90); await f.tap(p.x, p.y) }
+  },
+  async stop(page, f) {
+    const p = await middleOf(page, '.arrow-stop')
+    await f.tap(p.x, p.y)
+  },
+  // Walk (or run) one way for ms, then stop.
+  async walk(page, f, dir, ms, opts) {
+    await arrows.go(page, f, dir, opts)
+    await page.waitForTimeout(ms)
+    await arrows.stop(page, f)
+  },
 }
 
 // Reads only.

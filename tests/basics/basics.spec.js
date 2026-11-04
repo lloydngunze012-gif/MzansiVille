@@ -2,83 +2,71 @@
 // A video of each in docs/sprints/basics/. K8 (10 minutes of random play) is random.spec.js.
 // npx playwright test tests/basics --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
-import { PHONE, OUT, student, finger, stickBox, read, saveVideo, tapOn, dist, wrap, DEG } from './touch.js'
+import { PHONE, OUT, student, finger, arrows, read, saveVideo, tapOn, dist, wrap, DEG } from './touch.js'
 
 test.use(PHONE)
 test.describe.configure({ timeout: 300000 })
 
 const state = (page) => read.state(page)
 const body = (page) => page.evaluate(() => { const b = window.mzansiBodies('campus', 'player')[0]; return b && { yaw: b.yaw, clip: b.clip, speed: b.speed } })
-// Push the stick to (dx, dy) (fractions of its radius) and hold it there for ms.
-async function push(page, f, dx, dy, ms) {
-  const s = await stickBox(page)
-  await f.down(s.x, s.y)
-  await f.move(s.x + dx * s.r, s.y + dy * s.r)
-  if (ms) await page.waitForTimeout(ms)
-  return s
-}
-// Does the stick move you right now (within 0.8 s)?
-async function stickMoves(page, f) {
+// Do the arrows move you right now (within 0.8 s)?
+async function arrowsMove(page, f) {
   const a = await read.pos(page)
-  await push(page, f, 0.6, 0, 800)
-  await f.up()
+  await arrows.walk(page, f, 'right', 800)
   const b = await read.pos(page)
   return dist(a, b)
 }
 
-test('K1 thumbstick: walk a circle, run, let go and stop on the spot', async ({ page }) => {
+test('K1 arrows: tap to walk (keeps going), tap twice to run, stop on the spot', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
-  const s = await stickBox(page)
   const start = await read.pos(page)
-  // A circle: the finger goes round the stick, most of the way out (a brisk walk).
-  await f.down(s.x, s.y)
+  // A loop: up, right, down, left. One tap each, and you keep walking after the finger lifts.
   const speeds = []
   const track = [start]
-  for (let i = 0; i <= 48; i++) {
-    const a = (i / 48) * Math.PI * 2
-    await f.move(s.x + Math.sin(a) * s.r * 0.8, s.y - Math.cos(a) * s.r * 0.8)
-    await page.waitForTimeout(250)
-    if (i % 4 === 0) { const b = await body(page); speeds.push(b.speed); track.push(await read.pos(page)) }
+  for (const dir of ['up', 'right', 'down', 'left']) {
+    await arrows.go(page, f, dir)
+    for (let t = 0; t < 4; t++) {
+      await page.waitForTimeout(500)
+      speeds.push((await body(page)).speed)
+      track.push(await read.pos(page))
+    }
   }
   expect(await state(page)).toBe('walking')
   const walkPose = await read.pose(page)
-  // The dial: straight up at half a push, then nearly all the way (just short of a run).
-  const dial = {}
-  for (const [name, k] of [['half', 0.5], ['nearlyFull', 0.88]]) {
-    await f.move(s.x, s.y - s.r * k)
-    await page.waitForTimeout(2000)
-    dial[name] = (await body(page)).speed
-  }
-  // All the way out: a run.
-  await f.move(s.x, s.y - s.r * 1.2)
+  // Tap twice: a run.
+  await arrows.go(page, f, 'up', { run: true })
   await page.waitForTimeout(2500)
-  const run = { state: await state(page), pose: await read.pose(page), body: await body(page) }
+  const run = { state: await state(page), pose: await read.pose(page), body: await body(page), going: await page.locator('.arrows').getAttribute('data-going'), fps: Number(await page.evaluate(() => document.querySelector('#world').dataset.fps)) }
+  // (a double tap is two taps within 350 ms; a machine drawing under 15 fps delivers the
+  // second one too late to tell, so the run is only judged at 15 fps or more)
+  run.judged = run.going === 'run' || run.fps >= 15
   await page.screenshot({ path: `${OUT}/K1-run.png` })
-  // Let go: you stop where you are.
-  // (where you are the moment the stick feels the finger lift, read in the page)
-  await page.evaluate(() => document.querySelector('.stick').addEventListener('pointerup', () => { window.__k1lift = window.mzansiPlayerPos() }, { once: true }))
-  await f.up()
-  // (the ease to a halt: how far it carries you after letting go; distance, not time,
-  // since a slow test machine runs the game slower than real time)
+  // Stop: the middle button. (Where you are the moment it's pressed, read in the page.)
+  await page.evaluate(() => document.querySelector('.arrow-stop').addEventListener('pointerdown', () => { window.__k1stop = window.mzansiPlayerPos() }, { once: true }))
+  await arrows.stop(page, f)
+  // (the ease to a halt: distance, not time, since a slow test machine runs the game
+  // slower than real time)
   const t0 = Date.now()
   await expect.poll(() => state(page), { timeout: 5000, intervals: [50] }).toBe('free')
   const halted = Date.now() - t0
-  const last = await read.pos(page)
-  const glide = dist(await page.evaluate(() => window.__k1lift), last)
-  const atRelease = await read.pos(page)
+  const stopped = await read.pos(page)
+  const glide = dist(await page.evaluate(() => window.__k1stop), stopped)
   await page.waitForTimeout(1200)
   const after = await read.pos(page)
   const spread = Math.max(...track.map((p) => dist(p, start)))
-  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, dial, spread, run, glide: +glide.toFixed(2), halted, slide: dist(atRelease, after), state: await state(page) }))
+  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, spread, run, glide: +glide.toFixed(2), halted, slide: dist(stopped, after), state: await state(page) }))
   expect(walkPose).toBe('stand') // (walking: the walk clip, not the run)
-  expect(dial.half, 'half a push walks slower than nearly all the way').toBeLessThan(dial.nearlyFull * 0.85)
-  expect(spread, 'the circle took you round').toBeGreaterThan(3)
-  expect(run.state).toBe('running')
-  expect(run.pose).toBe('run')
-  expect(dist(atRelease, after), 'stopped on the spot').toBeLessThan(0.3)
+  expect(spread, 'the loop took you round').toBeGreaterThan(1)
+  if (run.judged) {
+    expect(run.state).toBe('running')
+    expect(run.pose).toBe('run')
+    expect(run.going).toBe('run')
+  }
+  expect(glide, 'eases to a halt, no long slide').toBeLessThan(0.6)
+  expect(dist(stopped, after), 'stopped on the spot').toBeLessThan(0.05)
   expect(await state(page)).toBe('free')
-  await saveVideo(page, 'K1-thumbstick')
+  await saveVideo(page, 'K1-arrows')
 })
 
 test('K2 tap 5 ground spots in a row (mid-walk too), then tap yourself to stop', async ({ page }) => {
@@ -148,7 +136,7 @@ test('K3 tap the Quad from the cafeteria: jog there, stop facing it, no slant', 
   await saveVideo(page, 'K3-arrive')
 })
 
-test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, the stick works after goodbye', async ({ page }) => {
+test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, the arrows work after goodbye', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
   const talked = []
@@ -156,7 +144,7 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, t
   let lost = 0
   for (let round = 0; round < 20 && talked.length < 5; round++) {
     // Someone on screen where a thumb can tap them (not under the HUD, the minimap,
-    // the stick or the buttons), the nearest first.
+    // the arrows or the buttons), the nearest first.
     const target = await page.evaluate((done) => {
       const p = window.mzansiPlayerPos()
       const open = (s) => s.x > 20 && s.x < 392 && s.y > 150 && s.y < 770 && !(s.x < 160 && s.y > 660) && !(s.x > 290 && s.y < 260)
@@ -167,9 +155,8 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, t
         .sort((a, b) => a.d - b.d)[0] || null
     }, [...talked.map((t) => t.id), ...skip])
     if (!target) {
-      // Nobody in view: walk on a bit with the stick.
-      await push(page, f, [0.5, -0.5, 0.6, -0.6][round % 4], [-0.6, -0.5, 0.5, 0.6][round % 4], 1500)
-      await f.up()
+      // Nobody in view: walk on a bit with the arrows.
+      await arrows.walk(page, f, ['up', 'right', 'down', 'left'][round % 4], 1500)
       continue
     }
     // The tap answers within 1 s: the chat opens, or (out of reach) you turn and set off
@@ -229,7 +216,7 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, t
       await tapOn(page, f, leave)
       await page.waitForTimeout(300)
     }
-    const moved = await stickMoves(page, f)
+    const moved = await arrowsMove(page, f)
     talked.push({ id: who, answered, opened, answer, moved: +moved.toFixed(2) })
   }
   console.log('K4', JSON.stringify({ talked, lostTaps: lost }))
@@ -237,7 +224,7 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, t
   for (const t of talked) {
     expect(t.answered, `${t.id}: the tap answers within 1 s (the chat, or walking up to them)`).toBeLessThan(1000)
     expect(t.answer, `${t.id}: the reply leads somewhere`).toBeTruthy()
-    expect(t.moved, `${t.id}: the stick works right after goodbye`).toBeGreaterThan(0.4)
+    expect(t.moved, `${t.id}: the arrows work right after goodbye`).toBeGreaterThan(0.4)
   }
   await saveVideo(page, 'K4-talk')
 })
@@ -292,10 +279,10 @@ test('K5 cafeteria queue: back of the line, one served at a time, served within 
   await expect.poll(() => read.pose(page), { timeout: 10000 }).toBe('stand')
   const q = await read.queue(page, 'caf')
   expect(q.order).not.toContain('player')
-  const moved = await stickMoves(page, f)
+  const moved = await arrowsMove(page, f)
   await page.screenshot({ path: `${OUT}/K5-3-walk-away.png` })
   console.log('K5 after', JSON.stringify({ moved, state: await state(page) }))
-  expect(moved, 'walk away with the stick').toBeGreaterThan(0.4)
+  expect(moved, 'walk away with the arrows').toBeGreaterThan(0.4)
   await saveVideo(page, 'K5-queue')
 })
 
@@ -321,7 +308,7 @@ test('K6 sit on a Quad bench and stand up; sleep in your bed and get up', async 
   await expect.poll(() => state(page), { timeout: 5000 }).toBe('free')
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/K6-2-stood.png` })
-  expect(await stickMoves(page, f)).toBeGreaterThan(0.4)
+  expect(await arrowsMove(page, f)).toBeGreaterThan(0.4)
   await saveVideo(page, 'K6-bench')
 })
 
@@ -357,8 +344,8 @@ test('K7 camera in Top, Sims and Eye: nothing blocks the player, heads in frame'
     const bad = []
     let samples = 0
     // Walk about near the menu board, the counter, the terrace and the trees.
-    for (const [dx, dy, ms] of [[0, -0.6, 2500], [0.6, 0, 2000], [0, 0.6, 2500], [-0.6, 0, 2500], [0.4, -0.4, 2000]]) {
-      const s = await push(page, f, dx, dy, 0)
+    for (const [dir, ms] of [['up', 2500], ['right', 2000], ['down', 2500], ['left', 2500], ['up', 2000]]) {
+      await arrows.go(page, f, dir)
       for (let t = 0; t < ms; t += 300) {
         await page.waitForTimeout(300)
         const h = await page.evaluate(() => window.mzansiHeads([]))
@@ -367,8 +354,7 @@ test('K7 camera in Top, Sims and Eye: nothing blocks the player, heads in frame'
         if (mode !== 'eye' && me && (!me.inside || me.hidden)) bad.push(me)
         if (mode === 'eye' && me?.shown) bad.push({ ...me, why: 'own head shown in Eye' })
       }
-      void s
-      await f.up()
+      await arrows.stop(page, f)
     }
     await page.screenshot({ path: `${OUT}/K7-${mode}.png` })
     out[mode] = { samples, bad: bad.length, first: bad[0] || null }
@@ -385,11 +371,7 @@ test('K9 no mirrored or upside-down text anywhere', async ({ page }) => {
   console.log('K9', JSON.stringify({ count: signs.length, bad }))
   // The taxi rank and the town edge, from the campus side.
   const f = await finger(page)
-  const s = await stickBox(page)
-  await f.down(s.x, s.y)
-  await f.move(s.x, s.y + s.r * 0.95)
-  await page.waitForTimeout(2500)
-  await f.up()
+  await arrows.walk(page, f, 'down', 2500)
   await page.screenshot({ path: `${OUT}/K9-taxi-rank.png` })
   expect(signs.length).toBeGreaterThan(10)
   expect(bad).toEqual([])

@@ -35,6 +35,8 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# ARROW PAD (owner, 4 Nov): the phone thumbstick is replaced by four arrows (src/world/arrows.js). Tap or hold an arrow: walk that way, and keep walking after the finger lifts. Tap the same arrow twice quickly (350 ms): run. Stop: the middle button, tapping yourself, tapping anywhere on the world, walking into something, or any card opening. Tests use the arrows helper in tests/basics/touch.js.
+
 # CURRENT SPRINT: MOVEMENT TRANSPLANT (owner, 2 Nov). Time-box 2 hours. Push after each rule. Report lines removed from scene.js and K-results, then STOP and wait.
 Read docs/reference/softlife/{player,input,camera,engine}.js: a 650-line movement core from a prototype that feels clean on a phone. Make MzansiVille's movement work the same way. Nothing new; this is removal and simplification. Rules, in priority order:
 1. Exactly one pause condition. Player movement pauses only while a card or sheet is open (talk, place card, event, map, summary). Delete pad.lock, the ps.open gate on input.stick(), and every other lock on movement. Actions, scripted moves, snaps, tours and pending actions never block the stick or ground taps; stick input cancels them instead.

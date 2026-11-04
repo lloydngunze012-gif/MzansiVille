@@ -18,7 +18,7 @@ import { createCrowd } from './crowd.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
-import { createStick, touchDevice } from './stick.js'
+import { createArrows, touchDevice } from './arrows.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
 import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
@@ -58,7 +58,8 @@ let actionLeft = 0
 let actionCommit = null
 let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
-let pad = null // the phone thumbstick (stick.js)
+let pad = null // the phone arrow pad (arrows.js)
+let padStuck = 0 // seconds the arrows have walked you into something
 let gateDay = ''
 let guide = null
 let guideFrom = null
@@ -250,7 +251,7 @@ function ensureRenderer() {
 
   // Phones get a thumbstick (the minimap moves up to the top right).
   if (touchDevice()) {
-    pad = createStick(host, { onPress: stopHere })
+    pad = createArrows(host)
     document.body.classList.add('has-stick')
   }
   input = bindInput(renderer.domElement, { cameraRig: rig, pad, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
@@ -342,6 +343,7 @@ function interrupt() {
 function stopHere() {
   if (!player) return
   mover.stop()
+  pad?.stop()
   endGoing()
   if (player.userData.pose === 'run') player.userData.pose = 'stand'
 }
@@ -366,6 +368,7 @@ function onSelf(x, y) {
 // a building (go in), or the ground (walk there).
 function tapped(point, x, y) {
   if (!player || !campus) return
+  pad?.stop() // (a tap anywhere on the world ends an arrow walk)
   const hitOf = (hits, key) => {
     for (let node = hits[0]?.object; node; node = node.parent) if (node.userData?.[key]) return node
     return null
@@ -394,6 +397,7 @@ function tapped(point, x, y) {
 // other opts go to the mover (pace, near, solid).
 function walkTo(x, z, done, opts = {}) {
   if (!campus || !player) return
+  pad?.stop()
   const start = nearestOpen(campus.grid, player.position)
   const goal = nearestOpen(campus.grid, { x, z })
   const points = findPath(campus.grid, start, goal)
@@ -2135,9 +2139,15 @@ function frameBody(now) {
       const push = input.stick() || forcedSteer
       if (push) interrupt()
       mover.setStick(push?.x, push?.z, push?.run, push?.mag)
+      const bx = player.position.x
+      const bz = player.position.z
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
-    }
+      // An arrow walk into a wall or a counter stops (sliding along it carries on).
+      const gone = Math.hypot(player.position.x - bx, player.position.z - bz)
+      padStuck = pad?.read() && mover.speed > 0.5 && gone < mover.speed * dt * 0.15 ? padStuck + dt : 0
+      if (padStuck > 0.4) { pad.stop(); padStuck = 0 }
+    } else pad?.stop() // (a card opens: you stand still, and stay still once it closes)
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) ps.busy(0.5)
     else if (player.userData.pose === 'run') player.userData.pose = 'stand'

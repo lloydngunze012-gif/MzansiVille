@@ -1,10 +1,10 @@
-// K11: the stick (and K11b: WASD) moves you the way it's pushed, as seen from the
-// camera. In the follow camera (Sims), push fully right for 1.5 s: you go to the
+// K11: the arrows (and K11b: WASD) move you the way they point, as seen from the
+// camera. In the follow camera (Sims), walk right for 1.5 s: you go to the
 // camera's right, not its left; then left, forward and back. The camera's right is
 // worked out here from where it sits and looks (read only), never from moveRight.
 // npx playwright test tests/basics/strafe.spec.js --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
-import { PHONE, student, finger, stickBox, read, saveVideo } from './touch.js'
+import { PHONE, student, finger, arrows, read, saveVideo } from './touch.js'
 
 test.use(PHONE)
 test.describe.configure({ timeout: 300000 })
@@ -18,23 +18,19 @@ async function cameraAxes(page) {
   return { f: { x: fx / n, z: fz / n }, r: { x: -fz / n, z: fx / n } }
 }
 
-test('K11 the stick moves you right, left, forward and back as seen from the camera', async ({ page }) => {
+test('K11 the arrows move you right, left, forward and back as seen from the camera', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
   expect(await page.evaluate(() => document.querySelector('#world').dataset.cam)).toBe('sims')
   const results = await moves(page, async (sx, sy) => {
-    const s = await stickBox(page)
-    await f.down(s.x, s.y)
-    await f.move(s.x + sx * s.r, s.y + sy * s.r)
-    await page.waitForTimeout(1500)
-    await f.up()
+    await arrows.walk(page, f, sx > 0 ? 'right' : sx < 0 ? 'left' : sy < 0 ? 'up' : 'down', 1500)
   })
   console.log('K11', JSON.stringify(results))
   check(results)
   await saveVideo(page, 'K11-strafe')
 })
 
-// The same with the keys (D, A, W, S): WASD and the stick share one path.
+// The same with the keys (D, A, W, S): WASD and the arrows share one path.
 test('K11b WASD moves you right, left, forward and back as seen from the camera', async ({ page }) => {
   await student(page, { spawn: 'quad' })
   const results = await moves(page, async (sx, sy) => {
