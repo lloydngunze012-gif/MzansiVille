@@ -29,6 +29,18 @@ Screenshots: [P1-both.png](P1-both.png) (each sees the other, count 2), [P3-walk
 - **HUD**: "N on campus" pill with a green dot next to the clock, live (src/ui/game.js, game.css).
 - `?room=<name>` picks the channel. Tests use their own, and automated tests without one never join, so nobody on the live campus sees test players.
 
+## Basics suite (tests/basics) after this change
+
+All 14 run on two workers: 3 passed, 11 failed. Several of those were browser crashes or a closed target, which means an overloaded machine, so I re-ran one at a time against the previous commit (6d3ac47):
+
+| Test | Before (6d3ac47) | After |
+|---|---|---|
+| K3 tap the Quad from the cafeteria | pass (2.49 m/s, jogging at the 1.5 s check) | **fail**: same path, a moment behind (2.06 m/s, still walking at 1.5 s) |
+| K5 cafeteria queue | pass | **fail**: joins at the back, nobody cuts in, served at 38.7 s (limit 30 s) |
+| K6 Quad bench, bed | fail (already broken) | fail (same error) |
+
+These tests run at about 5 fps on this PC's software GPU, and the game slows down below 20 fps. The 6 Quad filler students cost about one frame per second here. That is enough to flip K3's 1.5 s pose check and K5's 30 s deadline. To cut the cost, the fillers now show only within 32 m of the Quad, and their standing animation updates every third frame. On a phone GPU this should not matter, but it is the thing to watch on the owner's phone: frame rate on the Quad with the fillers there. K1, K2, K4 and K6b–K13 were not re-run one at a time.
+
 ## Not done / known limits
 
 - **Student numbers are a stand-in**: 26 + six random digits per phone (localStorage `mzansiville.presence`), until item 3 (enrolment) issues real ones from a Supabase sequence.

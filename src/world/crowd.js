@@ -86,7 +86,9 @@ export function createCrowd(scene, campus, opts = {}) {
       }
     })
   }
-  function setFill(on) {
+  // (only near the Quad: from across campus they'd cost a phone frames for nothing)
+  function setFill(on, playerPos) {
+    if (playerPos && quad && Math.hypot(playerPos.x - quad.cx, playerPos.z - quad.cz) > 32) on = false
     for (const f of fillers) {
       const i = people.indexOf(f)
       if (on && i < 0) { people.push(f); f.avatar.visible = true }
@@ -153,9 +155,13 @@ export function createCrowd(scene, campus, opts = {}) {
     return ahead > 0 && ahead < 1.6 && side < 0.8
   }
 
+  let tick = 0
   function update(dt, playerPos) {
+    tick += 1
     for (const person of people) {
       person.clock += dt
+      // The Quad's chatting pairs only stand and talk: a third of the frames is plenty.
+      if (person.filler && !person.talking && tick % 3) continue
       const { avatar } = person
       let walking = false
       // Someone you are talking to stands still and faces you.

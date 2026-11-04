@@ -2294,7 +2294,7 @@ function frameBody(now) {
     const pose = player.userData.pose || 'stand'
     reportLocal(here ? { a: 'campus', x: player.position.x, z: player.position.z, y: pose === 'sit' || pose === 'lie' ? player.position.y : 0, h: player.rotation.y, p: walking ? (pose === 'run' || mover.speed > 2.9 ? 'run' : 'walk') : pose } : { a: 'away' })
     others?.update(dt, camera, player.position, here, rig.mode === 'eye')
-    crowd?.setFill(onlineCount() < 3)
+    crowd?.setFill(onlineCount() < 3, player.position)
     for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
     lineTick(dt)
