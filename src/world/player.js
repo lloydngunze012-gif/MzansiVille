@@ -101,6 +101,9 @@ export function createPlayer({ blocked }) {
     },
     // Stop now. Braking takes one or two frames; nothing can refuse this.
     stop() { finish('cancelled'); stick = null },
+    // Held up for good (pressed against something): stop, ending the walk as 'stalled',
+    // so a walk that opens something where it ends (a chat, a place) still does.
+    giveUp() { finish('stalled'); stick = null },
     // The stick or WASD this frame (null: let go). It wins and clears the target.
     // mag (0-1) scales the speed, so a small push is a slow walk.
     setStick(x, z, run, mag = 1) {

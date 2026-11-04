@@ -2315,7 +2315,8 @@ function frameBody(now) {
     const pressed = mover.hasTarget && mover.speed > 0.3 && gone < mover.speed * dt * 0.2
     against = pressed ? against + dt : 0
     againstFrames = pressed ? againstFrames + 1 : 0
-    if (against > 0.5 || againstFrames >= 6) { mover.stop(); against = 0; againstFrames = 0 }
+    // (held up, not called off: a walk to someone or somewhere opens it where you stopped)
+    if (against > 0.5 || againstFrames >= 6) { mover.giveUp(); against = 0; againstFrames = 0 }
     frameFrom = null
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
