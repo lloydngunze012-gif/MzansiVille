@@ -23,7 +23,7 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 // the edges of the map and the buildings, for scripted walks onto seats and spots)
 export function createPlayer({ blocked }) {
   let body = null
-  let stick = null // { x, z, run } in world space, this frame
+  let stick = null // { x, z, run, mag } in world space, this frame
   let route = [] // points to walk through; the last is the target
   let pace = WALK
   let near = ARRIVE
@@ -76,9 +76,10 @@ export function createPlayer({ blocked }) {
       return pace
     },
     stop() { finish('cancelled'); stick = null },
-    // The stick this frame (null: let go). It wins and clears the target.
-    setStick(x, z, run) {
-      stick = x || z ? { x, z, run } : null
+    // The stick this frame (null: let go), and how far it's pushed (0-1). It wins and
+    // clears the target.
+    setStick(x, z, run, mag = 1) {
+      stick = x || z ? { x, z, run, mag } : null
       if (stick && route.length) finish('cancelled')
     },
     get hasTarget() { return route.length > 0 },
@@ -97,7 +98,8 @@ export function createPlayer({ blocked }) {
       let dz = 0
       if (stick) {
         const m = Math.hypot(stick.x, stick.z)
-        if (m > 0.001) { dx = stick.x / m; dz = stick.z / m; speed = stick.run ? JOG : WALK }
+        // (a little push, a slow walk; further out, faster; all the way, a run)
+        if (m > 0.001) { dx = stick.x / m; dz = stick.z / m; speed = stick.run ? JOG : WALK * Math.min(1, Math.max(0.35, stick.mag)) }
       } else if (route.length) {
         let next = route[0]
         let d = Math.hypot(next.x - body.position.x, next.z - body.position.z)

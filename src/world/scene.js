@@ -2134,7 +2134,7 @@ function frameBody(now) {
     if (!hold) {
       const push = input.stick() || forcedSteer
       if (push) interrupt()
-      mover.setStick(push?.x, push?.z, push?.run)
+      mover.setStick(push?.x, push?.z, push?.run, push?.mag)
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
     }

@@ -31,18 +31,25 @@ test('K1 thumbstick: walk a circle, run, let go and stop on the spot', async ({ 
   const f = await finger(page)
   const s = await stickBox(page)
   const start = await read.pos(page)
-  // A circle: the finger goes round the stick, a little way out (a walk).
+  // A circle: the finger goes round the stick, most of the way out (a brisk walk).
   await f.down(s.x, s.y)
   const speeds = []
   const track = [start]
   for (let i = 0; i <= 48; i++) {
     const a = (i / 48) * Math.PI * 2
-    await f.move(s.x + Math.sin(a) * s.r * 0.6, s.y - Math.cos(a) * s.r * 0.6)
+    await f.move(s.x + Math.sin(a) * s.r * 0.8, s.y - Math.cos(a) * s.r * 0.8)
     await page.waitForTimeout(250)
     if (i % 4 === 0) { const b = await body(page); speeds.push(b.speed); track.push(await read.pos(page)) }
   }
   expect(await state(page)).toBe('walking')
   const walkPose = await read.pose(page)
+  // The dial: straight up at half a push, then nearly all the way (just short of a run).
+  const dial = {}
+  for (const [name, k] of [['half', 0.5], ['nearlyFull', 0.88]]) {
+    await f.move(s.x, s.y - s.r * k)
+    await page.waitForTimeout(2000)
+    dial[name] = (await body(page)).speed
+  }
   // All the way out: a run.
   await f.move(s.x, s.y - s.r * 1.2)
   await page.waitForTimeout(2500)
@@ -55,8 +62,9 @@ test('K1 thumbstick: walk a circle, run, let go and stop on the spot', async ({ 
   await page.waitForTimeout(1200)
   const after = await read.pos(page)
   const spread = Math.max(...track.map((p) => dist(p, start)))
-  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, spread, run, slide: dist(atRelease, after), state: await state(page) }))
+  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, dial, spread, run, slide: dist(atRelease, after), state: await state(page) }))
   expect(walkPose).toBe('stand') // (walking: the walk clip, not the run)
+  expect(dial.half, 'half a push walks slower than nearly all the way').toBeLessThan(dial.nearlyFull * 0.85)
   expect(spread, 'the circle took you round').toBeGreaterThan(3)
   expect(run.state).toBe('running')
   expect(run.pose).toBe('run')

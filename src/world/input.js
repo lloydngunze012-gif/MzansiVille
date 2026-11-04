@@ -77,16 +77,18 @@ export function bindInput(canvas, { cameraRig, pad, onTap, live }) {
 
   return {
     clearKeys() { keys.clear() },
-    // This frame's push, in world space ({ x, z, run }), or null.
+    // This frame's push, in world space ({ x, z, run, mag }), or null.
     stick() {
       if (!live()) return null
       let x = 0
       let z = 0
       let run = keys.has('shift')
+      let mag = 1 // how far the stick is pushed (keys: all the way)
       const push = pad?.read()
       if (push) {
         x = push.x
         z = push.y
+        mag = push.m
         run = push.m >= RUN_AT
       } else {
         if (keys.has('w') || keys.has('arrowup')) z -= 1
@@ -98,7 +100,7 @@ export function bindInput(canvas, { cameraRig, pad, onTap, live }) {
       const f = cameraRig.moveForward()
       const r = cameraRig.moveRight()
       const len = Math.hypot(x, z) || 1
-      return { x: (r.x * x - f.x * z) / len, z: (r.z * x - f.z * z) / len, run }
+      return { x: (r.x * x - f.x * z) / len, z: (r.z * x - f.z * z) / len, run, mag }
     },
   }
 }
