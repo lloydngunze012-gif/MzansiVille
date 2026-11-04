@@ -42,6 +42,26 @@ export function buildDistrict(parts) {
     y: num(row.y),
     blurb: row.what_happens_here || row.blurb || '',
   }))
+  // The houses (houses.json) are the residences: each one is a building on the map.
+  const houses = (parts.houses?.houses || []).map((h) => ({
+    id: h.id,
+    name: h.name,
+    short: h.short || h.name,
+    main: h.main || '#444444',
+    accent: h.accent || '#ffffff',
+    place: h.place || `house_${h.id}`,
+    x: num(h.x),
+    y: num(h.y),
+    model: h.model || 'building-m',
+    height: num(h.height) || 10,
+    vibe: h.vibe || '',
+    blurb: h.blurb || '',
+    international: Boolean(h.international),
+    was: h.was || [],
+  }))
+  for (const h of houses) {
+    if (!places.some((p) => p.id === h.place)) places.push({ id: h.place, name: h.name, kind: 'residence', x: h.x, y: h.y, blurb: h.blurb, house: h.id })
+  }
 
   const activities = asArray(parts.activities, parseCsv).map((row) => ({
     id: row.id,
@@ -91,14 +111,8 @@ export function buildDistrict(parts) {
     if (!activity.deltas) activity.deltas = { ...EMPTY_DELTAS }
   }
 
-  const residences = asArray(parts.residences, parseCsv)
-    .filter((row) => row.name && !row.name.startsWith('ADD '))
-    .map((row) => ({
-      name: row.name,
-      type: row.type || 'other',
-      distanceKm: row.distance_km === '' || row.distance_km == null ? null : num(row.distance_km),
-      notes: row.notes || '',
-    }))
+  // What the creator offers: the houses (a house's name is the player's residence).
+  const residences = houses.map((h) => ({ name: h.name, type: 'house', distanceKm: null, notes: h.vibe, house: h.id }))
 
   const events = (parts.events || []).map((event) => ({
     id: event.id,
@@ -118,6 +132,7 @@ export function buildDistrict(parts) {
     places,
     activities,
     residences,
+    houses,
     events,
     hours: {
       places: parts.hours?.places || {},
@@ -129,12 +144,18 @@ export function buildDistrict(parts) {
   }
 }
 
+// The player's house: by its name; an old residence name belongs to the house that
+// lists it in "was"; any other old name gets a house of its own, the same one every time.
+export function houseOf(district, residence) {
+  const houses = district.houses || []
+  if (!houses.length) return null
+  return houses.find((h) => h.name === residence || h.id === residence)
+    || houses.find((h) => h.was.includes(residence))
+    || houses[hashString(String(residence || '')) % houses.length]
+}
+
 export function homePlaceId(district, residence) {
-  const map = district.meta.residencePlaces || {}
-  if (map[residence]) return map[residence]
-  const row = district.residences.find((item) => item.name === residence)
-  if (row?.type === 'on_campus') return map.default_on_campus
-  return map.default_off_campus
+  return houseOf(district, residence)?.place || null
 }
 
 export function coursePlaceId(district, course) {

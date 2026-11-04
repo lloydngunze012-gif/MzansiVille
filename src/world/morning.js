@@ -1,10 +1,12 @@
-// Day 1 morning slice: wake in the O Block room, noodles at the kettle, walk to the
+// Day 1 morning slice: wake in your house room, noodles at the kettle, walk to the
 // bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { loop as soundLoop, sfx, water } from '../audio.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { inTransition, createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
+import { districtById } from '../districts/registry.js'
+import { houseOf } from '../engine/model.js'
 import { CRUSHES, newCrush } from '../crush.js'
 import { addIdentity } from '../engine/identity.js'
 import { SPEED as FAST, ms } from '../speed.js'
@@ -49,12 +51,24 @@ export function line(path, fallback, vars) {
   if (typeof text !== 'string' || !text) text = fallback
   // Sipho has his own lines; anything he has no line for falls back to the swap.
   if (maleRoom && typeof LINES.sipho?.lines?.[path] === 'string') text = LINES.sipho.lines[path]
-  text = forGender(text)
+  text = forGender(text).replace(/\{house\}/g, myHouse()?.name || 'Res')
   return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text
 }
 // The lines are written for Zanele and a female student; swap names and words
 // when the student (and so the roommate) is male.
 let maleRoom = false
+// The player's house (houses.json): its name in the lines, its colours on the door label.
+function myHouse() {
+  return houseOf(districtById('campusville'), opts?.run?.character?.residence)
+}
+let houseLabel = null
+function paintHouseLabel() {
+  const h = myHouse()
+  if (!houseLabel || !h) return
+  houseLabel.material.map?.dispose()
+  houseLabel.material.map = textTexture([h.name], h.main, h.accent)
+  houseLabel.material.needsUpdate = true
+}
 function forGender(text) {
   if (!maleRoom) return text
   return text
@@ -492,10 +506,11 @@ function buildOutside() {
   const path2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 6), mat(0xd8c49a))
   path2.rotation.x = -Math.PI / 2; path2.position.set(16, 0.006, 3.6)
   scene.add(path2)
-  // block label
-  const lab = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.7), new THREE.MeshBasicMaterial({ map: textTexture(['O Block']) }))
+  // the house's name on the wall, in its colours (paintHouseLabel)
+  const lab = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.7), new THREE.MeshBasicMaterial({ map: textTexture(['Res']) }))
   lab.position.set(4.5, 2.6, -3.1)
   scene.add(lab)
+  houseLabel = lab
   // road
   const road = new THREE.Mesh(new THREE.PlaneGeometry(140, 4), mat(0x4a4a52))
   road.rotation.x = -Math.PI / 2; road.position.set(30, 0.01, 8)
@@ -513,7 +528,7 @@ function buildOutside() {
   box(0.1, 2.4, 0.1, 0x2a1846, 14.8, 1.2, 5.0)
   box(0.1, 2.4, 0.1, 0x2a1846, 17.2, 1.2, 5.0)
   box(2.2, 0.1, 0.4, 0x8c5a33, 16, 0.5, 4.9)
-  const stop = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshBasicMaterial({ map: textTexture(['BUS', 'Westville Campus']) }))
+  const stop = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8), new THREE.MeshBasicMaterial({ map: textTexture(['BUS', 'UMzansi']) }))
   stop.position.set(16, 2.9, 5.45)
   scene.add(stop)
   sign = stop
@@ -536,7 +551,7 @@ function buildOutside() {
     w.rotation.x = Math.PI / 2; w.position.set(x, 0.42, z)
     bus.add(w)
   }
-  const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.4), new THREE.MeshBasicMaterial({ map: textTexture(['Westville'], '#1d1236', '#f0c400', 512, 110) }))
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.4), new THREE.MeshBasicMaterial({ map: textTexture(['UMzansi'], '#1d1236', '#f0c400', 512, 110) }))
   plate.position.set(3.52, 2.25, 0); plate.rotation.y = Math.PI / 2
   bus.add(plate)
   bus.position.set(-40, 0, 7.4)
@@ -908,7 +923,7 @@ async function play() {
   if (route === 1) {
     // Skip: the shower, the walk and the ride pass in one fade; the clock still runs.
     setStep('skip-ride')
-    await fadeOut('\u{1F6BF} Shower · \u{1F68C} bus · Westville…')
+    await fadeOut('\u{1F6BF} Shower · \u{1F68C} bus · UMzansi…')
     const ride = busAfter(run.minutes + 15 + 8, delay)
     await addMinutes(ride.next + RIDE - run.minutes, 1.6)
     player.position.set(ANCHORS.arrive[0] - 1.5, 0, 6.2)
@@ -1156,6 +1171,7 @@ export function startMorning(options) {
   if (roommate) scene.remove(roommate)
   if (crushAv) scene.remove(crushAv)
   ROOMIE = roommateOf(opts.run.character?.avatar)
+  paintHouseLabel()
   maleRoom = genderOf(opts.run.character?.avatar) === 'male'
   host.dataset.roomie = ROOMIE
   uiq('.mm-tag').textContent = ROOMIE

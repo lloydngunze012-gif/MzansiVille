@@ -125,18 +125,6 @@ export function createOthers(scene) {
     scene.remove(group)
   }
 
-  // Where the real students are gathered: the spot with the most of them within 12 m
-  // (null when nobody's on the map).
-  function busiest() {
-    const list = peersOnCampus().filter((p) => p.p !== 'lie')
-    let best = null
-    for (const p of list) {
-      const n = list.filter((q) => Math.hypot(q.x - p.x, q.z - p.z) < 12).length
-      if (!best || n > best.n) best = { x: p.x, z: p.z, n }
-    }
-    return best
-  }
-
   // Tests (read only): the real students drawn here, where, and their tag.
   function report(camera) {
     return [...shown.entries()].map(([id, e]) => ({
@@ -152,5 +140,5 @@ export function createOthers(scene) {
     }))
   }
 
-  return { group, update, dispose, busiest, report, count: () => shown.size }
+  return { group, update, dispose, report, count: () => shown.size }
 }

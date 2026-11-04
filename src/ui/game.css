@@ -1,7 +1,7 @@
 .g-screen{position:relative;display:flex;flex-direction:column;height:100dvh;min-height:100dvh;overflow:hidden;background:#10241a;color:#f4f1e8;padding:0!important;max-width:none!important}
 .g-hud{position:relative;z-index:5;background:linear-gradient(#0d1712f2,#0d1712d9);padding:8px 10px 6px;border-bottom:1px solid #ffffff1a;backdrop-filter:blur(6px)}
 .g-row{display:flex;align-items:center;gap:10px}
-.g-day{font-size:13px;opacity:.9}.g-day b{font-size:15px;margin-right:4px}
+.g-day{font-size:13px;opacity:.9}.g-day b{font-size:15px;margin-right:4px;white-space:nowrap}
 .g-clock{margin-left:auto;font:700 20px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.5px;color:#ffe08a}
 .g-gear{width:40px;height:40px;border-radius:12px;border:1px solid #ffffff2a;background:#ffffff12;color:#fff;font-size:20px;cursor:pointer}
 .g-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:6px}

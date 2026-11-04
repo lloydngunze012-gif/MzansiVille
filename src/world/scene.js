@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
-import { homePlaceId } from '../engine/model.js'
+import { homePlaceId, houseOf } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
 import { createAvatar, gesture, inTransition, layDown, lookOf, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
@@ -16,7 +16,7 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { createOthers } from './others.js'
-import { onlineCount, reportLocal, settled } from '../presence.js'
+import { onlineCount, reportLocal } from '../presence.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
@@ -62,6 +62,7 @@ let actionCommit = null
 let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
 let stopButton = null // shown while you move: tap it and you stop, whatever was going on
+let houseBar = null // in a common room: Head out, Things to do
 let frameFrom = null // where the player was before this frame's step
 let against = 0 // seconds walking at something without going anywhere
 let againstFrames = 0
@@ -272,6 +273,11 @@ function ensureRenderer() {
     stopButton.hidden = true
   })
   stopButton.addEventListener('click', (event) => event.stopPropagation())
+  // In a house's common room: the way out, and what there is to do here.
+  host.insertAdjacentHTML('beforeend', '<div class="house-bar" hidden><button type="button" class="house-out">🚪 Head out</button><button type="button" class="house-do">Things to do</button></div>')
+  houseBar = host.querySelector('.house-bar')
+  host.querySelector('.house-out').addEventListener('click', (event) => { event.stopPropagation(); leaveHouse() })
+  host.querySelector('.house-do').addEventListener('click', (event) => { event.stopPropagation(); if (inHouse) openPlace(inHouse.building.id) })
   input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
@@ -393,6 +399,12 @@ function pick(point, x, y) {
   }
   if (onSelf(x, y)) return { kind: 'self' }
   raycaster.setFromCamera(point, camera)
+  if (inHouse && room) {
+    const hit = raycaster.intersectObjects(room.group.children, true)[0]
+    if (hit?.object.name === 'room-exit') return { kind: 'exit' }
+    const floor = raycaster.intersectObject(room.group.getObjectByName('room-floor'), false)[0]
+    return floor ? { kind: 'ground', x: floor.point.x, z: floor.point.z } : null
+  }
   const person = hitOf(raycaster.intersectObjects(everyone(), true).filter((hit) => hit.object.name === 'hit'), 'personId')
   if (person) return { kind: 'person', node: person }
   const stall = hitOf(raycaster.intersectObjects(campus.dressing?.vendorTaps || [], true), 'vendor')
@@ -412,6 +424,7 @@ function tapped(point, x, y) {
   if (!hit) return
   window.mzansiLastTap = hit.kind === 'person' ? { kind: 'person', id: hit.node.userData.personId } : { ...hit }
   if (hit.kind === 'self') stopHere()
+  else if (hit.kind === 'exit') walkTo(room.anchors.door.x, room.anchors.door.z, () => leaveHouse(), { always: true })
   else if (hit.kind === 'person') startTalk(hit.node)
   else if (hit.kind === 'vendor') { const a = everyone().find((p) => p.userData.personId === hit.id); if (a) startTalk(a) }
   else if (hit.kind === 'building') { interrupt(); approach(hit.id) }
@@ -424,6 +437,12 @@ function tapped(point, x, y) {
 // other opts go to the mover (pace, near, solid).
 function walkTo(x, z, done, opts = {}) {
   if (!campus || !player) return
+  if (inHouse && room) {
+    const pts = boxPath(room.blocks.concat(roomSolids), room.bounds, player.position, { x, z }, { pad: 0.34 })
+    const pace = mover.walkTo(pts.length ? pts : [{ x, z }], { ...opts, done: (how) => { if (how === 'arrived' || (how === 'stalled' && (opts.always || Math.hypot(x - player.position.x, z - player.position.z) < 1.5))) done?.() } })
+    host.dataset.walkSeconds = (mover.remaining() / pace).toFixed(1)
+    return
+  }
   const start = nearestOpen(campus.grid, player.position)
   const goal = nearestOpen(campus.grid, { x, z })
   const points = peopleInTheWay([start, goal], () => findPath(campus.grid, start, goal))
@@ -477,6 +496,10 @@ let going = null
 function goTo(id) {
   const building = campus?.layout.buildings.find((item) => item.id === id)
   if (!building || !player) return
+  if (inHouse) {
+    if (inHouse.building === building) { openPlace(id); return }
+    leaveHouse()
+  }
   const door = doorPoint(building)
   const skip = host.querySelector('.go-skip')
   going = { id, door }
@@ -490,7 +513,8 @@ function goTo(id) {
     player.position.set(going.door.x, player.position.y, going.door.z)
     const id2 = going.id
     endGoing()
-    openPlace(id2)
+    if (building.house) enterHouse(building, { sheet: true })
+    else openPlace(id2)
   }
   approach(id, () => { endGoing() })
 }
@@ -506,9 +530,16 @@ window.addEventListener('mzansi-go-place', (event) => { if (visible) goTo(event.
 function approach(id, onArrive) {
   const building = campus?.layout.buildings.find((item) => item.id === id)
   if (!building) return
+  if (inHouse && inHouse.building !== building) leaveHouse()
   const door = doorPoint(building)
   const dist = Math.hypot(door.x - player.position.x, door.z - player.position.z)
-  const there = () => { faceTo = { x: building.x, z: building.z }; onArrive?.(); openPlace(id) }
+  // (a house: through its door into the common room, its sheet over it)
+  const there = () => {
+    onArrive?.()
+    if (building.house) { enterHouse(building, { sheet: true }); return }
+    faceTo = { x: building.x, z: building.z }
+    openPlace(id)
+  }
   if (dist < 2.2) there()
   // (held up on the way: the place opens where you stopped, never nothing)
   else walkTo(door.x, door.z, there, { always: true })
@@ -534,8 +565,72 @@ function nearestDoor() {
 
 function enterNearest() {
   const near = nearestDoor()
-  if (near && near.dist < 2.2) openPlace(near.building.id)
+  if (!near || near.dist >= 2.2) return
+  if (near.building.house) { enterHouse(near.building, { sheet: true }); return }
+  openPlace(near.building.id)
 }
+
+// ---------- A house's common room (houses.json) ----------
+// Every house door opens into its common room: a room you walk about in (taps on the
+// floor), its housemates on the couch, the door out on the side wall. You start the
+// game in your own house's. Leaving (the door, Head out, the map or another place)
+// puts you on campus outside its door.
+let inHouse = null // { building, house, folk: [avatars] }
+function enterHouse(building, opts = {}) {
+  if (!building?.house || !player) return
+  const house = building.house
+  clearRoom()
+  mover.stop()
+  scriptMove = null
+  room = buildRoom('common', { house })
+  scene.add(room.group)
+  roomSolids = collidersOf(room.group)
+  const built = room
+  setTimeout(() => { if (room === built) roomSolids = collidersOf(room.group) }, 2500)
+  // Housemates: two on the couch, one at the kettle (a different few in each house).
+  const folk = []
+  const seed = [...house.id].reduce((t, ch) => t + ch.charCodeAt(0), 0)
+  const spots = room.anchors.seats.slice(0, 2).map((s) => ({ ...s, pose: 'sit' })).concat(room.anchors.stand.map((s) => ({ ...s, y: 0, pose: 'stand' })))
+  spots.forEach((s, i) => {
+    const id = `x${(seed + i * 5) % 20}`
+    const a = createAvatar(lookForPerson(id, seed + i))
+    a.position.set(s.x, s.y || 0, s.z)
+    a.rotation.y = s.rot
+    a.userData.pose = s.pose
+    room.group.attach(a)
+    folk.push(a)
+  })
+  inHouse = { building, house, folk }
+  const at = opts.spawn ? room.anchors.spawn : room.anchors.door
+  player.position.set(at.x, 0, at.z)
+  player.userData.lastPos?.set(at.x, 0, at.z)
+  player.userData.pose = 'stand'
+  player.rotation.y = Math.atan2(room.anchors.look.x - at.x, room.anchors.look.z - at.z)
+  // (the camera looks in through the open corner)
+  rig.yaw = 0.85
+  rig.facing = player.rotation.y
+  host.dataset.house = house.id
+  host.querySelector('.house-bar').hidden = false
+  if (opts.sheet) openPlace(building.id)
+}
+function leaveHouse(opts = {}) {
+  if (!inHouse) return
+  const { building } = inHouse
+  inHouse = null
+  clearRoom()
+  mover.stop()
+  delete host.dataset.house
+  host.querySelector('.house-bar').hidden = true
+  if (opts.stay) return
+  const door = doorPoint(building)
+  player.position.set(door.x, 0, door.z)
+  player.userData.lastPos?.set(door.x, 0, door.z)
+  player.userData.pose = 'stand'
+  player.rotation.y = 0 // facing out, away from the door
+  rig.yaw = Math.PI
+  rig.facing = 0
+}
+window.mzansiInHouse = () => (inHouse ? { id: inHouse.house.id, name: inHouse.house.name, place: inHouse.building.id } : null)
 
 // ---------- Talking to people ----------
 // Everyone tappable: the crowd, the places' own people (vendor, campaigners...).
@@ -785,7 +880,8 @@ function watch() {
   if (!player) return
   if (lastFrame && performance.now() - lastFrame > 8000) { failed('the 3D view stopped'); return }
   const inRoom = acting && room && player.position.x > room.bounds.minX - 2 && player.position.x < room.bounds.maxX + 2 && player.position.z > room.bounds.minZ - 2 && player.position.z < room.bounds.maxZ + 2
-  if (inRoom || onCampus(player.position)) return
+  const inCommon = inHouse && room && player.position.x > room.bounds.minX - 2 && player.position.x < room.bounds.maxX + 2 && player.position.z > room.bounds.minZ - 2 && player.position.z < room.bounds.maxZ + 2
+  if (inRoom || inCommon || onCampus(player.position)) return
   reportError('watchdog', 'player outside the map', { at: [player.position.x, player.position.z].map((v) => Number.isFinite(v) ? +v.toFixed(1) : String(v)), acting })
   respawnAt(nearestPlace())
 }
@@ -1683,6 +1779,10 @@ function abortable(promise) {
   return Promise.race([promise, running.left])
 }
 async function runActivity(detail) {
+  // (scenes start at the place's door: from a common room, step out first, and come
+  // back into it when the activity is over)
+  const fromHouse = inHouse?.building || null
+  if (fromHouse) leaveHouse()
   acting = true
   let quit
   running = { left: new Promise((resolve, reject) => { quit = reject }), base: detail.actionId === 'talk_queue' ? 'queueing' : 'doing' }
@@ -1725,6 +1825,7 @@ async function runActivity(detail) {
   if (companion && (left || !detail.sceneOpt?.keep)) stopCompanion()
   activities.api.end()
   backOnCampus(detail.placeId)
+  if (fromHouse) enterHouse(fromHouse)
   bar.hidden = true
   bar.classList.remove('small')
   acting = false
@@ -1852,6 +1953,7 @@ function rebuild(district, homeId) {
 }
 
 function respawn(district, run) {
+  leaveHouse({ stay: true })
   const homeId = homePlaceId(district, run.character?.residence)
   if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}`) rebuild(district, homeId)
   if (player) scene.remove(player)
@@ -1885,78 +1987,18 @@ function respawn(district, run) {
     rig.yaw = player.rotation.y + Math.PI
     gateDay = String(run.day)
   }
-  // Nobody spawns alone: off the bus you're at the gate (a few students get off with
-  // you); otherwise where the real students are gathered, or the Quad (never an empty
-  // residence path). Once the people already online have answered, if you haven't
-  // moved yet, you're moved over to them.
-  let spawnKind = gate ? 'gate' : 'home'
-  if (!gate && !spawnAt) {
-    spawnKind = crowdSpawn() || spawnKind
-    if (!settled()) {
-      const from = { x: player.position.x, z: player.position.z }
-      const placed = player
-      const later = () => {
-        if (player !== placed || mover.hasTarget || Math.hypot(player.position.x - from.x, player.position.z - from.z) > 0.3) return
-        if (settled()) {
-          // Already among them (a few metres off) stays put; on top of one, or far
-          // from them, goes beside them.
-          const spot = others?.busiest()
-          const d = spot ? Math.hypot(spot.x - player.position.x, spot.z - player.position.z) : 0
-          if (spot && (d < 1 || d > 8)) { const kind = crowdSpawn(true); if (kind) host.dataset.spawn = kind }
-          return
-        }
-        if (performance.now() - t0 < 15000) setTimeout(later, 250)
-      }
-      const t0 = performance.now()
-      setTimeout(later, 250)
-    }
-  }
+  // You start in your own house's common room (build plan, Piece 0), among
+  // housemates; off the bus you're at the gate; ?spawn=<place> at that place (tests).
+  const homeBuilding = campus.layout.buildings.find((building) => building.id === homeId)
+  const spawnKind = gate ? 'gate' : spawnAt ? 'place' : homeBuilding?.house ? 'house' : 'home'
   host.dataset.spawn = spawnKind
   host.dataset.facing = player.rotation.y.toFixed(2)
   scene.add(player)
   mover.attach(player)
+  if (spawnKind === 'house') enterHouse(homeBuilding, { spawn: true })
   clearGuide()
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'
-}
-
-// Stand the player beside the busiest group of real students (true: only if there is
-// one); otherwise on the Quad. Returns where they were put, or '' if nowhere new.
-function crowdSpawn(onlyPeople = false) {
-  const spot = others?.busiest()
-  let target = null
-  let kind = ''
-  if (spot) {
-    target = { x: spot.x, z: spot.z }
-    kind = 'players'
-  } else if (!onlyPeople) {
-    const quad = campus.layout.buildings.find((b) => b.id === 'quad')
-    if (quad) { target = { x: quad.cx + 2, z: quad.cz + 4 }; kind = 'quad' }
-  }
-  if (!target) return ''
-  // Beside them, not on top of them: the first free spot on a ring 1.8 m round them.
-  let at = null
-  const centre = spot || target
-  for (let k = 0; k < 12 && !at; k++) {
-    const a = 0.8 + k * (Math.PI / 6)
-    const x = centre.x + Math.sin(a) * (spot ? 1.8 : 0.01 + k * 0.5)
-    const z = centre.z + Math.cos(a) * (spot ? 1.8 : 0.01 + k * 0.5)
-    if (!hitsSolid(x, z) && !pointBlocked(campus.grid, x, z) && (crowd?.people || []).every((p) => Math.hypot(p.avatar.position.x - x, p.avatar.position.z - z) > 0.9)) at = { x, z }
-  }
-  if (!at) {
-    const cell = nearestOpen(campus.grid, target)
-    if (!cell) return ''
-    at = cellCenter(cell.c, cell.r)
-  }
-  mover.stop()
-  player.position.set(at.x, 0, at.z)
-  player.userData.lastPos?.set(at.x, 0, at.z)
-  if (spot) {
-    player.rotation.y = Math.atan2(spot.x - at.x, spot.z - at.z)
-    rig.facing = player.rotation.y
-    rig.yaw = player.rotation.y + Math.PI
-  }
-  return kind
 }
 
 function spawnKey(district, run) {
@@ -2262,6 +2304,8 @@ function frameBody(now) {
     if (walking) ps.busy(0.5)
     else if (player.userData.pose === 'run') player.userData.pose = 'stand'
     if (stopButton) stopButton.hidden = !walking
+    // (the house bar steps aside while the map or a sheet is open: never under a finger meant for them)
+    if (houseBar) houseBar.hidden = !inHouse || hold
     if (ps.open) {
       const now = walking ? (player.userData.pose === 'run' ? 'running' : 'walking') : 'free'
       if (ps.state !== now) ps.set(now)
@@ -2293,6 +2337,7 @@ function frameBody(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
+    for (const a of inHouse?.folk || []) poseAvatar(a, false, clock)
     // Presence: tell everyone where you are; draw where they are. (Not in a room built
     // off the map: there you're "away" and see nobody from campus.)
     const inRoom = room && player.position.x > room.bounds.minX - 2 && player.position.x < room.bounds.maxX + 2 && player.position.z > room.bounds.minZ - 2 && player.position.z < room.bounds.maxZ + 2

@@ -57,7 +57,7 @@ function sports() {
     ${[22, 30, 38, 46, 54].map((x) => `<rect x="${x}" y="8" width="5" height="5" fill="#ffd23f" opacity=".85"/>`).join('')}`)
 }
 
-function residence(letter, tint = '#d9774a') {
+export function residence(letter, tint = '#d9774a') {
   const win = []
   for (let r = 0; r < 3; r += 1) for (let c = 0; c < 3; c += 1) win.push(`<rect x="${12 + c * 9}" y="${14 + r * 10}" width="5" height="6" rx="1" fill="#ffcf6b" opacity="${(r + c) % 3 ? 0.9 : 0.45}"/>`)
   return svg(58, 54, `${SHADOW}
@@ -70,22 +70,6 @@ function residence(letter, tint = '#d9774a') {
     <text x="46" y="20" font-size="11" font-weight="900" text-anchor="middle" fill="#ffd23f" font-family="Arial Black,Arial">${letter}</text>`)
 }
 
-function blocks() {
-  return svg(60, 54, `${SHADOW}
-    <rect x="4" y="18" width="22" height="32" rx="2" fill="#c96a44"/><rect x="30" y="12" width="24" height="38" rx="2" fill="#d9774a"/>
-    ${[8, 16].map((x) => [24, 33, 42].map((y) => `<rect x="${x}" y="${y}" width="4" height="5" fill="#ffcf6b"/>`).join('')).join('')}
-    ${[34, 42].map((x) => [18, 27, 36].map((y) => `<rect x="${x}" y="${y}" width="5" height="5" fill="#ffcf6b" opacity=".8"/>`).join('')).join('')}
-    <circle cx="50" cy="44" r="7" fill="#2a1846" stroke="#ffd23f" stroke-width="1.3"/><text x="50" y="47.5" font-size="10" font-weight="900" text-anchor="middle" fill="#ffd23f">+</text>`)
-}
-
-function house() {
-  return svg(56, 50, `${SHADOW}
-    <rect x="10" y="22" width="34" height="24" fill="#f3d9b1"/>
-    <polygon points="6,24 27,8 48,24" fill="#b2462e"/>
-    <rect x="15" y="28" width="8" height="7" fill="#ffcf6b"/><rect x="30" y="31" width="8" height="15" fill="#2a1846"/>
-    <rect x="44" y="30" width="2" height="16" fill="#5b4a3a"/><rect x="40" y="26" width="12" height="7" rx="2" fill="#ffd23f"/>
-    <text x="46" y="31.5" font-size="5" text-anchor="middle" font-weight="900" fill="#2a1846">BUS</text>`)
-}
 
 function busStation() {
   return svg(76, 52, `${SHADOW}
@@ -135,11 +119,6 @@ export const ART = {
   science: () => lecture('#3d7be0', '\u{1F52C}'),
   law: () => lecture('#8a3346', '\u2696\uFE0F'),
   engineering: () => lecture('#d0782a', '\u2699\uFE0F'),
-  res_o: () => residence('O'),
-  res_r: () => residence('R', '#c9704a'),
-  res_s: () => residence('S', '#e08a55'),
-  res_other: blocks,
-  off_campus: house,
   bus_station: busStation,
   gate: gate,
 }
@@ -151,8 +130,8 @@ export const LAYOUT = {
   science: [27, 10], law: [70, 10],
   engineering: [13, 26], library: [42, 25], sports_centre: [80, 27],
   smig: [17, 41], quad: [47, 45], cafeteria: [79, 43],
-  health_sciences: [80, 59], res_other: [13.5, 57],
-  res_r: [43, 66], res_o: [15, 75], res_s: [31, 90],
+  health_sciences: [80, 59], res_other: [13.5, 57], res_j: [4, 60],
+  res_r: [43, 66], res_o: [15, 75], res_s: [31, 90], res_k: [52, 76],
   bus_station: [65, 75], gate: [57, 93], off_campus: [83, 88],
 }
 

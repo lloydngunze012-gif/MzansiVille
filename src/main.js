@@ -45,7 +45,7 @@ let shareMilestone = null
 let shareBlob = null
 import { emptyDraft, shotState, view } from './ui/render.js'
 import { anyEnabled, fpsText, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
-import { homePlaceId } from './engine/model.js'
+import { homePlaceId, houseOf } from './engine/model.js'
 import { venueFor } from './venues.js'
 import { toMinutes } from './engine/format.js'
 import { MENUS, itemOf } from './menus.js'
@@ -77,6 +77,12 @@ function loadSave() {
 const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.search).get('moments') !== '1'
 let save = loadSave()
 if (save.run) save.run.noMoments = NO_MOMENTS
+// The houses replaced the residences (build plan, Piece 0): an old residence moves into
+// its house (houses.json "was"; any other old name, a house of its own, always the same).
+if (save.run?.character) {
+  const h = houseOf(districtById(save.run.character.districtId || defaultDistrictId), save.run.character.residence)
+  if (h && save.run.character.residence !== h.name) { save.run.character.residence = h.name; try { localStorage.setItem(KEY, JSON.stringify(save)) } catch { /* kept in memory */ } }
+}
 let edits = []
 let draft = emptyDraft()
 let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
@@ -1091,7 +1097,11 @@ function syncCard() {
   const set = (key, text) => { const el = app.querySelector(`[data-card="${key}"]`); if (el && el.textContent !== text) el.textContent = text }
   const h = draft.handle.trim().replace(/^@/, '')
   set('name', draft.name.trim() || 'Your name')
-  set('residence', draft.residence || 'Res: choose')
+  set('residence', draft.residence || 'House: choose')
+  // (the card wears the house colours)
+  const card = app.querySelector('.cc-id')
+  const house = districtNow().houses?.find((h) => h.name === draft.residence)
+  if (card) { card.style.setProperty('--h1', house?.main || ''); card.style.setProperty('--h2', house?.accent || ''); card.toggleAttribute('data-house', Boolean(house)) }
   set('course', draft.course || 'Course: choose')
   set('handle', h ? '@' + h : '@handle')
   const todo = [draft.name.trim().length >= 2, !!draft.residence, !!draft.course].filter((ok) => !ok).length

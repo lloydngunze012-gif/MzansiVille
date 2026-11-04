@@ -102,6 +102,11 @@ export const SCENE_OF = {
   res_s_ball: ['exercise', { kind: 'ball' }],
   res_s_stoep: ['sitRelax', { seat: 'stoep', lines: ['The courtyard is loud and warm. You stay a while.'] }],
   res_s_kitchen: ['cook', { what: 'two-minute noodles', friend: true }],
+  // Every house's common room (place "house" in activities.csv).
+  house_tea: ['cook', { what: 'tea' }],
+  house_chat: ['chat', { who: ['x8'], lines: ['You live here too? Which floor?', 'Third. The one with the broken light.', 'Ah, the famous third floor.'] }],
+  house_tv: ['sitRelax', { room: 'lounge', lines: ['The match is on. The whole house groans at the same time.'] }],
+  house_late: ['sitRelax', { room: 'lounge', lines: ['The couch is warm. Someone tells the bus story again, bigger.'] }],
   res_other_kettle: ['cook', { what: 'kettle' }],
   res_other_out: ['walkOut', {}],
   res_other_quiet: ['sitRead', { room: 'bedroom' }],

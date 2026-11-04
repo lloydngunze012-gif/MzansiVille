@@ -1,6 +1,6 @@
 {
   "id": "campusville",
-  "name": "CampusVille",
+  "name": "UMzansi",
   "city": "Durban",
   "dialCode": "031",
   "grid": [
@@ -127,13 +127,6 @@
       "lowText": "Falling behind"
     },
     "spotGraceDays": 3
-  },
-  "residencePlaces": {
-    "O Block": "res_o",
-    "R Block": "res_r",
-    "S Block": "res_s",
-    "default_on_campus": "res_other",
-    "default_off_campus": "off_campus"
   },
   "courseVenues": {
     "Accounting": "smig",
@@ -298,6 +291,26 @@
         500,
         900
       ]
+    ],
+    [
+      [
+        90,
+        672
+      ],
+      [
+        150,
+        700
+      ]
+    ],
+    [
+      [
+        430,
+        812
+      ],
+      [
+        500,
+        812
+      ]
     ]
   ],
   "bestieDays": [
@@ -362,5 +375,6 @@
       "title": "Graduate first year",
       "text": "Reach day 30 with grades of 50 or more."
     }
-  ]
+  ],
+  "fullName": "University of Mzansi"
 }

@@ -8,7 +8,7 @@
   ],
   "people": {
     "zanele": {
-      "name": "Zanele", "role": "Your roommate", "bio": "O Block's loudest laugh. Borrows everything, returns it with interest.",
+      "name": "Zanele", "role": "Your roommate", "bio": "The house's loudest laugh. Borrows everything, returns it with interest.",
       "chats": [
         { "line": "Roomie! Campus is huge, hey? I already got lost twice. Proudly.", "replies": [
           { "text": "Let's get lost together.", "act": "walk", "social": 2, "close": 10, "answer": "Deal. You lead, I complain." },

@@ -41,6 +41,7 @@ export function buildingLayout(district) {
       id: place.id,
       name: place.name,
       kind: place.kind,
+      house: (district.houses || []).find((h) => h.place === place.id) || null,
       cx,
       cz,
       x,

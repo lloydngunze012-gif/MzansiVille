@@ -153,7 +153,7 @@ function buildingMesh(building, home) {
     group.add(roof)
     const door = new THREE.Mesh(
       new THREE.BoxGeometry(1.25, 2.15, 0.16),
-      new THREE.MeshStandardMaterial({ color: home ? 0xf0c400 : 0x3a2a22, roughness: 0.7 }),
+      new THREE.MeshStandardMaterial({ color: building.house ? building.house.main : home ? 0xf0c400 : 0x3a2a22, roughness: 0.7, ...(building.house ? { emissive: building.house.main, emissiveIntensity: 0.18 } : {}) }),
     )
     // The door swings on a hinge as you arrive (scene.js opens it).
     const hinge = new THREE.Group()

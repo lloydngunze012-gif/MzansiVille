@@ -15,12 +15,14 @@ insert into public.district_places (district_id, id, name, kind, x, y, blurb) va
 ('campusville', 'science', 'Science Lecture Venue', 'lecture', 360, 300, 'Science lectures and labs'),
 ('campusville', 'law', 'Law Lecture Venue', 'lecture', 680, 320, 'Law lectures'),
 ('campusville', 'engineering', 'Engineering Lecture Venue', 'lecture', 220, 420, 'Engineering lectures'),
-('campusville', 'res_o', 'O Block', 'residence', 150, 700, 'The loud block: sleep, two-minute noodles, a roommate, and a party that starts in someone''s room'),
-('campusville', 'res_r', 'R Block', 'residence', 250, 780, 'The quiet block: sleep, a kettle, and corridor lights that actually go out'),
-('campusville', 'res_s', 'S Block', 'residence', 350, 820, 'The middle block: sleep, a shared fridge, and courtyard noise that ends before a test'),
-('campusville', 'res_other', 'Other on-campus blocks', 'residence', 200, 600, 'The other on-campus blocks: sleep, a corridor, and whoever landed on your floor'),
-('campusville', 'off_campus', 'Off-campus res (bus home)', 'residence', 580, 980, 'Off-campus students start and end the day here. Home is a bus ride, not a walk across the quad'),
-('campusville', 'gate', 'Main Gate', 'transit', 500, 940, 'Entry; late-night security events');
+('campusville', 'gate', 'Main Gate', 'transit', 500, 940, 'Entry; late-night security events'),
+('campusville', 'res_o', 'Thekwini House', 'residence', 150, 700, 'The loud house: a speaker on the balcony, two-minute noodles, and a party that starts in someone''s room'),
+('campusville', 'res_r', 'Peak House', 'residence', 250, 780, 'The quiet house: the corridor goes still after ten, and the common room is for reading'),
+('campusville', 'res_s', 'Oakwinds House', 'residence', 350, 820, 'The courtyard house: soccer until the floodlight clicks off, then someone shares the fridge'),
+('campusville', 'res_other', 'Braam House', 'residence', 200, 600, 'The busy house: the most floors, the most stairs, and whoever landed next door becomes your person'),
+('campusville', 'res_j', 'Jakaranda House', 'residence', 90, 620, 'The creative house: purple blossoms on the path, paint on the stairs, and a playlist that never ends'),
+('campusville', 'res_k', 'Kingsway House', 'residence', 430, 760, 'The sporty house: boots by the door, a match on the TV, and a rivalry with every other house'),
+('campusville', 'off_campus', 'Mzansi House', 'residence', 580, 980, 'The international house by the gate: students from everywhere, and a kitchen that smells of five countries');
 
 insert into public.district_activities
   (district_id, id, phase, place_id, name, money, energy, grades, social, hunger, time_slots, risk_or_twist) values
@@ -114,7 +116,7 @@ insert into public.district_activities
 ('campusville', 'res_r_breakfast', 'morning', 'res_r', 'Quiet breakfast', -5, 4, 0, -1, 10, 1, 'Peace, toast and a sunrise; nobody talks before 8'),
 ('campusville', 'res_r_out', 'transit', 'res_r', 'Leave without waking the corridor', 0, -1, 0, 0, 0, 0, 'Ninja mode; the door creaks anyway'),
 ('campusville', 'res_r_reading', 'lecture', 'res_r', 'Read on the bed between classes', 0, -4, 3, -2, 0, 1, 'Good marks; the pillow is very persuasive'),
-('campusville', 'res_r_tea', 'social', 'res_r', 'Tea with one person', 0, -2, 0, 3, 5, 1, 'Rooibos and real talk; Quiet Block social'),
+('campusville', 'res_r_tea', 'social', 'res_r', 'Tea with one person', 0, -2, 0, 3, 5, 1, 'Rooibos and real talk; Peak House social'),
 ('campusville', 'res_r_lights', 'night', 'res_r', 'Lights-out corridor', 0, 2, 0, -1, 0, 0, 'Silence; one person is still typing loudly'),
 ('campusville', 'res_s_fridge', 'morning', 'res_s', 'Something from the shared fridge', -4, 0, 0, 2, 12, 0, 'Label your yoghurt or lose it'),
 ('campusville', 'res_s_out', 'transit', 'res_s', 'Walk out with the courtyard', 0, -2, 0, 2, 0, 0, 'Safety in numbers; jokes in numbers too'),
@@ -131,40 +133,20 @@ insert into public.district_activities
 ('campusville', 'off_return', 'lecture', 'off_campus', 'Go home for the forgotten textbook', -12, -8, -1, 0, 0, 1, 'The taxi fare hurts more than the lecture you miss'),
 ('campusville', 'off_supper', 'social', 'off_campus', 'Supper before the ride back', -25, 0, 0, 3, 20, 1, 'Home cooking hits different; leftovers are a gamble'),
 ('campusville', 'off_couch', 'leisure', 'off_campus', 'An hour on the couch', 0, 6, -1, -2, 0, 1, 'Rest; the TV remote has other plans'),
-('campusville', 'off_late', 'night', 'off_campus', 'Key in the gate', 0, -3, 0, 0, 0, 0, 'Home at last; the gate lock is stiff');
+('campusville', 'off_late', 'night', 'off_campus', 'Key in the gate', 0, -3, 0, 0, 0, 0, 'Home at last; the gate lock is stiff'),
+('campusville', 'house_tea', 'morning', 'house', 'Tea in the common room', -3, 3, 0, 1, 6, 0, 'Rooibos from the house tin; somebody always refills it'),
+('campusville', 'house_chat', 'social', 'house', 'Meet a housemate', 0, -2, 0, 4, 0, 1, 'Same house, same colours, new friend'),
+('campusville', 'house_tv', 'leisure', 'house', 'Watch the match in the common room', 0, 2, 0, 4, 0, 1, 'The whole house shouts at the same referee'),
+('campusville', 'house_late', 'night', 'house', 'Late chat on the common room couch', 0, -3, 0, 3, 0, 1, 'Lights low, phones out, the stories get bigger');
 
 insert into public.district_residences (district_id, name, type, distance_km, notes) values
-('campusville', 'O Block', 'on_campus', 0, 'Speaker on the balcony, two-minute noodles, and a party that starts in someone''s room.'),
-('campusville', 'R Block', 'on_campus', 0, 'The corridor goes still after ten. Bring earplugs only if you snore.'),
-('campusville', 'S Block', 'on_campus', 0, 'Courtyard soccer until the floodlight clicks off, then someone shares the fridge.'),
-('campusville', 'Jacaranda Court', 'off_campus_campus_owned', 2.4, 'Campus flats under the jacarandas. The guard knows your name. Single and two-bed.'),
-('campusville', 'Cane Crescent', 'off_campus_campus_owned', 3.2, 'Two-bed sharing and a kitchen that always smells like stew. A short bus, then you are home.'),
-('campusville', 'Harbour Walk', 'off_campus_leased', 11.8, 'The cheap rooms by the sea. The bus eats the evening and the breeze gives a little of it back.'),
-('campusville', 'Mango Yard', 'off_campus_leased', 4.6, 'Plastic chairs, a braai drum, and someone who will shout that the taxi is here.'),
-('campusville', 'Lantern House', 'off_campus_leased', 7.6, 'Fresh paint and a quiet study room on the second floor. The walls are thinner than the brochure.'),
-('campusville', 'Taxi Terrace', 'off_campus_leased', 5.5, 'You live on the route. Cheap, loud at six, and never short of a lift.'),
-('campusville', 'Fig Tree Flats', 'off_campus_leased', 2.8, 'Close enough to walk when the bus is full. The fig tree out front is the landmark.'),
-('campusville', 'Night Market Rooms', 'off_campus_leased', 9.2, 'Above the evening stalls. Cheap rent, late dinners, and a morning that starts too early.'),
-('campusville', 'Blue Crane House', 'off_campus_leased', 6.2, 'A leased house with a stoep. Someone is always borrowing sugar, and someone always has notes.'),
-('campusville', 'Kite Hill Rooms', 'off_campus_leased', 8.4, 'Plain rooms up a windy hill. The view is the amenity.'),
-('campusville', 'Gold Window', 'off_campus_leased', 3.6, 'Gold tint on the glass, a lobby that stays quiet, and wifi that actually holds.'),
-('campusville', 'Stoep House', 'off_campus_leased', 2.1, 'Almost on campus. The stoep is where the group chat happens out loud.'),
-('campusville', 'Raincloud Flats', 'off_campus_leased', 12.4, 'The frugal lease. You pack lunch, you learn the timetable, you still make the test.'),
-('campusville', 'Drummer''s Rest', 'off_campus_leased', 4.8, 'Someone is always rehearsing. You will know the chorus. You will also know your earplugs.'),
-('campusville', 'Library Lane', 'off_campus_leased', 3, 'A walk-up for people who treat Friday like a study date.'),
-('campusville', 'Spice Route', 'off_campus_leased', 10.6, 'A shared kitchen that feeds the floor. The long ride home is the tax.'),
-('campusville', 'Palm Gate', 'off_campus_leased', 1.8, 'The closest lease. You can hear the campus and still make an eight o''clock.'),
-('campusville', 'Red Dust House', 'off_campus_leased', 13, 'Far, hot, and honest about it. The rent leaves money for a kota.'),
-('campusville', 'Veranda House', 'off_campus_leased', 6.8, 'A plain good room. Not a story. A door that locks and a desk that fits.'),
-('campusville', 'Amber Lodge', 'private_accredited', 4, 'Accredited and serious about quiet hours. You are paying for the hush.'),
-('campusville', 'Cedar Rooms', 'private_accredited', 2.2, 'A short walk and a warden who actually does the rounds.'),
-('campusville', 'North Studio', 'private_accredited', 5, 'A private studio. You pay to be alone with the laptop, and you forget to eat.'),
-('campusville', 'Marula House', 'private_accredited', 2.6, 'Accredited house, big pots, and a rules page on the fridge.'),
-('campusville', 'Twin Palm', 'private_accredited', 2.4, 'A small courtyard and a short roll of neighbours. You will know everyone by week two.'),
-('campusville', 'Corner House', 'private_accredited', 1.6, 'The nearest accredited house. Home between lectures is a real option.'),
-('campusville', 'Lotus Rooms', 'private_accredited', 7.2, 'Quiet, a longer ride, and a kitchen that closes at ten.'),
-('campusville', 'Chapel Yard', 'private_accredited', 8, 'Early nights and a courtyard that smells like rain on warm brick.'),
-('campusville', 'Off campus (other)', 'other', null, 'A room the list does not name. No res bonus until it has its own story.');
+('campusville', 'Thekwini House', 'house', null, 'Loud and proud'),
+('campusville', 'Peak House', 'house', null, 'Quiet and focused'),
+('campusville', 'Oakwinds House', 'house', null, 'Courtyard family'),
+('campusville', 'Braam House', 'house', null, 'Big city energy'),
+('campusville', 'Jakaranda House', 'house', null, 'Leafy and creative'),
+('campusville', 'Kingsway House', 'house', null, 'Sporty and loud'),
+('campusville', 'Mzansi House', 'house', null, 'The world, one corridor');
 
 insert into public.district_events (district_id, id, title, body, choices) values
 ('campusville', 'nsfas_delayed', 'NSFAS is late', 'The 25th has come and gone and your NSFAS allowance has not landed. The res group chat is one long sigh with a lot of crying emojis.', '[{"label":"Stretch what you have","deltas":{"hunger":-10,"social":-2},"result":"Bread, peanut butter and patience. You discover that two-minute noodles can be a personality."},{"label":"Borrow R50 from a friend","deltas":{"money":50,"social":-4},"result":"A friend sends it with a voice note. The voice note is four minutes of advice, but the R50 is real."}]'::jsonb),

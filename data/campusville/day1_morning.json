@@ -8,14 +8,14 @@
   },
   "zanele": {
     "name": "Zanele",
-    "role": "Roommate in O Block. Your bestie from day one.",
+    "role": "Your roommate in the house. Your bestie from day one.",
     "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
     "intro": "That is Zanele. She will borrow things all year and return them with interest.",
     "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go."
   },
   "steps": {
     "wake": {
-      "caption": "O Block, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
+      "caption": "{house}, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
       "bubbles": [
         {
           "who": "player",
@@ -130,7 +130,7 @@
         "who": "player",
         "text": "Quick shower, get dressed…"
       },
-      "caption": "Door, stairwell, sunshine. The whole block smells of toast and ambition.",
+      "caption": "Door, stairwell, sunshine. The whole house smells of toast and ambition.",
       "zanele_at_door": {
         "who": "zanele",
         "text": "Go go go! Save me a seat at the back if we have the same class."
@@ -181,7 +181,7 @@
     },
     "head-out": { "caption": "Bag, student card, charger. Walk to the stop, or let the morning blur by." },
     "meet": { "caption": "Same bus, same wait. They have nice shoes and a very judgemental eyebrow for the timetable." },
-    "skip-ride": { "caption": "Shower, the stop, the bus, the gate. Westville appears like a jump cut." }
+    "skip-ride": { "caption": "Shower, the stop, the bus, the gate. UMzansi appears like a jump cut." }
   },
   "late_variants": {
     "bus_late": {
@@ -215,7 +215,7 @@
   ],
   "sipho": {
     "name": "Sipho",
-    "role": "Roommate in O Block for a male student. Your bestie from day one.",
+    "role": "Your roommate in the house, for a male student. Your bestie from day one.",
     "look": "Blue varsity jacket over a vest, one sock on, phone already at 12%.",
     "intro": "That is Sipho. He has a plan for everything except mornings.",
     "note": "Sipho has his own lines. Keys mirror the Zanele ones they replace (path in the morning code -> Sipho line).",

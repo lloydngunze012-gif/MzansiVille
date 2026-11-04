@@ -922,3 +922,14 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 #world .stop-btn{position:absolute;z-index:60;right:14px;bottom:calc(176px + env(safe-area-inset-bottom));width:76px;height:76px;border-radius:50%;border:3px solid #fff6e6;background:#d8342c;color:#fff;font:800 14px system-ui;display:grid;place-items:center;align-content:center;gap:0;box-shadow:0 6px 18px #0008;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
 #world .stop-btn span{font-size:18px;line-height:1}
 #world .stop-btn[hidden]{display:none}
+
+/* A house's common room (scene.js enterHouse): the way out and the house's actions. */
+#world .house-bar{position:absolute;z-index:58;left:50%;transform:translateX(-50%);bottom:calc(252px + env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto}
+#world .house-bar[hidden]{display:none}
+#world .house-bar button{font:800 14px system-ui;padding:11px 16px;border-radius:24px;border:2px solid #f0c400;background:#22143b;color:#fff6e6;box-shadow:0 4px 14px #0008;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+#world .house-bar .house-out{background:#f0c400;color:#22143b}
+
+/* House colours (houses.json): the student card's stripe and border, the profile chip. */
+.cc-id[data-house] { border-color: var(--h1); }
+.cc-id[data-house]::before { width: 9px; background: linear-gradient(var(--h1) 0 70%, var(--h2) 70%); }
+.house-chip { display: inline-block; padding: 1px 10px; border-radius: 12px; background: var(--h1, #5b23c9); color: var(--h2, #fff); border: 2px solid var(--h2, #f0c400); font-weight: 800; }

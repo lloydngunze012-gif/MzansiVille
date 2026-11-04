@@ -4,7 +4,7 @@ import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { chatFor } from '../engine/people.js'
 import { cardHtml, esc, summaryRows } from './render.js'
-import { ART, LAYOUT, groundHtml } from './campus.js'
+import { ART, LAYOUT, groundHtml, residence } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import { identityTitle } from '../engine/identity.js'
@@ -26,8 +26,7 @@ const ICON = {
 }
 const SHORT = {
   'SMIG': 'SMIG', 'Health Sciences Lecture Venue': 'Health Sci', 'Science Lecture Venue': 'Science',
-  'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Other on-campus blocks': 'Other blocks',
-  'Off-campus res (bus home)': 'Off-campus res', 'Main Bus Station': 'Bus station',
+  'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Main Bus Station': 'Bus station',
 }
 const CHIP_TIPS = [
   ['exam', '', '', 'Exam week: study counts double and the exam is at the Sports Centre on the last day.'],
@@ -429,7 +428,8 @@ export function mapHome(state, openPlace = '') {
     const [x, y] = layoutOf(place.id)
     const st = placeStatus(district, run, place.id)
     const mine = place.id === home ? ' mine' : ''
-    const art = (ART[place.id] || ART.res_other)()
+    const house = district.houses?.find((h) => h.place === place.id)
+    const art = house ? residence(house.short[0], house.main) : (ART[place.id] || ART.library)()
     return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%">
       ${st.open ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
       <span class="g-name">${esc(placeName(place))}${place.id === home ? ' \u00b7 home' : ''}</span>

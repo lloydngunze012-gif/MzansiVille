@@ -61,9 +61,10 @@ function enqueue(run, card) {
 function placeMatches(district, run, action, placeId) {
   if (action.scope === 'home') return homePlaceId(district, run.character.residence) === placeId
   if (action.scope === 'course') return coursePlaceId(district, run.character.course) === placeId
-  if (action.scope === 'campusRes') {
+  if (action.scope === 'campusRes' || action.placeId === 'house') {
+    // (every house: its common room, and the house party)
     const place = district.places.find((item) => item.id === placeId)
-    return Boolean(place && place.kind === 'residence' && place.id !== 'off_campus')
+    return Boolean(place && place.kind === 'residence')
   }
   return action.placeId === placeId
 }

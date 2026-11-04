@@ -5,6 +5,7 @@
 import * as THREE from 'three'
 import { loadModel } from './models.js'
 import { CHAIR_SEAT, makeChair } from './furniture.js'
+import { facadeSign, houseBanner } from './buildings.js'
 
 export const ROOM = { x: 0, z: -300 }
 const W = 9
@@ -12,7 +13,8 @@ const D = 8
 
 const mat = (color, extra) => new THREE.MeshStandardMaterial({ color, roughness: 0.85, ...extra })
 
-export function buildRoom(kind) {
+// opts.house (houses.json): for the common room, its colours, banner and name.
+export function buildRoom(kind, opts = {}) {
   const group = new THREE.Group()
   group.name = 'room'
   group.position.set(ROOM.x, 0, ROOM.z)
@@ -46,8 +48,12 @@ export function buildRoom(kind) {
     loadModel(`/models/${kit}/${name}.glb`).then((src) => { const m = src.clone(true); m.scale.setScalar(s); holder.add(m) }).catch(() => {})
     return holder
   }
-  const walls = { bedroom: [0xe8d6b8, 0x9a7048], kitchen: [0xf2efe6, 0xb8b0a0], classroom: [0xf6ecd8, 0xa07e58], library: [0xdfe6ee, 0x6b4a33], lab: [0xeef4f2, 0xc9d0d4], lounge: [0xf0dcc8, 0x8a6a4a] }[kind] || [0xeeeeee, 0x999999]
-  box(W, 0.1, D, walls[1], 0, -0.05, 0)
+  const house = kind === 'common' ? opts.house : null
+  // (a common room's walls: a light wash of its house colour)
+  const houseWall = house && new THREE.Color('#f4efe6').lerp(new THREE.Color(house.main), 0.22).getHex()
+  const walls = { bedroom: [0xe8d6b8, 0x9a7048], kitchen: [0xf2efe6, 0xb8b0a0], classroom: [0xf6ecd8, 0xa07e58], library: [0xdfe6ee, 0x6b4a33], lab: [0xeef4f2, 0xc9d0d4], lounge: [0xf0dcc8, 0x8a6a4a], common: [houseWall || 0xf0dcc8, 0x9a7048] }[kind] || [0xeeeeee, 0x999999]
+  const floor = box(W, 0.1, D, walls[1], 0, -0.05, 0)
+  floor.name = 'room-floor'
   box(W, 3.2, 0.2, walls[0], 0, 1.6, -D / 2)
   box(0.2, 3.2, D, walls[0], -W / 2, 1.6, 0)
   // Warm room light, always on (rooms are lit day and night).
@@ -160,6 +166,55 @@ export function buildRoom(kind) {
     anchors.laptop = { ...at(1.4, -2), rot: Math.PI }
     anchors.skeleton = { ...at(3.6, -1.6), rot: Math.PI }
     anchors.look = at(-1, -2.8)
+  }
+  if (house) {
+    // The house's common room: its colours on the walls, its banners, a couch in its
+    // colour, a TV, a kettle corner, and the door out (in its colour) on the side wall.
+    const main = new THREE.Color(house.main).getHex()
+    const accent = new THREE.Color(house.accent).getHex()
+    box(W, 0.14, 0.04, accent, 0, 1.05, -D / 2 + 0.12)
+    box(0.04, 0.14, D, accent, -W / 2 + 0.12, 1.05, 0)
+    box(4.2, 0.02, 2.8, accent, -0.4, 0.01, -1.3, { roughness: 1 })
+    box(3.2, 0.5, 1, main, -1.4, 0.25, -3)
+    box(3.2, 0.8, 0.3, main, -1.4, 0.75, -3.45)
+    box(0.7, 0.18, 0.5, accent, -2.4, 0.58, -3.05)
+    box(0.7, 0.18, 0.5, accent, -0.4, 0.58, -3.05)
+    box(1, 0.45, 1, main, 1.3, 0.22, -2.4)
+    box(1, 0.6, 0.25, main, 1.3, 0.6, -2.85)
+    box(1.4, 0.45, 0.8, 0x9a6a40, -1.4, 0.22, -1.5)
+    box(2.4, 1.35, 0.1, 0x1c1915, 2.6, 1.7, -D / 2 + 0.15)
+    box(2.2, 1.18, 0.02, 0x2b6fd0, 2.6, 1.7, -D / 2 + 0.21, { emissive: 0x2b6fd0, emissiveIntensity: 0.55 })
+    box(2.2, 0.95, 0.6, 0xd8d2c4, -W / 2 + 0.5, 0.47, 1.2)
+    box(0.25, 0.3, 0.25, 0xc0c0c8, -W / 2 + 0.5, 1.1, 1.0, { metalness: 0.4 })
+    const banner = houseBanner(house, 1.1, 2.6)
+    banner.position.set(-1.4, 2.2, -D / 2 + 0.13)
+    group.add(banner)
+    // its name on the side wall, where the camera sees it
+    const sign = facadeSign(house.name.toUpperCase(), house.main, 3, house.accent)
+    sign.position.set(-W / 2 + 0.13, 2.55, -1.3)
+    sign.rotation.y = Math.PI / 2
+    group.add(sign)
+    // The door out, on the side wall, and HEAD OUT over it.
+    const door = box(0.12, 2.15, 1.2, main, -W / 2 + 0.16, 1.08, 2.7, { emissive: main, emissiveIntensity: 0.15 })
+    door.name = 'room-exit'
+    blocks.pop() // (a door you walk up to, not a wall)
+    box(0.06, 0.08, 0.08, accent, -W / 2 + 0.24, 1.05, 2.25)
+    const out = facadeSign('HEAD OUT', house.main, 1.6, house.accent)
+    out.position.set(-W / 2 + 0.2, 2.45, 2.7)
+    out.rotation.y = Math.PI / 2
+    group.add(out)
+    // The open sides of the cutaway are edges you can't walk past.
+    block(W / 2 + 0.1, 0, 0.2, D + 0.4)
+    block(0, D / 2 + 0.1, W + 0.4, 0.2)
+    anchors.door = at(-W / 2 + 1.1, 2.7) // just inside the door out
+    anchors.spawn = at(-0.6, 1.4)
+    anchors.look = at(-1, -1.6)
+    anchors.seats = [
+      { ...at(-2.4, -3.0), rot: 0, y: 0.55 },
+      { ...at(-0.4, -3.0), rot: 0, y: 0.55 },
+      { ...at(1.3, -2.35), rot: 0, y: 0.5 },
+    ]
+    anchors.stand = [{ ...at(-W / 2 + 1.4, 1.6), rot: -Math.PI / 2 }]
   }
   const bounds = { minX: ROOM.x - W / 2 + 0.1, maxX: ROOM.x + W / 2 + 1.5, minZ: ROOM.z - D / 2 + 0.1, maxZ: ROOM.z + D / 2 + 1.5 }
   return { group, kind, anchors, at, blocks, bounds }

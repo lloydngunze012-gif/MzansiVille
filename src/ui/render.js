@@ -18,13 +18,11 @@ export function esc(value) {
   }[char]))
 }
 
-const RES_GROUPS = [
-  ['on_campus', 'On campus'],
-  ['off_campus_campus_owned', 'Campus-owned (off campus)'],
-  ['off_campus_leased', 'Leased'],
-  ['private_accredited', 'Private accredited'],
-  ['other', 'Other'],
-]
+// A house's colours as CSS variables (houses.json), for the card and the profile.
+export function houseVars(district, residence) {
+  const h = district.houses?.find((x) => x.name === residence)
+  return h ? `--h1:${h.main};--h2:${h.accent}` : ''
+}
 
 // A still of the student while the live 3D one loads (never a blank stage): the picture
 // made last time for this look (thumbs3d.js keeps them), or for the look every new
@@ -380,7 +378,7 @@ function legalList(items) {
   return `<ol>${items.map((text, i) => `<li><b>${i + 1}</b><span>${text}</span></li>`).join('')}</ol>`
 }
 function legalText(screen, title, paragraphs) {
-  return legalShell(screen, 'Westville Campus', title, legalList(paragraphs))
+  return legalShell(screen, 'University of Mzansi', title, legalList(paragraphs))
 }
 function rules() {
   return legalShell('rules', 'Before you move in', 'Community rules', legalList([
@@ -395,12 +393,8 @@ function rules() {
 function create(state) {
   const { district, draft } = state
   const code = district.meta.dialCode
-  const groups = RES_GROUPS.map(([type, label]) => {
-    const rows = district.residences.filter((row) => row.type === type)
-    if (!rows.length) return ''
-    return `<optgroup label="${label}">${rows.map((row) =>
-      `<option value="${esc(row.name)}" ${row.name === draft.residence ? 'selected' : ''}>${esc(row.name)}${row.distanceKm ? ` · ${row.distanceKm} km` : ''}</option>`).join('')}</optgroup>`
-  }).join('')
+  const groups = (district.houses || []).map((h) =>
+    `<option value="${esc(h.name)}" ${h.name === draft.residence ? 'selected' : ''}>${esc(h.name)} · ${esc(h.vibe)}</option>`).join('')
   const picker = (label, items, key) => `<fieldset class="cc-group"><legend>${label}</legend><div class="cc-chips${key === 'skin' ? ' sk' : ' thumbs'}">${items.map((item) =>
     `<button class="cc-chip${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${(draft.avatar[key] || (key === 'body' ? 'regular' : '')) === item.id}">${
       item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
@@ -433,14 +427,14 @@ function create(state) {
           ${stillOf(draft.avatar) ? `<img class="cc-still" src="${stillOf(draft.avatar)}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>
           <div class="cc-bob cc-dance">${avatarSvg(draft.avatar, code, 118)}</div>
         </div>
-        <div class="cc-id"><div class="cc-id-top"><small>Student card</small><svg class="cc-crest" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#5b23c9" stroke="#f0c400" stroke-width="2"/><path d="M6 15l1-7 3 3 2-4 2 4 3-3 1 7z" fill="#f0c400"/></svg></div>
+        <div class="cc-id" style="${houseVars(district, draft.residence)}"${houseVars(district, draft.residence) ? ' data-house' : ''}><div class="cc-id-top"><small>Student card</small><svg class="cc-crest" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#5b23c9" stroke="#f0c400" stroke-width="2"/><path d="M6 15l1-7 3 3 2-4 2 4 3-3 1 7z" fill="#f0c400"/></svg></div>
           <div class="cc-id-row"><span class="cc-photo">${avatarSvg(draft.avatar, code, 64)}</span><div class="cc-id-txt"><strong data-card="name">${esc(draft.name.trim() || 'Your name')}</strong>
-          <span data-card="residence">${esc(draft.residence || 'Res: choose')}</span><span data-card="course">${esc(draft.course || 'Course: choose')}</span><span data-card="handle">${esc(draft.handle.trim() ? '@' + draft.handle.trim().replace(/^@/, '') : '@handle')}</span></div></div>
+          <span data-card="residence">${esc(draft.residence || 'House: choose')}</span><span data-card="course">${esc(draft.course || 'Course: choose')}</span><span data-card="handle">${esc(draft.handle.trim() ? '@' + draft.handle.trim().replace(/^@/, '') : '@handle')}</span></div></div>
           <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
       </aside>
     <div class="cc-fields"${storyStep ? ' hidden' : ''}>
       <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Your name"></label>
-      <label class="cc-field">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
+      <label class="cc-field">House<select id="residence"><option value="">Choose your house</option>${groups}</select></label>
       <label class="cc-field">Course<select id="course"><option value="">Choose course</option>${district.courses.map((course) =>
         `<option ${course === draft.course ? 'selected' : ''}>${esc(course)}</option>`).join('')}</select></label>
       <label class="cc-field"><span>Social handle <span class="fine">optional</span></span><input id="handle" maxlength="30" placeholder="@handle" value="${esc(draft.handle)}"></label>
@@ -468,7 +462,7 @@ function profile(state) {
       <div>
         <h1>${esc(run.character.name)}</h1>
         <p class="id-title" data-title="${identityTitle(run).level}">${identityTitle(run).path ? identityTitle(run).path.icon + ' ' : ''}${esc(identityTitle(run).text)}</p>
-        <p class="fine">${esc(run.character.residence)} · ${esc(run.character.course)}</p>
+        <p class="fine"><span class="house-chip" style="${houseVars(district, run.character.residence)}">${esc(run.character.residence)}</span> · ${esc(run.character.course)}</p>
         <p class="fine">${run.character.handle ? `@${esc(run.character.handle)}` : 'No handle yet'} · Day ${run.day}</p>
         <p>${badges}</p>
       </div>
@@ -594,7 +588,7 @@ function board(state) {
     </div>
     <div class="tabs" style="margin-top:8px">
       <button type="button" data-act="board-scope" data-id="all" aria-pressed="${table.scope !== 'res'}">Overall</button>
-      <button type="button" data-act="board-scope" data-id="res" aria-pressed="${table.scope === 'res'}">Your residence</button>
+      <button type="button" data-act="board-scope" data-id="res" aria-pressed="${table.scope === 'res'}">Your house</button>
     </div>
     ${table.error ? `<p class="error">${esc(table.error)}</p>` : ''}
     <table><thead><tr><th>#</th><th>Student</th><th>Score</th></tr></thead><tbody id="board-rows">${body || '<tr><td colspan="3">When more students save their progress, they show up here.</td></tr>'}</tbody></table>
@@ -636,7 +630,7 @@ function admin(state) {
 function title(state) {
   const day = state.save.run?.day
   return `<main class="screen tc" data-screen="title">
-    <h1 class="sr-only">CampusVille</h1>
+    <h1 class="sr-only">UMzansi · University of Mzansi</h1>
     <div class="tc-art" aria-hidden="true"><picture>
       <source srcset="/cover.webp" type="image/webp">
       <img src="/cover.jpg" alt="" width="1024" height="1536" decoding="async" fetchpriority="high">
@@ -701,7 +695,7 @@ export function view(state) {
   if (screen === 'privacy') {
     return legalText('privacy', 'Privacy', [
       'Guest progress stays in localStorage on this phone. Clearing the browser clears the guest.',
-      'If you save, your name, residence, course, avatar, handle, stats, and the game state are stored in Supabase. Lobby messages are public to the campus room.',
+      'If you save, your name, house, course, avatar, handle, stats, and the game state are stored in Supabase. Lobby messages are public to the campus room.',
       'There are no photos. The avatar is drawn in the game.',
       'Full privacy text to follow.',
     ])
@@ -760,7 +754,7 @@ export function shotState(name) {
   const district = districtById('campusville')
   const run = createRun(district, {
     name: 'Aya M.',
-    residence: 'O Block',
+    residence: 'Thekwini House',
     course: 'Law',
     avatar: { skin: 'brown', hair: 'braids', outfit: 'organt' },
     handle: 'aya.m',
@@ -799,7 +793,7 @@ export function shotState(name) {
     run.queue = [{ id: 'shot-twist', kind: 'twist', title: 'Meanwhile', text: 'Rain. You arrive soaked.' }]
   }
   if (name === 'bestie') {
-    run.queue = [{ id: 'shot-bestie', kind: 'bestie', title: 'Thandi', text: 'Thandi from O Block holds the door and waits like they already decided you are their person.' }]
+    run.queue = [{ id: 'shot-bestie', kind: 'bestie', title: 'Thandi', text: 'Thandi from Thekwini House holds the door and waits like they already decided you are their person.' }]
   }
   if (name.startsWith('cam-')) state.screen = 'play'
   if (name === 'summary') {
@@ -823,7 +817,7 @@ export function shotState(name) {
   if (name === 'graduated') {
     run.day = 30
     run.graduated = true
-    run.queue = [{ id: 'shot-grad', kind: 'milestone', title: 'Graduated first year', text: 'CampusVille keeps your person. The next district opens from here.' }]
+    run.queue = [{ id: 'shot-grad', kind: 'milestone', title: 'Graduated first year', text: 'UMzansi keeps your person. The next district opens from here.' }]
   }
   if (name === 'profile' || name === 'share' || name === 'shop') {
     run.day = 12
@@ -835,16 +829,16 @@ export function shotState(name) {
   if (name === 'chat') {
     state.chat.offline = false
     state.chat.messages = [
-      { id: 'm1', user_id: 'u1', name: 'Sipho', residence: 'R Block', body: 'Is the bus late or is it just me?' },
-      { id: 'm2', user_id: 'u2', name: 'Naledi', residence: 'O Block', body: 'Stage 4. The library is on the generator.' },
-      { id: 'm3', user_id: 'u3', name: 'Jordan', residence: 'S Block', body: 'Derby fit check at the quad.' },
+      { id: 'm1', user_id: 'u1', name: 'Sipho', residence: 'Peak House', body: 'Is the bus late or is it just me?' },
+      { id: 'm2', user_id: 'u2', name: 'Naledi', residence: 'Thekwini House', body: 'Stage 4. The library is on the generator.' },
+      { id: 'm3', user_id: 'u3', name: 'Jordan', residence: 'Oakwinds House', body: 'Derby fit check at the quad.' },
     ]
   }
   if (name === 'leaderboard') {
     state.board.rows = [
-      { display_name: 'Aya M.', residence: 'O Block', money: 1280, grades: 64, balanced: 70, rich_avg: 1280, dean_avg: 64, balanced_avg: 70 },
-      { display_name: 'Sipho', residence: 'R Block', money: 2400, grades: 55, balanced: 48, rich_avg: 2400, dean_avg: 55, balanced_avg: 48 },
-      { display_name: 'Naledi', residence: 'O Block', money: 900, grades: 81, balanced: 62, rich_avg: 900, dean_avg: 81, balanced_avg: 62 },
+      { display_name: 'Aya M.', residence: 'Thekwini House', money: 1280, grades: 64, balanced: 70, rich_avg: 1280, dean_avg: 64, balanced_avg: 70 },
+      { display_name: 'Sipho', residence: 'Peak House', money: 2400, grades: 55, balanced: 48, rich_avg: 2400, dean_avg: 55, balanced_avg: 48 },
+      { display_name: 'Naledi', residence: 'Thekwini House', money: 900, grades: 81, balanced: 62, rich_avg: 900, dean_avg: 81, balanced_avg: 62 },
     ]
   }
   if (name === 'admin') {

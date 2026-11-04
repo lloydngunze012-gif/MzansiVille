@@ -16,11 +16,58 @@ export const LOOKS = {
   science: { url: `${CITY}building-e.glb`, h: 6.5, tint: 0xfff0b0, sign: 'SCIENCE', signBg: '#7a5a00' },
   law: { url: `${CITY}building-j.glb`, h: 8, tint: 0xf6c8a8, sign: 'LAW', signBg: '#5a2a14' },
   engineering: { url: `${CITY}building-n.glb`, h: 9, tint: 0xe4e8ec, sign: 'ENGINEERING', signBg: '#2b2b30' },
-  res_o: { url: `${CITY}building-m.glb`, h: 12, tint: 0xffd2a8, sign: 'O BLOCK', signBg: '#a8501a' },
-  res_r: { url: `${CITY}building-l.glb`, h: 11, tint: 0xf0a088, sign: 'R BLOCK', signBg: '#6a2214' },
-  res_s: { url: `${CITY}building-i.glb`, h: 10, tint: 0xb4eee6, sign: 'S BLOCK', signBg: '#1f5a55' },
-  res_other: { url: `${CITY}building-g.glb`, h: 10, tint: 0xfff2d8, sign: 'RESIDENCES', signBg: '#5a4a2a' },
-  off_campus: { url: `${SUBURB}building-type-n.glb`, h: 6, tint: 0xffffff, sign: 'OFF-CAMPUS RES', signBg: '#2b3a55' },
+}
+
+// A house (houses.json): its kit building, lightly tinted with its colour, its name
+// over the door in its colours. Nothing here names a house.
+function houseLook(house) {
+  const tint = new THREE.Color('#ffffff').lerp(new THREE.Color(house.main), 0.16)
+  return { url: `${CITY}${house.model}.glb`, h: house.height, tint: tint.getHex(), sign: house.name.toUpperCase(), signBg: house.main, signFg: house.accent, house }
+}
+
+// A house banner: its colour, an accent band and its short name, hung on the facade.
+// (unlit, so the colours read the same in sun and at night)
+export function houseBanner(house, w = 0.95, h = 2.3) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 128
+  canvas.height = 310
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = house.main
+  ctx.fillRect(0, 0, 128, 310)
+  ctx.fillStyle = house.accent
+  ctx.fillRect(0, 0, 128, 14)
+  ctx.fillRect(10, 250, 108, 10)
+  // a pennant tail
+  ctx.beginPath()
+  ctx.moveTo(0, 270)
+  ctx.lineTo(64, 310)
+  ctx.lineTo(128, 270)
+  ctx.lineTo(128, 310)
+  ctx.lineTo(0, 310)
+  ctx.closePath()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.fill()
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.strokeStyle = house.accent
+  ctx.lineWidth = 7
+  ctx.beginPath()
+  ctx.arc(64, 92, 34, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.fillStyle = house.accent
+  ctx.font = 'bold 40px sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(house.short[0], 64, 94)
+  ctx.font = 'bold 22px sans-serif'
+  ctx.save()
+  ctx.translate(64, 190)
+  ctx.fillText(house.short.toUpperCase(), 0, 0, 120)
+  ctx.restore()
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide }))
+  plane.name = 'house-banner'
+  return plane
 }
 
 // At night the kit buildings get lit window panels over their facades (hidden by
@@ -38,14 +85,14 @@ export function applyBuildingNight(n) {
 }
 
 // A facade sign over the entrance (canvas text on a plane).
-export function facadeSign(text, bg, w = 3.4) {
+export function facadeSign(text, bg, w = 3.4, fg = '#fff6e6') {
   const canvas = document.createElement('canvas')
   canvas.width = 512
   canvas.height = 112
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, 512, 112)
-  ctx.fillStyle = '#fff6e6'
+  ctx.fillStyle = fg
   ctx.font = 'bold 64px sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -64,7 +111,7 @@ function fit(model, w, d, h) {
 
 // Swap the stand-in box of a building for its kit model.
 export function upgradeBuilding(group, building) {
-  const look = LOOKS[building.id]
+  const look = LOOKS[building.id] || (building.house && houseLook(building.house))
   if (!look) return false
   loadModel(look.url).then((src) => {
     const model = src.clone(true)
@@ -92,9 +139,17 @@ export function upgradeBuilding(group, building) {
     const badge = group.getObjectByName('badge')
     if (badge) badge.position.y = look.h + 1
   }).catch(() => {})
-  const sign = facadeSign(look.sign, look.signBg)
+  const sign = facadeSign(look.sign, look.signBg, 3.4, look.signFg)
   sign.position.set(0, 2.85, building.d / 2 + 0.08)
   group.add(sign)
+  // A house: its banners either side of the door.
+  if (look.house) {
+    for (const side of [-1, 1]) {
+      const banner = houseBanner(look.house)
+      banner.position.set(side * 2.15, 2.75, building.d / 2 + 0.14)
+      group.add(banner)
+    }
+  }
   return true
 }
 
@@ -137,7 +192,7 @@ export function buildSpecial(group, building) {
     for (const x of [-w / 2 - 0.3, w / 2 + 0.3]) add(new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.6, 0.8), mat(0xd9c49c)), x, 1.3, 0)
     // Signs on the gatehouse walls (no overhead arch: it blocked the camera).
     for (const [z, rot] of [[1.52, 0], [-1.52, Math.PI]]) {
-      const sign = facadeSign('WESTVILLE CAMPUS · MAIN GATE', '#22143b', 2.9)
+      const sign = facadeSign('UNIVERSITY OF MZANSI · MAIN GATE', '#22143b', 2.9)
       sign.position.set(-w / 2 + 1.5, 2.1, z)
       sign.rotation.y = rot
       group.add(sign)

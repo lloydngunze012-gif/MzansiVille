@@ -3,8 +3,7 @@ const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
   'Engineering Lecture Venue': 'Engineering', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
-  'Health Sciences Lecture Venue': 'Health Sci', 'Other on-campus blocks': 'Other blocks', 'Main Bus Station': 'Bus station',
-  'Off-campus res (bus home)': 'Off-campus res',
+  'Health Sciences Lecture Venue': 'Health Sci', 'Main Bus Station': 'Bus station',
 }
 
 // The map's frame: every building fits, with a little margin.
@@ -119,7 +118,7 @@ export function createCampusMap(host) {
       button.className = `map-pin${active.has(building.id) ? ' live' : ''}`
       button.style.left = `${Math.max(6, Math.min(94, spot.get(building.id).x))}%`
       button.style.top = `${Math.max(5, Math.min(95, spot.get(building.id).y))}%`
-      button.innerHTML = `<span class="ico">${KIND_ICON[building.kind] || '•'}</span><span class="lbl">${SHORT[building.name] || building.name}</span>`
+      button.innerHTML = `<span class="ico">${KIND_ICON[building.kind] || '•'}</span><span class="lbl">${SHORT[building.name] || building.name.replace(/ House$/, '')}</span>`
       button.dataset.place = building.id
       button.addEventListener('click', () => { close(); onGo ? onGo(building.id) : select(building) })
       stage.append(button)

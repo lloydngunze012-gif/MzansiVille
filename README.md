@@ -1,6 +1,6 @@
-# MzansiVille
+# UMzansi: the University of Mzansi
 
-A mobile-first life sim in the browser. A district is a folder of data. The character keeps their stats and identity when a later district opens. CampusVille (`/data/campusville`) is the only district in this build. It is Durban, dialling code 031.
+A mobile-first life sim in the browser, set at the University of Mzansi (UMzansi), a fictional South African university anyone can enrol in. Students live in seven houses (Thekwini, Peak, Oakwinds, Braam, Jakaranda, Kingsway and Mzansi House, the international house), defined in `data/campusville/houses.json`. A district is a folder of data; the character keeps their stats and identity when a later district opens. UMzansi (`/data/campusville`, the folder keeps its old name) is the only district in this build. It is near Durban, dialling code 031.
 
 Play starts as a guest. Progress sits in `localStorage` under `mzansiville.v1`. On day 3 the game asks you to save with Google or an email magic link and merges that guest into the account.
 
@@ -73,7 +73,7 @@ Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project befor
 
 ## A district folder
 
-`src/districts/registry.js` is the only place that names CampusVille. Adding a district means a new folder plus one entry in that registry. `switchDistrict` keeps the person and changes `character.districtId`.
+`src/districts/registry.js` is the only place that names the district folder. Adding a district means a new folder plus one entry in that registry. `switchDistrict` keeps the person and changes `character.districtId`.
 
 ```
 data/<id>/
@@ -92,7 +92,7 @@ data/<id>/
 
 Dial codes reserved for later districts: 011 Johannesburg, 021 Cape Town, 012 Pretoria, 051 Bloemfontein. The Organt tee draws the current district's code.
 
-After editing CampusVille data, run `npm run seed` and re-apply `supabase/seed.sql` if the hosted tables should match.
+After editing the district data, run `npm run seed` and re-apply `supabase/seed.sql` if the hosted tables should match.
 
 ## Screenshots
 
@@ -106,7 +106,7 @@ npm run shots
 ## Still placeholders
 
 - `data/campusville/events.json` — NSFAS delayed, load shedding, and a lecturer surprise test, plus Derby Day. Replace this file when the real events land. `npm run seed` afterwards.
-- `data/campusville/besties.json` — stand-in names. The bestie is someone from the player's residence and is not the player's own name.
+- `data/campusville/besties.json` — stand-in names. The bestie is someone from the player's house and is not the player's own name.
 - `data/campusville/shop.json` — `url` is empty and the code is `ORG-` plus 4 characters until the shop format arrives. The job still shows "This links to a real shop" before any link opens.
 - Tutor pay in `jobs.json` is a stand-in. The Organt rep shift is R150 and social +4, from day 7.
 - Privacy, terms, and community rules pages say the full text is still to come.

@@ -53,7 +53,7 @@ async function enrol(frame, origin, name, gender) {
 }
 
 let opens = 0
-async function open(frame, origin) {
+async function open(frame, origin, headOut = true) {
   console.log('open', origin)
   // (a new query each time: the same URL again would only change the hash, no reload)
   await frame.goto(`${origin}/?morning=0&room=${ROOM}&visit=${++opens}#/play`)
@@ -65,6 +65,11 @@ async function open(frame, origin) {
     console.log('  card:', (await frame.locator('[role="dialog"]:visible').first().innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 80))
     await card.tap()
     await frame.waitForTimeout(800)
+  }
+  // Players start in their house's common room (build plan, Piece 0): head out.
+  if (headOut) {
+    const out = frame.locator('.house-out')
+    if (await out.isVisible().catch(() => false)) { await out.tap(); await frame.waitForTimeout(800) }
   }
 }
 
@@ -109,14 +114,14 @@ test('two players on one campus', async ({ page }) => {
   const B = page.frame({ name: 'b' })
   for (const f of [A, B]) f.page().on('console', (m) => { if (m.type() === 'error') console.log('console', m.text().slice(0, 200)) })
 
-  // Player A arrives on an empty campus: the Quad, filled with students.
+  // Player A starts in their house's common room, then heads out onto campus.
   await enrol(A, A_ORIGIN, 'Thandeka', 'female')
   await open(A, A_ORIGIN)
   await expect.poll(async () => (await presence(A)).live, { timeout: 20000 }).toBe(true)
   await page.waitForTimeout(2500)
   const spawnA = await A.locator('#world').getAttribute('data-spawn')
-  const fillA = await A.evaluate(() => document.querySelector('#world').dataset.crowd)
-  note('S1 alone: spawn on the Quad, filled', spawnA === 'quad', `A spawned at "${spawnA}", ${fillA} NPC people on campus, count "${await label(A)}"`)
+  const outA = await A.evaluate(() => window.mzansiInHouse())
+  note('S1 start in your house, head out', spawnA === 'house' && !outA, `A spawned "${spawnA}", out of the house: ${!outA}, count "${await label(A)}"`)
 
   // Player B joins: spawns beside A, and each sees the other with name and number.
   await enrol(B, B_ORIGIN, 'Kabelo', 'male')
@@ -127,13 +132,8 @@ test('two players on one campus', async ({ page }) => {
   await page.waitForTimeout(3000)
   const [pa, pb] = [await presence(A), await presence(B)]
   const [oa, ob] = [(await others(A))[0], (await others(B))[0]]
-  const spawnB = await B.locator('#world').getAttribute('data-spawn')
-  const posA = await me(A)
-  const posB = await me(B)
   note('P1 each sees the other', oa?.tag.includes('Kabelo') && ob?.tag.includes('Thandeka') && oa.tag.includes(pb.me.num) && ob.tag.includes(pa.me.num),
     `seen within ${seenIn} ms; A sees "${oa?.tag}", B sees "${ob?.tag}"`)
-  note('S2 B spawns beside A (busiest spot)', spawnB === 'players' && Math.hypot(posA.x - posB.x, posA.z - posB.z) > 1.2 && Math.hypot(posA.x - posB.x, posA.z - posB.z) < 4,
-    `B spawned "${spawnB}", ${Math.hypot(posA.x - posB.x, posA.z - posB.z).toFixed(2)} m from A`)
   const [la, lb] = [await label(A), await label(B)]
   note('P2 students-on-campus count', la === '2 on campus' && lb === '2 on campus', `A shows "${la}", B shows "${lb}"`)
   // Below 20 fps on either phone the movement checks can't pass or fail: INCONCLUSIVE.

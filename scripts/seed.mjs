@@ -16,9 +16,11 @@ function rows(file) {
   return parseCsv(readFileSync(join(data, file), 'utf8'))
 }
 
-const places = rows('places.csv')
+const houses = JSON.parse(readFileSync(join(data, 'houses.json'), 'utf8')).houses
+// The houses are residences and buildings both (houses.json is their only definition).
+const places = rows('places.csv').concat(houses.map((h) => ({ id: h.place, name: h.name, kind: 'residence', x: h.x, y: h.y, what_happens_here: h.blurb })))
 const activities = rows('activities.csv')
-const residences = rows('residences.csv').filter((row) => row.name && !row.name.startsWith('ADD '))
+const residences = houses.map((h) => ({ name: h.name, type: 'house', distance_km: '', notes: h.vibe }))
 const events = JSON.parse(readFileSync(join(data, 'events.json'), 'utf8'))
 
 const placeSql = places.map((row) =>

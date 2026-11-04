@@ -37,7 +37,7 @@ const district = buildDistrict({
   meta: JSON.parse(read('meta.json')),
   places: read('places.csv'),
   activities: read('activities.csv'),
-  residences: read('residences.csv'),
+  houses: JSON.parse(read('houses.json')),
   events: JSON.parse(read('events.json')),
   hours: JSON.parse(read('hours.json')),
   courses: JSON.parse(read('courses.json')),
@@ -49,7 +49,7 @@ const district = buildDistrict({
 
 const character = {
   name: 'Aya',
-  residence: 'O Block',
+  residence: 'Thekwini House',
   course: 'Law',
   avatar: { skin: 'amber', hair: 'braids', outfit: 'organt' },
   handle: '',
@@ -66,14 +66,15 @@ check('csv quotes and district size', () => {
   const quad = district.places.find((place) => place.id === 'quad')
   assert.equal(quad.name, 'The Quad')
   assert.match(quad.blurb, /cafeteria/)
-  assert.equal(district.places.length, 16)
+  assert.equal(district.places.length, 18) // 11 places + the 7 houses
   assert.ok(district.activities.some((action) => action.id === 'organt_rep'))
-  assert.equal(district.residences.some((row) => row.name.startsWith('ADD ')), false)
+  assert.equal(district.residences.length, 7)
+  assert.equal(district.houses.filter((h) => district.places.some((p) => p.id === h.place && p.kind === 'residence')).length, 7)
   assert.equal(district.meta.dialCode, '031')
 })
 
 check('every CSV row has as many columns as its header (QA B01)', () => {
-  for (const name of ['activities.csv', 'places.csv', 'residences.csv']) {
+  for (const name of ['activities.csv', 'places.csv']) {
     const rows = parseCsvRows(read(name))
     const width = rows[0].length
     rows.slice(1).forEach((row, i) => assert.equal(row.length, width, `${name} row ${i + 2} has ${row.length} columns, header has ${width}`))
@@ -282,8 +283,13 @@ check('your course decides your lecture venue; your own venue has no sit-in', ()
 })
 
 check('home and course places', () => {
-  assert.equal(homePlaceId(district, 'O Block'), 'res_o')
-  assert.equal(homePlaceId(district, 'Gapwood Residence'), 'off_campus')
+  assert.equal(homePlaceId(district, 'Thekwini House'), 'res_o')
+  assert.equal(homePlaceId(district, 'O Block'), 'res_o') // an old save moves into Thekwini
+  assert.equal(homePlaceId(district, 'Jakaranda House'), 'res_j')
+  // (any other old residence name gets a house, the same one every time)
+  const moved = homePlaceId(district, 'Gapwood Residence')
+  assert.ok(district.houses.some((h) => h.place === moved))
+  assert.equal(homePlaceId(district, 'Gapwood Residence'), moved)
   assert.equal(coursePlaceId(district, 'Law'), 'law')
 })
 
@@ -709,10 +715,10 @@ check('chat rate limit', () => {
 
 check('boards rank by residence and overall', () => {
   const rows = sampleBoard()
-  const all = rankRows(rows, 'grades', 'all', 'O Block')
+  const all = rankRows(rows, 'grades', 'all', 'Thekwini House')
   assert.equal(all[0].display_name, 'Kayla R.')
-  assert.ok(rankRows(rows, 'money', 'res', 'O Block').every((r) => r.residence === 'O Block'))
-  const houses = rankRows(rows, 'balanced', 'houses', 'O Block')
+  assert.ok(rankRows(rows, 'money', 'res', 'Thekwini House').every((r) => r.residence === 'Thekwini House'))
+  const houses = rankRows(rows, 'balanced', 'houses', 'Thekwini House')
   assert.ok(houses.length >= 4 && houses.some((h) => h.mine))
 })
 

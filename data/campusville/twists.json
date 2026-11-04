@@ -84,7 +84,7 @@
   "res_o_corridor": { "p": 0.2, "text": "You learn three secrets and one rumour about the warden.", "deltas": { "social": 2 } },
   "res_o_cook": { "p": 0.2, "text": "Half the floor smells your onions and appears with plates.", "deltas": { "social": 3, "hunger": -5 } },
   "res_o_late_chat": { "p": 0.15, "text": "The neighbour on the other side joins in. It is now a podcast.", "deltas": { "social": 2, "energy": -1 } },
-  "res_r_breakfast": { "p": 0.15, "text": "Someone made extra tea and left the pot. Quiet Block kindness.", "deltas": { "energy": 2 } },
+  "res_r_breakfast": { "p": 0.15, "text": "Someone made extra tea and left the pot. Peak House kindness.", "deltas": { "energy": 2 } },
   "res_r_out": { "p": 0.2, "text": "The door creaks. Twelve people sigh at once.", "deltas": { "social": -1 } },
   "res_r_reading": { "p": 0.2, "text": "You wake up with the textbook on your face. Page 3.", "deltas": { "grades": -1, "energy": 3 } },
   "res_r_tea": { "p": 0.15, "text": "They share rusks from home. The good ones. With aniseed.", "deltas": { "hunger": 5 } },
