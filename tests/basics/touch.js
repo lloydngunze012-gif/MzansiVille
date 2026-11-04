@@ -66,34 +66,18 @@ export async function finger(page) {
   }
 }
 
-// The arrow pad: up walks forward the way you face (twice quickly: run), left and right
-// turn you 15 degrees a tap, down turns you round, the middle button stops.
-async function middleOf(page, sel) {
-  const b = await page.locator(sel).boundingBox()
-  return { x: b.x + b.width / 2, y: b.y + b.height / 2 }
+// A point on the screen this far (px) from where the player stands, kept on the open
+// part of the screen (below the HUD, above the buttons).
+export async function nearMe(page, dx, dy) {
+  const me = await page.evaluate(() => { const p = window.mzansiPlayerPos(); return window.mzansiScreenOf(p.x, p.z, 0.2) })
+  return { x: Math.min(392, Math.max(20, me.x + dx)), y: Math.min(760, Math.max(300, me.y + dy)) }
 }
-export const arrows = {
-  at: (page, dir) => middleOf(page, `.arrow[data-dir="${dir}"]`),
-  async go(page, f, dir, { run = false } = {}) {
-    const p = await middleOf(page, `.arrow[data-dir="${dir}"]`)
-    await f.tap(p.x, p.y)
-    if (run) { await page.waitForTimeout(90); await f.tap(p.x, p.y) }
-  },
-  async stop(page, f) {
-    const p = await middleOf(page, '.arrow-stop')
-    await f.tap(p.x, p.y)
-  },
-  // Turn: taps on left or right (or down: round).
-  async turn(page, f, dir, times = 1) {
-    const p = await middleOf(page, `.arrow[data-dir="${dir}"]`)
-    for (let i = 0; i < times; i++) { await f.tap(p.x, p.y); await page.waitForTimeout(120) }
-  },
-  // Walk (or run) forward for ms, then stop.
-  async walk(page, f, ms, opts) {
-    await arrows.go(page, f, 'up', opts)
-    await page.waitForTimeout(ms)
-    await arrows.stop(page, f)
-  },
+// Walk with a finger: touch the ground this far from the player, wait ms, then tap
+// yourself to stop.
+export async function fingerWalk(page, f, dx, dy, ms) {
+  const p = await nearMe(page, dx, dy)
+  await f.tap(p.x, p.y)
+  await page.waitForTimeout(ms)
 }
 
 // Reads only.

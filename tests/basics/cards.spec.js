@@ -1,9 +1,9 @@
 // K10: open and close every card type (event, map, talk, place, day summary) by touch,
-// then the arrows move the player on the first frame (within 100 ms at 20 fps or
+// then a finger on the ground moves the player on the first frame (within 100 ms at 20 fps or
 // more). Only an open card pauses movement.
 // npx playwright test tests/basics/cards.spec.js --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
-import { PHONE, OUT, student, finger, arrows, read, saveVideo, tapOn } from './touch.js'
+import { PHONE, OUT, student, finger, nearMe, read, saveVideo, tapOn } from './touch.js'
 
 test.use(PHONE)
 test.describe.configure({ timeout: 400000 })
@@ -19,15 +19,15 @@ async function clearCards(page, f) {
   }
 }
 
-// Tap an arrow: how long from the finger going down (its event time) to the first
+// A finger on the ground: how long from it going down (its event time) to the first
 // frame the player has moved (read from the page, nothing driven by it).
 async function stickLatency(page, f) {
-  const up = await arrows.at(page, 'up')
+  const p = await nearMe(page, 0, -160)
   await page.evaluate(() => new Promise((resolve) => {
     const world = document.querySelector('#world')
     const k = { from: `${world.dataset.px},${world.dataset.pz}`, down: 0, moved: 0 }
     window.__k10 = k
-    document.querySelector('.arrow[data-dir="up"]').addEventListener('pointerdown', (e) => { k.down = e.timeStamp }, { once: true })
+    document.querySelector('#world canvas').addEventListener('pointerdown', (e) => { k.down = e.timeStamp }, { once: true })
     const watch = (t) => {
       if (k.down) k.frames = (k.frames || 0) + 1
       if (k.down && `${world.dataset.px},${world.dataset.pz}` !== k.from) { k.moved = t; k.at = performance.now(); k.fps = world.dataset.fps; return }
@@ -36,14 +36,14 @@ async function stickLatency(page, f) {
     requestAnimationFrame(watch)
     resolve()
   }))
-  await f.tap(up.x, up.y)
+  await f.down(p.x, p.y)
   await expect.poll(() => page.evaluate(() => window.__k10.moved), { timeout: 5000 }).toBeGreaterThan(0)
   await page.waitForTimeout(400)
-  await arrows.stop(page, f)
+  await f.up()
   return page.evaluate(() => ({ ms: Math.round(window.__k10.moved - window.__k10.down), frames: window.__k10.frames, fps: Number(window.__k10.fps) }))
 }
 
-test('K10 open and close every card type, then the arrows move you within 100 ms', async ({ page }) => {
+test('K10 open and close every card type, then a finger moves you within 100 ms', async ({ page }) => {
   // (setup, not play: an event waiting in the save, as the day would bring one)
   await student(page, { spawn: 'quad', run: { queue: [{ id: 'k10-event', kind: 'event', title: 'NSFAS is late', text: 'Your allowance has not landed.', choices: ['Call home', 'Wait it out'], eventId: 'nsfas_delayed' }] } })
   const f = await finger(page)
@@ -111,8 +111,8 @@ test('K10 open and close every card type, then the arrows move you within 100 ms
   // In time that's one frame: under 100 ms wherever the screen draws 20 fps or more (a
   // phone draws 60, 17 ms); a test machine drawing fewer can't show it any sooner.
   for (const [card, r] of Object.entries(results)) {
-    expect(r.frames, `${card}: the arrows move you on the first frame`).toBeLessThanOrEqual(1)
-    if (r.fps >= 20) expect(r.ms, `${card}: the arrows move you within 100 ms`).toBeLessThan(100)
+    expect(r.frames, `${card}: a finger moves you on the first frame`).toBeLessThanOrEqual(1)
+    if (r.fps >= 20) expect(r.ms, `${card}: a finger moves you within 100 ms`).toBeLessThan(100)
   }
   await saveVideo(page, 'K10-cards')
 })

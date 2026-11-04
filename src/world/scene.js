@@ -15,10 +15,9 @@ import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
-import { bindInput } from './input.js'
-import { ARROW_RUN, ARROW_WALK, createPlayer, WALK } from './player.js'
+import { bindInput, touchDevice } from './input.js'
+import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
-import { createArrows, touchDevice } from './arrows.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
 import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
@@ -58,9 +57,7 @@ let actionLeft = 0
 let actionCommit = null
 let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
-let pad = null // the phone arrow pad (arrows.js)
-let padStuck = 0 // seconds the arrows have walked you into something
-let heading = null // where the arrows have turned you (null: they haven't)
+let touch = false // a phone: the minimap sits top right
 let gateDay = ''
 let guide = null
 let guideFrom = null
@@ -252,10 +249,10 @@ function ensureRenderer() {
 
   // Phones get a thumbstick (the minimap moves up to the top right).
   if (touchDevice()) {
-    pad = createArrows(host, { onTurn: turnBy })
+    touch = true
     document.body.classList.add('has-stick')
   }
-  input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
+  input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, onTouch: touched, onSteer: steered, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
   window.addEventListener('keydown', onWorldKey)
@@ -340,28 +337,10 @@ function interrupt() {
     player.position.y = 0
   }
 }
-// The arrows: left and right turn you (a little each tap, on and on while held), down
-// turns you round; up walks you forward the way you face (twice: a run).
-const TURN_RATE = 2.1 // radians a second while left or right is held (about 120 degrees)
-function turnBy(angle) {
-  if (!player) return
-  interrupt()
-  if (!pad.read().forward) mover.stop()
-  heading = (heading ?? player.rotation.y) + angle
-}
-function padPush(dt) {
-  const p = pad?.read()
-  if (!p || !player || (!p.forward && !p.turn)) return null
-  if (heading === null) heading = player.rotation.y
-  if (p.turn) heading += p.turn * TURN_RATE * dt
-  if (!p.forward) return null
-  return { x: Math.sin(heading), z: Math.cos(heading), run: p.forward === 'run', mag: 1, pace: p.forward === 'run' ? ARROW_RUN : ARROW_WALK }
-}
 // Stop on the spot: the stick was touched, or you tapped yourself.
 function stopHere() {
   if (!player) return
   mover.stop()
-  pad?.stop()
   endGoing()
   if (player.userData.pose === 'run') player.userData.pose = 'stand'
 }
@@ -384,30 +363,56 @@ function onSelf(x, y) {
 }
 // A tap on the world: yourself (stop), a person (talk), a vendor's stall (her queue),
 // a building (go in), or the ground (walk there).
-function tapped(point, x, y) {
-  if (!player || !campus) return
-  pad?.stop() // (a tap anywhere on the world ends an arrow walk)
-  heading = null
+// What's under a point on screen: yourself, a person, a vendor's stall, a building, or
+// the ground (and where on it).
+function pick(point, x, y) {
+  if (!player || !campus) return null
   const hitOf = (hits, key) => {
     for (let node = hits[0]?.object; node; node = node.parent) if (node.userData?.[key]) return node
     return null
   }
-  if (onSelf(x, y)) { window.mzansiLastTap = { kind: 'self' }; stopHere(); return }
+  if (onSelf(x, y)) return { kind: 'self' }
   raycaster.setFromCamera(point, camera)
   const person = hitOf(raycaster.intersectObjects(everyone(), true).filter((hit) => hit.object.name === 'hit'), 'personId')
-  if (person) { window.mzansiLastTap = { kind: 'person', id: person.userData.personId }; startTalk(person); return }
+  if (person) return { kind: 'person', node: person }
   const stall = hitOf(raycaster.intersectObjects(campus.dressing?.vendorTaps || [], true), 'vendor')
-  if (stall) {
-    window.mzansiLastTap = { kind: 'vendor', id: stall.userData.vendor }
-    const a = everyone().find((p) => p.userData.personId === stall.userData.vendor)
-    if (a) startTalk(a)
-    return
-  }
+  if (stall) return { kind: 'vendor', id: stall.userData.vendor }
   const building = raycaster.intersectObjects([campus.buildings], true)[0]
   const ground = raycaster.intersectObjects([campus.ground], true)[0]
   const place = building && (!ground || building.distance <= ground.distance + 0.05) && hitOf([building], 'placeId')
-  if (place) { window.mzansiLastTap = { kind: 'building', id: place.userData.placeId }; interrupt(); approach(place.userData.placeId); return }
-  if (ground) { window.mzansiLastTap = { kind: 'ground', x: ground.point.x, z: ground.point.z }; interrupt(); walkTo(ground.point.x, ground.point.z) }
+  if (place) return { kind: 'building', id: place.userData.placeId }
+  return ground ? { kind: 'ground', x: ground.point.x, z: ground.point.z } : null
+}
+// A finger lands on the ground: walk there at once (true). Anything else waits for the
+// tap. (Mid-scene, a touch on yourself or on nothing, as in a room off the map, ends the
+// scene: you stand up, back on campus.)
+function touched(point, x, y) {
+  const hit = pick(point, x, y)
+  if (acting && (!hit || hit.kind === 'self')) { interrupt(); return false }
+  if (hit?.kind !== 'ground') return false
+  window.mzansiLastTap = { kind: 'ground', x: hit.x, z: hit.z }
+  interrupt()
+  walkTo(hit.x, hit.z)
+  return true
+}
+// The finger held on the ground slides: the walk follows it.
+function steered(point) {
+  if (!player || !campus) return
+  raycaster.setFromCamera(point, camera)
+  const ground = raycaster.intersectObjects([campus.ground], true)[0]
+  if (ground) walkTo(ground.point.x, ground.point.z)
+}
+// A tap: yourself (stop), a person (talk), a vendor's stall (her queue), a building (go
+// in), or the ground (walk there).
+function tapped(point, x, y) {
+  const hit = pick(point, x, y)
+  if (!hit) return
+  window.mzansiLastTap = hit.kind === 'person' ? { kind: 'person', id: hit.node.userData.personId } : { ...hit }
+  if (hit.kind === 'self') stopHere()
+  else if (hit.kind === 'person') startTalk(hit.node)
+  else if (hit.kind === 'vendor') { const a = everyone().find((p) => p.userData.personId === hit.id); if (a) startTalk(a) }
+  else if (hit.kind === 'building') { interrupt(); approach(hit.id) }
+  else { interrupt(); walkTo(hit.x, hit.z) }
 }
 
 // Walk to a spot: a route round the buildings on the grid, ending exactly where asked.
@@ -416,8 +421,6 @@ function tapped(point, x, y) {
 // other opts go to the mover (pace, near, solid).
 function walkTo(x, z, done, opts = {}) {
   if (!campus || !player) return
-  pad?.stop()
-  heading = null
   const start = nearestOpen(campus.grid, player.position)
   const goal = nearestOpen(campus.grid, { x, z })
   const points = findPath(campus.grid, start, goal)
@@ -1894,7 +1897,7 @@ function pinAbove(node, x, y, z) {
   const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].map((el) => el.getBoundingClientRect().bottom)
   const top = (bars.length ? Math.max(...bars) : 120) + node.offsetHeight + 8
   // (never over the minimap, top right on phones: keep left of it)
-  const mini = pad && host.querySelector('.minimap')?.getBoundingClientRect()
+  const mini = touch && host.querySelector('.minimap')?.getBoundingClientRect()
   const right = mini && mini.width ? Math.min(host.clientWidth, mini.left - 6) : host.clientWidth
   node.style.left = `${Math.min(right - half, Math.max(half, sx))}px`
   node.style.top = `${Math.max(top, sy)}px`
@@ -2156,22 +2159,16 @@ function frameBody(now) {
     // Two inputs: the stick (it wins, and calls off whatever was playing out), then a
     // tap target. Only an open card or sheet pauses them.
     if (!hold) {
-      const push = padPush(dt) || input.stick() || forcedSteer
+      const push = input.stick() || forcedSteer
       if (push) interrupt()
-      mover.setStick(push?.x, push?.z, push?.run, push?.mag, push?.pace)
-      const bx = player.position.x
-      const bz = player.position.z
+      mover.setStick(push?.x, push?.z, push?.run, push?.mag)
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
-      // An arrow walk into a wall or a counter stops (sliding along it carries on).
-      const gone = Math.hypot(player.position.x - bx, player.position.z - bz)
-      padStuck = pad?.read().forward && mover.speed > 0.5 && gone < mover.speed * dt * 0.15 ? padStuck + dt : 0
-      if (padStuck > 0.4) { pad.stop(); padStuck = 0 }
-    } else pad?.stop() // (a card opens: you stand still, and stay still once it closes)
+    }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) ps.busy(0.5)
     else if (player.userData.pose === 'run') player.userData.pose = 'stand'
-    if (pad && frames % 20 === 0) placeMinimap()
+    if (touch && frames % 20 === 0) placeMinimap()
     if (ps.open) {
       const now = walking ? (player.userData.pose === 'run' ? 'running' : 'walking') : 'free'
       if (ps.state !== now) ps.set(now)
@@ -2186,14 +2183,7 @@ function frameBody(now) {
       faceTo = null
     }
     const free = ps.open && (player.userData.pose || 'stand') === 'stand' && !inTransition(player)
-    // The arrows hold your facing: anything else that moves or turns you lets it go.
-    if (hold || acting || scriptMove || talk || mover.hasTarget) heading = null
-    if (heading !== null && !walking && free) {
-      // (turning on the spot: the body sweeps round to where the arrows point)
-      player.rotation.y += Math.atan2(Math.sin(heading - player.rotation.y), Math.cos(heading - player.rotation.y)) * Math.min(1, dt * 10)
-    }
-    if (heading !== null && rig.mode === 'eye') rig.facing = player.rotation.y
-    else if (rig.mode === 'eye' && !walking && free) {
+    if (rig.mode === 'eye' && !walking && free) {
       const facing = rig.moveForward()
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }

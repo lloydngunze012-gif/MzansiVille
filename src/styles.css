@@ -905,17 +905,6 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .ps-leave{position:absolute;z-index:7;left:50%;transform:translateX(-50%);top:calc(150px + env(safe-area-inset-top));min-height:44px;padding:0 20px;border-radius:999px;border:2px solid #fff6e6;background:#c4372ef0;color:#fff6e6;font:800 15px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
 .ps-leave[hidden]{display:none}
 
-/* Arrow pad (phones): bottom left; the minimap moves to the top right. */
-.arrows{position:absolute;z-index:6;left:12px;bottom:calc(122px + env(safe-area-inset-bottom));width:144px;height:144px;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;touch-action:none;user-select:none;-webkit-user-select:none;pointer-events:auto}
-.arrows[hidden]{display:none}
-.arrows button{touch-action:none;-webkit-tap-highlight-color:transparent;border-radius:50%;border:2px solid #fff6e6cc;background:#22143bb0;color:#fff6e6;font:700 20px system-ui;box-shadow:0 3px 8px #0005;padding:0;display:grid;place-items:center}
-.arrow[data-dir="up"]{grid-area:1/2}
-.arrow[data-dir="left"]{grid-area:2/1}
-.arrow[data-dir="right"]{grid-area:2/3}
-.arrow[data-dir="down"]{grid-area:3/2}
-.arrow-stop{grid-area:2/2;font-size:15px!important;background:#22143b70!important;transform:scale(.8)}
-.arrows .arrow.on{background:#f0c400;color:#22143b;border-color:#fff6e6}
-.arrows[data-going="run"] .arrow.on{background:#ff8a3d;color:#fff}
-.arrows[data-going="rest"] .arrow-stop{opacity:.55}
+/* Phones: the minimap sits top right (bottom left stays clear for the thumb). */
 body.has-stick .minimap{left:auto;right:10px;bottom:auto;top:150px;width:96px;height:96px}
 body.has-stick .minimap canvas{width:96px;height:96px}
