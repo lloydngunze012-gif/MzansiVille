@@ -32,7 +32,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
-import { roommateOf } from './avatar.js'
+import { outfitsFor, roommateOf } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
@@ -302,7 +302,18 @@ function hydrateThumbs() {
     chip.dataset.thumb = '3d'
   }
   for (const chip of chips) show(chip, lastThumb.get(`${chip.dataset.part}|${chip.dataset.id}`))
-  thumbsPromise.then(({ thumbFor, thumbNow }) => {
+  // The student card's photo: the 3D student as dressed now (head and shoulders).
+  const photo = app.querySelector('.cc-photo')
+  const lastPhoto = lastThumb.get('photo')
+  if (photo && lastPhoto) photo.innerHTML = `<img src="${lastPhoto}" alt="">`
+  // (the big student on the stage first: the pictures wait until it's showing)
+  const stageReady = previewPromise ? previewPromise.then((mod) => mod.ready?.()).catch(() => {}) : Promise.resolve()
+  Promise.all([thumbsPromise, stageReady]).then(([{ thumbFor, thumbNow }]) => {
+    const look = draft.avatar
+    const putPhoto = (url) => { const node = app.querySelector('.cc-photo'); if (url && node) { lastThumb.set('photo', url); node.innerHTML = `<img src="${url}" alt="">` } }
+    const ready = thumbNow(look, 'hair')
+    if (ready) putPhoto(ready)
+    else thumbFor(look, 'hair', () => Boolean(app.querySelector('.cc-photo'))).then(putPhoto)
     const order = [...chips].sort((a, b) => Number(b.classList.contains('on') || b.getAttribute('aria-pressed') === 'true') - Number(a.classList.contains('on') || a.getAttribute('aria-pressed') === 'true'))
     for (const chip of order) {
       const part = chip.dataset.part
@@ -1227,6 +1238,8 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'avatar') {
     draft.avatar = { ...draft.avatar, [button.dataset.part]: button.dataset.id }
+    // (a new gender keeps the outfit only if that gender has it: men have no dress)
+    if (button.dataset.part === 'gender' && !outfitsFor(button.dataset.id).some((o) => o.id === draft.avatar.outfit)) draft.avatar.outfit = 'hoodie'
     paint()
     return
   }
@@ -1648,6 +1661,9 @@ window.addEventListener('hashchange', () => {
 })
 
 paint()
+// The students' models start loading in the background as the title shows, so the
+// creator's student is there the moment it opens.
+if (hasGL()) (window.requestIdleCallback || setTimeout)(() => { import('./world/avatar3d.js').then((m) => m.preloadPeople()).catch(() => {}) })
 arm()
 if (save.run && route().name === 'chat') loadChat()
 if (save.run && route().name === 'board') loadBoard()

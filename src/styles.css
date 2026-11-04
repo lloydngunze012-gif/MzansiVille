@@ -872,7 +872,16 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
   .cc-preview { order: -1; display: flex; flex-direction: column; gap: 8px; }
   .cc-stage { flex: none; width: 100%; min-height: 0; height: min(52vh, 440px); }
   .cc-id { width: 100%; box-sizing: border-box; }
+  /* While you choose, the student and the card stay at the top, side by side, so you
+     see every change as you make it (the choices scroll underneath). */
+  .cc:not(.cc-step2) .cc-preview { position: sticky; top: 0; z-index: 8; display: grid; grid-template-columns: 1fr 44%; align-items: stretch; margin: 0 -14px; padding: calc(6px + var(--safe-t)) 14px 8px; background: #1b1030; box-shadow: 0 8px 14px -8px #000a; }
+  .cc:not(.cc-step2) .cc-stage { height: min(36vh, 300px); }
+  .cc:not(.cc-step2) .cc-id { justify-content: center; }
+  .cc:not(.cc-step2) .cc-id-row { flex-direction: column; align-items: flex-start; }
 }
+.cc-body > .cc-fields, .cc-body > .cc-err, .cc-body > .cc-go { grid-column: 1 / -1; }
+.cc-photo:has(img) { width: 64px; height: 72px; background: #e9e3f5; }
+.cc-photo img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; }
 .dream-card{margin:12px 0;padding:12px;border-radius:14px;background:#ffffff14;border:1px solid #f0c40055}
 .dream-card p{margin:0 0 8px}
 .dream-bar{height:10px;border-radius:999px;background:#2a184622;overflow:hidden}

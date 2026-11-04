@@ -20,9 +20,11 @@ const OUTFIT = {
     punk: { file: 'punk', top: ['Black'] },
     beach: { file: 'beach', top: ['LightBrown'] },
   },
+  // (the women's pack has no hoodie: "hoodie" is the tee, named Tee in the creator;
+  // "shirt" is the punk crop top, named Crop top)
   female: {
     hoodie: { file: 'tee', top: ['White'] },
-    shirt: { file: 'tee', top: ['White'] },
+    shirt: { file: 'punk', top: ['Pink'] },
     organt: { file: 'tee', top: ['White'] },
     jacket: { file: 'suit', top: ['Black'] },
     dress: { file: 'dress', top: ['LimeGreen'], dress: true },
@@ -31,9 +33,9 @@ const OUTFIT = {
     punk: { file: 'punk', top: ['Pink'] },
   },
 }
-// Creator hair -> head file.
+// Creator hair -> head file (each named after what it shows: see hairsFor in avatar.js).
 const HEAD = {
-  female: { braids: 'long', curls: 'bun', fade: 'bob', crop: 'bob' },
+  female: { braids: 'long', curls: 'bun', fade: 'mohawk', crop: 'bob' },
   male: { braids: 'long', curls: 'parted', fade: 'short', crop: 'crop' },
 }
 // Cast and crowd "model" keys: gender and head, for variety.
@@ -43,6 +45,7 @@ const MODEL_LOOK = {
 }
 export const CROWD_MODELS = Object.keys(MODEL_LOOK)
 const HEIGHT = 1.74
+const CURVY = 1.3 // how much fuller a curvy student's thighs are
 
 // [top, trousers, shoes], the same palette as the 2D creator (src/avatar.js).
 const CLOTH = {
@@ -425,11 +428,20 @@ async function attachModel(group, look) {
   const s = HEIGHT / Math.max(0.1, box.max.y - box.min.y)
   model.scale.setScalar(s)
   // Not everyone has the same build: a little wider or narrower, taller or shorter.
-  const wide = 1 + (look.curvy ? 0.12 : 0) + look.build * 0.1
+  const wide = 1 + look.build * 0.1
   model.scale.x *= wide
   model.scale.z *= wide
   model.scale.y *= 1 + look.build * 0.03
   model.name = 'rig'
+  // Curvy: fuller hips and thighs (the thigh bones thicker, the shins as before).
+  if (look.curvy) {
+    for (const side of ['L', 'R']) {
+      model.getObjectByName(`UpperLeg${side}`)?.scale.set(CURVY, 1, CURVY)
+      model.getObjectByName(`LowerLeg${side}`)?.scale.set(1.05 / CURVY, 1, 1.05 / CURVY)
+    }
+    model.getObjectByName('Hips')?.scale.set(1.12, 1, 1.12)
+    model.getObjectByName('Abdomen')?.scale.set(0.9, 1, 0.92)
+  }
   const bones = {}
   // (three.js drops the dots from bone names: UpperLeg.L loads as UpperLegL.)
   for (const name of ['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR', 'Hips', 'Abdomen']) {
@@ -525,6 +537,12 @@ function fadeIn(group, dt) {
     m.opacity = m.userData.base.opacity * data.fade
     m.needsUpdate = true
   }
+}
+
+// Start loading the most likely students early (the title screen), so the creator's
+// student is there the moment it opens.
+export function preloadPeople() {
+  for (const name of ['female_anim', 'female_outfit_tee', 'female_head_bob', 'male_anim', 'male_outfit_hoodie', 'male_head_crop']) load(name).catch(() => {})
 }
 
 // Fully there now, no fade (a still picture of them: the creator's icons).

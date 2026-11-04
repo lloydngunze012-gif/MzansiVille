@@ -1,4 +1,4 @@
-import { avatarSvg, bodies, genderOf, genders, hairs, outfits, skins } from '../avatar.js'
+import { avatarSvg, bodies, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
 import { readErrors } from '../errors.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
@@ -409,8 +409,8 @@ function create(state) {
         ${storyStep ? `<p class="cc-lede">First year is a fresh start. Nobody here knows who you were.</p>${storyHtml}` : `${genderPick}
         ${picker('Skin', skins, 'skin')}
         ${picker('Body', bodies, 'body')}
-        ${picker('Hair', hairs, 'hair')}
-        ${picker('Outfit', outfits, 'outfit')}`}
+        ${picker('Hair', hairsFor(genderOf(draft.avatar)), 'hair')}
+        ${picker('Outfit', outfitsFor(genderOf(draft.avatar)), 'outfit')}`}
       </div>
       <aside class="cc-preview">
         <div class="cc-stage">
@@ -425,7 +425,6 @@ function create(state) {
           <span data-card="residence">${esc(draft.residence || 'Res: choose')}</span><span data-card="course">${esc(draft.course || 'Course: choose')}</span><span data-card="handle">${esc(draft.handle.trim() ? '@' + draft.handle.trim().replace(/^@/, '') : '@handle')}</span></div></div>
           <svg class="cc-bar" viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">${[2,1,3,1,1,2,4,1,2,1,3,2,1,1,4,2,1,3,1,2,2,1,3,1,1,2,4,1,2,3].map((w, i, a) => { const x = a.slice(0, i).reduce((t, v) => t + v + 1.5, 0); return `<rect x="${x}" width="${w}" height="12" fill="#1c1915"/>` }).join('')}</svg></div>
       </aside>
-    </div>
     <div class="cc-fields"${storyStep ? ' hidden' : ''}>
       <label class="cc-field">Name<input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Your name"></label>
       <label class="cc-field">Residence<select id="residence"><option value="">Choose res</option>${groups}</select></label>
@@ -435,6 +434,7 @@ function create(state) {
     </div>
     ${draft.error ? `<p class="error cc-err">${esc(draft.error)}</p>` : ''}
     <div class="cc-go"><button class="btn ts-start" type="button" data-act="begin">${draft.edit ? 'Save changes' : storyStep ? 'Walk onto campus' : 'Next: your story \u203a'}</button></div>
+    </div>
   </main>`
 }
 

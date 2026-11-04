@@ -89,6 +89,11 @@ export function showPreview(stage, look) {
   if (!frame) frame = requestAnimationFrame(tick)
 }
 
+// Resolves once the student on the stage is showing (or failed to load).
+export function ready() {
+  return avatar?.userData.ready || Promise.resolve()
+}
+
 export function hidePreview() {
   if (frame) cancelAnimationFrame(frame)
   frame = 0
