@@ -143,8 +143,9 @@ export function createCameraRig() {
       return lookDir()
     },
     moveRight() {
+      // (Y up, right-handed: looking along -z, right is +x)
       const f = lookDir()
-      return { x: f.z, z: -f.x }
+      return { x: -f.z, z: f.x }
     },
     apply(camera, target, dt, buildings) {
       const point = new THREE.Vector3(target.x, 0, target.z)

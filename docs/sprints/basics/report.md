@@ -49,3 +49,11 @@ Test machine drew 5-7 fps (so the game ran slower than real time); a phone draws
 | K8 10 min random | PASS (131 taps, 146 stick pushes, worst lock 0 s) |
 | K9 mirrored text | PASS (39 signs) |
 | K10 every card type, then the stick | PASS: after the event, map, talk, place and day summary cards, the stick moves you on the first frame drawn (360-550 ms here at 6 fps, one frame; under 100 ms needs 20+ fps, a phone's 60 fps is 17 ms) |
+
+## Sideways mirrored (4 Nov)
+moveRight in src/world/camera.js returned the camera's left ({ x: f.z, z: -f.x }); fixed to { x: -f.z, z: f.x }. It's the only camera right vector; the stick and WASD both use it (input.js).
+| | Result |
+|---|---|
+| K11 stick right/left/forward/back (Sims camera) | PASS: 1.36-1.53 m the way pushed, 0 m sideways. On the old sign: right went 2.21 m left, left went 2.04 m right (FAIL) |
+| K11b WASD | PASS: 0.43-0.52 m the way pressed (a walk on this 5-7 fps machine), 0.01 m sideways |
+| K1 thumbstick | PASS after the fix |
