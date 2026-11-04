@@ -33,11 +33,11 @@ export const hairs = [
   { id: 'fade', label: 'Fade' },
   { id: 'braids', label: 'Braids' },
 ]
-// What each hair looks like on the 3D student (the CC0 pack has no braids yet), so
-// each choice is named after what you see.
+// What each hair looks like on the 3D student, so each choice is named after what you
+// see (braids and the fade are made in avatar3d.js; the pack has neither).
 const HAIR_NAMES = {
-  female: { crop: 'Bob', curls: 'Curly bun', braids: 'Long', fade: 'Mohawk' },
-  male: { crop: 'Crop', curls: 'Parted', fade: 'Fade', braids: 'Spiky' },
+  female: { crop: 'Bob', curls: 'Curly bun' },
+  male: { curls: 'Parted' },
 }
 export function hairsFor(gender) {
   return hairs.map((h) => ({ ...h, label: HAIR_NAMES[gender]?.[h.id] || h.label }))
@@ -53,9 +53,8 @@ export const outfits = [
   { id: 'shweshwe', label: 'Shweshwe' },
 ]
 
-// Outfits as the 3D student wears them: the women's pack has no hoodie (a tee) and its
-// "shirt" is a crop top; the men's pack has no dress or skirt, so those aren't offered.
-const OUTFIT_NAMES = { female: { hoodie: 'Tee', shirt: 'Crop top' }, male: { shirt: 'Tee' } }
+// Outfits as the 3D student wears them: the women's "shirt" is a crop top; the men's pack has no dress or skirt, so those aren't offered.
+const OUTFIT_NAMES = { female: { shirt: 'Crop top' }, male: { shirt: 'Tee' } }
 const MALE_OUTFITS = new Set(['hoodie', 'shirt', 'jacket', 'organt'])
 export function outfitsFor(gender) {
   return outfits.filter((o) => gender !== 'male' || MALE_OUTFITS.has(o.id)).map((o) => ({ ...o, label: OUTFIT_NAMES[gender]?.[o.id] || o.label }))

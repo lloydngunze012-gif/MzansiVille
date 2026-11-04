@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { genderOf, skins } from '../avatar.js'
 import { SPEED } from '../speed.js'
 
@@ -20,10 +21,10 @@ const OUTFIT = {
     punk: { file: 'punk', top: ['Black'] },
     beach: { file: 'beach', top: ['LightBrown'] },
   },
-  // (the women's pack has no hoodie: "hoodie" is the tee, named Tee in the creator;
-  // "shirt" is the punk crop top, named Crop top)
+  // (the women's pack has no hoodie: "hoodie" is the tee with a hood, long sleeves and
+  // a pocket made here, see addHoodie; "shirt" is the punk crop top, named Crop top)
   female: {
-    hoodie: { file: 'tee', top: ['White'] },
+    hoodie: { file: 'tee', top: ['White'], hoodie: true },
     shirt: { file: 'punk', top: ['Pink'] },
     organt: { file: 'tee', top: ['White'] },
     jacket: { file: 'suit', top: ['Black'] },
@@ -33,11 +34,13 @@ const OUTFIT = {
     punk: { file: 'punk', top: ['Pink'] },
   },
 }
-// Creator hair -> head file (each named after what it shows: see hairsFor in avatar.js).
+// Creator hair -> head file, and the hair made here on top of it (HAIR_STYLE: braids
+// and a fade aren't in the pack; see hairCap and addBraids).
 const HEAD = {
-  female: { braids: 'long', curls: 'bun', fade: 'mohawk', crop: 'bob' },
-  male: { braids: 'long', curls: 'parted', fade: 'short', crop: 'crop' },
+  female: { braids: 'bob', curls: 'bun', fade: 'bob', crop: 'bob', long: 'long', mohawk: 'mohawk' },
+  male: { braids: 'short', curls: 'parted', fade: 'short', crop: 'crop', spiky: 'long' },
 }
+const HAIR_STYLE = { female: { braids: 'braids', fade: 'fade' }, male: { braids: 'braids' } }
 // Cast and crowd "model" keys: gender and head, for variety.
 const MODEL_LOOK = {
   'female-b': ['female', 'bun'], 'female-d': ['female', 'long'], 'female-f': ['female', 'bob'],
@@ -116,11 +119,11 @@ function recolour(model, look) {
       // Shoes for everyone: where an outfit shows bare feet (sandals, flip-flops,
       // pumps), that part becomes the shoe's upper, a shade darker than the shoe.
       if (part === 'feet' && /^skin/i.test(name)) return shared('upper', () => mat(new THREE.Color(look.shoes).multiplyScalar(0.72)))
-      if (/^skin/i.test(name)) return shared(`skin${name}`, () => mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)))
+      if (/^skin/i.test(name)) return shared(`skin${name}`, () => { const m = mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)); m.userData.skin = true; return m })
       if (part === 'head') {
         if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x1c120c))
         if (/earring|yellow|moustache/i.test(name)) return shared(`own${m.uuid}`, () => m.clone())
-        return shared('hair', () => mat(look.hair))
+        return shared('hair', () => { const m = mat(look.hair); m.userData.hair = true; return m })
       }
       if (part === 'body') return look.outfitTop.includes(name) ? topMat() : shared(`own${m.uuid}`, () => m.clone())
       if (part === 'legs') {
@@ -180,6 +183,135 @@ function addOrgantMark(model) {
   chest.attach(mark)
 }
 
+// Hair the pack doesn't have, made here in the same flat low-poly style and carried by
+// the head bone: a close crop (a fade) and box braids. The head's own hair is hidden
+// (its big hair meshes; the eyebrows stay) and a cap is shaped over the scalp.
+function hairCap(model, heads, look, fuller) {
+  const head = model.getObjectByName('Head')
+  if (!head) return null
+  model.updateMatrixWorld(true)
+  const box = new THREE.Box3()
+  for (const mesh of heads) {
+    const m = [].concat(mesh.material)[0]
+    const b = new THREE.Box3().setFromObject(mesh)
+    if (m?.userData.hair && b.getSize(new THREE.Vector3()).y > 0.05) mesh.visible = false
+    else if (m?.userData.skin) box.union(b)
+  }
+  if (box.isEmpty()) return null
+  const size = box.getSize(new THREE.Vector3())
+  const mid = box.getCenter(new THREE.Vector3())
+  // An egg round the whole skull (a touch bigger, fuller for braids), tilted back so its
+  // rim sits at the brow in front and down at the nape behind: hair, not a hat.
+  const k = fuller ? 1.2 : 1.16
+  const radii = new THREE.Vector3(size.x / 2 * k * 1.08, size.y / 2 * k * 1.14, size.z / 2 * k * 1.1)
+  const RIM = Math.PI * 0.57
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 9, 0, Math.PI * 2, 0, RIM), new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.9, flatShading: true, side: THREE.DoubleSide }))
+  cap.scale.copy(radii)
+  // (a fade sits higher and tighter: a short crop with the forehead showing)
+  cap.rotation.x = fuller ? -0.46 : -0.62
+  // (the men's face is longer: their hairline sits higher still)
+  cap.position.copy(mid).add(new THREE.Vector3(0, size.y * (fuller ? 0.06 : look.gender === 'male' ? 0.22 : 0.13), fuller ? 0 : -size.z * 0.06))
+  cap.castShadow = true
+  cap.name = 'hair-cap'
+  // (built in world space, then handed to the model and on to the head bone)
+  cap.position.copy(model.worldToLocal(cap.position.clone()))
+  const s = model.getWorldScale(new THREE.Vector3())
+  cap.scale.divide(s)
+  model.add(cap)
+  cap.updateMatrixWorld(true)
+  // A point on the rim, at an angle round the head (0: the back), in world space.
+  const rim = (a) => new THREE.Vector3(Math.sin(a) * Math.sin(RIM), Math.cos(RIM), -Math.cos(a) * Math.sin(RIM)).applyMatrix4(cap.matrixWorld)
+  head.attach(cap)
+  return { head, rim, radii, mid }
+}
+
+function addBraids(model, heads, look) {
+  // (men's braids sit on the tight, high crop; women's on a fuller cap)
+  const base = hairCap(model, heads, look, look.gender !== 'male')
+  if (!base) return
+  const { head, rim, mid } = base
+  const strands = []
+  const shoulder = mid.y - (look.gender === 'male' ? 0.2 : 0.36) // where they hang down to
+  // Round the sides and the back of the head; none across the face.
+  for (let i = 0; i < 26; i++) {
+    const a = -Math.PI * 0.6 + (i / 25) * Math.PI * 1.2
+    const root = rim(a)
+    const len = Math.max(0.08, root.y - shoulder)
+    const g = new THREE.CylinderGeometry(0.012, 0.009, len, 5, 4)
+    // (a braid's bumps: every other ring a touch wider)
+    const pos = g.attributes.position
+    for (let v = 0; v < pos.count; v++) {
+      const ring = Math.round((pos.getY(v) / len + 0.5) * 4)
+      const w = ring % 2 ? 1.3 : 1
+      pos.setX(v, pos.getX(v) * w)
+      pos.setZ(v, pos.getZ(v) * w)
+    }
+    // Hanging straight down from the rim, a little out from the head.
+    const out = new THREE.Vector3(root.x - mid.x, 0, root.z - mid.z).normalize()
+    const at = root.clone().addScaledVector(out, 0.012)
+    at.y -= len / 2
+    const m = new THREE.Matrix4().compose(model.worldToLocal(at), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(out.z, 0, -out.x), 0.1), new THREE.Vector3(1, 1, 1).divide(model.getWorldScale(new THREE.Vector3())))
+    g.applyMatrix4(m)
+    strands.push(g)
+  }
+  const braids = new THREE.Mesh(mergeGeometries(strands), new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.85, flatShading: true }))
+  braids.castShadow = true
+  braids.name = 'braids'
+  model.add(braids)
+  braids.updateMatrixWorld(true)
+  head.attach(braids)
+}
+
+// The women's pack has no hoodie: the tee, with long sleeves on the arm bones, a hood
+// lying at the back of the neck, a front pocket and drawstrings, in the top colour.
+function addHoodie(model, look) {
+  const chest = model.getObjectByName('Chest')
+  const neck = model.getObjectByName('Neck')
+  const torso = model.getObjectByName('Torso') || model.getObjectByName('Abdomen')
+  if (!chest || !neck || !torso) return
+  model.updateMatrixWorld(true)
+  const cloth = new THREE.MeshStandardMaterial({ color: look.top, roughness: 0.85, flatShading: true })
+  const shade = new THREE.MeshStandardMaterial({ color: new THREE.Color(look.top).multiplyScalar(0.8), roughness: 0.85, flatShading: true })
+  const put = (mesh, bone) => { mesh.castShadow = true; model.add(mesh); mesh.updateMatrixWorld(true); bone.attach(mesh) }
+  // Sleeves: from the shoulder to the wrist, a slightly baggy tube on each arm bone.
+  for (const side of ['L', 'R']) {
+    const upper = model.getObjectByName(`UpperArm${side}`)
+    const lower = model.getObjectByName(`LowerArm${side}`)
+    const wrist = model.getObjectByName(`Wrist${side}`)
+    if (!upper || !lower || !wrist) continue
+    for (const [bone, from, to, r] of [[upper, worldOf(upper), worldOf(lower), 0.05], [lower, worldOf(lower), worldOf(wrist), 0.043]]) {
+      const len = from.distanceTo(to)
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.92, len * 1.04, 7), cloth)
+      tube.position.copy(from).lerp(to, 0.5)
+      tube.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize())
+      tube.position.copy(model.worldToLocal(tube.position.clone()))
+      tube.quaternion.premultiply(model.getWorldQuaternion(new THREE.Quaternion()).invert())
+      put(tube, bone)
+    }
+  }
+  const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(model.getWorldQuaternion(new THREE.Quaternion()))
+  const top = worldOf(neck)
+  const low = worldOf(torso)
+  const shoulders = worldOf(model.getObjectByName('UpperArmL') || neck).distanceTo(worldOf(model.getObjectByName('UpperArmR') || neck)) || 0.3
+  const local = (v) => model.worldToLocal(v.clone())
+  // The hood, down at the back of the neck.
+  const hood = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.6), cloth)
+  hood.scale.set(shoulders * 0.42, 0.1, 0.07)
+  hood.rotation.x = Math.PI * 0.62
+  hood.position.copy(local(top.clone().addScaledVector(forward, -0.07).add(new THREE.Vector3(0, -0.04, 0))))
+  put(hood, chest)
+  // The front pocket (a darker band across the belly) and two drawstrings.
+  const pocket = new THREE.Mesh(new THREE.BoxGeometry(shoulders * 0.62, 0.075, 0.012), shade)
+  pocket.position.copy(local(new THREE.Vector3().lerpVectors(low, top, 0.02).addScaledVector(forward, shoulders * 0.5)))
+  put(pocket, torso)
+  for (const side of [-1, 1]) {
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4), new THREE.MeshStandardMaterial({ color: 0xf7f4ee, roughness: 0.6 }))
+    const at = top.clone().addScaledVector(forward, shoulders * 0.42).add(new THREE.Vector3(side * 0.03, -0.1, 0))
+    cord.position.copy(local(at))
+    put(cord, chest)
+  }
+}
+
 export function lookOf(avatar = {}) {
   const byModel = MODEL_LOOK[avatar.model]
   const gender = byModel ? byModel[0] : genderOf(avatar)
@@ -188,7 +320,7 @@ export function lookOf(avatar = {}) {
   const skin = avatar.skinColor || colorOf(skins, avatar.skin, '#d2956b')
   const head = byModel ? byModel[1] : HEAD[gender][avatar.hair] || HEAD[gender].crop
   return {
-    model: avatar.model || `${gender}:${outfit.file}:${head}`,
+    model: avatar.model || `${gender}:${outfit.file}:${head}${HAIR_STYLE[gender]?.[avatar.hair] ? `:${HAIR_STYLE[gender][avatar.hair]}` : ''}${outfit.hoodie ? ':hood' : ''}`,
     gender,
     outfitFile: outfit.file,
     outfitTop: outfit.top,
@@ -202,6 +334,8 @@ export function lookOf(avatar = {}) {
     dress: Boolean(outfit.dress),
     shweshwe: avatar.outfit === 'shweshwe',
     organt: avatar.outfit === 'organt',
+    hoodie: Boolean(outfit.hoodie),
+    hairStyle: byModel ? '' : HAIR_STYLE[gender]?.[avatar.hair] || '',
     curvy: avatar.body === 'curvy',
     build: avatar.build ?? 0,
   }
@@ -473,6 +607,9 @@ async function attachModel(group, look) {
   const gaitKey = `${g}:${look.outfitFile}`
   gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
   if (look.organt) addOrgantMark(model)
+  if (look.hairStyle === 'braids') addBraids(model, heads, look)
+  if (look.hairStyle === 'fade') hairCap(model, heads, look, false)
+  if (look.hoodie) addHoodie(model, look)
   const mixer = new THREE.AnimationMixer(model)
   const actions = {}
   for (const clip of animGltf.animations) actions[clip.name] = mixer.clipAction(clip)
