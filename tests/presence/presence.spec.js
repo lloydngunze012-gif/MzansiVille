@@ -168,28 +168,31 @@ test('two players on one campus', async ({ page }) => {
     `B walked ${walked.toFixed(1)} m; A's view ends ${(endGap * 100).toFixed(0)} cm from B; biggest jump between 0.2 s samples ${worstStep.toFixed(2)} m (jog 4 m/s = 0.8); body seen ${walkPoses}`)
   await page.screenshot({ path: `${OUT}/P3-walked.png` })
 
-  // A walks straight into B: no collision between players, A ends on B's spot.
-  // (a tap on B where A sees them; B far off: a tap a few metres towards them first)
+  // No collision between players: A walks to the ground 40 cm beside B (closer than the
+  // collision pass lets anyone stand to a person, 50 cm) and ends there. (A tap ON B
+  // opens B's card now, Piece 1a, so the finger goes beside them. B far off: a few
+  // metres nearer first.)
   const fa = await finger(page, A, 0)
   const open_ = (s) => s && !s.behind && s.x > 40 && s.x < 372 && s.y > 230 && s.y < 640
-  for (let i = 0; i < 8; i++) {
+  let closest = 99
+  for (let i = 0; i < 12 && closest > 0.45; i++) {
     const seen = (await others(A))[0]
     const at = await me(A)
     const d = Math.hypot(seen.x - at.x, seen.z - at.z)
-    if (d < 0.4) break
-    let s = await A.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0), [seen.x, seen.z])
-    if (!open_(s)) {
-      const k = Math.min(6, d) / d
-      s = await A.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0), [at.x + (seen.x - at.x) * k, at.z + (seen.z - at.z) * k])
-      if (!open_(s)) break
-    }
+    const ux = (seen.x - at.x) / d
+    const uz = (seen.z - at.z) / d
+    const target = d > 3.5 ? { x: at.x + ux * Math.min(5, d - 2.5), z: at.z + uz * Math.min(5, d - 2.5) } : { x: seen.x - uz * 0.4, z: seen.z + ux * 0.4 }
+    const s = await A.evaluate(([x, z]) => window.mzansiScreenOf(x, z, 0), [target.x, target.z])
+    if (!open_(s)) continue
     await fa.tap(s.x, s.y)
+    if (await A.locator('.pc-sheet-wrap.on').isVisible().catch(() => false)) { await page.waitForTimeout(600); await fa.tap(200, 90) }
     await page.waitForTimeout(800)
-    await expect.poll(async () => { const a = await me(A); await page.waitForTimeout(300); const b = await me(A); return Math.hypot(a.x - b.x, a.z - b.z) }, { timeout: 20000 }).toBeLessThan(0.01)
+    await expect.poll(async () => { const p1 = await me(A); await page.waitForTimeout(300); const p2 = await me(A); return Math.hypot(p1.x - p2.x, p1.z - p2.z) }, { timeout: 20000 }).toBeLessThan(0.01)
+    const a2 = await me(A)
+    closest = Math.min(closest, Math.hypot(a2.x - seen.x, a2.z - seen.z))
   }
-  const posA2 = await me(A)
-  const overlap = Math.hypot(posA2.x - endB.x, posA2.z - endB.z)
-  note('P4 players pass through each other', overlap < 0.4, `A walked onto B and stopped ${(overlap * 100).toFixed(0)} cm from B's middle (a body is 30 cm wide; NPCs keep 50 cm+)`)
+  const overlap = closest
+  note('P4 players pass through each other', overlap < 0.45, `A walked up beside B and stopped ${(overlap * 100).toFixed(0)} cm from B's middle (people keep 50 cm+ apart; players don't)`)
   await page.screenshot({ path: `${OUT}/P4-through.png` })
 
   // B closes the tab: gone from A within 10 s.

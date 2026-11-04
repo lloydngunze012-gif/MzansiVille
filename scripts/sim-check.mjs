@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { filterText, canSend } from '../src/engine/filter.js'
+import { filterText, cleanBio, canSend } from '../src/engine/filter.js'
 import { rankRows, sampleBoard } from '../src/engine/social-data.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -704,6 +704,17 @@ check('filter masks English, Afrikaans and isiZulu swearing', () => {
 
 check('filter blocks slurs', () => {
   for (const t of ['you k4ffir', 'makwerekwere go home', 'moffie']) assert.equal(filterText(t).blocked, true, t)
+})
+
+check('card bios: contact details taken out with a reason, slurs blocked (Piece 1a)', () => {
+  const a = cleanBio('Call me 072 123 4567 or wa.me/27721234567 ig: thandi_99 @thandi www.mysite.co.za')
+  assert.equal(a.text, 'Call me or')
+  assert.ok(a.removed.some((r) => /Phone/.test(r)) && a.removed.some((r) => /WhatsApp/.test(r)) && a.removed.some((r) => /Social/.test(r)) && a.removed.some((r) => /Links/.test(r)))
+  assert.equal(cleanBio('Class of 2026, room 12, 3 lectures a day').text, 'Class of 2026, room 12, 3 lectures a day')
+  assert.deepEqual(cleanBio('Class of 2026, room 12').removed, [])
+  assert.equal(cleanBio('x'.repeat(120)).text.length, 80)
+  assert.equal(cleanBio('you are a kaffir').blocked, true)
+  assert.equal(cleanBio('Law student who loves amapiano and bunny chow').removed.length, 0)
 })
 
 check('chat rate limit', () => {

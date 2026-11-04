@@ -1,5 +1,5 @@
 {
-  "room": "test-mw2dixkz",
+  "room": "test-mw2il3vd",
   "results": [
     {
       "id": "S1 start in your house, head out",
@@ -9,7 +9,7 @@
     {
       "id": "P1 each sees the other",
       "pass": true,
-      "detail": "seen within 6481 ms; A sees \"Kabelo 26120838\", B sees \"Thandeka 26632184\""
+      "detail": "seen within 4546 ms; A sees \"Kabelo 26672894\", B sees \"Thandeka 26228943\""
     },
     {
       "id": "P2 students-on-campus count",
@@ -19,12 +19,12 @@
     {
       "id": "P3 movement follows, interpolated",
       "pass": true,
-      "detail": "B walked 20.1 m; A's view ends 0 cm from B; biggest jump between 0.2 s samples 0.81 m (jog 4 m/s = 0.8); body seen stand,walk clip"
+      "detail": "B walked 20.1 m; A's view ends 0 cm from B; biggest jump between 0.2 s samples 0.90 m (jog 4 m/s = 0.8); body seen stand,walk clip"
     },
     {
       "id": "P4 players pass through each other",
       "pass": true,
-      "detail": "A walked onto B and stopped 17 cm from B's middle (a body is 30 cm wide; NPCs keep 50 cm+)"
+      "detail": "A walked up beside B and stopped 41 cm from B's middle (people keep 50 cm+ apart; players don't)"
     },
     {
       "id": "L1 closing the tab: gone within 10 s",
@@ -34,7 +34,7 @@
     {
       "id": "L2 a frozen phone (no goodbye): gone within 10 s",
       "pass": true,
-      "detail": "B vanished from A 5.8 s after B's page froze"
+      "detail": "B vanished from A 5.7 s after B's page froze"
     }
   ]
 }

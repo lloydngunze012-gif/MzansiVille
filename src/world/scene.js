@@ -287,6 +287,14 @@ function ensureRenderer() {
   window.addEventListener('mzansi-cam', (event) => rig?.setMode(event.detail))
   window.addEventListener('mzansi-help', () => { if (visible) showTour(true) })
   window.addEventListener('mzansi-act', (event) => beginAction(event.detail))
+  // Piece 1a: you wave at a player (turn to them, wave); a player waves at you.
+  window.addEventListener('mzansi-wave', (event) => {
+    if (!player) return
+    const at = others?.positionOf(event.detail.id)
+    if (at && (player.userData.pose || 'stand') === 'stand') player.rotation.y = Math.atan2(at.x - player.position.x, at.z - player.position.z)
+    gesture(player, event.detail.gesture || 'emote-yes')
+  })
+  window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
   // Used by tests and the map: walk to a building's door and enter it.
   window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string') approach(event.detail) })
 }
@@ -397,8 +405,19 @@ function pick(point, x, y) {
     for (let node = hits[0]?.object; node; node = node.parent) if (node.userData?.[key]) return node
     return null
   }
-  if (onSelf(x, y)) return { kind: 'self' }
   raycaster.setFromCamera(point, camera)
+  // A real player (others.js): their card. (Standing on the same spot as you, they win
+  // the tap while you stand still; walking, a tap on yourself still stops you.)
+  const playerHit = () => {
+    if (!others || inHouse) return null
+    const hit = raycaster.intersectObjects(others.group.children, true).find((h) => h.object.name === 'hit')
+    let node = hit?.object
+    while (node && !node.userData.remote) node = node.parent
+    return node ? { kind: 'player', id: node.userData.remote } : null
+  }
+  if (onSelf(x, y)) return (!mover.hasTarget && playerHit()) || { kind: 'self' }
+  const other = playerHit()
+  if (other) return other
   if (inHouse && room) {
     const hit = raycaster.intersectObjects(room.group.children, true)[0]
     if (hit?.object.name === 'room-exit') return { kind: 'exit' }
@@ -423,6 +442,7 @@ function tapped(point, x, y) {
   if (acting && (!hit || hit.kind === 'self')) { interrupt(); return }
   if (!hit) return
   window.mzansiLastTap = hit.kind === 'person' ? { kind: 'person', id: hit.node.userData.personId } : { ...hit }
+  if (hit.kind === 'player') { window.dispatchEvent(new CustomEvent('mzansi-player-card', { detail: { id: hit.id } })); return }
   if (hit.kind === 'self') stopHere()
   else if (hit.kind === 'exit') walkTo(room.anchors.door.x, room.anchors.door.z, () => leaveHouse(), { always: true })
   else if (hit.kind === 'person') startTalk(hit.node)

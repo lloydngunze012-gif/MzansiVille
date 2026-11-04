@@ -26,6 +26,8 @@ const META_EVERY = 5000 // the name and look ride along this often (and on a hel
 const SAY_BYE = params.get('bye') !== '0'
 
 const peers = new Map() // id -> { id, meta, snaps: [{t, x, z, y, h, p}], off, heard, area }
+const hidden = new Set() // players you reported: never drawn, their pokes ignored
+export function hidePlayer(id) { if (id) hidden.add(id) }
 const listeners = new Set()
 let channel = null
 let live = false
@@ -44,13 +46,18 @@ let lastCount = -1
 // (item 3) issues real ones from the server; it keeps the 26 + six digits look.
 function identity() {
   const key = 'mzansiville.presence'
+  // (secret: proves to Supabase that a card is this phone's own; never broadcast)
+  const token = () => (crypto.randomUUID?.() || `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`)
   try {
     const saved = JSON.parse(localStorage.getItem(key) || 'null')
-    if (saved?.id && saved?.num) return saved
+    if (saved?.id && saved?.num) {
+      if (!saved.secret) { saved.secret = token(); localStorage.setItem(key, JSON.stringify(saved)) }
+      return saved
+    }
   } catch { /* storage blocked: a fresh one for this visit */ }
-  const id = (crypto.randomUUID?.() || `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`).slice(0, 36)
+  const id = token().slice(0, 36)
   const num = `26${String(Math.floor(Math.random() * 1e6)).padStart(6, '0')}`
-  const made = { id, num }
+  const made = { id, num, secret: token() }
   try { localStorage.setItem(key, JSON.stringify(made)) } catch { /* fine */ }
   return made
 }
@@ -59,12 +66,17 @@ export function myNumber() {
   if (!me) me = identity()
   return me.num
 }
+export function myIdentity() {
+  if (!me) me = identity()
+  return me
+}
 
-// Join (or update who you are: a new name or look is sent at once).
-export function joinPresence(character) {
+// Join (or update who you are: a new name, look or card is sent at once).
+// card: the compact player card (cards.js) others see when they tap you.
+export function joinPresence(character, card = null) {
   if (!character) return
   if (!me) me = identity()
-  const next = { n: String(character.name || 'Student').slice(0, 24), s: me.num, k: character.avatar || {} }
+  const next = { n: String(character.name || 'Student').slice(0, 24), s: me.num, k: character.avatar || {}, h: character.residence || '', c: card }
   const changed = JSON.stringify(next) !== JSON.stringify(meta)
   meta = next
   if (changed) lastMeta = 0
@@ -91,6 +103,7 @@ async function connect() {
       if (payload?.i && payload.i !== me.id) { lastMeta = 0; replyDue = Date.now() + 100 + Math.random() * 300 }
     })
     .on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.i))
+    .on('broadcast', { event: 'poke' }, ({ payload }) => { if (payload?.to === me.id && payload.from !== me.id && !hidden.has(payload.from)) for (const fn of pokeListeners) fn(payload) })
     .on('presence', { event: 'leave' }, ({ key }) => drop(key))
     .subscribe((status) => {
       if (channel !== ch) return
@@ -125,7 +138,7 @@ function heard(m) {
     peer = { id: m.i, meta: null, snaps: [], off: now - m.t, heard: now, area: m.a }
     peers.set(m.i, peer)
   }
-  if (m.m) peer.meta = { name: filterText(m.m.n || 'Student').text || 'Student', num: String(m.m.s || ''), look: m.m.k || {} }
+  if (m.m) peer.meta = { name: filterText(m.m.n || 'Student').text || 'Student', num: String(m.m.s || ''), look: m.m.k || {}, house: String(m.m.h || ''), card: m.m.c || null }
   // Their clock against ours: the smallest gap seen is the truest (it drifts up slowly).
   const gap = now - m.t
   peer.off = gap < peer.off ? gap : peer.off + (gap - peer.off) * 0.02
@@ -208,6 +221,22 @@ export function countLabel() {
   const n = Math.max(1, onlineCount())
   return `${n} on campus`
 }
+// Someone did something to you (Piece 1a: wave, hi, friend): { from, kind, name }.
+const pokeListeners = new Set()
+export function onPoke(fn) {
+  pokeListeners.add(fn)
+  return () => pokeListeners.delete(fn)
+}
+export function sendPoke(to, kind) {
+  if (!channel || !live || !meta) return false
+  channel.send({ type: 'broadcast', event: 'poke', payload: { to, from: me.id, kind, name: meta.n, num: meta.s } }).catch(() => {})
+  return true
+}
+// What presence knows about someone (their name, number, look, house, card), or null.
+export function peerMeta(id) {
+  return peers.get(id)?.meta || null
+}
+
 export function onPresence(fn) {
   listeners.add(fn)
   return () => listeners.delete(fn)
@@ -227,7 +256,7 @@ export function peersOnCampus() {
   const step = rate()
   const delay = step + 100 // 350 ms behind at 4 updates a second
   for (const peer of peers.values()) {
-    if (peer.area !== 'campus' || !peer.meta || !peer.snaps.length) continue
+    if (peer.area !== 'campus' || !peer.meta || !peer.snaps.length || hidden.has(peer.id)) continue
     out.push({ id: peer.id, meta: peer.meta, ...sample(peer.snaps, now - peer.off - delay, step) })
   }
   return out

@@ -1,5 +1,5 @@
 import { districtById, defaultDistrictId } from './districts/registry.js'
-import { filterText, canSend } from './engine/filter.js'
+import { filterText, cleanBio, canSend } from './engine/filter.js'
 import { loadBoardRows, loadLobby } from './social.js'
 import { withEventEdits } from './engine/model.js'
 import {
@@ -52,7 +52,9 @@ import { MENUS, itemOf } from './menus.js'
 import { LECTURERS } from './venues.js'
 import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
 import { clearErrors, installErrorReporting, readErrors } from './errors.js'
-import { joinPresence } from './presence.js'
+import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
+import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
+import { playerCardHtml } from './ui/card.js'
 
 installErrorReporting()
 
@@ -406,7 +408,7 @@ setInterval(() => {
 
 function paint() {
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
-  if (save.run?.character) joinPresence(save.run.character)
+  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run) }
   const shot = new URLSearchParams(location.search).get('shot')
   if (!shot) rememberMorning(save.run)
   if (!shot && route().name === 'play' && morningWanted(save.run)) {
@@ -1084,6 +1086,7 @@ app.addEventListener('focusin', (event) => {
 })
 
 app.addEventListener('input', (event) => {
+  if (event.target.id === 'pc-bio') { const n = app.querySelector('[data-pc-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
   if (event.target.id === 'name') draft.name = event.target.value
   if (event.target.id === 'handle') draft.handle = event.target.value
   if (event.target.id === 'email') draft.email = event.target.value
@@ -1135,6 +1138,10 @@ app.addEventListener('click', async (event) => {
   captureForm()
   const act = button?.dataset.act
   const district = districtNow()
+  if (act === 'pc-edit') { ui.cardEdit = true; ui.cardNotice = null; paint(); return }
+  if (act === 'pc-cancel') { ui.cardEdit = false; ui.cardNotice = null; paint(); return }
+  if (act === 'pc-stats') { ui.cardStats = !ui.cardStats; paint(); return }
+  if (act === 'pc-save') { saveCardForm(); return }
 
   if (place && !act) {
     go(`place/${place.dataset.place}`)
@@ -1711,3 +1718,122 @@ window.addEventListener('keydown', (event) => {
   paint()
 })
 bootAuth().catch(() => {})
+
+// ---------- Player cards (build plan, Piece 1a) ----------
+// Your card: Edit (the bio filtered on save, saying what was taken out), Stats.
+function saveCardForm() {
+  const c = save.run?.character
+  if (!c) return
+  const res = cleanBio(app.querySelector('#pc-bio')?.value || '')
+  if (res.blocked) { ui.cardNotice = { bad: true, text: 'That bio has a word we don’t allow. Try other words.' }; paint(); return }
+  c.bio = res.text
+  c.vibe = app.querySelector('#pc-vibe')?.value || ''
+  c.looking = app.querySelector('#pc-looking')?.value || ''
+  ui.cardEdit = false
+  ui.cardNotice = res.removed.length ? { bad: false, text: `Saved. ${res.removed.join(' ')}` } : { bad: false, text: 'Card saved.' }
+  persist()
+  saveMyCard(save.run)
+  paint()
+}
+
+// Someone else's card: tapped on campus, it slides up from the bottom; one tap on the
+// scrim, the grab bar or Close puts it away. Wave, Say hi, Add friend, Report.
+let sheetFor = ''
+let sheetCard = null
+const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
+function sheetEl() {
+  let el = document.querySelector('.pc-sheet-wrap')
+  if (!el) {
+    el = document.createElement('div')
+    el.className = 'pc-sheet-wrap'
+    document.body.append(el)
+    el.addEventListener('click', onSheetClick)
+  }
+  return el
+}
+function openPlayerCard(id) {
+  sheetFor = id
+  sheetCard = null
+  const el = sheetEl()
+  el.innerHTML = '<div class="pc-scrim" data-pc="close"></div><aside class="pc-sheet" role="dialog" aria-label="Player card"><button type="button" class="pc-grab" data-pc="close" aria-label="Close"></button><div class="pc-sheet-body"><p class="fine">Loading their card…</p></div></aside>'
+  el.hidden = false
+  el.dataset.opened = String(Date.now())
+  requestAnimationFrame(() => el.classList.add('on'))
+  loadCard(id, (card) => { if (sheetFor === id) { sheetCard = card; renderSheet() } })
+}
+function closePlayerCard() {
+  const el = document.querySelector('.pc-sheet-wrap')
+  if (!el) return
+  sheetFor = ''
+  el.classList.remove('on')
+  setTimeout(() => { if (!sheetFor) { el.hidden = true; el.innerHTML = '' } }, 260)
+}
+function renderSheet(reporting = false) {
+  const body = document.querySelector('.pc-sheet-body')
+  if (!body || !sheetCard) return
+  const house = districtNow().houses?.find((h) => h.name === sheetCard.house) || null
+  const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
+  const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
+  const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
+  body.innerHTML = `${playerCardHtml(sheetCard, house)}
+    ${reporting ? `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.</p>
+      ${reasons.map((r) => `<button type="button" data-pc="report-${escHtml(r)}">${escHtml(r)}</button>`).join('')}
+      <button type="button" class="ghost" data-pc="report-cancel">Cancel</button></div>`
+    : `<div class="pc-sheet-acts">
+      <button type="button" data-pc="wave">\u{1F44B} Wave</button>
+      <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
+      <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+      <button type="button" class="bad" data-pc="report">⚑ Report</button>
+    </div>
+    <button type="button" class="pc-close" data-pc="close">Close</button>`}`
+}
+function onSheetClick(event) {
+  const k = event.target.closest('[data-pc]')?.dataset.pc
+  if (!k) return
+  const id = sheetFor
+  const name = String(sheetCard?.name || 'them').split(' ')[0]
+  // (the tap that opened the card ends in a click on the same spot, now the scrim: not a close)
+  if (k === 'close' && Date.now() - Number(event.currentTarget.dataset.opened || 0) < 500) return
+  if (k === 'close') { closePlayerCard(); return }
+  if (k === 'wave') {
+    sendPoke(id, 'wave')
+    window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { id } }))
+    toast(`\u{1F44B} You waved at ${name}`)
+    closePlayerCard()
+    return
+  }
+  if (k === 'hi') {
+    sendPoke(id, 'hi')
+    window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { id, gesture: 'interact-right' } }))
+    toast(`\u{1F4AC} You said hi to ${name}`)
+    closePlayerCard()
+    return
+  }
+  if (k === 'friend' && save.run) {
+    save.run.friends = (save.run.friends || []).filter((f) => f.id !== id).concat({ id, name: sheetCard?.name || 'Student', house: sheetCard?.house || '', num: sheetCard?.num || '', day: save.run.day })
+    persist()
+    sendPoke(id, 'friend')
+    toast(`\u{1F91D} ${name} is on your friends list`)
+    renderSheet()
+    return
+  }
+  if (k === 'report') { renderSheet(true); return }
+  if (k === 'report-cancel') { renderSheet(); return }
+  if (k.startsWith('report-')) {
+    reportPlayer(id, k.slice(7), sheetCard)
+    save.blocks = [...new Set([...(save.blocks || []), id])]
+    persist()
+    hidePlayer(id)
+    toast(`Reported. You won’t see ${name} on campus any more.`)
+    closePlayerCard()
+  }
+}
+window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id))
+// Someone did something to you.
+onPoke(({ from, kind, name }) => {
+  const who = String(name || 'Someone').split(' ')[0]
+  if (kind === 'wave') { toast(`\u{1F44B} ${who} waved at you`); window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from } })) }
+  if (kind === 'hi') { toast(`\u{1F4AC} ${who} says hi!`); window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from, gesture: 'interact-right' } })) }
+  if (kind === 'friend') toast(`\u{1F91D} ${who} added you as a friend`)
+})
+for (const id of save.blocks || []) hidePlayer(id)

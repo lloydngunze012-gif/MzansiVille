@@ -181,6 +181,7 @@ function gearMenu(run) {
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
     ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
     <button type="button" data-act="edit-char">Edit character</button>
+    <button type="button" data-act="nav" data-go="notices">📢 Notices</button>
     <button type="button" data-act="nav" data-go="settings">Settings</button>
     <p class="g-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
     ${run.userId ? '<button type="button" data-act="signout">Sign out</button>' : '<button type="button" data-act="nav" data-go="save">Save progress / sign in</button>'}

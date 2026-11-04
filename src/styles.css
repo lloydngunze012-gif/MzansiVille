@@ -933,3 +933,75 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .cc-id[data-house] { border-color: var(--h1); }
 .cc-id[data-house]::before { width: 9px; background: linear-gradient(var(--h1) 0 70%, var(--h2) 70%); }
 .house-chip { display: inline-block; padding: 1px 10px; border-radius: 12px; background: var(--h1, #5b23c9); color: var(--h2, #fff); border: 2px solid var(--h2, #f0c400); font-weight: 800; }
+
+/* ---------- The player card (Piece 1a): one phone screen, nothing scrolling ---------- */
+.pc-screen { min-height: 100dvh; box-sizing: border-box; padding: 0 12px calc(72px + env(safe-area-inset-bottom)); background: #1d1236; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.pc-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 2px 2px; color: #fff6e6; }
+.pc-bar b { font: 900 18px system-ui; }
+.pc-back { color: #f0c400; font-weight: 800; text-decoration: none; }
+.pc-stats-btn { font: 800 13px system-ui; border: 2px solid #f0c400; background: transparent; color: #f0c400; border-radius: 16px; padding: 5px 10px; }
+.pc-stats-btn.on { background: #f0c400; color: #22143b; }
+.pcard { --h1: #5b23c9; --h2: #f0c400; background: #fffaf0; color: #1c1915; border: 3px solid var(--h1); border-radius: 18px; overflow: hidden; box-shadow: 0 6px 0 var(--h2), 0 10px 26px #0006; flex: none; }
+.pc-top { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--h1); color: var(--h2); font: 900 13px system-ui; letter-spacing: .06em; }
+.pc-class { font-weight: 800; opacity: .95; }
+.pc-main { display: flex; gap: 12px; padding: 12px 12px 4px; align-items: center; }
+.pc-photo { width: 104px; height: 120px; flex: none; border-radius: 12px; background: #ece4f7; border: 3px solid var(--h1); overflow: hidden; display: grid; place-items: center; }
+.pc-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; }
+.pc-photo svg { width: 96px; height: auto; }
+.pc-id { min-width: 0; }
+.pc-name { margin: 0; font: 900 24px/1.1 system-ui; overflow-wrap: anywhere; }
+.pc-handle { margin: 2px 0 6px; color: #5b4a7a; font-weight: 700; }
+.pc-num { margin: 0; font-size: 13px; }
+.pc-num b { font: 800 15px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
+.pc-num i { font: 700 10px system-ui; color: #8a7a9a; border: 1px solid #c9bedb; border-radius: 8px; padding: 0 5px; margin-left: 2px; }
+.pc-bio { margin: 6px 12px; font: 600 15px/1.35 system-ui; min-height: 2.7em; }
+.pc-tags { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 12px 8px; padding: 0; }
+.pc-tags li { font: 700 12px system-ui; padding: 4px 9px; border-radius: 14px; background: var(--h1); color: var(--h2); border: 1px solid var(--h2); }
+.pc-tags li.empty, .pcard .empty { background: transparent; color: #9a8aa8; border: 1px dashed #c9bedb; font-weight: 600; }
+.pcard .pc-bio .empty, .pcard .pc-handle .empty { border: 0; }
+.pc-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 12px 8px; }
+.pc-facts div { background: #f1ebfa; border-radius: 10px; padding: 5px 8px; }
+.pc-facts dt { font: 700 10px system-ui; color: #7a6a8a; text-transform: uppercase; letter-spacing: .05em; }
+.pc-facts dd { margin: 0; font: 800 14px system-ui; }
+.pc-badges { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
+.pc-badge { font: 700 12px system-ui; background: #fff1c2; border: 1px solid #f0c400; border-radius: 12px; padding: 2px 8px; }
+.pc-badge.none { background: transparent; border-style: dashed; color: #9a8aa8; }
+.pc-acts { display: flex; gap: 8px; }
+.pc-acts .btn { flex: 1; padding: 11px 6px; font-size: 14px; }
+.pc-notice { margin: 0; padding: 8px 12px; border-radius: 12px; background: #e6f7ea; color: #1d4a2a; font: 700 13px system-ui; }
+.pc-notice.bad { background: #ffe3e3; color: #7a1414; }
+.pc-edit { display: flex; flex-direction: column; gap: 8px; background: #2a1846; border-radius: 14px; padding: 10px; color: #fff6e6; }
+.pc-edit .fine { margin: 0; color: #d8c8ff; }
+.pc-field { display: flex; flex-direction: column; gap: 3px; font: 800 12px system-ui; flex: 1; min-width: 0; }
+.pc-field span { display: flex; justify-content: space-between; }
+.pc-field input, .pc-field select { font: 600 15px system-ui; padding: 9px; border-radius: 10px; border: 2px solid #f0c400; background: #fffaf0; color: #1c1915; min-width: 0; }
+.pc-row { display: flex; gap: 8px; }
+.pc-stats { position: fixed; z-index: 70; left: 0; right: 0; bottom: 0; max-height: 82dvh; overflow: auto; background: #fffaf0; color: #1c1915; border-radius: 18px 18px 0 0; padding: 12px 14px calc(16px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 30px #0008; }
+.pc-stats header { display: flex; justify-content: space-between; align-items: center; font: 900 18px system-ui; margin-bottom: 6px; }
+.pc-stats .dream-card { margin: 8px 0; }
+
+/* Another player's card: slides up from the bottom; one tap on the scrim closes it. */
+.pc-sheet-wrap { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+.pc-sheet-wrap[hidden] { display: none; }
+.pc-scrim { position: absolute; inset: 0; background: #0009; opacity: 0; transition: opacity .22s; pointer-events: auto; }
+.pc-sheet { position: absolute; left: 0; right: 0; bottom: 0; max-height: 92dvh; overflow: auto; background: #1d1236; border-radius: 20px 20px 0 0; padding: 6px 12px calc(14px + env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .24s ease-out; pointer-events: auto; box-shadow: 0 -12px 34px #000a; }
+.pc-sheet-wrap.on .pc-scrim { opacity: 1; }
+.pc-sheet-wrap.on .pc-sheet { transform: translateY(0); }
+.pc-grab { display: block; width: 64px; height: 18px; margin: 0 auto 6px; border: 0; background: transparent; position: relative; }
+.pc-grab::after { content: ''; position: absolute; left: 12px; right: 12px; top: 7px; height: 5px; border-radius: 3px; background: #ffffff55; }
+.pc-sheet-body { display: flex; flex-direction: column; gap: 10px; color: #fff6e6; }
+.pc-sheet-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pc-sheet-acts button, .pc-report button { font: 800 15px system-ui; padding: 12px 8px; border-radius: 14px; border: 2px solid #f0c400; background: #2a1846; color: #fff6e6; }
+.pc-sheet-acts button[data-pc="wave"] { background: #f0c400; color: #22143b; }
+.pc-sheet-acts button.bad { border-color: #ff7a7a; color: #ffb3b3; }
+.pc-sheet-acts button:disabled { opacity: .7; border-style: dashed; }
+.pc-close { font: 800 14px system-ui; padding: 10px; border-radius: 12px; border: 0; background: transparent; color: #d8c8ff; }
+.pc-report { display: flex; flex-direction: column; gap: 8px; }
+.pc-report p { margin: 0; }
+.pc-report .ghost { background: transparent; border-color: #ffffff44; }
+.nt-screen .pc-bar { color: inherit; }
+/* (the card screen is dark: its buttons carry their own colours; the floating home button sits top left) */
+.pc-bar { padding-left: 58px; }
+.pc-acts .btn { background: #2a1846; color: #fff6e6; border: 2px solid #f0c400; }
+.pc-acts .btn.primary { background: #f0c400; color: #22143b; }
+.pc-acts .btn.ghost { background: transparent; color: #d8c8ff; border-color: #ffffff44; }

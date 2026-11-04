@@ -1,12 +1,12 @@
 import * as THREE from 'three'
-import { createAvatar, poseAvatar } from './avatar3d.js'
+import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { peersOnCampus } from '../presence.js'
 
 // The other real students (presence.js): the same character model as everyone, in
 // their own look, placed where the network says they are (interpolated there), with
 // their name and student number over their head. They're kept out of the collision
-// pass, the crowd's personal space and tap picking: players pass through each other,
-// and a tap on one walks you there.
+// pass and the crowd's personal space: players pass through each other. A tap on one
+// opens their card (Piece 1a: scene.js picks their hit cylinder).
 
 const MAX_SHOWN = 24 // the nearest this many (a phone draws only so many people)
 const TAG_FAR = 45 // tags show this far away (NPC tags stop at 10 m)
@@ -59,8 +59,8 @@ export function createOthers(scene) {
     const avatar = createAvatar(peer.meta.look)
     avatar.userData.remote = peer.id
     avatar.userData.leads = true // we turn them (to the way they face), not poseAvatar
-    // Not a tap target: a tap on them is a tap on the ground there.
-    avatar.traverse((node) => { node.raycast = () => {} })
+    // Only the hit cylinder is a tap target (the tag and the body aren't).
+    avatar.traverse((node) => { if (node.name !== 'hit') node.raycast = () => {} })
     avatar.position.set(peer.x, peer.y || 0, peer.z)
     avatar.rotation.y = peer.h
     group.add(avatar)
@@ -140,5 +140,15 @@ export function createOthers(scene) {
     }))
   }
 
-  return { group, update, dispose, report, count: () => shown.size }
+  // A real player waves (or gestures) on this phone too.
+  function gestureOf(id, name) {
+    const entry = shown.get(id)
+    if (entry) gesture(entry.avatar, name)
+  }
+  function positionOf(id) {
+    const entry = shown.get(id)
+    return entry ? { x: entry.avatar.position.x, z: entry.avatar.position.z } : null
+  }
+
+  return { group, update, dispose, report, gestureOf, positionOf, count: () => shown.size }
 }

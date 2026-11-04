@@ -7,7 +7,10 @@ import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
 import { boardScreen, lobbyScreen } from './social.js'
-import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
+import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, ui, withHud } from './game.js'
+import { LOOKING, VIBES, cardOf } from '../cards.js'
+import { playerCardHtml } from './card.js'
+import { BIO_MAX } from '../engine/filter.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
 import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
 import { STORY_OPTS, storyWithDefaults } from '../story.js'
@@ -447,38 +450,55 @@ function create(state) {
 
 function profile(state) {
   const { district, run } = state
-  const badges = [
-    run.badges?.includes('lectures') ? '<span class="badge">Lecture streak</span>' : '',
-    run.graduated ? '<span class="badge">Graduated first year</span>' : '',
-  ].join(' ')
-  const card = run.referralCode ? `<section class="organt-card">
-      <strong>${esc(district.shop.brand)}</strong>
-      <p>Referral ${esc(run.referralCode)}</p>
-      <button class="btn block" type="button" data-act="open-shop">This links to a real shop</button>
-    </section>` : ''
-  return `<main class="screen pad has-nav" data-screen="profile">
-    <div class="profile-head">
-      ${avatarSvg(run.character.avatar, district.meta.dialCode, 96)}
-      <div>
-        <h1>${esc(run.character.name)}</h1>
-        <p class="id-title" data-title="${identityTitle(run).level}">${identityTitle(run).path ? identityTitle(run).path.icon + ' ' : ''}${esc(identityTitle(run).text)}</p>
-        <p class="fine"><span class="house-chip" style="${houseVars(district, run.character.residence)}">${esc(run.character.residence)}</span> · ${esc(run.character.course)}</p>
-        <p class="fine">${run.character.handle ? `@${esc(run.character.handle)}` : 'No handle yet'} · Day ${run.day}</p>
-        <p>${badges}</p>
-      </div>
-    </div>
-    <p style="margin:12px 0">${esc(run.lastStatLine)}</p>
-    <p class="fine">Bestie: ${esc(run.bestieName)} from ${esc(run.character.residence)}</p>
-    <section class="dream-card phone-card" aria-label="Your phone"><p>\u{1F4F1} Your phone</p>${(run.contacts || []).length ? `<ul class="phone-list">${run.contacts.map((c) => `<li><b>${esc(c.name)}</b><small>since day ${c.day}</small></li>`).join('')}</ul>` : '<small>No numbers yet. Talk to people and swap numbers.</small>'}${(run.inbox || []).length ? `<p class="phone-msgs-h">Messages</p><ul class="phone-list">${run.inbox.slice(-5).reverse().map((m) => `<li><b>${esc(m.from)}</b><small>${esc(m.text)}</small></li>`).join('')}</ul>` : ''}</section>
-    <section class="dream-card id-card" aria-label="Who you're becoming"><p>Who you're becoming</p>${Object.values(PATHS).map((p) => `<div class="id-row"><span>${p.icon} ${esc(p.name.replace('The ', ''))}</span><div class="dream-bar"><i style="width:${Math.min(100, Math.round(identityPoints(run)[p.id] / 20 * 100))}%"></i></div></div>`).join('')}<small>${Math.round(identityProgress(run) * 100)}% of the way to "Known as"</small></section>
-    <section class="dream-card" aria-label="Year dream"><p>${dreamOf(run).icon} Year dream: <b>${esc(dreamOf(run).label)}</b></p><div class="dream-bar"><i style="width:${Math.max(3, Math.round(dreamProgress(run) * 100))}%"></i></div><small>${Math.round(dreamProgress(run) * 100)}% of the way</small></section>
-    ${card}
-    <div class="stack" style="margin-top:12px">
-      <button class="btn primary block" type="button" data-act="nav" data-go="share">Share card</button>
-      ${run.userId ? '' : '<button class="btn block" type="button" data-act="nav" data-go="save">Save your progress</button>'}
-      <button class="btn ghost block" type="button" data-act="nav" data-go="admin">Admin</button>
-      ${run.userId ? '<button class="btn ghost block" type="button" data-act="signout">Sign out</button>' : ''}
-    </div>
+  const house = district.houses?.find((h) => h.name === run.character.residence) || null
+  const card = cardOf(run)
+  const editing = ui.cardEdit
+  const c = run.character
+  const opt = (list, value, none) => `<option value="">${none}</option>${list.map((v) => `<option ${v === value ? 'selected' : ''}>${esc(v)}</option>`).join('')}`
+  const form = editing ? `<form class="pc-edit" data-act="none" onsubmit="return false">
+      <label class="pc-field"><span>Bio <small data-pc-count>${(c.bio || '').length}/${BIO_MAX}</small></span><input id="pc-bio" maxlength="${BIO_MAX}" value="${esc(c.bio || '')}" placeholder="One line about you, in your words" autocomplete="off"></label>
+      <div class="pc-row"><label class="pc-field"><span>Vibe</span><select id="pc-vibe">${opt(VIBES, c.vibe, 'Pick a vibe')}</select></label>
+      <label class="pc-field"><span>Looking for</span><select id="pc-looking">${opt(LOOKING, c.looking, 'Pick one')}</select></label></div>
+      <p class="fine">No phone numbers, links or social handles: they're taken out automatically.</p>
+      <div class="pc-acts"><button class="btn primary" type="button" data-act="pc-save">Save card</button><button class="btn ghost" type="button" data-act="pc-cancel">Cancel</button></div>
+    </form>` : `<div class="pc-acts">
+      <button class="btn primary" type="button" data-act="pc-edit">Edit card</button>
+      <button class="btn" type="button" data-act="nav" data-go="share">Share</button>
+      ${run.userId ? '<button class="btn ghost" type="button" data-act="signout">Sign out</button>' : '<button class="btn ghost" type="button" data-act="nav" data-go="save">Save progress</button>'}
+    </div>`
+  const notice = ui.cardNotice ? `<p class="pc-notice ${ui.cardNotice.bad ? 'bad' : ''}" role="status">${esc(ui.cardNotice.text)}</p>` : ''
+  const statRow = (k, label, v, max) => `<div class="id-row"><span>${label} <b>${k === 'money' ? formatMoney(v) : v}</b></span><div class="dream-bar"><i style="width:${Math.max(2, Math.min(100, Math.round(v / max * 100)))}%"></i></div></div>`
+  const stats = ui.cardStats ? `<div class="g-scrim soft" data-act="pc-stats"></div>
+    <aside class="pc-stats" role="dialog" aria-label="Stats">
+      <header><b>Stats</b><button type="button" class="g-x" data-act="pc-stats" aria-label="Close">\u00d7</button></header>
+      <p class="id-title" data-title="${identityTitle(run).level}">${identityTitle(run).path ? identityTitle(run).path.icon + ' ' : ''}${esc(identityTitle(run).text)}</p>
+      <section class="dream-card">${statRow('money', 'Money', run.stats.money, 3000)}${statRow('energy', 'Energy', run.stats.energy, run.energyCap || 100)}${statRow('hunger', 'Fullness', run.stats.hunger, 100)}${statRow('grades', 'Grades', run.stats.grades, 100)}${statRow('social', 'Social', run.stats.social, 100)}<small>${esc(run.lastStatLine || '')}</small></section>
+      <section class="dream-card id-card"><p>Who you're becoming</p>${Object.values(PATHS).map((p) => `<div class="id-row"><span>${p.icon} ${esc(p.name.replace('The ', ''))}</span><div class="dream-bar"><i style="width:${Math.min(100, Math.round(identityPoints(run)[p.id] / 20 * 100))}%"></i></div></div>`).join('')}<small>${Math.round(identityProgress(run) * 100)}% of the way to "Known as"</small></section>
+      <section class="dream-card"><p>${dreamOf(run).icon} Year dream: <b>${esc(dreamOf(run).label)}</b></p><div class="dream-bar"><i style="width:${Math.max(3, Math.round(dreamProgress(run) * 100))}%"></i></div><small>${Math.round(dreamProgress(run) * 100)}% of the way</small></section>
+      <p class="fine">Bestie: ${esc(run.bestieName)} from ${esc(run.character.residence)}</p>
+      ${run.referralCode ? `<section class="organt-card"><strong>${esc(district.shop.brand)}</strong><p>Referral ${esc(run.referralCode)}</p><button class="btn block" type="button" data-act="open-shop">This links to a real shop</button></section>` : ''}
+      <p class="fine"><a href="#/admin">Admin</a></p>
+    </aside>` : ''
+  return `<main class="screen pc-screen has-nav" data-screen="profile">
+    <div class="pc-bar"><a class="pc-back" href="#/play">\u2190 Campus</a><b>Your card</b><button type="button" class="pc-stats-btn${ui.cardStats ? ' on' : ''}" data-act="pc-stats">\u{1F4CA} Stats</button></div>
+    ${playerCardHtml(card, house, { own: true, provisional: true, photo: stillOf(c.avatar) })}
+    ${notice}
+    ${form}
+    ${stats}
+    ${nav('profile')}
+  </main>`
+}
+
+// Notices (from the menu): campus notices, texts and NSFAS-type news, newest first,
+// and the numbers you've swapped. They used to crowd the profile.
+function notices(state) {
+  const { run } = state
+  const inbox = (run?.inbox || []).slice().reverse()
+  return `<main class="screen pad has-nav nt-screen" data-screen="notices">
+    <div class="pc-bar"><a class="pc-back" href="#/play">\u2190 Campus</a><b>Notices</b><span></span></div>
+    <section class="dream-card"><p>\u{1F4E2} Notices and messages</p>${inbox.length ? `<ul class="phone-list">${inbox.map((m) => `<li><b>${esc(m.from)}</b><small>${esc(m.text)}</small></li>`).join('')}</ul>` : '<small>Nothing new. Campus news, texts and NSFAS updates land here.</small>'}</section>
+    <section class="dream-card phone-card"><p>\u{1F4F1} Your phone</p>${(run?.contacts || []).length ? `<ul class="phone-list">${run.contacts.map((c) => `<li><b>${esc(c.name)}</b><small>since day ${c.day}</small></li>`).join('')}</ul>` : '<small>No numbers yet. Talk to people and swap numbers.</small>'}</section>
+    ${(run?.friends || []).length ? `<section class="dream-card"><p>\u{1F91D} Friends</p><ul class="phone-list">${run.friends.map((f) => `<li><b>${esc(f.name)}</b><small>${esc(f.house || '')}</small></li>`).join('')}</ul></section>` : ''}
     ${nav('profile')}
   </main>`
 }
@@ -715,7 +735,8 @@ export function view(state) {
   if (screen === 'refill' || screen === 'locked') return locked(state)
   if (screen === 'gameover' || screen === 'over') return gameOverScreen(state)
   if (screen === 'milestones') return milestonesScreen(state)
-  if (screen === 'profile') return withHud(state, profile(state))
+  if (screen === 'profile') return profile(state)
+  if (screen === 'notices') return notices(state)
   if (screen === 'share') return share(state)
   if (screen === 'shop') return shop(state)
   if (screen === 'save') return withHud(state, saveScreen(state))

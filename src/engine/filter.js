@@ -72,3 +72,28 @@ export function canSend(stamps, now = Date.now()) {
   if (recent.length >= 30) return { ok: false, reason: '30 messages per 10 minutes.', stamps: recent }
   return { ok: true, reason: '', stamps: recent }
 }
+
+// A player's card bio: one line, 80 characters, their own words (Piece 1a). Contact
+// details never go on a card: phone numbers, links (WhatsApp ones included) and social
+// handles are taken out, each with the reason; a slur blocks the bio. Used on save and
+// again on display. Returns { text, removed: [why...], blocked, masked }.
+export const BIO_MAX = 80
+export function cleanBio(raw) {
+  let text = String(raw ?? '').replace(/\s+/g, ' ').trim()
+  const removed = []
+  const strip = (re, why, keep = () => false) => {
+    let hit = false
+    text = text.replace(re, (m) => { if (keep(m)) return m; hit = true; return ' ' }).replace(/\s+/g, ' ').trim()
+    if (hit && !removed.includes(why)) removed.push(why)
+  }
+  strip(/(?:https?:\/\/)?(?:wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com|whatsapp\.com)\/?\S*/gi, 'WhatsApp links are taken out.')
+  strip(/(?:https?:\/\/|www\.)\S+/gi, 'Links are taken out.')
+  strip(/\b[\w-]+(?:\.[\w-]+)*\.(?:com|co\.za|org\.za|za|net|org|io|me|ly|app|gg|tv|link|xyz|info|biz|page|site|online|store|shop)\b(?:\/\S*)?/gi, 'Links are taken out.')
+  strip(/\b(?:ig|insta|instagram|tiktok|tt|snap|snapchat|sc|twitter|x|fb|facebook|whatsapp|wa|telegram|discord)\s*[:=-]\s*\S+/gi, 'Social handles are taken out (your @handle has its own place on the card).')
+  strip(/(?:^|\s)@[\w.]{2,}/g, 'Social handles are taken out (your @handle has its own place on the card).')
+  // (seven digits or more, with spaces, dashes or brackets between: a phone number)
+  strip(/\+?\d[\d\s().-]{5,}\d/g, 'Phone numbers are taken out.', (m) => m.replace(/\D/g, '').length < 7)
+  if (text.length > BIO_MAX) text = text.slice(0, BIO_MAX).trim()
+  const f = filterText(text)
+  return { text: f.text, removed, blocked: f.blocked, masked: f.masked }
+}

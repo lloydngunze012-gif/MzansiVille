@@ -22,6 +22,15 @@ Everything already built keeps working; only names, grouping and spawn points ch
 
 **Phone test:** every house door opens into the right common room; the colours look right in sunlight and at night; no old campus name anywhere.
 
+## Piece 1a — The player card (2 hours, before enrolment)
+
+- Every player has a card: one phone screen, nothing scrolling. Portrait in the current outfit, name, @handle, student number (a placeholder until Piece 1), house name in house colours, Class of 2026, a one-line bio (80 characters, the player's own words), three tags chosen from lists (course, vibe, looking for), year of study, days on campus, and any badges. **Never show age.**
+- Tapping another player on campus slides their card up from the bottom with four buttons: **Wave, Say hi, Add friend, Report**. One tap to close. The card loads from Supabase and caches.
+- The bio is filtered on save and on display: slurs blocked; phone numbers, URLs, WhatsApp links and social handles stripped automatically, with a message saying why.
+- The profile page is stripped down: campus notices and NSFAS-type events move to a separate **Notices** sheet in the menu; stats go behind a small **Stats** toggle on your own card. The card is what opens by default.
+
+**Phone test:** your card fits one screen; edit the bio (try a phone number and a link: they're removed, and it says why); tap another player and their card slides up; each of the four buttons does something; one tap closes it.
+
 ## Piece 1 — Enrolment and the student number (1 day)
 
 - A 30-second enrolment: name, look, house, done.

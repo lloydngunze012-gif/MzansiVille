@@ -669,3 +669,82 @@ create policy "anyone can report an error" on public.client_errors
 drop policy if exists "admins read errors" on public.client_errors;
 create policy "admins read errors" on public.client_errors
   for select using (public.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Piece 1a: player cards. Run this block once in the Supabase SQL editor.
+-- A card is keyed by the player's presence id (until accounts arrive in Piece 1).
+-- Anyone can read cards; only the phone holding the card's secret can write it
+-- (save_player_card: the first save claims the id). Bios are filtered in the game on
+-- save and again on display; here they are only cut to length.
+-- ---------------------------------------------------------------------------
+create table if not exists public.player_cards (
+  id text primary key,
+  name text,
+  handle text,
+  num text,
+  house text,
+  bio text,
+  tags jsonb not null default '{}'::jsonb,
+  year int not null default 1,
+  days int not null default 1,
+  badges jsonb not null default '[]'::jsonb,
+  look jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.player_cards enable row level security;
+grant select on public.player_cards to anon, authenticated;
+drop policy if exists "anyone can read cards" on public.player_cards;
+create policy "anyone can read cards" on public.player_cards for select using (true);
+
+-- The secrets live apart, readable by nobody (no policies): only the function uses them.
+create table if not exists public.player_card_keys (
+  id text primary key,
+  secret_hash text not null
+);
+alter table public.player_card_keys enable row level security;
+
+create or replace function public.save_player_card(p_id text, p_secret text, p_card jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if p_id is null or length(p_id) not between 8 and 64 or p_secret is null or length(p_secret) < 16 then
+    raise exception 'bad card';
+  end if;
+  if length(p_card::text) > 6000 then raise exception 'card too big'; end if;
+  insert into player_card_keys (id, secret_hash) values (p_id, md5(p_secret)) on conflict (id) do nothing;
+  if (select secret_hash from player_card_keys where id = p_id) <> md5(p_secret) then
+    raise exception 'not your card';
+  end if;
+  insert into player_cards (id, name, handle, num, house, bio, tags, year, days, badges, look, updated_at)
+  values (
+    p_id, left(p_card->>'name', 24), left(p_card->>'handle', 30), left(p_card->>'num', 12), left(p_card->>'house', 40),
+    left(p_card->>'bio', 80), coalesce(p_card->'tags', '{}'::jsonb), least(greatest(coalesce((p_card->>'year')::int, 1), 1), 8),
+    greatest(coalesce((p_card->>'days')::int, 1), 1), coalesce(p_card->'badges', '[]'::jsonb), coalesce(p_card->'look', '{}'::jsonb), now()
+  )
+  on conflict (id) do update set
+    name = excluded.name, handle = excluded.handle, num = excluded.num, house = excluded.house, bio = excluded.bio,
+    tags = excluded.tags, year = excluded.year, days = excluded.days, badges = excluded.badges, look = excluded.look,
+    updated_at = now();
+end $$;
+grant execute on function public.save_player_card(text, text, jsonb) to anon, authenticated;
+
+-- Reports on players (the Report button on a card). Anyone can file one; admins read.
+create table if not exists public.player_reports (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  reporter_id text,
+  reported_id text,
+  reason text,
+  card jsonb
+);
+alter table public.player_reports enable row level security;
+drop policy if exists "admins read player reports" on public.player_reports;
+create policy "admins read player reports" on public.player_reports for select using (public.is_admin());
+
+create or replace function public.report_player(p_reporter text, p_reported text, p_reason text, p_card jsonb)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if length(coalesce(p_card::text, '')) > 6000 then raise exception 'too big'; end if;
+  insert into player_reports (reporter_id, reported_id, reason, card)
+  values (left(p_reporter, 64), left(p_reported, 64), left(p_reason, 80), p_card);
+end $$;
+grant execute on function public.report_player(text, text, text, jsonb) to anon, authenticated;
