@@ -9,3 +9,6 @@ playwright-report
 test-results
 blob-report
 *.log
+# Test videos and screenshots stay on this machine; reports name them by file.
+docs/sprints/**/*.webm
+docs/sprints/**/*.png

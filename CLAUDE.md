@@ -44,6 +44,8 @@ Status (4 Nov): done and pushed; all 8 presence checks pass (docs/sprints/presen
 
 ---
 
+# REPO SIZE (owner, 4 Nov): test videos and screenshots (docs/sprints/**/*.webm, *.png) are never committed: they stay on this machine and reports name them by file. History was rewritten without them (git-filter-repo). dist/ is ignored.
+
 # BUILD PLAN (owner, 4 Nov): docs/design/build-plan.md, read with the retention spec. One piece per sprint, in order; stop after each piece for the owner's phone verdict. Done = works on the owner's phone, measured fps reported, nothing earlier broke. No feature outside the current piece (anything else to docs/backlog.md); no movement pass/fail below 20 fps.
 
 # PIECE 0: THE RENAME AND THE HOUSES (owner, 4 Nov). Time-box 4 hours, push, redeploy, report with the measured fps, then STOP and wait. Don't start Piece 1.
