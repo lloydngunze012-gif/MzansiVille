@@ -1,7 +1,7 @@
 // The thumbstick for phones, bottom left. Push a little: walk. Push all the way: run.
 // Let go: stop. Touching it stops any walk that's under way (onPress).
 const DEAD = 0.18 // a touch this close to the middle doesn't move you
-export const RUN_AT = 0.85 // pushed this far out: run
+export const RUN_AT = 0.92 // pushed (nearly) all the way out: run
 
 export function touchDevice() {
   return (window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !new URLSearchParams(location.search).has('nostick')

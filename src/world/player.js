@@ -6,7 +6,7 @@
 // A brisk walk (m/s): the walk clip plays at the speed you really move. Trips longer
 // than JOG_FROM are a jog (the run clip, played slower), up to JOG_MAX.
 export const WALK = 1.75
-export const JOG = 3.4
+export const JOG = 2.9
 const JOG_FROM = 15
 const JOG_MAX = 4.5
 const ARRIVE = 0.2 // close enough to a tapped spot
