@@ -445,6 +445,8 @@
   "extra_names": [
     ["Sizwe", "male", "fresher"], ["Palesa", "female", "bookworm"], ["Karabo", "male", "sporty"], ["Megan", "female", "fresher"],
     ["Tumi", "female", "hustler"], ["Ayanda", "male", "bookworm"], ["Nomsa", "female", "sporty"], ["Kyle", "male", "hustler"],
-    ["Lerato", "female", "fresher"], ["Dineo", "female", "sporty"], ["Musa", "male", "hustler"], ["Farah", "female", "bookworm"]
+    ["Lerato", "female", "fresher"], ["Dineo", "female", "sporty"], ["Musa", "male", "hustler"], ["Farah", "female", "bookworm"],
+    ["Bandile", "male", "fresher"], ["Zinhle", "female", "hustler"], ["Thabo", "male", "bookworm"], ["Refilwe", "female", "sporty"],
+    ["Ethan", "male", "sporty"], ["Nandi", "female", "fresher"], ["Sello", "male", "hustler"], ["Ayesha", "female", "bookworm"]
   ]
 }

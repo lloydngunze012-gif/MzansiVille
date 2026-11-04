@@ -35,6 +35,15 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# RETENTION SPEC, ITEM 1: PRESENCE (owner, 4 Nov). Time-box 2 hours, push, redeploy, report, then STOP and wait for the phone verdict.
+New spec: docs/design/retention-spec.md, read with the player experience spec. It renames the campus to the University of Mzansi (UMzansi) and sets the build order (section 8).
+Item 1 only: other real players visible on the same campus; position and pose broadcast through Supabase a few times a second and interpolated; names and student numbers above their heads; players pass through each other (no collision); nobody ever spawns alone; an "X students on campus" count. Supabase Realtime, not polling. A player closing the tab disappears within 10 seconds. Test with two browsers side by side at phone size and record a video of both. Nothing from items 2 to 7 yet.
+Where it lives: src/presence.js (the Realtime channel presence:<room>: broadcast pos 4/s moving, a 2 s heartbeat still, hello/bye, presence leave, 7 s silence = gone; the count; interpolation 350 ms behind), src/world/others.js (the other players' bodies and name + number tags, kept out of collisions and tap picking), crowd.js setFill (Quad students x14-x19 while fewer than 3 real players are online), scene.js crowdSpawn (spawn beside the busiest group of real players, else the Quad; off the bus still the gate), the HUD count in src/ui/game.js. ?room=<name> picks a channel (tests use their own; automation never joins the live campus). Test: tests/presence/presence.spec.js (two phones in one page, video in docs/sprints/presence/).
+Student numbers are a stand-in (26 + six random digits per phone, localStorage mzansiville.presence) until item 3 (enrolment) issues real ones from a Supabase sequence.
+Status (4 Nov): done and pushed; all 8 presence checks pass (docs/sprints/presence/report.md). Waiting for the owner's phone verdict; nothing from items 2-7.
+
+---
+
 # TAP-TO-MOVE (owner, 4 Nov): src/world/player.js is the owner's new version (don't rewrite it): walk 2.3, jog 4.0, ramp up 9 / brake 14, turning costs speed, stop() always works. Phones: tap (finger down) the ground to walk there, tap again for a new target, held and slid it steers; tap a person or place to walk there and open on arrival; tap yourself to stop. A red round Stop button bottom right shows while you move (scene.js stopButton): it calls interrupt() and stop(), from any state (scene walks and queue walks end too). No thumbstick; the minimap is back bottom left (above the camera buttons). Walking at something without going anywhere gives up after 0.5 s or 6 frames (scene.js, against). Clip rates follow the real speed (walk cap 3x, run 4.5x; the run clip from 2.9 m/s, RUN_FROM in avatar3d.js). Tests: K1 (taps), K12 (Stop), K13 (tap behind the stage) in tests/basics/stop.spec.js; WASD K11b.
 
 # CURRENT SPRINT: MOVEMENT TRANSPLANT (owner, 2 Nov). Time-box 2 hours. Push after each rule. Report lines removed from scene.js and K-results, then STOP and wait.

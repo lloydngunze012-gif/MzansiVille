@@ -1,3 +1,4 @@
+import { countLabel } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
@@ -142,6 +143,7 @@ export function hud(district, run, opts = {}) {
       <button class="g-gear g-home" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>
       <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
       <span class="g-clock">${formatClock(run.minutes)}</span>
+      <span class="g-online" data-online title="Students on campus right now">${countLabel()}</span>
       <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>
       <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
       <button class="g-gear" type="button" data-act="gear" aria-label="Menu">\u2699\uFE0F</button>

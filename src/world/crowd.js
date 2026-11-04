@@ -65,6 +65,35 @@ export function createCrowd(scene, campus, opts = {}) {
     }
   }
 
+  // Nobody spawns alone (retention spec, item 1): while fewer than three real players
+  // are online, students hang about on the Quad lawn in twos, chatting (setFill).
+  // They can be talked to like anyone (x14-x19 in people.json).
+  const fillers = []
+  if (quad) {
+    const spots = [[3.8, 1.6, 0.5], [-4.2, 2.4, -0.9], [0.6, 6.4, 1.9]]
+    spots.forEach(([ox, oz, angle], g) => {
+      for (let k = 0; k < 2; k++) {
+        const id = `x${14 + g * 2 + k}`
+        const avatar = createAvatar(lookForPerson(id, 14 + g * 2 + k))
+        avatar.userData.personId = id
+        const side = k ? 0.6 : -0.6
+        avatar.position.set(quad.cx + ox + Math.sin(angle) * side, 0, quad.cz + oz + Math.cos(angle) * side)
+        avatar.rotation.y = angle + (k ? Math.PI : 0)
+        avatar.userData.pose = (g + k) % 2 ? 'talk' : 'stand'
+        avatar.visible = false
+        group.add(avatar)
+        fillers.push({ avatar, sitting: true, standing: true, filler: true, clock: Math.random() * 10 })
+      }
+    })
+  }
+  function setFill(on) {
+    for (const f of fillers) {
+      const i = people.indexOf(f)
+      if (on && i < 0) { people.push(f); f.avatar.visible = true }
+      if (!on && i >= 0 && !f.talking) { people.splice(i, 1); f.avatar.visible = false }
+    }
+  }
+
   // Each venue's lecturer outside their building, between lectures.
   for (const venue of Object.values(VENUES)) {
     const hall = campus.layout.buildings.find((b) => b.id === venue.id)
@@ -185,5 +214,5 @@ export function createCrowd(scene, campus, opts = {}) {
     }
   }
 
-  return { group, people, update, pushOut, dispose }
+  return { group, people, update, pushOut, dispose, setFill, fillers }
 }

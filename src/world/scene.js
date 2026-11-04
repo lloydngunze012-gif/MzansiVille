@@ -15,6 +15,8 @@ import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
+import { createOthers } from './others.js'
+import { onlineCount, reportLocal, settled } from '../presence.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
@@ -36,6 +38,7 @@ let rig
 let input
 let campus
 let crowd = null
+let others = null // the other real students (others.js, presence.js)
 let player
 let sun
 let hemi
@@ -1835,10 +1838,12 @@ function rebuild(district, homeId) {
   activities = null
   if (campus) scene.remove(campus.group)
   crowd?.dispose()
+  others?.dispose()
   campus = createCampus(district, homeId)
   scene.add(campus.group)
   scene.userData.floorAt = campus.floor.at // soles rest on paths, plazas and decks (avatar3d)
   crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase() })
+  others = createOthers(scene)
   builtId = `${district.meta.id}|${homeId}|${genderOf(currentRun?.character?.avatar)}`
 }
 
@@ -1876,13 +1881,78 @@ function respawn(district, run) {
     rig.yaw = player.rotation.y + Math.PI
     gateDay = String(run.day)
   }
-  host.dataset.spawn = gate ? 'gate' : 'home'
+  // Nobody spawns alone: off the bus you're at the gate (a few students get off with
+  // you); otherwise where the real students are gathered, or the Quad (never an empty
+  // residence path). Once the people already online have answered, if you haven't
+  // moved yet, you're moved over to them.
+  let spawnKind = gate ? 'gate' : 'home'
+  if (!gate && !spawnAt) {
+    spawnKind = crowdSpawn() || spawnKind
+    if (!settled()) {
+      const from = { x: player.position.x, z: player.position.z }
+      const placed = player
+      const later = () => {
+        if (player !== placed || mover.hasTarget || Math.hypot(player.position.x - from.x, player.position.z - from.z) > 0.3) return
+        if (settled()) {
+          // Already among them (a few metres off) stays put; on top of one, or far
+          // from them, goes beside them.
+          const spot = others?.busiest()
+          const d = spot ? Math.hypot(spot.x - player.position.x, spot.z - player.position.z) : 0
+          if (spot && (d < 1 || d > 8)) { const kind = crowdSpawn(true); if (kind) host.dataset.spawn = kind }
+          return
+        }
+        if (performance.now() - t0 < 15000) setTimeout(later, 250)
+      }
+      const t0 = performance.now()
+      setTimeout(later, 250)
+    }
+  }
+  host.dataset.spawn = spawnKind
   host.dataset.facing = player.rotation.y.toFixed(2)
   scene.add(player)
   mover.attach(player)
   clearGuide()
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'
+}
+
+// Stand the player beside the busiest group of real students (true: only if there is
+// one); otherwise on the Quad. Returns where they were put, or '' if nowhere new.
+function crowdSpawn(onlyPeople = false) {
+  const spot = others?.busiest()
+  let target = null
+  let kind = ''
+  if (spot) {
+    target = { x: spot.x, z: spot.z }
+    kind = 'players'
+  } else if (!onlyPeople) {
+    const quad = campus.layout.buildings.find((b) => b.id === 'quad')
+    if (quad) { target = { x: quad.cx + 2, z: quad.cz + 4 }; kind = 'quad' }
+  }
+  if (!target) return ''
+  // Beside them, not on top of them: the first free spot on a ring 1.8 m round them.
+  let at = null
+  const centre = spot || target
+  for (let k = 0; k < 12 && !at; k++) {
+    const a = 0.8 + k * (Math.PI / 6)
+    const x = centre.x + Math.sin(a) * (spot ? 1.8 : 0.01 + k * 0.5)
+    const z = centre.z + Math.cos(a) * (spot ? 1.8 : 0.01 + k * 0.5)
+    if (!hitsSolid(x, z) && !pointBlocked(campus.grid, x, z) && (crowd?.people || []).every((p) => Math.hypot(p.avatar.position.x - x, p.avatar.position.z - z) > 0.9)) at = { x, z }
+  }
+  if (!at) {
+    const cell = nearestOpen(campus.grid, target)
+    if (!cell) return ''
+    at = cellCenter(cell.c, cell.r)
+  }
+  mover.stop()
+  player.position.set(at.x, 0, at.z)
+  player.userData.lastPos?.set(at.x, 0, at.z)
+  if (spot) {
+    player.rotation.y = Math.atan2(spot.x - at.x, spot.z - at.z)
+    rig.facing = player.rotation.y
+    rig.yaw = player.rotation.y + Math.PI
+  }
+  return kind
 }
 
 function spawnKey(district, run) {
@@ -1967,6 +2037,8 @@ function campusBodies() {
   for (const r of returners) list.push({ avatar: r.avatar, fixed: false })
   return list.filter((b, i) => b.avatar && list.findIndex((c) => c.avatar === b.avatar) === i)
 }
+// Tests (read only): the real students drawn on this phone.
+window.mzansiOthers = () => others?.report(camera) || []
 window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
 window.mzansiNear = () => { const p = player.position; return { at: [+p.x.toFixed(2), +p.z.toFixed(2)], nc: player.userData.noCollide || null, pose: player.userData.pose, boxes: (boxesNear(p.x, p.z) || []).map((b) => ({ kind: b.kind || 'aabb', depth: +depthIn(p.x, p.z, b, 0.25).toFixed(3), b: b.rot === undefined ? [b.minX, b.maxX, b.minZ, b.maxZ].map((v) => +v.toFixed(2)) : [b.cx, b.cz, b.hx, b.hz, b.rot].map((v) => +v.toFixed(2)) })).filter((b) => b.depth > 0 || /step|stage|tree/.test(b.kind)) } }
 // Tests: every collider (kind, middle, half-size, turn) and how many of each kind.
@@ -2215,6 +2287,14 @@ function frameBody(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position)
+    // Presence: tell everyone where you are; draw where they are. (Not in a room built
+    // off the map: there you're "away" and see nobody from campus.)
+    const inRoom = room && player.position.x > room.bounds.minX - 2 && player.position.x < room.bounds.maxX + 2 && player.position.z > room.bounds.minZ - 2 && player.position.z < room.bounds.maxZ + 2
+    const here = !inRoom && onCampus(player.position)
+    const pose = player.userData.pose || 'stand'
+    reportLocal(here ? { a: 'campus', x: player.position.x, z: player.position.z, y: pose === 'sit' || pose === 'lie' ? player.position.y : 0, h: player.rotation.y, p: walking ? (pose === 'run' || mover.speed > 2.9 ? 'run' : 'walk') : pose } : { a: 'away' })
+    others?.update(dt, camera, player.position, here, rig.mode === 'eye')
+    crowd?.setFill(onlineCount() < 3)
     for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
     lineTick(dt)
@@ -2303,6 +2383,7 @@ function stop() {
 export function setVisible(on) {
   visible = on
   host.dataset.on = on ? '1' : '0'
+  if (!on) reportLocal({ a: 'away' })
   if (!on) {
     mapUi?.close()
     input?.clearKeys()

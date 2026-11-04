@@ -520,3 +520,8 @@ body:has(.g-full) .door-prompt{visibility:hidden}
 .g-screen:has(.g-sheet) .g-views,.g-screen:has(.g-talk) .g-views{display:none}
 .g-toast{position:fixed;z-index:300;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);margin:0;padding:10px 16px;border-radius:999px;background:#22143bf2;color:#fff6e6;font:700 14px system-ui;border:1px solid #f0c40088;box-shadow:0 6px 18px #0008;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
 .g-toast[hidden]{display:none}
+
+/* Students on campus right now (presence.js): a live count, the green dot of the player tags. */
+.g-online{display:inline-flex;align-items:center;gap:5px;font:700 11px system-ui;color:#c9f7dc;background:#0f3a2a;border:1px solid #3ddc8466;border-radius:20px;padding:3px 8px 3px 7px;white-space:nowrap}
+.g-online::before{content:"";width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 6px #3ddc84}
+.g-online+.g-soc{margin-left:0}

@@ -52,6 +52,7 @@ import { MENUS, itemOf } from './menus.js'
 import { LECTURERS } from './venues.js'
 import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
 import { clearErrors, installErrorReporting, readErrors } from './errors.js'
+import { joinPresence } from './presence.js'
 
 installErrorReporting()
 
@@ -392,6 +393,8 @@ function syncWorld(viewState) {
 }
 
 function paint() {
+  // Presence: on campus with everyone else as soon as you have a student (presence.js).
+  if (save.run?.character) joinPresence(save.run.character)
   const shot = new URLSearchParams(location.search).get('shot')
   if (!shot) rememberMorning(save.run)
   if (!shot && route().name === 'play' && morningWanted(save.run)) {

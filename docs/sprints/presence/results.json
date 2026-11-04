@@ -1,0 +1,45 @@
+{
+  "room": "test-mw23k8p7",
+  "results": [
+    {
+      "id": "S1 alone: spawn on the Quad, filled",
+      "pass": true,
+      "detail": "A spawned at \"quad\", 24 NPC people on campus, count \"1 on campus\""
+    },
+    {
+      "id": "P1 each sees the other",
+      "pass": true,
+      "detail": "seen within 5238 ms; A sees \"Kabelo 26198256\", B sees \"Thandeka 26629946\""
+    },
+    {
+      "id": "S2 B spawns beside A (busiest spot)",
+      "pass": true,
+      "detail": "B spawned \"players\", 1.80 m from A"
+    },
+    {
+      "id": "P2 students-on-campus count",
+      "pass": true,
+      "detail": "A shows \"2 on campus\", B shows \"2 on campus\""
+    },
+    {
+      "id": "P3 movement follows, interpolated",
+      "pass": true,
+      "detail": "B walked 26.9 m; A's view ends 0 cm from B; biggest jump between 0.2 s samples 0.82 m (jog 4 m/s = 0.8); body seen stand,walk clip"
+    },
+    {
+      "id": "P4 players pass through each other",
+      "pass": true,
+      "detail": "A walked onto B and stopped 17 cm from B's middle (a body is 30 cm wide; NPCs keep 50 cm+)"
+    },
+    {
+      "id": "L1 closing the tab: gone within 10 s",
+      "pass": true,
+      "detail": "B vanished from A after 0.5 s; count \"1 on campus\""
+    },
+    {
+      "id": "L2 a frozen phone (no goodbye): gone within 10 s",
+      "pass": true,
+      "detail": "B vanished from A 6.8 s after B's page froze"
+    }
+  ]
+}
