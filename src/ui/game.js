@@ -156,6 +156,15 @@ export function hud(district, run, opts = {}) {
   ${ui.gear ? gearMenu(run) : ''}`
 }
 
+// The frame rate the campus draws at on this phone (scene.js counts it), for the
+// readout in the menu and Settings, so the owner can report the real number.
+export function fpsText() {
+  const world = document.getElementById('world')?.dataset || {}
+  if (!world.fpsAvg) return 'open the campus to measure'
+  const live = world.on === '1' ? `${world.fps} fps now, ` : 'on campus: '
+  return `${live}${world.fpsAvg} average, ${world.fpsLow} slowest (last 10 s)`
+}
+
 export function soundOn() {
   try { return localStorage.getItem('mzansiville.sound') !== 'off' } catch { return true }
 }
@@ -174,6 +183,7 @@ function gearMenu(run) {
     ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
     <button type="button" data-act="edit-char">Edit character</button>
     <button type="button" data-act="nav" data-go="settings">Settings</button>
+    <p class="g-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
     ${run.userId ? '<button type="button" data-act="signout">Sign out</button>' : '<button type="button" data-act="nav" data-go="save">Save progress / sign in</button>'}
     <button type="button" class="ghost" data-act="gear">Close</button>
   </aside>`

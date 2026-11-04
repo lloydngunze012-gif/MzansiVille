@@ -525,3 +525,7 @@ body:has(.g-full) .door-prompt{visibility:hidden}
 .g-online{display:inline-flex;align-items:center;gap:5px;font:700 11px system-ui;color:#c9f7dc;background:#0f3a2a;border:1px solid #3ddc8466;border-radius:20px;padding:3px 8px 3px 7px;white-space:nowrap}
 .g-online::before{content:"";width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 6px #3ddc84}
 .g-online+.g-soc{margin-left:0}
+
+/* Frame rate readout (menu, Settings): the phone's real number for the owner. */
+.g-fps,.set-fps{margin:6px 2px;font:600 12px system-ui;opacity:.85}
+.g-fps b,.set-fps b{font-weight:800}

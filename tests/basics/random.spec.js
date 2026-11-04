@@ -64,13 +64,13 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       await f.tap(30 + rnd() * 352, 230 + rnd() * 480)
       await page.waitForTimeout(400 + rnd() * 1800)
     } else {
-      // A finger held on the ground and slid a little: check it moves you.
+      // A swipe (it turns the view, never walks), then check a tap still moves you.
       log.sticks += 1
       const a = rnd() * Math.PI * 2
       const p = await nearMe(page, Math.sin(a) * 170, -Math.cos(a) * 170)
       const before = await read.pos(page)
       await f.down(p.x, p.y)
-      await f.move(p.x + 20, p.y + 10)
+      await f.move(p.x + 30, p.y + 10)
       await page.waitForTimeout(700 + rnd() * 1500)
       const after = await read.pos(page)
       // (the game answering: moving, or striding with the walk or run clip; on a slow

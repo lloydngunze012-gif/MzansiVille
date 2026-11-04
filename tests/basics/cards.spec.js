@@ -19,27 +19,29 @@ async function clearCards(page, f) {
   }
 }
 
-// A finger on the ground: how long from it going down (its event time) to the first
-// frame the player has moved (read from the page, nothing driven by it).
+// A tap on the ground: how long from the finger lifting (its event time) to the first
+// frame the player has moved (read from the page, nothing driven by it). (A tap walks
+// when the finger lifts; a swipe only turns the view.)
 async function stickLatency(page, f) {
   const p = await nearMe(page, 0, -160)
   await page.evaluate(() => new Promise((resolve) => {
     const world = document.querySelector('#world')
     const k = { from: `${world.dataset.px},${world.dataset.pz}`, down: 0, moved: 0 }
     window.__k10 = k
-    document.querySelector('#world canvas').addEventListener('pointerdown', (e) => { k.down = e.timeStamp }, { once: true })
+    document.querySelector('#world canvas').addEventListener('pointerup', (e) => { k.down = e.timeStamp }, { once: true })
     const watch = (t) => {
       if (k.down) k.frames = (k.frames || 0) + 1
-      if (k.down && `${world.dataset.px},${world.dataset.pz}` !== k.from) { k.moved = t; k.at = performance.now(); k.fps = world.dataset.fps; return }
+      // (moved: the position changed, or the walk has speed: at 40 fps a first frame's
+      // step is under the centimetre the position is shown to)
+      if (k.down && (`${world.dataset.px},${world.dataset.pz}` !== k.from || window.mzansiWalkPace().now > 0)) { k.moved = t; k.at = performance.now(); k.fps = world.dataset.fps; return }
       requestAnimationFrame(watch)
     }
     requestAnimationFrame(watch)
     resolve()
   }))
-  await f.down(p.x, p.y)
+  await f.tap(p.x, p.y)
   await expect.poll(() => page.evaluate(() => window.__k10.moved), { timeout: 5000 }).toBeGreaterThan(0)
   await page.waitForTimeout(400)
-  await f.up()
   return page.evaluate(() => ({ ms: Math.round(window.__k10.moved - window.__k10.down), frames: window.__k10.frames, fps: Number(window.__k10.fps) }))
 }
 

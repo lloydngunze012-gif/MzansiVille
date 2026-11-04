@@ -6,6 +6,7 @@
 // hooks are only READ, to know where to put the finger and to measure.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { fpsGate } from '../fps.js'
 
 const OUT = 'docs/sprints/presence'
 const ROOM = `test-${Date.now().toString(36)}`
@@ -135,8 +136,8 @@ test('two players on one campus', async ({ page }) => {
     `B spawned "${spawnB}", ${Math.hypot(posA.x - posB.x, posA.z - posB.z).toFixed(2)} m from A`)
   const [la, lb] = [await label(A), await label(B)]
   note('P2 students-on-campus count', la === '2 on campus' && lb === '2 on campus', `A shows "${la}", B shows "${lb}"`)
-  const fps = [await A.locator('#world').getAttribute('data-fps'), await B.locator('#world').getAttribute('data-fps')]
-  console.log('  fps A, B:', fps.join(', '), ' send rate (ms):', pa.rate)
+  // Below 20 fps on either phone the movement checks can't pass or fail: INCONCLUSIVE.
+  await fpsGate(A, B)
   await page.screenshot({ path: `${OUT}/P1-both.png` })
 
   // B walks: four taps on the ground; A's copy of B follows smoothly and ends where B is.

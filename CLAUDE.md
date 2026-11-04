@@ -44,6 +44,13 @@ Status (4 Nov): done and pushed; all 8 presence checks pass (docs/sprints/presen
 
 ---
 
+# GESTURES BY DISTANCE (owner, 4 Nov evening, after the presence phone test; replaces the finger rules in TAP-TO-MOVE below)
+"I wanted to look left, it just started moving left" / "I turned to someone and got stuck". Stop tuning thresholds: one frame on a 5 fps test machine is longer than the gesture.
+- A finger that moves more than 24 px before lifting is a swipe: it turns the view (Eye view: the student turns with it), never walks. Under 16 px and under 420 ms is a tap: walk there / talk / go in / stop on yourself. A long press that never moves does nothing. No hold-to-walk, no slide-to-steer. HOLD_MS stays 200 ms (input.js) and is left alone; nothing reads it now.
+- People are obstacles on the walk grid: while a route is found the cells they stand in are closed (scene.js peopleInTheWay), so routes go round them, not through.
+- Every movement test measures fps first (tests/fps.js fpsGate) and is skipped as INCONCLUSIVE below 20 fps; the fps is printed at the top. Basics tests run on the real GPU (touch.js PHONE launchOptions). K15 (walking at someone in the way) is parked in docs/backlog.md; K14 (tests/basics/look.spec.js) covers the gestures.
+- The menu and Settings show the phone's frame rate (now, 10 s average, slowest) so the owner can report the real number.
+
 # TAP-TO-MOVE (owner, 4 Nov): src/world/player.js is the owner's new version (don't rewrite it): walk 2.3, jog 4.0, ramp up 9 / brake 14, turning costs speed, stop() always works. Phones: tap (finger down) the ground to walk there, tap again for a new target, held and slid it steers; tap a person or place to walk there and open on arrival; tap yourself to stop. A red round Stop button bottom right shows while you move (scene.js stopButton): it calls interrupt() and stop(), from any state (scene walks and queue walks end too). No thumbstick; the minimap is back bottom left (above the camera buttons). Walking at something without going anywhere gives up after 0.5 s or 6 frames (scene.js, against). Clip rates follow the real speed (walk cap 3x, run 4.5x; the run clip from 2.9 m/s, RUN_FROM in avatar3d.js). Tests: K1 (taps), K12 (Stop), K13 (tap behind the stage) in tests/basics/stop.spec.js; WASD K11b.
 
 # CURRENT SPRINT: MOVEMENT TRANSPLANT (owner, 2 Nov). Time-box 2 hours. Push after each rule. Report lines removed from scene.js and K-results, then STOP and wait.

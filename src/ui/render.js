@@ -7,7 +7,7 @@ import { districtById } from '../districts/registry.js'
 import { authEnabled } from '../net.js'
 
 import { boardScreen, lobbyScreen } from './social.js'
-import { gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
+import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, withHud } from './game.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
 import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
 import { STORY_OPTS, storyWithDefaults } from '../story.js'
@@ -664,6 +664,7 @@ function settings(state) {
       <button class="btn block" type="button" data-act="sound">Sound: <b>${state.sound ? 'On' : 'Off'}</b></button>
       ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
       <a class="btn ghost block" href="#/errors">Error log</a>
+      <p class="set-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
       <a class="btn ghost block" href="#/rules">Community rules</a>
       <a class="btn ghost block" href="#/privacy">Privacy</a>
       <a class="btn ghost block" href="#/terms">Terms</a>

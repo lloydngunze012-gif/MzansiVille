@@ -54,6 +54,7 @@ let walking = false
 let clock = 0
 let frames = 0
 let fpsStamp = 0
+const fpsSeen = [] // the frame rate every half second, the last 10 s
 let currentRun = null
 let currentDistrict = null
 let actionLeft = 0
@@ -271,7 +272,7 @@ function ensureRenderer() {
     stopButton.hidden = true
   })
   stopButton.addEventListener('click', (event) => event.stopPropagation())
-  input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, onTouch: touched, onSteer: steered, live: () => visible && host.dataset.on === '1' && !paused() })
+  input = bindInput(renderer.domElement, { cameraRig: rig, onTap: tapped, live: () => visible && host.dataset.on === '1' && !paused() })
 
   window.addEventListener('resize', resize)
   window.addEventListener('keydown', onWorldKey)
@@ -402,29 +403,12 @@ function pick(point, x, y) {
   if (place) return { kind: 'building', id: place.userData.placeId }
   return ground ? { kind: 'ground', x: ground.point.x, z: ground.point.z } : null
 }
-// A finger lands on the ground: walk there at once (true). Anything else waits for the
-// tap. (Mid-scene, a touch on yourself or on nothing, as in a room off the map, ends the
-// scene: you stand up, back on campus.)
-function touched(point, x, y) {
-  const hit = pick(point, x, y)
-  if (acting && (!hit || hit.kind === 'self')) { interrupt(); return false }
-  if (hit?.kind !== 'ground') return false
-  window.mzansiLastTap = { kind: 'ground', x: hit.x, z: hit.z }
-  interrupt()
-  walkTo(hit.x, hit.z)
-  return true
-}
-// The finger held on the ground slides: the walk follows it.
-function steered(point) {
-  if (!player || !campus) return
-  raycaster.setFromCamera(point, camera)
-  const ground = raycaster.intersectObjects([campus.ground], true)[0]
-  if (ground) walkTo(ground.point.x, ground.point.z)
-}
 // A tap: yourself (stop), a person (talk), a vendor's stall (her queue), a building (go
 // in), or the ground (walk there).
 function tapped(point, x, y) {
   const hit = pick(point, x, y)
+  // (mid-scene, a tap on yourself or on nothing, as in a room off the map, ends it)
+  if (acting && (!hit || hit.kind === 'self')) { interrupt(); return }
   if (!hit) return
   window.mzansiLastTap = hit.kind === 'person' ? { kind: 'person', id: hit.node.userData.personId } : { ...hit }
   if (hit.kind === 'self') stopHere()
@@ -442,7 +426,7 @@ function walkTo(x, z, done, opts = {}) {
   if (!campus || !player) return
   const start = nearestOpen(campus.grid, player.position)
   const goal = nearestOpen(campus.grid, { x, z })
-  const points = findPath(campus.grid, start, goal)
+  const points = peopleInTheWay([start, goal], () => findPath(campus.grid, start, goal))
   if (points.length && Math.hypot(points[0].x - player.position.x, points[0].z - player.position.z) < 0.8) points.shift()
   points.pop()
   points.push(pointBlocked(campus.grid, x, z) ? cellCenter(goal.c, goal.r) : { x, z })
@@ -453,6 +437,25 @@ function walkTo(x, z, done, opts = {}) {
     },
   })
   host.dataset.walkSeconds = (mover.remaining() / pace).toFixed(1)
+}
+// People are in the way too: while a route is found, the cells they stand in are closed
+// (the grid itself only knows buildings and props), so it goes round them, never
+// through. Where you start and where you're going stay open. Your companion and the
+// other real players (others.js) aren't obstacles.
+function peopleInTheWay(keep, find) {
+  const grid = campus.grid
+  const closed = []
+  for (const b of campusBodies()) {
+    const a = b.avatar
+    if (a === player || a === companion?.avatar || !a.visible) continue
+    const cell = cellOf(a.position.x, a.position.z)
+    if (cell.c < 0 || cell.r < 0 || cell.c >= grid.cols || cell.r >= grid.rows) continue
+    const i = cell.r * grid.cols + cell.c
+    if (grid.blocked[i] || keep.some((k) => k && k.c === cell.c && k.r === cell.r)) continue
+    grid.blocked[i] = 2
+    closed.push(i)
+  }
+  try { return find() } finally { for (const i of closed) grid.blocked[i] = 0 }
 }
 // Is a body standing here inside something? Solid: every prop's outline, as a plain
 // box; otherwise only the map's edge and the buildings (scripted walks onto seats).
@@ -2037,6 +2040,8 @@ function campusBodies() {
   for (const r of returners) list.push({ avatar: r.avatar, fixed: false })
   return list.filter((b, i) => b.avatar && list.findIndex((c) => c.avatar === b.avatar) === i)
 }
+// Tests (read only): is this spot open ground you can stand on (no building, prop or wall)?
+window.mzansiOpen = (x, z) => Boolean(campus) && !pointBlocked(campus.grid, x, z) && !hitsSolid(x, z)
 // Tests (read only): the real students drawn on this phone.
 window.mzansiOthers = () => others?.report(camera) || []
 window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
@@ -2356,11 +2361,18 @@ function frameBody(now) {
     host.dataset.px = player.position.x.toFixed(2)
     host.dataset.pz = player.position.z.toFixed(2)
     host.dataset.cam = rig.mode
+    host.dataset.view = (rig.mode === 'eye' ? rig.facing : rig.yaw).toFixed(3)
   }
   renderer.render(scene, camera)
   frames += 1
   if (now - fpsStamp > 500) {
-    host.dataset.fps = String(Math.round((frames * 1000) / (now - fpsStamp)))
+    const fps = Math.round((frames * 1000) / (now - fpsStamp))
+    host.dataset.fps = String(fps)
+    // The last 10 s, for the readout in the menu and Settings (the phone's real number).
+    fpsSeen.push(fps)
+    if (fpsSeen.length > 20) fpsSeen.shift()
+    host.dataset.fpsAvg = String(Math.round(fpsSeen.reduce((a, b) => a + b, 0) / fpsSeen.length))
+    host.dataset.fpsLow = String(Math.min(...fpsSeen))
     frames = 0
     fpsStamp = now
   }

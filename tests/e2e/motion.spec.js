@@ -1,3 +1,4 @@
+import { fpsGate } from '../fps.js'
 // Motion sprint finish line (M1-M7) at 412x915 and normal speed: bodies measured
 // from their skinned vertices (window.mzansiBodies), plus a video of each journey
 // and screenshots in docs/sprints/motion/ for the owner to watch.
@@ -35,6 +36,7 @@ async function campus(page, spawn, extra = '') {
   let n = -1
   await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m === n && m > 0; n = m; return done }, { timeout: 60000, intervals: [1500] }).toBe(true)
   await page.waitForTimeout(1500)
+  await fpsGate(page) // below 20 fps: INCONCLUSIVE (tests/fps.js)
 }
 
 // Keep the journey's video next to its screenshots.

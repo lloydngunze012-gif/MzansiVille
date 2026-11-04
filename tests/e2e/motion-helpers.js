@@ -1,3 +1,4 @@
+import { fpsGate } from '../fps.js'
 // Shared by the motion tests (not a spec: importing a spec file runs all its tests).
 import { expect } from '@playwright/test'
 import fs from 'node:fs'
@@ -29,6 +30,7 @@ async function campus(page, spawn, extra = '', run = {}) {
   let n = -1
   await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m === n && m > 0; n = m; return done }, { timeout: 60000, intervals: [1500] }).toBe(true)
   await page.waitForTimeout(1500)
+  await fpsGate(page) // below 20 fps: INCONCLUSIVE (tests/fps.js)
 }
 
 // Sideways sliding from consecutive frames: the angle between each step and the way

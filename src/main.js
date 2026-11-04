@@ -44,7 +44,7 @@ import { startGroove, stopGroove } from './groove.js'
 let shareMilestone = null
 let shareBlob = null
 import { emptyDraft, shotState, view } from './ui/render.js'
-import { anyEnabled, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
+import { anyEnabled, fpsText, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
 import { homePlaceId } from './engine/model.js'
 import { venueFor } from './venues.js'
 import { toMinutes } from './engine/format.js'
@@ -391,6 +391,12 @@ function syncWorld(viewState) {
     console.error(error)
   })
 }
+
+// The frame-rate readout (menu, Settings) stays live while it's on screen.
+setInterval(() => {
+  const els = document.querySelectorAll('[data-fps-live]')
+  if (els.length) { const text = fpsText(); for (const el of els) el.textContent = text }
+}, 500)
 
 function paint() {
   // Presence: on campus with everyone else as soon as you have a student (presence.js).

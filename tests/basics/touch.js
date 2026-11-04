@@ -5,9 +5,11 @@
 // on to 13:00 on day 1 (after the morning and the lecture) and the game opens at a place.
 import { expect } from '@playwright/test'
 import fs from 'node:fs'
+import { fpsGate } from '../fps.js'
 
 export const OUT = 'docs/sprints/basics'
-export const PHONE = { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, video: { mode: 'on', size: { width: 412, height: 915 } } }
+// (on the real GPU: the software one draws about 5 fps, below the movement tests' 20)
+export const PHONE = { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, video: { mode: 'on', size: { width: 412, height: 915 } }, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } }
 
 export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
   fs.mkdirSync(OUT, { recursive: true })
@@ -37,6 +39,8 @@ export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
   let n = -1
   await expect.poll(async () => { const m = await page.evaluate(() => window.mzansiBodies('campus').length); const done = m > 0 && (m === n || (Date.now() - t0 > 20000 && m > 10)); n = m; return done }, { timeout: 150000, intervals: [1500] }).toBe(true)
   await page.waitForTimeout(1000)
+  // Below 20 fps this test can't pass or fail: INCONCLUSIVE (tests/fps.js).
+  await fpsGate(page)
 }
 
 // A finger on the glass (Chrome DevTools touch events: the page sees touch and pointer
@@ -89,7 +93,8 @@ export async function groundAhead(page, metres) {
       const x = p.x + Math.sin(Math.PI + a) * m
       const z = p.z + Math.cos(Math.PI + a) * m
       const s = window.mzansiScreenOf(x, z, 0)
-      if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 170 && s.y < 780) return { x, z, s }
+      // (open ground only: not on the stage, a bench or a wall)
+      if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 170 && s.y < 780 && window.mzansiOpen(x, z)) return { x, z, s }
     }
     return null
   }, metres)
