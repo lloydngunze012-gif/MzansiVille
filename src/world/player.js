@@ -13,6 +13,8 @@ const ARRIVE = 0.2 // close enough to a tapped spot
 const CORNER = 0.35 // close enough to a corner of the route: on to the next
 const STALL = 0.0005 // a frame that moves less than this toward the target drops it
 const TURN = 12 // heading lerp rate
+const SPEED_UP = 8 // m/s each second: starting takes about 0.15-0.2 s
+const SLOW_DOWN = 14 // ...and letting go eases you to a halt within 0.2 s
 
 // How fast to go for a trip this long: a brisk walk, or a jog past 15 m.
 export const paceFor = (len) => (len <= JOG_FROM ? WALK : Math.min(JOG_MAX, Math.max(JOG, len / 14)))
@@ -30,7 +32,8 @@ export function createPlayer({ blocked }) {
   let solid = true
   let done = null // done(how): 'arrived', 'stalled' (blocked, dropped) or 'cancelled'
   let moving = false
-  let speed = 0
+  let speed = 0 // how fast you're going now (eases toward what's asked)
+  let dir = { x: 0, z: 0 } // which way, kept while easing to a halt
 
   function remaining() {
     let len = 0
@@ -75,7 +78,7 @@ export function createPlayer({ blocked }) {
       if (!route.length) finish('arrived')
       return pace
     },
-    stop() { finish('cancelled'); stick = null },
+    stop() { finish('cancelled'); stick = null; speed = 0 },
     // The stick this frame (null: let go), and how far it's pushed (0-1). It wins and
     // clears the target.
     setStick(x, z, run, mag = 1) {
@@ -92,14 +95,13 @@ export function createPlayer({ blocked }) {
 
     update(dt) {
       moving = false
-      speed = 0
       if (!body || dt <= 0) return false
-      let dx = 0
-      let dz = 0
+      let want = 0
+      let exact = Infinity // (the last few centimetres of a precise stop: never past the spot)
       if (stick) {
         const m = Math.hypot(stick.x, stick.z)
         // (a little push, a slow walk; further out, faster; all the way, a run)
-        if (m > 0.001) { dx = stick.x / m; dz = stick.z / m; speed = stick.run ? JOG : WALK * Math.min(1, Math.max(0.35, stick.mag)) }
+        if (m > 0.001) { dir = { x: stick.x / m, z: stick.z / m }; want = stick.run ? JOG : WALK * Math.min(1, Math.max(0.35, stick.mag)) }
       } else if (route.length) {
         let next = route[0]
         let d = Math.hypot(next.x - body.position.x, next.z - body.position.z)
@@ -108,19 +110,22 @@ export function createPlayer({ blocked }) {
           next = route[0]
           d = Math.hypot(next.x - body.position.x, next.z - body.position.z)
         }
-        if (route.length === 1 && d < near) { finish('arrived'); return false }
-        dx = (next.x - body.position.x) / d
-        dz = (next.z - body.position.z) / d
-        speed = Math.min(pace, Math.max(1.2, remaining() * 4))
-        // (the last few centimetres of a precise stop: never past the spot)
-        if (route.length === 1) speed = Math.min(speed, d / dt)
+        if (route.length === 1 && d < near) { finish('arrived'); speed = 0; return false }
+        dir = { x: (next.x - body.position.x) / d, z: (next.z - body.position.z) / d }
+        want = Math.min(pace, Math.max(1.2, remaining() * 4))
+        if (route.length === 1) exact = d / dt
       }
-      if (speed <= 0.01) return false
+      // Ramp, don't snap: ease toward the speed asked for (let go: down to a halt).
+      speed += Math.max(-SLOW_DOWN * dt, Math.min(SPEED_UP * dt, want - speed))
+      if (speed <= 0.01) { speed = 0; return false }
+      const go = Math.min(speed, exact)
+      const dx = dir.x
+      const dz = dir.z
       const bx = body.position.x
       const bz = body.position.z
-      step(dx * speed * dt, dz * speed * dt)
+      step(dx * go * dt, dz * go * dt)
       const moved = Math.hypot(body.position.x - bx, body.position.z - bz)
-      if (!stick && moved < STALL) { finish('stalled'); speed = 0; return false }
+      if (route.length && go > 0.3 && moved < STALL) { finish('stalled'); speed = 0; return false }
       body.rotation.y += wrap(Math.atan2(dx, dz) - body.rotation.y) * Math.min(1, dt * TURN)
       const pose = body.userData.pose
       if (pose === 'stand' || pose === 'run' || pose === undefined) body.userData.pose = speed > WALK * 1.4 ? 'run' : 'stand'

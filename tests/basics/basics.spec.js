@@ -56,13 +56,25 @@ test('K1 thumbstick: walk a circle, run, let go and stop on the spot', async ({ 
   const run = { state: await state(page), pose: await read.pose(page), body: await body(page) }
   await page.screenshot({ path: `${OUT}/K1-run.png` })
   // Let go: you stop where you are.
+  const beforeRelease = await read.pos(page)
   await f.up()
+  // (the ease to a halt: how far it carries you after letting go)
+  const t0 = Date.now()
+  let halted = 0
+  let last = beforeRelease
+  for (let i = 0; i < 20 && !halted; i++) {
+    await page.waitForTimeout(50)
+    const p = await read.pos(page)
+    if (dist(p, last) < 0.005) halted = Date.now() - t0
+    last = p
+  }
+  const glide = dist(beforeRelease, last)
   await page.waitForTimeout(150)
   const atRelease = await read.pos(page)
   await page.waitForTimeout(1200)
   const after = await read.pos(page)
   const spread = Math.max(...track.map((p) => dist(p, start)))
-  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, dial, spread, run, slide: dist(atRelease, after), state: await state(page) }))
+  console.log('K1', JSON.stringify({ walkPose, walkSpeeds: speeds, dial, spread, run, glide: +glide.toFixed(2), halted, slide: dist(atRelease, after), state: await state(page) }))
   expect(walkPose).toBe('stand') // (walking: the walk clip, not the run)
   expect(dial.half, 'half a push walks slower than nearly all the way').toBeLessThan(dial.nearlyFull * 0.85)
   expect(spread, 'the circle took you round').toBeGreaterThan(3)
