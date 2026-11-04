@@ -12,7 +12,7 @@ const JOG_MAX = 4.5
 const ARRIVE = 0.2 // close enough to a tapped spot
 const CORNER = 0.35 // close enough to a corner of the route: on to the next
 const STALL = 0.0005 // a frame that moves less than this toward the target drops it
-const TURN = 12 // heading lerp rate
+const TURN = 7 // heading lerp rate: the body sweeps round, never snaps
 const SPEED_UP = 8 // m/s each second: starting takes about 0.15-0.2 s
 const SLOW_DOWN = 14 // ...and letting go eases you to a halt within 0.2 s
 
