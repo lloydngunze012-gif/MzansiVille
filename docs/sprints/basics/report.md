@@ -57,3 +57,15 @@ moveRight in src/world/camera.js returned the camera's left ({ x: f.z, z: -f.x }
 | K11 stick right/left/forward/back (Sims camera) | PASS: 1.36-1.53 m the way pushed, 0 m sideways. On the old sign: right went 2.21 m left, left went 2.04 m right (FAIL) |
 | K11b WASD | PASS: 0.43-0.52 m the way pressed (a walk on this 5-7 fps machine), 0.01 m sideways |
 | K1 thumbstick | PASS after the fix |
+
+## Movement feel (4 Nov)
+Pushed and deployed one item at a time. Test laptop on battery (5-7 fps, the game runs at about a quarter of real time), so times below are game time where it matters.
+| | Value |
+|---|---|
+| 1 Speed follows the push | 50% push 0.89 m/s, 80% 1.40 m/s, 88% 1.52 m/s (WALK 1.75 x clamp(push, 0.35, 1)) |
+| 2 Ramp | up 8 m/s per second (0 to a walk in 0.22 s), down 14 (a walk halts in 0.13 s, a run in 0.21 s); after a 2.88 m/s run, letting go carries you 0.23 m, then 0 m slide |
+| 3 Run | at 92% push (was 85%), 2.87 m/s with the run clip (was 3.4) |
+| 4 Turning | 7 (was 12) |
+| 5 Camera | follow lag 4 (was 8) in Sims and Eye; Eye only turns with you while you cover ground (> 0.5 m/s), at half its old rate |
+| K1 | PASS | K11 / K7 | PASS |
+| K2 (taps) | not judged: on battery this laptop delivers a 60 ms tap 470-750 ms late, over the 420 ms tap limit, so every tap is dropped. Needs mains power or your phone |

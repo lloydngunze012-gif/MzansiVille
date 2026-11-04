@@ -2163,8 +2163,9 @@ function frameBody(now) {
     clock += dt
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
-    if (rig.mode === 'eye' && walking && player.userData.yaw !== undefined) {
-      rig.facing += Math.atan2(Math.sin(player.userData.yaw - rig.facing), Math.cos(player.userData.yaw - rig.facing)) * Math.min(1, dt * 6)
+    // (only while you cover ground: turning on the spot never swings the view)
+    if (rig.mode === 'eye' && walking && mover.speed > 0.5 && player.userData.yaw !== undefined) {
+      rig.facing += Math.atan2(Math.sin(player.userData.yaw - rig.facing), Math.cos(player.userData.yaw - rig.facing)) * Math.min(1, dt * 3)
     }
     applyTime()
     campus.dressing?.update(dt)

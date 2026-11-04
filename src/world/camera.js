@@ -150,7 +150,8 @@ export function createCameraRig() {
     apply(camera, target, dt, buildings) {
       const point = new THREE.Vector3(target.x, 0, target.z)
       if (!seeded) follow.copy(point)
-      const lag = rig.mode === 'top' ? 2.2 : 8
+      // (the camera trails you a little: calm, never jerky)
+      const lag = rig.mode === 'top' ? 2.2 : 4
       follow.lerp(point, 1 - Math.exp(-dt * lag))
       const goal = pose(point)
       goal.pos = pullIn(goal.pos, point, buildings)

@@ -56,20 +56,16 @@ test('K1 thumbstick: walk a circle, run, let go and stop on the spot', async ({ 
   const run = { state: await state(page), pose: await read.pose(page), body: await body(page) }
   await page.screenshot({ path: `${OUT}/K1-run.png` })
   // Let go: you stop where you are.
-  const beforeRelease = await read.pos(page)
+  // (where you are the moment the stick feels the finger lift, read in the page)
+  await page.evaluate(() => document.querySelector('.stick').addEventListener('pointerup', () => { window.__k1lift = window.mzansiPlayerPos() }, { once: true }))
   await f.up()
-  // (the ease to a halt: how far it carries you after letting go)
+  // (the ease to a halt: how far it carries you after letting go; distance, not time,
+  // since a slow test machine runs the game slower than real time)
   const t0 = Date.now()
-  let halted = 0
-  let last = beforeRelease
-  for (let i = 0; i < 20 && !halted; i++) {
-    await page.waitForTimeout(50)
-    const p = await read.pos(page)
-    if (dist(p, last) < 0.005) halted = Date.now() - t0
-    last = p
-  }
-  const glide = dist(beforeRelease, last)
-  await page.waitForTimeout(150)
+  await expect.poll(() => state(page), { timeout: 5000, intervals: [50] }).toBe('free')
+  const halted = Date.now() - t0
+  const last = await read.pos(page)
+  const glide = dist(await page.evaluate(() => window.__k1lift), last)
   const atRelease = await read.pos(page)
   await page.waitForTimeout(1200)
   const after = await read.pos(page)
