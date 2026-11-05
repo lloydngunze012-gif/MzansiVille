@@ -748,3 +748,30 @@ begin
   values (left(p_reporter, 64), left(p_reported, 64), left(p_reason, 80), p_card);
 end $$;
 grant execute on function public.report_player(text, text, text, jsonb) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Piece 3: talking. Run this block once in the Supabase SQL editor (after the Piece 1a
+-- block, or on its own: it makes the reports table if it isn't there). A report can
+-- carry what the player said (the chat line reported, or their last few lines).
+-- Until it is run, the game files reports in client_errors (kind 'player_report').
+create table if not exists public.player_reports (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  reporter_id text,
+  reported_id text,
+  reason text,
+  card jsonb
+);
+alter table public.player_reports add column if not exists message text;
+alter table public.player_reports enable row level security;
+drop policy if exists "admins read player reports" on public.player_reports;
+create policy "admins read player reports" on public.player_reports for select using (public.is_admin());
+
+create or replace function public.report_player(p_reporter text, p_reported text, p_reason text, p_card jsonb, p_message text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if length(coalesce(p_card::text, '')) > 6000 then raise exception 'too big'; end if;
+  insert into player_reports (reporter_id, reported_id, reason, card, message)
+  values (left(p_reporter, 64), left(p_reported, 64), left(p_reason, 80), p_card, left(p_message, 600));
+end $$;
+grant execute on function public.report_player(text, text, text, jsonb, text) to anon, authenticated;

@@ -112,10 +112,23 @@ export async function loadCard(id, onCard) {
 }
 
 // ---------- Reporting a player ----------
-export async function reportPlayer(id, reason, card) {
+// message: what they said (Piece 3: the chat line reported, or their last few). Goes to
+// player_reports (report_player with p_message, from the Piece 3 block in schema.sql);
+// until those tables are set up in Supabase, the report lands in client_errors (kind
+// player_report), which exists, so no report is lost.
+export async function reportPlayer(id, reason, card, message = '') {
   const client = await getClient()
   if (!client) return { ok: false }
   const me = myIdentity()
-  const { error } = await client.rpc('report_player', { p_reporter: me.id, p_reported: id, p_reason: reason, p_card: card || {} })
+  const small = card ? { name: card.name, num: card.num, house: card.house, handle: card.handle, bio: card.bio } : {}
+  const text = String(message || '').slice(0, 600)
+  let { error } = await client.rpc('report_player', { p_reporter: me.id, p_reported: id, p_reason: reason, p_card: small, p_message: text })
+  if (error) ({ error } = await client.rpc('report_player', { p_reporter: me.id, p_reported: id, p_reason: reason, p_card: { ...small, message: text } }))
+  if (error) {
+    ({ error } = await client.from('client_errors').insert({
+      kind: 'player_report', message: `${reason}: ${text}`.slice(0, 800), screen: 'campus', step: 'report',
+      device: navigator.userAgent.slice(0, 200), build: 'report', detail: JSON.stringify({ reporter: me.id, reported: id, reason, message: text, card: small }).slice(0, 1000),
+    }))
+  }
   return { ok: !error }
 }

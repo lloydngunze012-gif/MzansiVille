@@ -194,3 +194,156 @@ test('T2 tap a player within 4 m: two-shot (Eye view too), back out when the car
   expect(result.after.convo).toBe(null)
   await saveVideo(page, 'T2-player-twoshot')
 })
+
+// T3 (part 2): player chat. B taps A, Say hi opens the text box; a quick phrase and free
+// text show as a bubble over B's head on both phones (readable: 15 px), in both logs.
+// Phone numbers, links and handles are taken out (saying why); a slur isn't sent;
+// 120 characters at most. A answers from the Talk button; A's bubble fades out and is
+// gone 8 s later. B blocks A from the log: A's body, bubbles and lines are gone for B.
+// A walks over 15 m away: B's next line doesn't reach A. A reports B from the log: the
+// report goes to Supabase with the message.
+test('T3 player chat: Say hi, bubbles within 15 m for 8 s, log, quick phrases, filter, block, report', async ({ page }) => {
+  const reports = []
+  page.on('request', (req) => {
+    if (req.method() !== 'POST' || !/report_player|client_errors/.test(req.url())) return
+    const body = req.postData() || ''
+    if (!/player_report|p_reason/.test(body)) return
+    req.response().then((res) => reports.push({ url: req.url().replace(/^https:\/\/[^/]+/, ''), status: res?.status(), body: body.slice(0, 400) })).catch(() => {})
+  })
+  const { A, B, BX } = await twoPhones(page, 't3')
+  const out = {}
+  const aId = (await B.evaluate(() => window.mzansiOthers()))[0].id
+  const bId = (await A.evaluate(() => window.mzansiOthers()))[0].id
+  const lineOn = (frame, text) => frame.evaluate((t) => window.mzansiChat().some((m) => m.text.includes(t)), text)
+  const bubbleOn = (frame, speaker) => frame.evaluate((s) => window.mzansiBubbles().find((b) => b.speaker === s) || null, speaker)
+
+  // 1. B taps A; Say hi opens the text box (the card goes, the two-shot stays).
+  for (let i = 0; i < 5 && !(await B.locator('.pc-sheet .pcard').isVisible().catch(() => false)); i++) {
+    await tapOther(page, B, BX)
+    await page.waitForTimeout(900)
+  }
+  await tapIn(page, B.locator('[data-pc="hi"]'))
+  await expect(B.locator('.chat-panel')).toBeVisible({ timeout: 5000 })
+  await page.waitForTimeout(900)
+  out.shotWhileChatting = await B.evaluate(() => { const s = window.mzansiShot(); return { convo: s.convo?.kind, eased: s.eased, back: s.back, height: s.height } })
+  out.headsWhileChatting = (await B.evaluate((id) => window.mzansiHeads([id]), aId)).heads.map((h) => ({ id: h.id === 'player' ? 'B' : 'A', inside: h.inside, underHud: h.underHud, hidden: h.hidden }))
+  // 2. A quick phrase: B's bubble on both phones, the line in both logs.
+  await tapIn(page, B.locator('.chat-quick [data-say="Howzit! 👋"]'))
+  await expect.poll(() => lineOn(A, 'Howzit'), { timeout: 8000 }).toBe(true)
+  await page.waitForTimeout(400)
+  out.quick = { onA: await lineOn(A, 'Howzit'), onB: await lineOn(B, 'Howzit'), bubbleOnA: await bubbleOn(A, bId), bubbleOnB: await bubbleOn(B, 'me') }
+  await page.screenshot({ path: `${OUT}/T3-1-quick.png` })
+  // 3. Free text with a phone number, a link and a handle: taken out, saying why.
+  await page.waitForTimeout(1300)
+  await B.locator('.chat-form input').fill('call me 082 555 1234 or ig: kabelo_99 see www.kabelo.co.za tonight')
+  await tapIn(page, B.locator('.chat-form button[type="submit"]'))
+  await expect.poll(() => lineOn(A, 'tonight'), { timeout: 8000 }).toBe(true)
+  out.filtered = { note: await B.locator('.chat-note').textContent(), onA: (await A.evaluate(() => window.mzansiChat().map((m) => m.text))).find((t) => t.includes('tonight')) }
+  // 4. A slur isn't sent at all.
+  await page.waitForTimeout(1300)
+  await B.locator('.chat-form input').fill('you kaffir')
+  await tapIn(page, B.locator('.chat-form button[type="submit"]'))
+  await page.waitForTimeout(2500)
+  out.slur = { note: await B.locator('.chat-note').textContent(), onA: await lineOn(A, 'you '), onB: await lineOn(B, 'you ') }
+  // 5. 120 characters at most.
+  await B.locator('.chat-form input').fill('x'.repeat(150))
+  out.max = (await B.locator('.chat-form input').inputValue()).length
+  await B.locator('.chat-form input').fill('')
+  await page.screenshot({ path: `${OUT}/T3-2-filter.png` })
+  // 6. A answers from the Talk button: B sees A's bubble; it fades and is gone after 8 s.
+  await tapIn(page, A.locator('.chat-btn'))
+  await expect(A.locator('.chat-panel')).toBeVisible()
+  await tapIn(page, A.locator('.chat-quick [data-say="Sharp sharp"]'))
+  await expect.poll(() => lineOn(B, 'Sharp sharp'), { timeout: 8000 }).toBe(true)
+  const seen = Date.now()
+  await page.waitForTimeout(700)
+  out.answer = { bubbleOnB: await bubbleOn(B, aId) }
+  await page.screenshot({ path: `${OUT}/T3-3-answer.png` })
+  await page.waitForTimeout(Math.max(0, 7400 - (Date.now() - seen)))
+  out.answer.late = await bubbleOn(B, aId)
+  await page.waitForTimeout(1800)
+  out.answer.after = await bubbleOn(B, aId)
+  out.answer.logStill = await lineOn(B, 'Sharp sharp')
+  // 7. B blocks A (from the line in B's log): A's body, bubbles and lines are gone for B.
+  await tapIn(page, B.locator(`.chat-log .chat-who[data-id="${aId}"]`).first())
+  await expect(B.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await tapIn(page, B.locator('[data-pc="block"]'))
+  await page.waitForTimeout(1500)
+  await tapIn(page, A.locator('.chat-quick [data-say="Lekker vibes 🔥"]'))
+  await page.waitForTimeout(3000)
+  out.block = { othersOnB: (await B.evaluate(() => window.mzansiOthers())).length, lineOnB: await lineOn(B, 'Lekker'), bubbleOnB: await bubbleOn(B, aId), oldLinesOnB: await lineOn(B, 'Sharp sharp'), onA: await lineOn(A, 'Lekker'), chatStillOpenOnB: await B.locator('.chat-panel').isVisible() }
+  await page.screenshot({ path: `${OUT}/T3-4-blocked.png` })
+  // 8. A walks over 15 m away; B's next line doesn't reach A.
+  await tapIn(page, A.locator('.chat-x'))
+  const far = async () => A.evaluate(() => { const p = window.mzansiPlayerPos(); const o = window.mzansiOthers()[0]; return o ? Math.hypot(o.x - p.x, o.z - p.z) : null })
+  for (let i = 0; i < 8 && (await far()) < 17; i++) {
+    const spot = await A.evaluate(() => {
+      const p = window.mzansiPlayerPos()
+      const o = window.mzansiOthers()[0]
+      const ax = p.x - o.x
+      const az = p.z - o.z
+      const d = Math.hypot(ax, az) || 1
+      for (const turn of [0, 0.5, -0.5, 1, -1, 1.6, -1.6]) {
+        const ux = Math.cos(turn) * ax / d - Math.sin(turn) * az / d
+        const uz = Math.sin(turn) * ax / d + Math.cos(turn) * az / d
+        for (const m of [12, 9, 6]) {
+          const x = p.x + ux * m
+          const z = p.z + uz * m
+          const s = window.mzansiScreenOf(x, z, 0)
+          if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 230 && s.y < 700 && window.mzansiOpen(x, z)) return s
+        }
+      }
+      return null
+    })
+    if (spot) await (await finger(page, 0)).tap(spot.x, spot.y)
+    await page.waitForTimeout(4500)
+  }
+  out.range = { apart: +((await far()) || 0).toFixed(1) }
+  await page.waitForTimeout(1300)
+  await B.locator('.chat-form input').fill('Can you hear me')
+  await tapIn(page, B.locator('.chat-form button[type="submit"]'))
+  await page.waitForTimeout(3500)
+  out.range.onA = await lineOn(A, 'Can you hear me')
+  out.range.onB = await lineOn(B, 'Can you hear me')
+  // 9. A reports B from the log (B's line goes with it): it reaches Supabase.
+  await tapIn(page, A.locator('.chat-btn'))
+  await tapIn(page, A.locator(`.chat-log .chat-who[data-id="${bId}"]`).last())
+  await expect(A.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await tapIn(page, A.locator('[data-pc="report"]'))
+  out.reportNote = await A.locator('.pc-report small').textContent().catch(() => '')
+  await tapIn(page, A.locator('[data-pc="report-Rude or hateful"]'))
+  await page.waitForTimeout(4000)
+  out.reports = reports
+  out.reportedHiddenOnA = (await A.evaluate(() => window.mzansiOthers())).length === 0
+  await page.screenshot({ path: `${OUT}/T3-5-reported.png` })
+  console.log('T3', JSON.stringify(out, null, 1))
+
+  expect(out.shotWhileChatting.convo, 'the conversation goes on in the chat').toBe('player')
+  expect(out.shotWhileChatting.eased, 'two-shot while chatting').toBe(true)
+  for (const h of out.headsWhileChatting) expect(h.inside && !h.underHud && !h.hidden, `${h.id}'s head in the two-shot above the chat`).toBe(true)
+  expect(out.quick.onA && out.quick.onB, 'the quick phrase in both logs').toBe(true)
+  expect(out.quick.bubbleOnA?.shown, 'B’s bubble over B on A’s phone').toBe(true)
+  expect(out.quick.bubbleOnA.font, 'readable at phone size').toBeGreaterThanOrEqual(15)
+  expect(out.quick.bubbleOnB?.shown, 'B’s own bubble on B’s phone').toBe(true)
+  expect(out.filtered.note).toContain('Phone numbers are taken out')
+  expect(out.filtered.note).toContain('Links are taken out')
+  expect(out.filtered.note).toContain('Social handles are taken out')
+  expect(out.filtered.onA).not.toMatch(/\d{3}|kabelo_99|www\.|co\.za/)
+  expect(out.slur.note).toContain('isn’t allowed')
+  expect(out.slur.onA || out.slur.onB, 'a slur is never sent').toBe(false)
+  expect(out.max).toBe(120)
+  expect(out.answer.bubbleOnB?.shown, 'A’s bubble on B’s phone').toBe(true)
+  expect(out.answer.late?.opacity ?? 0, 'fading near 8 s').toBeLessThan(1)
+  expect(out.answer.after, 'gone after 8 s').toBe(null)
+  expect(out.answer.logStill, 'still in the log').toBe(true)
+  expect(out.block.othersOnB, 'blocked: A gone from B’s campus').toBe(0)
+  expect(out.block.lineOnB || Boolean(out.block.bubbleOnB) || out.block.oldLinesOnB, 'blocked: no bubbles or lines from A').toBe(false)
+  expect(out.block.onA, 'A still sees their own line').toBe(true)
+  expect(out.range.apart).toBeGreaterThan(15)
+  expect(out.range.onB).toBe(true)
+  expect(out.range.onA, 'out of earshot past 15 m').toBe(false)
+  expect(out.reportNote, 'the reported line is shown').toContain('tonight')
+  expect(out.reports.some((r) => r.status >= 200 && r.status < 300 && /tonight/.test(r.body)), 'the report reached Supabase with the message').toBe(true)
+  expect(out.reportedHiddenOnA).toBe(true)
+  await saveVideo(page, 'T3-chat')
+})

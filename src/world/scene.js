@@ -12,6 +12,9 @@ import { makeChair } from './furniture.js'
 import { loadModel } from './models.js'
 import { createCameraRig } from './camera.js'
 import { headOf, SHOT_EASE, SHOT_RANGE, twoShot } from './twoshot.js'
+import { createBubbles } from './bubbles.js'
+import { mountChat } from '../ui/chat.js'
+import { onChat } from '../chat.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
@@ -64,6 +67,9 @@ let tourIndex = 0
 let ps = null // the player's one state (player-state.js)
 let stopButton = null // shown while you move: tap it and you stop, whatever was going on
 let houseBar = null // in a common room: Head out, Things to do
+let chatUi = null // Piece 3: the Talk button and the chat panel (ui/chat.js)
+let bubbles = null // speech bubbles over heads (bubbles.js)
+let hudTop = 140 // the HUD's bottom edge on screen (bubbles stay under it)
 let frameFrom = null // where the player was before this frame's step
 let against = 0 // seconds walking at something without going anywhere
 let againstFrames = 0
@@ -274,6 +280,12 @@ function ensureRenderer() {
     stopButton.hidden = true
   })
   stopButton.addEventListener('click', (event) => event.stopPropagation())
+  // Piece 3: talking to each other. The Talk button and panel; what's said near you shows
+  // as a bubble over the speaker's head (yours too).
+  chatUi = mountChat(host)
+  bubbles = createBubbles(host)
+  onChat((m) => bubbles.show(m.me ? 'me' : m.id, m.me ? String(currentRun?.character?.name || 'You').split(' ')[0] : String(m.name).split(' ')[0], m.text, m.me))
+  window.addEventListener('mzansi-block', (event) => { bubbles.hide(event.detail?.id); chatUi.repaint() })
   // In a house's common room: the way out, and what there is to do here.
   host.insertAdjacentHTML('beforeend', '<div class="house-bar" hidden><button type="button" class="house-out">🚪 Head out</button><button type="button" class="house-do">Things to do</button></div>')
   houseBar = host.querySelector('.house-bar')
@@ -299,7 +311,9 @@ function ensureRenderer() {
   // the chat opens (the nearest person within 4 m gets the two-shot with you).
   window.addEventListener('mzansi-convo-end', () => endConvo())
   window.addEventListener('mzansi-chat-open', (event) => {
-    if (!visible || convo) return
+    // (already talking, from their card: re-aimed above the chat panel, now it's up)
+    if (convo) { const c = convo; requestAnimationFrame(() => { if (convo === c) aimConvo(true) }); return }
+    if (!visible) return
     const id = event.detail?.id
     const them = id ? { kind: 'player', id, avatar: others?.avatarOf(id) } : nearestToTalk()
     if (them?.avatar) startConvo(them.kind, them.id, them.avatar)
@@ -838,9 +852,9 @@ function shotBand() {
   const rect = renderer.domElement.getBoundingClientRect()
   const ndc = (px) => 1 - ((px - rect.top) / rect.height) * 2
   // (the Goodbye / Leave button floats just under the HUD)
-  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal, .ps-leave')].filter((el) => el.offsetParent && !el.hidden).map((el) => el.getBoundingClientRect().bottom)
+  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal, .ps-leave')].filter((el) => el.getClientRects().length && !el.hidden).map((el) => el.getBoundingClientRect().bottom)
   const topPx = (bars.length ? Math.max(...bars) : rect.top + rect.height * 0.12) + 6
-  const cards = [...document.querySelectorAll('.g-talk, .chat-panel:not([hidden])')].filter((el) => el.offsetParent).map((el) => el.getBoundingClientRect().top)
+  const cards = [...document.querySelectorAll('.g-talk, .chat-panel:not([hidden])')].filter((el) => el.getClientRects().length).map((el) => el.getBoundingClientRect().top)
   const bottomPx = cards.length ? Math.min(...cards) - 6 : rect.top + rect.height * 0.55
   const top = Math.min(0.9, ndc(topPx))
   // (a tall card: the heads keep at least a third of the screen, partly behind it)
@@ -911,6 +925,13 @@ function endConvo() {
   delete host.dataset.convo
   if (closeShot?.convo) closeShot = null
 }
+// Where a speaker's head is, for their bubble: you, or a real player drawn here.
+function speakerHead(id) {
+  if (id === 'me') return player ? headOf(player) : null
+  const a = others?.avatarOf(id)
+  return a ? headOf(a) : null
+}
+window.mzansiBubbles = () => bubbles?.report() || []
 // Opening the chat: the nearest real player within 4 m, else the nearest person here.
 function nearestToTalk() {
   if (!player) return null
@@ -2581,6 +2602,8 @@ function frameBody(now) {
     frameFrom = null
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
+    // (the Talk button on campus while nothing else is open)
+    chatUi?.available(!hold && here && !acting && !inHouse && !talk)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
@@ -2592,6 +2615,10 @@ function frameBody(now) {
     // that first-person camera: a close shot of a chat or a meal shows you whole).
     for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(closeShot) || easingOut()
     camera.updateMatrixWorld()
+    if (bubbles) {
+      if (frames % 30 === 0) hudTop = Math.max(0, ...[...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].filter((el) => el.getClientRects().length).map((el) => el.getBoundingClientRect().bottom - host.getBoundingClientRect().top))
+      bubbles.frame(camera, speakerHead, player.position, hudTop)
+    }
     if (frames % 3 === 0) seeThrough()
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
     swingDoors(dt)
@@ -2650,6 +2677,8 @@ export function setVisible(on) {
   if (!on) {
     mapUi?.close()
     input?.clearKeys()
+    chatUi?.hide()
+    bubbles?.clear()
   }
   if (on) start()
   else stop()

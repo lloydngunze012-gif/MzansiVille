@@ -994,6 +994,43 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .pc-sheet-acts button, .pc-report button { font: 800 15px system-ui; padding: 12px 8px; border-radius: 14px; border: 2px solid #f0c400; background: #2a1846; color: #fff6e6; }
 .pc-sheet-acts button[data-pc="wave"] { background: #f0c400; color: #22143b; }
 .pc-sheet-acts button.bad { border-color: #ff7a7a; color: #ffb3b3; }
+.pc-sheet-acts button.wide { grid-column: 1 / -1; padding: 9px 8px; font-size: 14px; }
+.pc-report small { display: block; margin-top: 6px; color: #e8d9ff; font-weight: 600; }
+
+/* Piece 3: talking. The Talk button (bottom right, above Stop), the chat panel at the
+   bottom (log, eight quick phrases, a 120-character box), speech bubbles over heads. */
+#world .chat-btn { position: absolute; z-index: 59; right: 14px; bottom: calc(262px + env(safe-area-inset-bottom)); width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff6e6; background: #5b23c9; color: #fff; font: 800 12px system-ui; display: grid; place-items: center; align-content: center; gap: 0; box-shadow: 0 6px 18px #0008; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+#world .chat-btn span { font-size: 22px; line-height: 1.05; }
+#world .chat-btn[hidden] { display: none; }
+#world .chat-btn[data-unread="1"]::after { content: ''; position: absolute; top: 2px; right: 2px; width: 14px; height: 14px; border-radius: 50%; background: #f0c400; border: 2px solid #22143b; }
+body > .chat-panel { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 7px; padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); background: #1d1236; border-top: 3px solid #f0c400; border-radius: 20px 20px 0 0; box-shadow: 0 -10px 28px #0008; color: #fff6e6; pointer-events: auto; animation: gup .18s ease-out; }
+body > .chat-panel[hidden] { display: none; }
+.chat-head { display: flex; align-items: baseline; gap: 8px; }
+.chat-head b { font: 800 15px system-ui; }
+.chat-head small { font: 600 12px system-ui; color: #c9b8ea; }
+.chat-x { margin-left: auto; width: 40px; height: 34px; border-radius: 12px; border: 2px solid #fff6e655; background: transparent; color: #fff6e6; font: 800 16px system-ui; }
+.chat-log { list-style: none; margin: 0; padding: 6px 8px; max-height: 92px; min-height: 44px; overflow-y: auto; border-radius: 12px; background: #0e0820; font: 600 14px/1.35 system-ui; overscroll-behavior: contain; }
+.chat-log li { padding: 1px 0; overflow-wrap: anywhere; }
+.chat-log li.me b { color: #f0c400; }
+.chat-log .chat-who { all: unset; cursor: pointer; font-weight: 800; color: #7fe3a8; text-decoration: underline dotted; }
+.chat-log .chat-empty { color: #a99bc6; font-weight: 600; }
+.chat-quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.chat-quick button { min-height: 36px; padding: 4px 4px; border-radius: 12px; border: 2px solid #f0c40099; background: #2a1846; color: #fff6e6; font: 700 12.5px/1.15 system-ui; }
+.chat-quick button:active { background: #f0c400; color: #22143b; }
+.chat-form { display: flex; align-items: center; gap: 6px; }
+.chat-form input { flex: 1; min-width: 0; height: 42px; padding: 0 10px; border-radius: 12px; border: 2px solid #fff6e655; background: #fffaf0; color: #1c1915; font: 600 16px system-ui; }
+.chat-count { font: 700 11px system-ui; color: #a99bc6; min-width: 46px; text-align: right; }
+.chat-form button { height: 42px; padding: 0 16px; border-radius: 12px; border: 0; background: #f0c400; color: #22143b; font: 800 15px system-ui; }
+.chat-note { margin: 0; min-height: 0; font: 600 12.5px system-ui; color: #bff5d5; }
+.chat-note:empty { display: none; }
+.chat-note.bad { color: #ffc7a8; }
+#world .bubbles { position: absolute; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; }
+#world .bubble { position: absolute; left: 0; top: 0; max-width: min(230px, 62vw); padding: 6px 11px 7px; border-radius: 16px; background: #fffaf0; color: #1c1915; border: 2px solid #22143b; box-shadow: 0 4px 12px #0006; will-change: transform, opacity; visibility: hidden; }
+#world .bubble::after { content: ''; position: absolute; left: 50%; bottom: -9px; margin-left: -8px; border: 8px solid transparent; border-top-color: #22143b; border-bottom: 0; }
+#world .bubble b { display: block; font: 800 11px system-ui; color: #5b23c9; }
+#world .bubble span { display: block; font: 700 15px/1.25 system-ui; overflow-wrap: anywhere; }
+#world .bubble.mine { background: #fff4c2; }
+#world .bubble.mine b { color: #8a5a00; }
 .pc-sheet-acts button:disabled { opacity: .7; border-style: dashed; }
 .pc-close { font: 800 14px system-ui; padding: 10px; border-radius: 12px; border: 0; background: transparent; color: #d8c8ff; }
 .pc-report { display: flex; flex-direction: column; gap: 8px; }

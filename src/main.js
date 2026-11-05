@@ -54,6 +54,7 @@ import { addContact, applyFx, closer, markTogether } from './engine/talkactions.
 import { clearErrors, installErrorReporting, readErrors } from './errors.js'
 import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
+import { saidBy } from './chat.js'
 import { playerCardHtml } from './ui/card.js'
 
 installErrorReporting()
@@ -1740,6 +1741,8 @@ function saveCardForm() {
 // scrim, the grab bar or Close puts it away. Wave, Say hi, Add friend, Report.
 let sheetFor = ''
 let sheetCard = null
+let sheetMessage = '' // opened from a line in the chat: that line goes with a report
+let sheetKeep = false // opened from the chat: closing it leaves the chat (and its camera) as it was
 const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 function sheetEl() {
   let el = document.querySelector('.pc-sheet-wrap')
@@ -1751,9 +1754,11 @@ function sheetEl() {
   }
   return el
 }
-function openPlayerCard(id) {
+function openPlayerCard(id, opts = {}) {
   sheetFor = id
   sheetCard = null
+  sheetMessage = String(opts.message || '')
+  sheetKeep = Boolean(opts.keep)
   const el = sheetEl()
   el.innerHTML = '<div class="pc-scrim" data-pc="close"></div><aside class="pc-sheet" role="dialog" aria-label="Player card"><button type="button" class="pc-grab" data-pc="close" aria-label="Close"></button><div class="pc-sheet-body"><p class="fine">Loading their card…</p></div></aside>'
   el.hidden = false
@@ -1766,7 +1771,7 @@ function openPlayerCard(id) {
 function closePlayerCard(keep = false) {
   const el = document.querySelector('.pc-sheet-wrap')
   if (!el) return
-  if (!keep) window.dispatchEvent(new CustomEvent('mzansi-convo-end'))
+  if (!keep && !sheetKeep) window.dispatchEvent(new CustomEvent('mzansi-convo-end'))
   sheetFor = ''
   el.classList.remove('on')
   setTimeout(() => { if (!sheetFor) { el.hidden = true; el.innerHTML = '' } }, 260)
@@ -1779,14 +1784,15 @@ function renderSheet(reporting = false) {
   const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
   const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
   body.innerHTML = `${playerCardHtml(sheetCard, house)}
-    ${reporting ? `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.</p>
+    ${reporting ? `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>
       ${reasons.map((r) => `<button type="button" data-pc="report-${escHtml(r)}">${escHtml(r)}</button>`).join('')}
       <button type="button" class="ghost" data-pc="report-cancel">Cancel</button></div>`
     : `<div class="pc-sheet-acts">
       <button type="button" data-pc="wave">\u{1F44B} Wave</button>
       <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
       <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
-      <button type="button" class="bad" data-pc="report">⚑ Report</button>
+      <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
+      <button type="button" class="bad wide" data-pc="report">⚑ Report</button>
     </div>
     <button type="button" class="pc-close" data-pc="close">Close</button>`}`
 }
@@ -1805,11 +1811,19 @@ function onSheetClick(event) {
     closePlayerCard()
     return
   }
+  // Say hi (Piece 3): the chat opens, the conversation (and its two-shot) goes on.
   if (k === 'hi') {
-    sendPoke(id, 'hi')
     window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { id, gesture: 'interact-right' } }))
-    toast(`\u{1F4AC} You said hi to ${name}`)
-    closePlayerCard()
+    const keep = sheetKeep
+    closePlayerCard(true)
+    if (!keep) window.dispatchEvent(new CustomEvent('mzansi-open-chat', { detail: { id } }))
+    return
+  }
+  // Block: their body, bubbles, lines in your chat and card are gone for you.
+  if (k === 'block') {
+    blockPlayer(id)
+    toast(`\u{1F6AB} Blocked. You won’t see or hear ${name} any more.`)
+    closePlayerCard(sheetKeep)
     return
   }
   if (k === 'friend' && save.run) {
@@ -1823,15 +1837,20 @@ function onSheetClick(event) {
   if (k === 'report') { renderSheet(true); return }
   if (k === 'report-cancel') { renderSheet(); return }
   if (k.startsWith('report-')) {
-    reportPlayer(id, k.slice(7), sheetCard)
-    save.blocks = [...new Set([...(save.blocks || []), id])]
-    persist()
-    hidePlayer(id)
+    // (with what they said: the line it was opened from, else their last few lines)
+    reportPlayer(id, k.slice(7), sheetCard, sheetMessage || saidBy(id).join(' | '))
+    blockPlayer(id)
     toast(`Reported. You won’t see ${name} on campus any more.`)
-    closePlayerCard()
+    closePlayerCard(sheetKeep)
   }
 }
-window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id))
+function blockPlayer(id) {
+  save.blocks = [...new Set([...(save.blocks || []), id])]
+  persist()
+  hidePlayer(id)
+  window.dispatchEvent(new CustomEvent('mzansi-block', { detail: { id } }))
+}
+window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id, event.detail))
 // Someone did something to you.
 onPoke(({ from, kind, name }) => {
   const who = String(name || 'Someone').split(' ')[0]

@@ -79,6 +79,17 @@ export function canSend(stamps, now = Date.now()) {
 // again on display. Returns { text, removed: [why...], blocked, masked }.
 export const BIO_MAX = 80
 export function cleanBio(raw) {
+  return cleanContacts(raw, BIO_MAX, 'Social handles are taken out (your @handle has its own place on the card).')
+}
+
+// A chat message (Piece 3): one line, 120 characters. The same rules as a bio: contact
+// details are taken out with the reason; a slur blocks the message (it isn't sent).
+export const CHAT_MAX = 120
+export function cleanChat(raw) {
+  return cleanContacts(raw, CHAT_MAX, 'Social handles are taken out.')
+}
+
+function cleanContacts(raw, max, handleWhy) {
   let text = String(raw ?? '').replace(/\s+/g, ' ').trim()
   const removed = []
   const strip = (re, why, keep = () => false) => {
@@ -89,11 +100,11 @@ export function cleanBio(raw) {
   strip(/(?:https?:\/\/)?(?:wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com|whatsapp\.com)\/?\S*/gi, 'WhatsApp links are taken out.')
   strip(/(?:https?:\/\/|www\.)\S+/gi, 'Links are taken out.')
   strip(/\b[\w-]+(?:\.[\w-]+)*\.(?:com|co\.za|org\.za|za|net|org|io|me|ly|app|gg|tv|link|xyz|info|biz|page|site|online|store|shop)\b(?:\/\S*)?/gi, 'Links are taken out.')
-  strip(/\b(?:ig|insta|instagram|tiktok|tt|snap|snapchat|sc|twitter|x|fb|facebook|whatsapp|wa|telegram|discord)\s*[:=-]\s*\S+/gi, 'Social handles are taken out (your @handle has its own place on the card).')
-  strip(/(?:^|\s)@[\w.]{2,}/g, 'Social handles are taken out (your @handle has its own place on the card).')
+  strip(/\b(?:ig|insta|instagram|tiktok|tt|snap|snapchat|sc|twitter|x|fb|facebook|whatsapp|wa|telegram|discord)\s*[:=-]\s*\S+/gi, handleWhy)
+  strip(/(?:^|\s)@[\w.]{2,}/g, handleWhy)
   // (seven digits or more, with spaces, dashes or brackets between: a phone number)
   strip(/\+?\d[\d\s().-]{5,}\d/g, 'Phone numbers are taken out.', (m) => m.replace(/\D/g, '').length < 7)
-  if (text.length > BIO_MAX) text = text.slice(0, BIO_MAX).trim()
+  if (text.length > max) text = text.slice(0, max).trim()
   const f = filterText(text)
   return { text: f.text, removed, blocked: f.blocked, masked: f.masked }
 }

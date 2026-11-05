@@ -104,6 +104,7 @@ async function connect() {
     })
     .on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.i))
     .on('broadcast', { event: 'poke' }, ({ payload }) => { if (payload?.to === me.id && payload.from !== me.id && !hidden.has(payload.from)) for (const fn of pokeListeners) fn(payload) })
+    .on('broadcast', { event: 'say' }, ({ payload }) => { if (payload?.i && payload.i !== me.id && !hidden.has(payload.i) && typeof payload.text === 'string') for (const fn of sayListeners) fn(payload) })
     .on('presence', { event: 'leave' }, ({ key }) => drop(key))
     .subscribe((status) => {
       if (channel !== ch) return
@@ -232,6 +233,23 @@ export function sendPoke(to, kind) {
   channel.send({ type: 'broadcast', event: 'poke', payload: { to, from: me.id, kind, name: meta.n, num: meta.s } }).catch(() => {})
   return true
 }
+// Piece 3, chat: a message goes out on the channel with where you stood when you said
+// it; each phone keeps only what was said within 15 m of its own player (chat.js).
+// { i, t, x, z, text, n: name, s: number }
+const sayListeners = new Set()
+export function onSay(fn) {
+  sayListeners.add(fn)
+  return () => sayListeners.delete(fn)
+}
+export function sendSay(text) {
+  if (!channel || !live || !meta || local.a !== 'campus') return false
+  channel.send({ type: 'broadcast', event: 'say', payload: { i: me.id, t: Date.now(), x: round(local.x), z: round(local.z), text: String(text).slice(0, 120), n: meta.n, s: meta.s } }).catch(() => {})
+  return true
+}
+// Where this phone's player is (what the scene last reported).
+export function whereAmI() { return local }
+export function isHidden(id) { return hidden.has(id) }
+
 // What presence knows about someone (their name, number, look, house, card), or null.
 export function peerMeta(id) {
   return peers.get(id)?.meta || null
