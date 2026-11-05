@@ -11,6 +11,7 @@ import { buildRoom } from './rooms.js'
 import { makeChair } from './furniture.js'
 import { loadModel } from './models.js'
 import { createCameraRig } from './camera.js'
+import { headOf, SHOT_EASE, SHOT_RANGE, twoShot } from './twoshot.js'
 import { applyNight, createCampus, fitLabels, markDoors } from './campus.js'
 import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
@@ -294,6 +295,15 @@ function ensureRenderer() {
     if (at && (player.userData.pose || 'stand') === 'stand') player.rotation.y = Math.atan2(at.x - player.position.x, at.z - player.position.z)
     gesture(player, event.detail.gesture || 'emote-yes')
   })
+  // Piece 3: a conversation with a real player ends (their card closed, the chat closed);
+  // the chat opens (the nearest person within 4 m gets the two-shot with you).
+  window.addEventListener('mzansi-convo-end', () => endConvo())
+  window.addEventListener('mzansi-chat-open', (event) => {
+    if (!visible || convo) return
+    const id = event.detail?.id
+    const them = id ? { kind: 'player', id, avatar: others?.avatarOf(id) } : nearestToTalk()
+    if (them?.avatar) startConvo(them.kind, them.id, them.avatar)
+  })
   window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
   // Used by tests and the map: walk to a building's door and enter it.
   window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string') approach(event.detail) })
@@ -442,7 +452,12 @@ function tapped(point, x, y) {
   if (acting && (!hit || hit.kind === 'self')) { interrupt(); return }
   if (!hit) return
   window.mzansiLastTap = hit.kind === 'person' ? { kind: 'person', id: hit.node.userData.personId } : { ...hit }
-  if (hit.kind === 'player') { window.dispatchEvent(new CustomEvent('mzansi-player-card', { detail: { id: hit.id } })); return }
+  if (hit.kind === 'player') {
+    // (within 4 m: a conversation, and its two-shot, starts as their card slides up)
+    startConvo('player', hit.id, others?.avatarOf(hit.id))
+    window.dispatchEvent(new CustomEvent('mzansi-player-card', { detail: { id: hit.id } }))
+    return
+  }
   if (hit.kind === 'self') stopHere()
   else if (hit.kind === 'exit') walkTo(room.anchors.door.x, room.anchors.door.z, () => leaveHouse(), { always: true })
   else if (hit.kind === 'person') startTalk(hit.node)
@@ -667,9 +682,74 @@ function everyone() {
 
 // A close camera shot (talking, activities) overrides the follow camera.
 let closeShot = null
-let shotBlend = 0
 const shotCam = new THREE.Vector3()
 const closeLook = new THREE.Vector3()
+// What the camera showed last frame, and the ease from it: a two-shot (ease: true) eases
+// in over SHOT_EASE and back out to the follow view when it ends; the activities' shots
+// follow as before (a smooth chase), and end with a cut back.
+const shown = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), ready: false }
+const easeFrom = { pos: new THREE.Vector3(), quat: new THREE.Quaternion() }
+const goalQuat = new THREE.Quaternion()
+const lookMatrix = new THREE.Matrix4()
+let easeGoal = null
+let easeT = 1
+let easeOut = false
+let lastEased = false
+let aimedAt = 0
+let easeCount = 0 // (tests: how many times the camera set off for a new shot)
+function easingOut() { return easeOut && easeT < 1 }
+function aimCamera(dt) {
+  // (the 0.4 s ease runs on the wall clock: a slow frame, as the card appears, doesn't
+  // stretch it; ?fast=1 speeds it up with everything else)
+  const now = performance.now()
+  const real = Math.min(0.5, (now - (aimedAt || now)) / 1000) * SPEED
+  aimedAt = now
+  // (rig.apply has just put the camera at the follow view)
+  if (!shown.ready) { shown.pos.copy(camera.position); shown.quat.copy(camera.quaternion); shown.ready = true }
+  const shot = closeShot
+  if (shot !== easeGoal) {
+    easeFrom.pos.copy(shown.pos)
+    easeFrom.quat.copy(shown.quat)
+    easeOut = !shot && lastEased
+    easeT = 0
+    if (shot && !shot.ease) {
+      // (a chase shot starts from what was on screen, looking where it looked)
+      shotCam.copy(shown.pos)
+      closeLook.copy(shown.pos).add(new THREE.Vector3(0, 0, -1).applyQuaternion(shown.quat).multiplyScalar(Math.max(1, shown.pos.distanceTo(shot.look))))
+    }
+    easeGoal = shot
+    easeCount += 1
+  }
+  if (shot && !shot.ease) {
+    const k = 1 - Math.exp(-dt * 3.5)
+    shotCam.lerp(shot.pos, k)
+    closeLook.lerp(shot.look, k)
+    camera.position.copy(shotCam)
+    camera.lookAt(closeLook)
+    lastEased = false
+  } else if (shot || easingOut()) {
+    easeT = Math.min(1, easeT + real / SHOT_EASE)
+    const x = easeT
+    const t = x * x * (3 - 2 * x)
+    if (shot) {
+      lookMatrix.lookAt(shot.pos, shot.look, camera.up)
+      goalQuat.setFromRotationMatrix(lookMatrix)
+      camera.position.lerpVectors(easeFrom.pos, shot.pos, t)
+      lastEased = true
+    } else {
+      // (back to the follow view, wherever it is now)
+      goalQuat.copy(camera.quaternion)
+      camera.position.lerpVectors(easeFrom.pos, camera.position, t)
+      if (easeT >= 1) lastEased = false
+    }
+    camera.quaternion.slerpQuaternions(easeFrom.quat, goalQuat, t)
+  } else {
+    lastEased = false
+    closeLook.copy(player.position)
+  }
+  shown.pos.copy(camera.position)
+  shown.quat.copy(camera.quaternion)
+}
 // A two-shot from the side: both people in profile, in the top half of a portrait
 // screen (the conversation card covers the bottom). The distance comes from the
 // screen's shape (portrait phones see a narrow slice), and the camera takes the
@@ -749,6 +829,99 @@ function overShoulder(from, to) {
   return { pos: best, look: best.clone().addScaledVector(dir, 10) }
 }
 
+// ---------- Piece 3: the conversation camera ----------
+// Talking to someone within 4 m (a person here, a real player): the two-shot (twoshot.js),
+// both heads between the HUD and the card, in every camera mode. It eases in over 0.4 s
+// and back out to the view you had when the conversation ends.
+// The strip of screen the heads go in (NDC y): under the HUD's bars, above the card.
+function shotBand() {
+  const rect = renderer.domElement.getBoundingClientRect()
+  const ndc = (px) => 1 - ((px - rect.top) / rect.height) * 2
+  // (the Goodbye / Leave button floats just under the HUD)
+  const bars = [...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal, .ps-leave')].filter((el) => el.offsetParent && !el.hidden).map((el) => el.getBoundingClientRect().bottom)
+  const topPx = (bars.length ? Math.max(...bars) : rect.top + rect.height * 0.12) + 6
+  const cards = [...document.querySelectorAll('.g-talk, .chat-panel:not([hidden])')].filter((el) => el.offsetParent).map((el) => el.getBoundingClientRect().top)
+  const bottomPx = cards.length ? Math.min(...cards) - 6 : rect.top + rect.height * 0.55
+  const top = Math.min(0.9, ndc(topPx))
+  // (a tall card: the heads keep at least a third of the screen, partly behind it)
+  const bottom = Math.min(ndc(bottomPx), top - 0.34)
+  return { top, bottom }
+}
+function shotFree(pos) {
+  if (!onCampus(pos)) return false
+  if (campus.layout.buildings.some((b) => pos.x > b.minX - 0.6 && pos.x < b.minX + b.w + 0.6 && pos.z > b.minZ - 0.6 && pos.z < b.minZ + b.d + 0.6 && pos.y < (b.h || 12) + 1)) return false
+  if ((boxesNear(pos.x, pos.z) || []).some((b) => depthIn(pos.x, pos.z, b, 0.25) > 0)) return false
+  // (never inside anyone's body: the crowd, the places' people, the real players)
+  const bodies = everyone().concat(temps, others?.group.children || [])
+  return !bodies.some((a) => a.visible !== false && Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < 0.5)
+}
+function shotClear(pos, head) {
+  const dir = head.clone().sub(pos)
+  shotRay.set(pos, dir.clone().normalize())
+  shotRay.far = Math.max(0, dir.length() - 0.3)
+  return !shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !hit.object.userData.seeThrough && !isPart(hit.object))
+}
+// The two-shot of you and them, or null (too far, or nowhere to stand the camera).
+function conversationShot(them) {
+  if (!player || !them || !campus || inHouse) return null
+  if (Math.hypot(them.position.x - player.position.x, them.position.z - player.position.z) > SHOT_RANGE) return null
+  const a = headOf(player)
+  const b = headOf(them)
+  const ground = Math.min(campus.floor?.at(player.position.x, player.position.z) ?? 0, campus.floor?.at(them.position.x, them.position.z) ?? 0)
+  return twoShot({ camera, a, b, band: shotBand(), free: shotFree, clear: shotClear, ground, facing: player.rotation.y, faces: them.rotation.y })
+}
+// A conversation with a real player (their card, then the chat), or with whoever is
+// nearest when you open the chat: { kind: 'player' | 'npc', id, avatar, from, to }.
+let convo = null
+function convoAvatar(c) {
+  if (!c) return null
+  if (c.kind === 'player') return others?.avatarOf(c.id) || null
+  return c.avatar?.parent ? c.avatar : null
+}
+function startConvo(kind, id, avatar) {
+  if (!player || !avatar) return false
+  if (Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z) > SHOT_RANGE) return false
+  interrupt()
+  // (you turn to them; seated, you stay as you sit)
+  if ((player.userData.pose || 'stand') === 'stand') player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
+  // (aimed on the next frame, once the card or chat is drawn and the band is known; the
+  // re-aim every half second waits until then)
+  const c = { kind, id, avatar, from: null, to: null, timer: Infinity }
+  convo = c
+  host.dataset.convo = kind
+  requestAnimationFrame(() => { if (convo === c) { aimConvo(true); c.timer = 0.5 } })
+  return true
+}
+function aimConvo(force) {
+  if (!convo) return
+  const them = convoAvatar(convo)
+  const far = !them || Math.hypot(them.position.x - player.position.x, them.position.z - player.position.z) > SHOT_RANGE + 1
+  if (far) { if (closeShot?.convo) closeShot = null; return }
+  const moved = !convo.from || Math.hypot(player.position.x - convo.from.x, player.position.z - convo.from.z) > 0.35 || Math.hypot(them.position.x - convo.to.x, them.position.z - convo.to.z) > 0.35
+  if (!force && !moved && closeShot?.convo) return
+  const shot = conversationShot(them)
+  convo.from = { x: player.position.x, z: player.position.z }
+  convo.to = { x: them.position.x, z: them.position.z }
+  // (a new spot only if it's really somewhere else: no restarting the ease for nothing)
+  if (shot && !(closeShot?.convo && closeShot.pos.distanceTo(shot.pos) < 0.3 && closeShot.look.distanceTo(shot.look) < 0.6)) closeShot = { ...shot, convo: true }
+}
+function endConvo() {
+  if (!convo) return
+  convo = null
+  delete host.dataset.convo
+  if (closeShot?.convo) closeShot = null
+}
+// Opening the chat: the nearest real player within 4 m, else the nearest person here.
+function nearestToTalk() {
+  if (!player) return null
+  const dist = (a) => Math.hypot(a.position.x - player.position.x, a.position.z - player.position.z)
+  let best = null
+  for (const a of others?.group.children || []) if (a.userData.remote && dist(a) <= SHOT_RANGE && (!best || dist(a) < dist(best.avatar))) best = { kind: 'player', id: a.userData.remote, avatar: a }
+  if (best) return best
+  for (const a of everyone()) if (a.visible !== false && dist(a) <= SHOT_RANGE && (!best || dist(a) < dist(best.avatar))) best = { kind: 'npc', id: a.userData.personId, avatar: a }
+  return best
+}
+
 let talk = null
 // Tapping someone: walk up to them (a walk like any other: tap elsewhere and it's off),
 // then the chat opens and the player is 'talking' until goodbye.
@@ -788,7 +961,9 @@ function startTalk(avatar) {
   const face = () => {
     player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
     if (!fixed) avatar.rotation.y = Math.atan2(player.position.x - avatar.position.x, player.position.z - avatar.position.z)
-    closeShot = overShoulder(player.position, avatar.position)
+    // (Piece 3: the two-shot; the old high shot only where no two-shot spot works)
+    const shot = conversationShot(avatar)
+    closeShot = shot ? { ...shot, talk: true } : overShoulder(player.position, avatar.position)
   }
   const open = () => {
     if (talk) return
@@ -1021,8 +1196,8 @@ window.mzansiHeads = (ids = []) => {
   const blockers = campus ? [campus.buildings, campus.dressing.group, ...(room ? [room.group] : []), tempGroup] : []
   // ('near': everyone within 2.5 m of you, like the scene's own copy of a friend in a room)
   const near = (x) => x !== player && x.visible && Math.hypot(x.position.x - player.position.x, x.position.z - player.position.z) < 2.5
-  const pool = [...everyone(), ...temps]
-  for (const a of [player, ...pool.filter((x, i) => pool.indexOf(x) === i && (ids.includes(x.userData.personId) || (ids.includes('near') && near(x))))]) {
+  const pool = [...everyone(), ...temps, ...(others?.group.children || [])]
+  for (const a of [player, ...pool.filter((x, i) => pool.indexOf(x) === i && (ids.includes(x.userData.personId) || ids.includes(x.userData.remote) || (ids.includes('near') && near(x))))]) {
     if (!a?.visible) continue
     const head = a.getObjectByName('Head')
     if (!head) continue
@@ -1040,9 +1215,30 @@ window.mzansiHeads = (ids = []) => {
     ray.set(camera.position, c.clone().sub(camera.position).normalize())
     ray.far = dist - 0.25
     const hit = ray.intersectObjects(blockers, true).find((h) => h.object.visible && !h.object.userData.standIn && !h.object.userData.seeThrough && h.object.name !== 'beacon' && h.object.name !== 'badge' && h.object.type === 'Mesh')
-    out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId, inside, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
+    out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId || a.userData.remote, inside, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
   }
   return { mode: rig.mode, close: Boolean(closeShot), heads: out }
+}
+// Tests (Piece 3, read only): the camera now, the close shot it is in or easing to, and
+// the conversation (who with), with the camera's distance and height from the pair.
+window.mzansiShot = () => {
+  if (!camera || !player) return null
+  const them = convoAvatar(convo) || (talk?.avatar ?? null)
+  const mid = them ? { x: (them.position.x + player.position.x) / 2, z: (them.position.z + player.position.z) / 2 } : null
+  return {
+    mode: rig.mode,
+    cam: camera.position.toArray().map((v) => +v.toFixed(3)),
+    close: Boolean(closeShot),
+    eased: Boolean(closeShot?.ease),
+    easing: closeShot ? easeT < 1 : easingOut(),
+    eases: easeCount,
+    easeT: +easeT.toFixed(3),
+    convo: convo ? { kind: convo.kind, id: convo.id } : null,
+    talk: talk?.id || null,
+    back: mid ? +Math.hypot(camera.position.x - mid.x, camera.position.z - mid.z).toFixed(2) : null,
+    height: +(camera.position.y - (campus?.floor?.at(camera.position.x, camera.position.z) ?? 0)).toFixed(2),
+    apart: them ? +Math.hypot(them.position.x - player.position.x, them.position.z - player.position.z).toFixed(2) : null,
+  }
 }
 window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.line.order.length), people: q.people.length, order: q.line.order.map((a) => (a.userData.isPlayer ? 'player' : a.userData.personId)), serving: q.line.serving ? (q.line.serving.userData.isPlayer ? 'player' : q.line.serving.userData.personId) : null, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
 window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.atan2(x - player.position.x, z - player.position.z); rig.facing = a; player.rotation.y = a }
@@ -2364,7 +2560,7 @@ function frameBody(now) {
     const here = !inRoom && onCampus(player.position)
     const pose = player.userData.pose || 'stand'
     reportLocal(here ? { a: 'campus', x: player.position.x, z: player.position.z, y: pose === 'sit' || pose === 'lie' ? player.position.y : 0, h: player.rotation.y, p: walking ? (pose === 'run' || mover.speed > 2.9 ? 'run' : 'walk') : pose } : { a: 'away' })
-    others?.update(dt, camera, player.position, here, rig.mode === 'eye')
+    others?.update(dt, camera, player.position, here, rig.mode === 'eye' && !closeShot)
     crowd?.setFill(onlineCount() < 3, player.position)
     for (const a of lineup) poseAvatar(a, false, clock)
     companionTick(dt)
@@ -2390,23 +2586,11 @@ function frameBody(now) {
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
     sceneTick(dt)
-    if (closeShot) {
-      // Ease from wherever the camera was into the close shot, and follow it smoothly.
-      // (rig.apply above moved the camera back to the follow view; keep our own copy.)
-      if (shotBlend === 0) { shotCam.copy(camera.position); closeLook.copy(closeShot.look) }
-      shotBlend = 1
-      const k = 1 - Math.exp(-dt * 3.5)
-      shotCam.lerp(closeShot.pos, k)
-      closeLook.lerp(closeShot.look, k)
-      camera.position.copy(shotCam)
-      camera.lookAt(closeLook)
-    } else {
-      shotBlend = 0
-      closeLook.copy(player.position)
-    }
+    if (convo) { convo.timer -= dt; if (convo.timer <= 0) { convo.timer = 0.5; aimConvo(false) } }
+    aimCamera(dt)
     // Eye view looks out of the player's eyes: hide their own head and hair (only for
     // that first-person camera: a close shot of a chat or a meal shows you whole).
-    for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(closeShot)
+    for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(closeShot) || easingOut()
     camera.updateMatrixWorld()
     if (frames % 3 === 0) seeThrough()
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })

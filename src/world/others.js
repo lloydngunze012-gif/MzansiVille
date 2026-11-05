@@ -102,10 +102,12 @@ export function createOthers(scene) {
         avatar.add(entry.tag)
         entry.tagKey = tagKey
       }
+      // (and shrinks up close, in a conversation's two-shot: never wider than about a head
+      // and a half, still readable on a phone)
       const d = camera.position.distanceTo(avatar.position)
-      const s = Math.max(1, d / 9)
+      const s = Math.max(0.4, d / 9)
       entry.tag.scale.set(0.86 * s, 0.3 * s, 1)
-      entry.tag.position.y = (pose === 'sit' ? 1.62 : 2.12) + 0.15 * (s - 1)
+      entry.tag.position.y = (pose === 'sit' ? 1.62 : 2.12) + 0.15 * (s - 1) - (s < 1 ? 0.18 * (1 - s) : 0)
       const flat = Math.hypot(avatar.position.x - me.x, avatar.position.z - me.z)
       entry.tag.visible = flat < TAG_FAR && !(eyeView && flat < 2.2)
     }
@@ -149,6 +151,9 @@ export function createOthers(scene) {
     const entry = shown.get(id)
     return entry ? { x: entry.avatar.position.x, z: entry.avatar.position.z } : null
   }
+  function avatarOf(id) {
+    return shown.get(id)?.avatar || null
+  }
 
-  return { group, update, dispose, report, gestureOf, positionOf, count: () => shown.size }
+  return { group, update, dispose, report, gestureOf, positionOf, avatarOf, count: () => shown.size }
 }

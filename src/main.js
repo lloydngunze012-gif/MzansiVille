@@ -1761,9 +1761,12 @@ function openPlayerCard(id) {
   requestAnimationFrame(() => el.classList.add('on'))
   loadCard(id, (card) => { if (sheetFor === id) { sheetCard = card; renderSheet() } })
 }
-function closePlayerCard() {
+// keep: the conversation goes on (Say hi opens the chat); otherwise it ends and the
+// camera eases back out of the two-shot.
+function closePlayerCard(keep = false) {
   const el = document.querySelector('.pc-sheet-wrap')
   if (!el) return
+  if (!keep) window.dispatchEvent(new CustomEvent('mzansi-convo-end'))
   sheetFor = ''
   el.classList.remove('on')
   setTimeout(() => { if (!sheetFor) { el.hidden = true; el.innerHTML = '' } }, 260)
