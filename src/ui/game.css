@@ -96,6 +96,18 @@
 .g-gear{background:#ffffff12;border-color:#f0c40055}
 .g-stat{background:#ffffff0f;border:1px solid #ffffff12}
 .g-stat.on{background:#f0c40022;outline:1px solid #f0c400}
+/* Stat colours by value (game.js statBand): the number, the bar and a soft border. Bright
+   enough to read on the dark panel in sunlight; red also carries a down arrow. */
+.g-stat.good{--sc:#4ee39a}.g-stat.mid{--sc:#ffc23d}.g-stat.low{--sc:#ff6b5e}
+.g-stat.good,.g-stat.mid,.g-stat.low{border-color:color-mix(in srgb,var(--sc) 45%,transparent)}
+.g-stat.good .g-stat-top i,.g-stat.mid .g-stat-top i,.g-stat.low .g-stat-top i{color:var(--sc)}
+.g-stat .g-bar span{background:var(--sc,#f5c542)}
+.g-stat.low{background:#ff6b5e14}
+.g-low{display:inline-block;margin-right:2px;font-size:9px;vertical-align:1px}
+/* Only the lowest red stat: a slow 2 s glow. Reduced motion: a still outline instead. */
+.g-stat.pulse{animation:gstatpulse 2s ease-in-out infinite}
+@keyframes gstatpulse{0%,100%{box-shadow:0 0 0 0 #ff6b5e00}50%{box-shadow:0 0 0 2px #ff6b5e99,0 0 12px 2px #ff6b5e66}}
+@media (prefers-reduced-motion: reduce){.g-stat.pulse{animation:none;outline:2px solid #ff6b5e;outline-offset:0}}
 .g-tip{background:linear-gradient(90deg,#ffd23f,#ff8a3d);color:#2a1206;font-weight:600;animation:gpop .2s ease-out}
 .g-phases li{background:#ffffff10}
 .g-phases li.now{background:linear-gradient(180deg,#ffd23f,#f0a400);color:#2a1206;box-shadow:0 0 10px #f0c40066}

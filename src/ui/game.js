@@ -114,12 +114,36 @@ export function placeStatus(district, run, placeId) {
   return { open: false, label: items.length ? 'done today' : '' }
 }
 
-function bar(key, word, color, value, max) {
+// Stat colours (visual only): green at 70 and up, amber 40-69, red under 40; money green
+// above R500, amber R100-R500, red under R100. The number, the bar and a soft border take
+// the colour; a red pill also gets a down arrow (never colour alone). Only the single
+// lowest red stat pulses (how far into the red, so money and the others compare).
+export function statBand(key, value) {
+  const v = Number(value) || 0
+  if (key === 'money') return v > 500 ? 'good' : v >= 100 ? 'mid' : 'low'
+  return v >= 70 ? 'good' : v >= 40 ? 'mid' : 'low'
+}
+function redDepth(key, value) {
+  return (Number(value) || 0) / (key === 'money' ? 100 : 40)
+}
+export function pulsingStat(stats) {
+  let worst = null
+  for (const [key] of STATS) {
+    if (statBand(key, stats[key]) !== 'low') continue
+    if (!worst || redDepth(key, stats[key]) < redDepth(worst, stats[worst])) worst = key
+  }
+  return worst
+}
+function bar(key, word, value, max, pulse) {
   const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)))
   const shown = key === 'money' ? formatMoney(value) : value
-  return `<button class="g-stat${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" aria-label="${word} ${shown}">
-    <span class="g-stat-top"><b>${word}</b><i>${esc(String(shown))}</i></span>
-    <span class="g-bar"><span style="width:${pct}%;background:${color}"></span></span>
+  const band = statBand(key, value)
+  const low = band === 'low'
+  // (the HUD is redrawn often: the pulse keeps its place in the 2 s cycle, never restarts)
+  const phase = pulse ? ` style="animation-delay:-${Date.now() % 2000}ms"` : ''
+  return `<button class="g-stat ${band}${pulse ? ' pulse' : ''}${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" data-band="${band}" aria-label="${word} ${shown}${low ? ', low' : ''}"${phase}>
+    <span class="g-stat-top"><b>${word}</b><i>${low ? '<span class="g-low" aria-hidden="true">▼</span>' : ''}${esc(String(shown))}</i></span>
+    <span class="g-bar"><span style="width:${pct}%"></span></span>
   </button>`
 }
 
@@ -147,7 +171,7 @@ export function hud(district, run, opts = {}) {
       <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
       <button class="g-gear" type="button" data-act="gear" aria-label="Menu">\u2699\uFE0F</button>
     </div>
-    <div class="g-stats">${STATS.map(([k, w, c]) => bar(k, w, c, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100))).join('')}</div>
+    <div class="g-stats">${STATS.map(([k, w]) => bar(k, w, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100), k === pulsingStat(run.stats))).join('')}</div>
     ${tip ? `<p class="g-tip" role="status">${esc(tip[3])}</p>` : ''}
     ${chips.length ? `<p class="g-chips">${chips.map(([k, ic, c]) => `<button type="button" class="g-chip ${k}" data-act="stat" data-k="chip-${k}">${ic} ${esc(c)}</button>`).join('')}</p>` : ''}
     ${opts.strip === false ? '' : phaseStrip(district, run)}
