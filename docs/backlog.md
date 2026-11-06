@@ -94,3 +94,7 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 ## Queues and taps (6 Nov)
 
 - Auntie Pinky can be hidden behind her queue, so a tap opens a student's chat instead of joining the line.
+
+## Day 1 home (6 Nov)
+
+- Day 1 home: on the way to the car, the parent walks in a straight line from the table to the door, through the coffee table. Route them round it.
