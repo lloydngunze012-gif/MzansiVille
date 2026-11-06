@@ -14,6 +14,7 @@ import { cliffhanger } from '../src/engine/dayend.js'
 import { MOMENTS, chooseMoment, momentCard, rollMoment } from '../src/engine/moments.js'
 import { BEATS } from '../src/engine/arcs.js'
 import { fridayTest } from '../src/engine/friday.js'
+import { mealCost } from '../src/engine/grocer.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
@@ -22,6 +23,7 @@ import {
   advancePhase,
   applyAction,
   beginNextDay,
+  buy,
   chooseEvent,
   createRun,
   endDay,
@@ -45,6 +47,7 @@ const district = buildDistrict({
   twists: JSON.parse(read('twists.json')),
   jobs: JSON.parse(read('jobs.json')),
   shop: JSON.parse(read('shop.json')),
+  greenway: JSON.parse(read('greenway.json')),
 })
 
 const character = {
@@ -632,7 +635,7 @@ check('a campus day changes the same stats as the action list', () => {
   assert.ok(morning.includes('wake_phone'))
   assert.equal(applyAction(district, run, 'wake_phone', rng).ok, true)
   advancePhase(district, run, rng)
-  assert.ok(actionsAt(district, run, 'bus_station').some((action) => action.id === 'go_walk'))
+  assert.ok(actionsAt(district, run, 'gate').some((action) => action.id === 'go_walk'))
   assert.equal(applyAction(district, run, 'go_walk', rng).ok, true)
   advancePhase(district, run, rng)
   assert.ok(actionsAt(district, run, 'smig').some((action) => action.id === 'lecture_attend'))
@@ -755,6 +758,69 @@ check('day 1 morning lines exist for every key the morning uses', () => {
   const ids = [...src.matchAll(/setStep\('([^']+)'\)/g)].map((m) => m[1])
   const internal = new Set(['greet', 'snooze', 'eating'])
   for (const id of ids) assert.ok(internal.has(id) || lines.steps[id], `no steps.${id} in day1_morning.json`)
+})
+
+
+// ---- Greenway Grocer and the house fridge (owner, 6 Nov) ----
+check('Greenway: 12 items on three shelves, at the asked prices', () => {
+  const g = district.greenway
+  assert.equal(g.items.length, 12)
+  assert.deepEqual(g.shelves.map((x) => x.id), ['groceries', 'essentials', 'treats'])
+  const price = Object.fromEntries(g.items.map((i) => [i.id, i.price]))
+  assert.deepEqual(price, { bread: 18, eggs: 45, noodles: 8, pasta: 25, chicken: 70, colddrink: 15, airtime: 29, data: 49, toiletries: 40, chips: 14, chocolate: 18, energydrink: 22 })
+  assert.ok(district.places.some((p) => p.id === 'greenway' && p.name === 'Greenway Grocer'))
+  assert.ok(!district.places.some((p) => p.id === 'bus_station'))
+})
+
+check('groceries go in the fridge; cooking needs them, uses them, names what is missing', () => {
+  const run = createRun(district, character)
+  run.phase = 'leisure'
+  const dinner = district.activities.find((a) => a.id === 'house_dinner')
+  const out = actionState(district, run, dinner)
+  assert.equal(out.disabled, true)
+  assert.equal(out.reason, 'Out of pasta and chicken')
+  assert.equal(out.greenway, true)
+  const money = run.stats.money
+  assert.equal(buy(district, run, 'pasta').ok, true)
+  assert.equal(buy(district, run, 'chicken').ok, true)
+  assert.equal(run.stats.money, money - 95)
+  assert.equal(run.fridge.pasta, 4)
+  assert.equal(run.fridge.chicken, 4)
+  assert.equal(actionState(district, run, dinner).disabled, false)
+  const before = run.stats.money
+  assert.equal(applyAction(district, run, 'house_dinner', () => 0.99).ok, true)
+  assert.equal(run.stats.money, before, 'paid at the shop, not at the stove')
+  assert.equal(run.fridge.pasta, 3)
+  assert.equal(run.fridge.chicken, 3)
+  assert.equal(run.fridge.leftovers, 1)
+})
+
+check('cooking at home costs less per meal than the caf, and takes longer', () => {
+  const caf = district.activities.find((a) => a.id === 'cafeteria_meal')
+  const dinner = district.activities.find((a) => a.id === 'house_dinner')
+  const cost = mealCost(district, 'house_dinner')
+  assert.ok(cost < -caf.deltas.money, `R${cost} at home vs R${-caf.deltas.money} at the caf`)
+  assert.ok(dinner.deltas.hunger >= caf.deltas.hunger)
+  assert.ok(dinner.slots > caf.slots, 'two slots at home, one at the caf')
+})
+
+check('essentials and treats count at once: the energy drink, airtime for calls', () => {
+  const run = createRun(district, character)
+  run.stats.energy = 50
+  buy(district, run, 'energydrink')
+  assert.equal(run.stats.energy, 70)
+  run.phase = 'leisure'
+  run.credit = 0
+  const call = district.activities.find((a) => a.id === 'call_home')
+  assert.equal(actionState(district, run, call).reason, 'No airtime or data')
+  buy(district, run, 'airtime')
+  assert.equal(run.credit, 3)
+  const ok = actionState(district, run, call)
+  assert.ok(!ok.disabled || ok.reason !== 'No airtime or data')
+  const poor = createRun(district, character)
+  poor.stats.money = 5
+  assert.equal(buy(district, poor, 'chicken').ok, false)
+  assert.equal(poor.fridge.chicken || 0, 0)
 })
 
 console.log(`${passed} checks passed`)

@@ -5,6 +5,7 @@ import { checkGoals, goalText, goalsCard, startGoals, trackToday } from './goals
 import { FUNDING_MONEY } from '../story.js'
 import { identityCard, identityFromAction } from './identity.js'
 import { endOfDay } from './dayend.js'
+import { buyItem, shortfall, stock, useFor } from './grocer.js'
 import { rollMoment } from './moments.js'
 import { beatCard, dueBeat } from './arcs.js'
 import { fridayCard, fridayTest } from './friday.js'
@@ -110,6 +111,10 @@ export function actionState(district, run, action) {
   if (run.noodlesOnly && action.tags.includes('meal') && action.deltas.money < 0 && action.id !== 'wake_noodles') {
     return { disabled: true, hidden: false, reason: 'Noodles only until a shift' }
   }
+  // Cooking needs what's in your fridge; calls need airtime (grocer.js). Out of
+  // something: say what, and Greenway is one tap away.
+  const short = shortfall(district, run, action)
+  if (short) return { disabled: true, hidden: false, reason: short.reason, missing: short.missing, greenway: true }
   // (going to bed is always possible: late at night with nothing left, bed is the way on)
   if (action.slots > run.slotsLeft && !action.tags.includes('sleep')) return { disabled: true, hidden: false, reason: `Needs ${action.slots} slots` }
   return { disabled: false, hidden: false, reason: '' }
@@ -519,6 +524,8 @@ export function createRun(district, character, now = new Date()) {
     chatStamps: [],
   }
   rememberStat(run)
+  // Your house fridge and phone credit: a starter pack (greenway.json).
+  stock(district, run)
   openDay(district, run)
   return run
 }
@@ -628,6 +635,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   applyStats(run, deltas)
   trackToday(run, action, deltas)
   spendTime(district, run, action)
+  useFor(district, run, action)
 
   cards.unshift({ id: `result-${action.id}-${run.day}`, kind: 'result', title: action.name, text: formatDelta(deltas) })
   run.lastEventLine = cards.find((card) => card.kind === 'twist')?.text || action.name
@@ -746,6 +754,13 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   }
   return { ok: true }
 }
+
+// Greenway Grocer: buy one item at the till (grocer.js). Groceries go in the fridge;
+// essentials and treats count at once.
+export function buy(district, run, itemId) {
+  return buyItem(district, run, itemId, applyStats)
+}
+export { stock }
 
 export function switchDistrict(run, nextDistrict) {
   run.character.districtId = nextDistrict.meta.id

@@ -17,6 +17,7 @@ import './cream.css'
 import { venueFor } from '../venues.js'
 import { MENUS } from '../menus.js'
 import { talkActions } from '../engine/talkactions.js'
+import { fridgeName, itemOf } from '../engine/grocer.js'
 
 // UI-only state that should not be saved.
 export const ui = { tip: '', gear: false, confirmReset: false, delta: null, notice: '', talk: null }
@@ -234,10 +235,36 @@ function isNight(run) {
   return m >= 18 * 60 || m < 6 * 60
 }
 
+// Greenway Grocer's shop card: three shelves, a card per item with its price; groceries
+// say what goes in your fridge, essentials and treats what they do.
+function shopHtml(district, run) {
+  const g = district.greenway
+  const money = run.stats.money || 0
+  const fridge = run.fridge || {}
+  return g.shelves.map((shelf) => `<div class="g-row-title gw-shelf"><span>${esc(shelf.label)}</span><small>${esc(shelf.note || '')}</small></div>
+    <div class="gw-items">${g.items.filter((item) => item.shelf === shelf.id).map((item) => {
+      const short = money < item.price
+      const what = item.shelf === 'groceries'
+        ? `+${item.portions || 1} ${esc(item.unit || '')}${fridge[item.id] ? ` · ${fridge[item.id]} at home` : ''}`
+        : esc(item.says || Object.entries(item.effects || {}).map(([k, v]) => `${v > 0 ? '+' : ''}${v} ${k === 'hunger' ? 'Fullness' : k[0].toUpperCase() + k.slice(1)}`).join(' · '))
+      return `<button type="button" class="gw-item" data-act="buy" data-id="${item.id}"${short ? ' disabled' : ''}><span class="gw-ic">${item.icon}</span><b>${esc(item.name)}</b><span class="gw-price">${formatMoney(item.price)}</span><small>${short ? 'Not enough money' : what}</small></button>`
+    }).join('')}</div>`).join('')
+}
+
+// Your house fridge: what's in it (portions), on your house's card.
+function fridgeHtml(district, run) {
+  const fridge = run.fridge || {}
+  const have = Object.entries(fridge).filter(([, n]) => n > 0)
+  const chips = have.map(([id, n]) => `<span class="gw-have">${itemOf(district, id)?.icon || '\u{1F372}'} ${esc(fridgeName(district, id))} <b>${n}</b></span>`).join('')
+  return `<div class="g-row-title"><span>\u{1F9CA} Your fridge</span><small>${(run.credit || 0)} phone credit</small></div>
+    <div class="gw-fridge">${chips || '<span class="gw-empty">Empty. Greenway Grocer is by the gate.</span>'}<button type="button" class="gw-go" data-act="go-greenway">\u{1F6D2} Shop at Greenway</button></div>`
+}
+
 function sheetHtml(district, run, placeId) {
   const place = district.places.find((p) => p.id === placeId)
   if (!place) return ''
   const story = STORY[placeId]
+  const isHouse = (district.houses || []).some((h) => h.place === placeId)
   const items = visibleActions(district, run, placeId)
   const status = placeStatus(district, run, placeId)
   const rows = items.map(({ action, state }) => {
@@ -251,13 +278,15 @@ function sheetHtml(district, run, placeId) {
     const price = money < 0 ? formatMoney(-money) : money > 0 ? `Earn ${formatMoney(money)}` : 'Free'
     const fx = { ...action.deltas }
     delete fx.money
-    return `<button class="g-act g-card" type="button" data-act="do" data-id="${action.id}" data-place="${placeId}"${state.disabled ? ' disabled' : ''}>
+    const card = `<button class="g-act g-card" type="button" data-act="do" data-id="${action.id}" data-place="${placeId}"${state.disabled ? ' disabled' : ''}>
       <span class="g-card-top"><span class="g-card-ic">${story?.icon || ICON[place.kind] || '\u2728'}</span><small>\u23F1 ${mins} min</small></span>
       <b class="g-price${money > 0 ? ' earn' : ''}">${price}</b>
       <strong>${esc(action.name)}</strong>
       <span class="g-act-fx">${effectChips(fx)}</span>
       ${state.disabled ? `<span class="g-why">${esc(state.reason)}</span>` : warn}
     </button>`
+    // Out of an ingredient (or airtime): the card says what, and Greenway is one tap away.
+    return state.greenway ? `<div class="gw-wrap">${card}<button type="button" class="gw-take" data-act="go-greenway" data-for="${action.id}">\u{1F6D2} Take me to Greenway</button></div>` : card
   }).join('')
   const later = opensAt(district, run, placeId)
   // Say plainly which later phases have something here today.
@@ -279,8 +308,10 @@ function sheetHtml(district, run, placeId) {
     <div class="g-grab"></div>
     <div class="g-sheet-head"><span class="g-sheet-ic">${story?.icon || ICON[place.kind] || ''}</span><div><h2>${esc(place.name)}</h2><p class="g-flavour" data-lines="${esc(JSON.stringify(lines))}">${esc(lines[0] || '')}</p></div><button type="button" class="g-x" data-act="close-sheet" aria-label="Close">\u00d7</button></div>
     ${spots ? `<div class="g-row-title"><span>Spots here</span><small>\u{1F463} Tap one to walk there</small></div><div class="g-spots">${spots}</div>` : ''}
-    <div class="g-row-title"><span>Things to do</span>${rows ? `<small>${run.slotsLeft} of ${run.slotsTotal} slots left</small>` : ''}</div>
-    <div class="g-acts g-cards">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>
+    ${placeId === 'greenway' && district.greenway ? shopHtml(district, run) : ''}
+    ${isHouse ? fridgeHtml(district, run) : ''}
+    ${placeId === 'greenway' && !rows ? '' : `<div class="g-row-title"><span>Things to do</span>${rows ? `<small>${run.slotsLeft} of ${run.slotsTotal} slots left</small>` : ''}</div>
+    <div class="g-acts g-cards">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>`}
   </section>`
 }
 

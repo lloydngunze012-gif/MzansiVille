@@ -186,6 +186,12 @@ export function buildRoom(kind, opts = {}) {
     box(2.2, 1.18, 0.02, 0x2b6fd0, 2.6, 1.7, -D / 2 + 0.21, { emissive: 0x2b6fd0, emissiveIntensity: 0.55 })
     box(2.2, 0.95, 0.6, 0xd8d2c4, -W / 2 + 0.5, 0.47, 1.2)
     box(0.25, 0.3, 0.25, 0xc0c0c8, -W / 2 + 0.5, 1.1, 1.0, { metalness: 0.4 })
+    // The house fridge (Greenway groceries go in here), beside the kettle corner.
+    const fridge = box(0.75, 1.85, 0.7, 0xf2f3ef, -W / 2 + 0.5, 0.93, -0.35, { roughness: 0.35 })
+    fridge.name = 'fridge'
+    box(0.04, 0.5, 0.05, 0x9aa0a6, -W / 2 + 0.9, 1.3, -0.15, { metalness: 0.5 })
+    box(0.02, 0.06, 0.6, 0xd8dad6, -W / 2 + 0.88, 1.25, -0.35)
+    anchors.fridge = { ...at(-W / 2 + 1.35, -0.35), rot: -Math.PI / 2 }
     const banner = houseBanner(house, 1.1, 2.6)
     banner.position.set(-1.4, 2.2, -D / 2 + 0.13)
     group.add(banner)

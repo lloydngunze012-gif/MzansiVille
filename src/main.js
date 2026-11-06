@@ -8,8 +8,10 @@ import {
   applyAction,
   beginNextDay,
   chooseEvent,
+  buy,
   createRun,
   dismissCard,
+  stock,
 } from './engine/sim.js'
 import {
   authEnabled,
@@ -83,6 +85,8 @@ const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.
 let save = loadSave()
 // A new visit starts where people are (the Quad), not at the door you walked out of earlier.
 if (save.run?.outDoor) delete save.run.outDoor
+// (a save from before Greenway Grocer: the starter fridge and phone credit)
+if (save.run) stock(districtById(save.run.character?.districtId || defaultDistrictId), save.run)
 if (save.run) save.run.noMoments = NO_MOMENTS
 // The houses replaced the residences (build plan, Piece 0): an old residence moves into
 // its house (houses.json "was"; any other old name, a house of its own, always the same).
@@ -1461,6 +1465,24 @@ app.addEventListener('click', async (event) => {
     // Attending the day-1 lecture from a sheet or the map plays the lecture itself.
     blip()
     go('lecture')
+    return
+  }
+  // Greenway Grocer: buy at the till (money drops, the fridge fills, or it counts at once).
+  if (act === 'buy' && save.run) {
+    const res = buy(district, save.run, button.dataset.id)
+    toast(res.ok ? res.text : `\u274C ${res.text}`)
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { gesture: 'interact-right' } }))
+      blip(500)
+    }
+    persist()
+    paint()
+    return
+  }
+  // Out of something: walk to Greenway (its card opens at the door).
+  if (act === 'go-greenway') {
+    go('play')
+    setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-go-place', { detail: { id: 'greenway' } })), 50)
     return
   }
   if (act === 'do') {

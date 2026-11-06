@@ -17,7 +17,6 @@ const CASES = [
   ['eng_workshop', 'engineering', 'leisure', 960],
   ['gate_vetkoek', 'gate', 'transit', 500],
   ['sport_pickup', 'sports_centre', 'social', 780],
-  ['bus_town', 'bus_station', 'social', 780],
   ['res_o_cook', 'res_o', 'leisure', 960],
   ['call_home', 'res_o', 'leisure', 960],
   ['sleep', 'res_o', 'night', 1290],

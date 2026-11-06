@@ -153,7 +153,42 @@ export function upgradeBuilding(group, building) {
   return true
 }
 
-// Hand-built: an arched sports hall, a bus station shelter, the main gate.
+// Greenway Grocer's shop front, on the ordinary building (owner, 6 Nov): a green awning,
+// big shop windows with shelves behind them, the name on a green fascia, and a till
+// counter by the door. Green and white, an invented name, no real chain's look.
+export function dressGrocer(group, building) {
+  const { w, d } = building
+  const mat = (color, extra) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, ...extra })
+  const add = (mesh, x, y, z, name) => { mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; if (name) mesh.name = name; group.add(mesh); return mesh }
+  const front = d / 2
+  // The green fascia band and the awning over the front.
+  add(new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, 0.7, 0.12), mat(0x2f8f5b)), 0, 3.55, front + 0.06, 'fascia')
+  const awning = add(new THREE.Mesh(new THREE.BoxGeometry(w - 0.4, 0.12, 1.4), mat(0x3aa86b)), 0, 2.75, front + 0.7, 'awning')
+  awning.rotation.x = 0.18
+  for (let i = 0; i < 6; i++) add(new THREE.Mesh(new THREE.BoxGeometry((w - 0.4) / 12, 0.13, 1.42), mat(0xffffff)), -((w - 0.4) / 2) + ((w - 0.4) / 6) * (i + 0.5) + (w - 0.4) / 24, 2.76, front + 0.7).rotation.x = 0.18
+  // Shop windows either side of the door, shelves of colour behind the glass.
+  for (const side of [-1, 1]) {
+    const cx = side * (w / 4 + 0.35)
+    add(new THREE.Mesh(new THREE.BoxGeometry(w / 2 - 1.9, 1.7, 0.04), mat(0xdff5ea, { transparent: true, opacity: 0.35, roughness: 0.1 })), cx, 1.35, front + 0.36, 'shop-window')
+    add(new THREE.Mesh(new THREE.BoxGeometry(w / 2 - 1.8, 1.8, 0.04), mat(0xffffff)), cx, 1.35, front + 0.02)
+    for (let row = 0; row < 3; row++) {
+      add(new THREE.Mesh(new THREE.BoxGeometry(w / 2 - 2.1, 0.05, 0.28), mat(0xd9dcd6)), cx, 0.75 + row * 0.5, front + 0.18)
+      for (let k = 0; k < 6; k++) add(new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.2), mat([0xe94b3c, 0xf4c430, 0x3aa86b, 0x2f7fd0, 0xff8a3d, 0xf2f2f2][(k + row) % 6])), cx - (w / 2 - 2.4) / 2 + k * ((w / 2 - 2.4) / 5), 0.92 + row * 0.5, front + 0.18)
+    }
+  }
+  // The till counter beside the door, under the awning: where you pay.
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.95, 0.6), mat(0x2f8f5b)), 1.6, 0.48, front + 0.55, 'till')
+  add(new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.06, 0.65), mat(0xffffff)), 1.6, 0.98, front + 0.55)
+  add(new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.22, 0.28), mat(0x22262a)), 1.85, 1.12, front + 0.5, 'till-screen')
+  // Its door in its green.
+  const door = group.getObjectByName('door')
+  if (door) door.material = mat(0x2f8f5b, { emissive: 0x2f8f5b, emissiveIntensity: 0.12 })
+  const sign = facadeSign('GREENWAY GROCER', '#2f8f5b', 3.6)
+  sign.position.set(0, 3.55, front + 0.13)
+  group.add(sign)
+}
+
+// Hand-built: an arched sports hall, the main gate.
 export function buildSpecial(group, building) {
   const mat = (color, extra) => new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra })
   const add = (mesh, x, y, z) => { mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); return mesh }
@@ -172,16 +207,6 @@ export function buildSpecial(group, building) {
     }
     const sign = facadeSign('SPORTS CENTRE', '#1f5a3a', 4.2)
     sign.position.set(0, 2.6, d / 2 + 0.06)
-    group.add(sign)
-    return true
-  }
-  if (building.id === 'bus_station') {
-    const { w, d } = building
-    for (const x of [-w / 2 + 0.4, 0, w / 2 - 0.4]) for (const z of [-d / 2 + 0.4, d / 2 - 0.4]) add(new THREE.Mesh(new THREE.BoxGeometry(0.18, 3, 0.18), mat(0x5a6068)), x, 1.5, z)
-    add(new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 0.25, d + 0.8), mat(0x2c6a9a)), 0, 3.1, 0).name = 'canopy'
-    add(new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.45, 0.5), mat(0x9a6a40)), 0, 0.45, -d / 2 + 0.6)
-    const sign = facadeSign('BUS STATION', '#2c6a9a', 4)
-    sign.position.set(0, 2.5, d / 2 + 0.45)
     group.add(sign)
     return true
   }

@@ -62,7 +62,7 @@ for (const [place, hour] of [['quad', 21], ['quad', 12], ['cafeteria', 21]]) {
 }
 
 // Look-check shots (owner rule): buildings, labels and surroundings from the player's camera.
-for (const [place, hour, cam] of [['gate', 12, 'sims'], ['library', 12, 'sims'], ['smig', 12, 'sims'], ['res_o', 12, 'sims'], ['sports_centre', 12, 'sims'], ['bus_station', 12, 'sims'], ['gate', 21, 'sims'], ['smig', 21, 'sims'], ['gate', 12, 'top']]) {
+for (const [place, hour, cam] of [['gate', 12, 'sims'], ['library', 12, 'sims'], ['smig', 12, 'sims'], ['res_o', 12, 'sims'], ['sports_centre', 12, 'sims'], ['greenway', 12, 'sims'], ['gate', 21, 'sims'], ['smig', 21, 'sims'], ['gate', 12, 'top']]) {
   test(`look: ${place} ${cam} at ${hour}:00`, async ({ page }) => {
     fs.mkdirSync(OUT, { recursive: true })
     await page.goto(`/?fast=1&shot=cam-${cam}&spawn=${place}&hour=${hour}`)

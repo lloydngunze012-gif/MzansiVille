@@ -82,5 +82,14 @@
         "Clean audits, clean bathrooms. Boring? Maybe. Working? Yes."
       ]
     }
-  ]
+  ],
+  "greenway": {
+    "icon": "🛒",
+    "sign": "GREENWAY GROCER",
+    "flavour": {
+      "day": ["Fresh bread at the front, two-minute noodles by the hundred at the back.", "A student counts coins at the till for one more energy drink.", "The aircon is the best thing on campus and everyone knows it."],
+      "night": ["Open late. The lights are white, the floor is clean, the chips are on special.", "Someone buys pasta and chicken like they've got a plan."]
+    },
+    "spots": []
+  }
 }

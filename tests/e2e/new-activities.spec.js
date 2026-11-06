@@ -46,6 +46,9 @@ async function setPhase(page, phase, minutes) {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
     Object.assign(save.run, { morningDone: true, queue: [], phase: p, minutes: m, lectureResolved: true, slotsLeft: 5 })
     Object.assign(save.run.stats, { money: 1500, energy: 100, hunger: 50 })
+    // (cooking needs what's in the fridge since Greenway Grocer: a full one)
+    save.run.fridge = { noodles: 9, bread: 9, eggs: 9, pasta: 9, chicken: 9, colddrink: 9, leftovers: 9 }
+    save.run.credit = 9
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   }, [phase, minutes])

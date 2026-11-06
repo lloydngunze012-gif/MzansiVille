@@ -300,3 +300,22 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .en-done { display: flex; flex-direction: column; gap: 10px; }
 .en-done .pcard { margin: 0 auto; width: 100%; }
 .en-from { margin: 0; text-align: center; font: 700 14px system-ui; color: var(--cr-muted); }
+
+/* ---- Greenway Grocer (green and white, its own look) and your house fridge ---- */
+.gw-shelf span { color: #1f7a4a; }
+.gw-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 4px; }
+.gw-item { all: unset; cursor: pointer; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 96px; padding: 9px 9px 8px; border-radius: 14px; background: #fff; border: 2px solid #cfe8d9; box-shadow: 0 3px 0 #b7dcc6; }
+.gw-item:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #b7dcc6; background: #effaf3; }
+.gw-item:disabled { opacity: .55; box-shadow: none; }
+.gw-ic { font-size: 22px; line-height: 1; }
+.gw-item b { font: 800 13.5px/1.15 system-ui; color: var(--cr-ink); }
+.gw-price { font: 900 15px var(--display, system-ui); color: #1f7a4a; }
+.gw-item small { font: 600 11.5px/1.2 system-ui; color: var(--cr-muted); }
+.gw-fridge { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.gw-have { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border-radius: 999px; background: #fff; border: 1.5px solid #cfe8d9; font: 700 13px system-ui; color: var(--cr-ink); text-transform: capitalize; }
+.gw-have b { color: #1f7a4a; }
+.gw-empty { font: 600 13px system-ui; color: var(--cr-muted); }
+.gw-go, .gw-take { all: unset; cursor: pointer; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; border-radius: 999px; background: #2f8f5b; color: #fff; font: 800 14px system-ui; box-shadow: 0 3px 0 #1f6b43; }
+.gw-go { margin-left: auto; }
+.gw-wrap { display: flex; flex-direction: column; gap: 6px; }
+.gw-take { width: 100%; }

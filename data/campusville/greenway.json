@@ -1,0 +1,38 @@
+{
+  "name": "Greenway Grocer",
+  "tagline": "Fresh, cheap, open late. Everything a res fridge needs.",
+  "note": "An invented shop: green and white, no real chain's name, colours, layout or logo.",
+  "shelves": [
+    { "id": "groceries", "label": "Groceries", "note": "Go in your house fridge. Cook them in the common room." },
+    { "id": "essentials", "label": "Essentials", "note": "Count straight away." },
+    { "id": "treats", "label": "Treats", "note": "Eaten on the spot." }
+  ],
+  "items": [
+    { "id": "bread", "name": "Bread", "shelf": "groceries", "price": 18, "icon": "🍞", "portions": 8, "unit": "slices" },
+    { "id": "eggs", "name": "Eggs (6)", "shelf": "groceries", "price": 45, "icon": "🥚", "portions": 6, "unit": "eggs" },
+    { "id": "noodles", "name": "Two-minute noodles", "shelf": "groceries", "price": 8, "icon": "🍜", "portions": 1, "unit": "packet" },
+    { "id": "pasta", "name": "Pasta", "shelf": "groceries", "price": 25, "icon": "🍝", "portions": 4, "unit": "meals" },
+    { "id": "chicken", "name": "Chicken", "shelf": "groceries", "price": 70, "icon": "🍗", "portions": 4, "unit": "portions" },
+    { "id": "colddrink", "name": "Cold drink", "shelf": "groceries", "price": 15, "icon": "🥤", "portions": 1, "unit": "can" },
+    { "id": "airtime", "name": "Airtime", "shelf": "essentials", "price": 29, "icon": "📱", "gives": { "credit": 3 }, "says": "3 calls or messages" },
+    { "id": "data", "name": "Data bundle", "shelf": "essentials", "price": 49, "icon": "📶", "gives": { "credit": 5 }, "effects": { "social": 2 }, "says": "5 calls or messages, and you're back online" },
+    { "id": "toiletries", "name": "Toiletries", "shelf": "essentials", "price": 40, "icon": "🧴", "effects": { "energy": 4, "social": 3 }, "says": "Fresh: +Social" },
+    { "id": "chips", "name": "Chips", "shelf": "treats", "price": 14, "icon": "🥔", "effects": { "hunger": 8 } },
+    { "id": "chocolate", "name": "Chocolate", "shelf": "treats", "price": 18, "icon": "🍫", "effects": { "hunger": 6, "energy": 4 } },
+    { "id": "energydrink", "name": "Energy drink", "shelf": "treats", "price": 22, "icon": "⚡", "effects": { "energy": 20, "hunger": -2 } }
+  ],
+  "phoneTags": ["phone"],
+  "phoneActions": ["wake_phone", "call_home"],
+  "actionGives": { "house_airtime": { "credit": 1 } },
+  "starter": { "fridge": { "noodles": 2, "bread": 4 }, "credit": 2 },
+  "recipes": {
+    "house_noodles": { "uses": { "noodles": 1 } },
+    "house_toast": { "uses": { "bread": 2 } },
+    "house_dinner": { "uses": { "pasta": 1, "chicken": 1 }, "makes": { "leftovers": 1 } },
+    "house_braai": { "uses": { "chicken": 2, "colddrink": 1 } },
+    "house_oil": { "uses": { "pasta": 1 }, "makes": { "leftovers": 1 } },
+    "house_eggs": { "uses": { "eggs": 2, "bread": 2 } },
+    "house_leftovers": { "uses": { "leftovers": 1 } }
+  },
+  "fridgeNames": { "leftovers": "Leftovers" }
+}

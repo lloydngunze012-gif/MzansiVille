@@ -71,6 +71,16 @@ export function residence(letter, tint = '#d9774a') {
 }
 
 
+// Greenway Grocer: a white shop, green awning and fascia, a trolley.
+function grocer() {
+  return svg(76, 52, `${SHADOW}
+    <rect x="8" y="14" width="56" height="30" rx="3" fill="#f6f7f3" stroke="#2f8f5b" stroke-width="2"/>
+    <rect x="6" y="10" width="60" height="7" rx="2" fill="#2f8f5b"/>
+    ${[10, 22, 34, 46, 58].map((x) => `<rect x="${x}" y="17" width="6" height="5" fill="#3aa86b"/>`).join('')}
+    <rect x="14" y="26" width="16" height="12" rx="1" fill="#cfeee0"/><rect x="42" y="26" width="16" height="12" rx="1" fill="#cfeee0"/>
+    <rect x="32" y="28" width="8" height="16" rx="1" fill="#2f8f5b"/>`)
+}
+
 function busStation() {
   return svg(76, 52, `${SHADOW}
     <rect x="4" y="12" width="30" height="4" rx="1.5" fill="#5b23c9"/>
@@ -119,7 +129,7 @@ export const ART = {
   science: () => lecture('#3d7be0', '\u{1F52C}'),
   law: () => lecture('#8a3346', '\u2696\uFE0F'),
   engineering: () => lecture('#d0782a', '\u2699\uFE0F'),
-  bus_station: busStation,
+  greenway: grocer,
   gate: gate,
 }
 
@@ -132,7 +142,7 @@ export const LAYOUT = {
   smig: [17, 41], quad: [47, 45], cafeteria: [79, 43],
   health_sciences: [80, 59], res_other: [13.5, 57], res_j: [4, 60],
   res_r: [43, 66], res_o: [15, 75], res_s: [31, 90], res_k: [52, 76],
-  bus_station: [65, 75], gate: [57, 93], off_campus: [83, 88],
+  greenway: [65, 75], gate: [57, 93], off_campus: [83, 88],
 }
 
 // Curved paved paths (viewBox 0-100, stretched). Hand-placed to avoid the

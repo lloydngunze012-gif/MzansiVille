@@ -3,7 +3,7 @@ const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
   'Engineering Lecture Venue': 'Engineering', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
-  'Health Sciences Lecture Venue': 'Health Sci', 'Main Bus Station': 'Bus station',
+  'Health Sciences Lecture Venue': 'Health Sci', 'Greenway Grocer': 'Greenway',
 }
 
 // The map's frame: every building fits, with a little margin.
@@ -19,6 +19,7 @@ const KIND_ICON = {
   hub: '◆',
   food: '🍽',
   transit: '🚌',
+  shop: '🛒',
   venue: '⚽',
   study: '📖',
   lecture: '🎓',

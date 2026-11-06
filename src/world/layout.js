@@ -14,6 +14,8 @@ const KIND = {
   study: { w: 12, d: 9, h: 5.4, color: 0x6d8cae, roof: 0x4d6c8c },
   lecture: { w: 11, d: 8, h: 5, color: 0xd07a52, roof: 0xa85c38 },
   residence: { w: 9, d: 11, h: 8, color: 0xc4a484, roof: 0x8d6b4a },
+  // Greenway Grocer: white walls, a green roof (its own colours, no real chain's)
+  shop: { w: 11, d: 7, h: 4.2, color: 0xf6f7f3, roof: 0x2f8f5b },
 }
 
 // Places with their own shape. open: no walls (the Quad is a plaza; its footprint

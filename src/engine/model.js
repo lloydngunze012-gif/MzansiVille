@@ -141,6 +141,8 @@ export function buildDistrict(parts) {
     courses: parts.courses || [],
     besties: parts.besties || { names: ['Friend'], moments: [] },
     shop: parts.shop || { brand: 'Shop', url: '', codePrefix: 'ORG-', codeLength: 4, warning: 'This links to a real shop' },
+    // Greenway Grocer: its shelves, prices, recipes, starter fridge (greenway.json)
+    greenway: parts.greenway || null,
   }
 }
 

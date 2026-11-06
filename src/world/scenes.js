@@ -128,6 +128,9 @@ export const SCENE_OF = {
   house_couch_study: ['sitRead', { room: 'lounge' }],
   house_shedding: ['sitRelax', { room: 'lounge', lines: ['The lights go. Someone finds a candle. Nobody leaves.'] }],
   house_oil: ['cook', { what: 'a midnight pot', friend: true }],
+  // (Greenway Grocer: cooking from your own fridge)
+  house_dinner: ['cook', { what: 'pasta and chicken' }],
+  house_eggs: ['cook', { what: 'eggs on toast' }],
   caf_coffee: ['queueBuy', { food: 'coffee', eat: true }],
   caf_porridge: ['queueBuy', { food: 'porridge', eat: true }],
   caf_russian: ['queueBuy', { food: 'a Russian and chips', eat: true }],

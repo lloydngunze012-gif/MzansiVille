@@ -10,10 +10,11 @@ import besties from '../../data/campusville/besties.json'
 import twists from '../../data/campusville/twists.json'
 import jobs from '../../data/campusville/jobs.json'
 import shop from '../../data/campusville/shop.json'
+import greenway from '../../data/campusville/greenway.json'
 
 export const districts = {
   campusville: buildDistrict({
-    meta, places, activities, houses, events, hours, courses, besties, twists, jobs, shop,
+    meta, places, activities, houses, events, hours, courses, besties, twists, jobs, shop, greenway,
   }),
 }
 

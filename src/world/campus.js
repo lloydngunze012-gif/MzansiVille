@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { buildingLayout } from './layout.js'
 import { buildGrid } from './nav.js'
 import { dressPlaces } from './dress.js'
-import { applyBuildingNight, buildSpecial, setWindowBuilder, upgradeBuilding } from './buildings.js'
+import { applyBuildingNight, buildSpecial, dressGrocer, setWindowBuilder, upgradeBuilding } from './buildings.js'
 import { addSurroundings } from './surroundings.js'
 import { loadGlb, modelManifest, modelUrl } from './models.js'
 
@@ -164,6 +164,7 @@ function buildingMesh(building, home) {
     hinge.add(door)
     group.add(hinge)
     if (!upgradeBuilding(group, building)) addWindows(group, building)
+    if (building.id === 'greenway') dressGrocer(group, building)
   }
   const beacon = new THREE.Mesh(
     new THREE.SphereGeometry(0.22, 12, 10),
@@ -179,7 +180,7 @@ function buildingMesh(building, home) {
   badge.visible = false
   group.add(badge)
   const label = labelSprite(shortName(building.name), home)
-  const LABEL_Y = { sports_centre: 8, gate: 7, bus_station: 4.6 }
+  const LABEL_Y = { sports_centre: 8, gate: 7, greenway: 6 }
   label.position.y = building.open ? 4.8 : LABEL_Y[building.id] || Math.min(building.h + 1.3, 5.6)
   group.add(label)
   return group
