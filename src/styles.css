@@ -783,6 +783,13 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .tc-continue { min-height: 52px; border-radius: 16px; border: 3px solid #fff; background: rgba(123,63,228,.9); color: #fff; font: 900 17px var(--display, system-ui); opacity: 0; animation: tc-pop .55s .55s cubic-bezier(.2,1.6,.4,1) forwards; transition: transform .08s; }
 .tc-start:active { transform: translateY(4px); box-shadow: 0 1px 0 #1c1915; } .tc-continue:active { transform: scale(.97); }
 .tc-start:focus-visible, .tc-continue:focus-visible, .tc-links a:focus-visible { outline: 3px solid #7cc6e8; outline-offset: 3px; }
+.tc-over { align-self: center; min-height: 44px; padding: 0 14px; border: 0; background: transparent; color: #fff; font: 700 14px system-ui; text-decoration: underline; text-underline-offset: 3px; text-shadow: 0 1px 4px #000; opacity: 0; animation: tc-pop .4s .6s ease-out forwards; }
+.tc-restart { padding: 12px 14px; border-radius: 16px; background: #fffaf0; color: #1c1915; text-align: center; font: 600 14px/1.35 system-ui; }
+.tc-restart p { margin: 0 0 10px; }
+.tc-restart div { display: flex; gap: 8px; }
+.tc-restart button { flex: 1; min-height: 44px; border-radius: 12px; font: 800 14px system-ui; }
+.tc-yes { border: 0; background: #c43b3b; color: #fff; }
+.tc-no { border: 1.5px solid #e3d8c4; background: #fff; color: #1c1915; }
 .tc-links { display: flex; justify-content: center; gap: 22px; opacity: 0; animation: tc-pop .4s .7s ease-out forwards; }
 .tc-links a { color: #fff; font: 700 13px system-ui; text-decoration: none; padding: 8px 4px; text-shadow: 0 1px 4px #000; }
 @keyframes tc-pop { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }

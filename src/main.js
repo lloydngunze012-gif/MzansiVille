@@ -1227,6 +1227,17 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'delete-ask') { ui.confirmDelete = true; paint(); return }
   if (act === 'delete-no') { ui.confirmDelete = false; paint(); return }
+  // Start over (the start screen): a fresh student; the rules stay agreed.
+  if (act === 'restart-ask') { ui.confirmRestart = true; paint(); return }
+  if (act === 'restart-no') { ui.confirmRestart = false; paint(); return }
+  if (act === 'restart-yes') {
+    ui.confirmRestart = false
+    save.run = null
+    draft = emptyDraft()
+    persist()
+    go('new')
+    return
+  }
   if (act === 'delete-yes') {
     ui.confirmDelete = false
     save.run = null

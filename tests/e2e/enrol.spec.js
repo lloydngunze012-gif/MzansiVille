@@ -115,3 +115,27 @@ test('Skip all the way: a valid student anyway', async ({ page }) => {
   expect(c.residence).toBeTruthy()
   expect(c.course).toBeTruthy()
 })
+
+test('Start over from the start screen: confirm, then a fresh enrolment', async ({ page }) => {
+  await page.goto('/?morning=0#/')
+  await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
+  await page.goto('/?morning=0&fresh=1#/new')
+  for (const step of ['look', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
+  await page.locator('[data-act="enrol-enter"]').tap()
+  await page.waitForURL(/#\/(play|morning)/)
+  await page.goto('/?morning=0&t=2#/')
+  await expect(page.locator('[data-act="continue"]')).toBeVisible()
+  await page.waitForTimeout(900)
+  await page.locator('[data-act="restart-ask"]').tap()
+  await expect(page.locator('.tc-restart')).toBeVisible()
+  await page.screenshot({ path: `${OUT}/5-start-over.png` })
+  // "Keep playing" keeps the student.
+  await page.locator('[data-act="restart-no"]').tap()
+  await expect(page.locator('[data-act="continue"]')).toBeVisible()
+  await page.locator('[data-act="restart-ask"]').tap()
+  await page.locator('[data-act="restart-yes"]').tap()
+  await expect(page.locator('.en[data-step="look"]')).toBeVisible()
+  const save = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')))
+  expect(save.run).toBeNull()
+  expect(save.rulesAccepted).toBe(true)
+})

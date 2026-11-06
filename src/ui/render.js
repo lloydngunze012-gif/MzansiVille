@@ -663,6 +663,9 @@ function title(state) {
     <div class="tc-foot">
       <p class="tc-tag">First year at the University of Mzansi. Your house, your crew, your story.</p>
       ${day ? `<button class="btn tc-start" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : '<button class="btn tc-start" type="button" data-act="start">Enrol</button>'}
+      ${day ? (ui.confirmRestart
+        ? `<div class="tc-restart" role="alertdialog" aria-label="Start over"><p>Start over as a new student? <b>${esc(state.save.run.character?.name || 'This student')}</b> and day ${day} are deleted from this phone.</p><div><button type="button" class="tc-yes" data-act="restart-yes">Yes, start over</button><button type="button" class="tc-no" data-act="restart-no">Keep playing</button></div></div>`
+        : '<button type="button" class="tc-over" data-act="restart-ask">Start over as a new student</button>') : ''}
       <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
     </div>
   </main>`
