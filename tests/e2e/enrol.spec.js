@@ -73,7 +73,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
     house: await page.locator('.pcard .pc-house').textContent(),
     bio: await page.locator('.pcard .pc-bio').textContent(),
     tags: await page.locator('.pcard .pc-tags li').allTextContents(),
-    from: await page.locator('.en-from').textContent().catch(() => ''),
+    from: await page.locator('.pcard .pc-from').textContent().catch(() => ''),
   }
   await page.waitForTimeout(600)
   await page.screenshot({ path: `${OUT}/4-card.png` })

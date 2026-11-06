@@ -26,6 +26,8 @@ export function cardOf(run, num = myIdentity().num) {
     house: c.residence || '',
     bio: cleanBio(c.bio || '').text,
     tags: { course: c.course || '', vibe: VIBES.includes(c.vibe) ? c.vibe : '', looking: LOOKING.includes(c.looking) ? c.looking : '' },
+    // (where you're from: optional, on the card under your name and handle)
+    from: cleanBio(c.from || '').text.slice(0, 30),
     year: run?.year || 1,
     days: run?.day || 1,
     badges,
@@ -36,8 +38,8 @@ export function cardOf(run, num = myIdentity().num) {
 
 // The part of the card that rides along with presence (small: no look, sent anyway).
 export function compactCard(run) {
-  const { handle, bio, tags, year, days, badges } = cardOf(run)
-  return { handle, bio, tags, year, days, badges }
+  const { handle, bio, tags, year, days, badges, from } = cardOf(run)
+  return { handle, bio, tags, year, days, badges, from }
 }
 
 // ---------- Saving your card ----------
@@ -86,7 +88,7 @@ function fromPresence(id) {
   const c = m.card || {}
   return {
     name: m.name, num: m.num, house: m.house, look: m.look,
-    handle: c.handle || '', bio: c.bio || '', tags: c.tags || {}, year: c.year || 1, days: c.days || 1, badges: c.badges || [], classOf: CLASS_OF,
+    handle: c.handle || '', bio: c.bio || '', tags: c.tags || {}, year: c.year || 1, days: c.days || 1, badges: c.badges || [], from: String(c.from || '').slice(0, 30), classOf: CLASS_OF,
   }
 }
 

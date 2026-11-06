@@ -256,6 +256,8 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 #world .bubble b i { font-style: normal; font-weight: 700; color: var(--cr-muted); }
 .chat-log .chat-who small { font-weight: 600; color: var(--cr-muted); text-decoration: none; }
 
+.pc-from { margin: 2px 0 0; font: 600 13px system-ui; color: var(--cr-muted); }
+
 /* ---- Enrolment (src/ui/enrol.js): three quick screens and your card ---- */
 .en { min-height: 100dvh; display: flex; flex-direction: column; background: var(--cr-bg-2); color: var(--cr-ink); padding: calc(6px + var(--safe-t, 0px)) 14px 0; box-sizing: border-box; max-width: 560px; margin: 0 auto; }
 .en-top { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; min-height: 48px; }

@@ -121,7 +121,6 @@ function cardStep(state, photo) {
   return `<div class="en-done">
       <h2 class="en-q">This is what other students see</h2>
       ${html}
-      ${card.from ? `<p class="en-from">\u{1F4CD} From ${esc(card.from)}</p>` : ''}
     </div>`
 }
 
