@@ -134,6 +134,8 @@ export function createCameraRig() {
         rig.pitch = Math.min(60 * Math.PI / 180, Math.max(45 * Math.PI / 180, rig.pitch + dy * 0.004))
       }
     },
+    // A scene's own starting distance for a mode (the day-1 home is smaller than campus).
+    setDistance(mode, d) { if (rig.distance[mode] !== undefined) rig.distance[mode] = d },
     zoom(delta) {
       if (rig.mode === 'top') rig.distance.top = Math.min(110, Math.max(28, rig.distance.top + delta * 1.4))
       else if (rig.mode === 'eye') rig.distance.eye = Math.min(5.2, Math.max(1.8, rig.distance.eye + delta * 0.15))

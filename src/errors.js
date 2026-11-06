@@ -12,9 +12,11 @@ function stepNow() {
   const world = document.getElementById('world')
   const lecture = document.getElementById('lecture3d')
   const morning = document.getElementById('morning3d')
+  const home = document.getElementById('home3d')
   const parts = []
   if (world?.dataset.activity) parts.push(`activity:${world.dataset.activity}/${world.dataset.activityStep || ''}`)
   if (morning?.dataset.step) parts.push(`morning:${morning.dataset.step}`)
+  if (home?.dataset.on === '1' && home.dataset.step) parts.push(`home:${home.dataset.step}`)
   if (lecture?.dataset.step) parts.push(`lecture:${lecture.dataset.step}`)
   if (world?.dataset.cam) parts.push(`cam:${world.dataset.cam}`)
   return parts.join(' ')

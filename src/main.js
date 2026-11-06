@@ -211,12 +211,21 @@ let worldTicket = 0
 
 let morningPromise = null
 
+// Day 1 opens at your family home (world/home.js: leaving home, the drive to UMzansi);
+// day 2 is your first morning in res (world/morning.js: the kettle, noodles, the shower).
 function morningWanted(run) {
   if (!run || run.mode !== 'play' || run.phase !== 'wake') return false
   const q = new URLSearchParams(location.search)
   if (q.get('shot') || q.get('morning') === '0' || !hasGL()) return false
   if (q.get('morning') === '1') return true
-  return run.day === 1 && !run.morningDone
+  if (run.day === 1) return !run.morningDone
+  if (run.day === 2) return !run.resMorningDone
+  return false
+}
+let homePromise = null
+function stopIntro() {
+  morningPromise?.then((mod) => mod.stopMorning())
+  homePromise?.then((mod) => mod.stopHome())
 }
 
 function morningSnapshot(run) {
@@ -228,13 +237,31 @@ function endMorning(skip, result) {
   const run = save.run
   if (!run) return
   if (skip && run.morningStart) { run.stats = { ...run.morningStart.stats }; run.minutes = run.morningStart.minutes }
-  run.morningDone = true
+  const homeDay = run.day === 1
+  if (homeDay) run.morningDone = true
+  else run.resMorningDone = true
   delete run.morningStart
-  // The morning already introduced the roommate (Zanele, or Sipho for a male student), so they are the bestie
-  // and the day 1 "New bestie" card would only repeat it.
+  // Your roommate (Zanele, or Sipho for a male student) meets you at your house door on day 1,
+  // so they are the bestie and the day 1 "New bestie" card would only repeat it.
   run.bestieName = roommateOf(run.character?.avatar)
   run.queue = run.queue.filter((card) => card.id !== 'bestie-1')
-  morningPromise?.then((mod) => mod.stopMorning())
+  stopIntro()
+  if (!skip && homeDay) {
+    // Leaving home: the car pulls up at the Main Gate (world/dropoff.js on campus). The goodbye,
+    // the money and the walk to your house door come first; today's goals after that.
+    const district = districtNow()
+    const arrived = result?.arrived || run.minutes
+    for (let i = 0; i < 3 && run.phase !== 'lecture'; i++) advancePhase(district, run)
+    run.minutes = arrived
+    run.at = 'gate'
+    run.dropOff = { style: result?.style || run.home?.style || 'suburban', day: run.day }
+    run.outDoor = false
+    if (!run.crush) run.crush = newCrush(run.character)
+    ui.gear = false
+    persist()
+    go('play')
+    return
+  }
   if (!skip) {
     const district = districtNow()
     // advancePhase resets the clock to 09:00; campus starts when you walked out of the door.
@@ -258,7 +285,21 @@ function endMorning(skip, result) {
 
 function syncMorning(viewState) {
   const on = viewState?.screen === 'morning' && Boolean(viewState.run)
-  if (!on) { morningPromise?.then((mod) => mod.stopMorning()); return false }
+  if (!on) { stopIntro(); return false }
+  if (viewState.run.day === 1) {
+    morningPromise?.then((mod) => mod.stopMorning())
+    if (!homePromise) homePromise = import('./world/home.js')
+    homePromise.then((mod) => {
+      if (route().name !== 'morning') return
+      mod.startHome({
+        run: save.run,
+        onUpdate() { persist(); paint() },
+        onDone(result) { endMorning(false, result) },
+      })
+    }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
+    return true
+  }
+  homePromise?.then((mod) => mod.stopHome())
   if (!morningPromise) morningPromise = import('./world/morning.js')
   morningPromise.then((mod) => {
     if (route().name !== 'morning') return
@@ -998,8 +1039,9 @@ function startNextDay() {
   save.run.at = home
   ui.delta = null
   finishTurn()
-  // You wake up in your room, not on the path outside; today's goals come after.
-  if (save.run.mode === 'play' && document.body.dataset.world === '1') {
+  // You wake up in your room, not on the path outside; today's goals come after. (Day 2's
+  // first morning in res plays the whole wake-up itself: world/morning.js.)
+  if (save.run.mode === 'play' && document.body.dataset.world === '1' && !morningWanted(save.run)) {
     const held = save.run.queue.filter((card) => card.kind === 'goals')
     save.run.queue = save.run.queue.filter((card) => card.kind !== 'goals')
     paint()
@@ -1228,7 +1270,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'home') {
     if (route().name === 'morning' && save.run?.morningStart && !window.confirm('Leave the morning? This morning starts over next time.')) return
     ui.gear = false
-    morningPromise?.then((mod) => mod.stopMorning())
+    stopIntro()
     persist()
     go('title')
     return

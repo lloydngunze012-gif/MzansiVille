@@ -522,6 +522,14 @@ export function mapHome(state, openPlace = '') {
 export function morningScreen(state) {
   const { district, run } = state
   const left = 9 * 60 - run.minutes
+  // Day 1 is leaving home (world/home.js): no lecture countdown yet, and the three cameras.
+  if (run.day === 1) {
+    return `<main class="screen g-screen g-3d g-morning g-home-day" data-screen="morning">
+    ${hud(district, run)}
+    <p class="g-goal" role="status"><span>\u{1F3E0} Leaving home today. Next stop: UMzansi.</span></p>
+    ${viewBar(true).replace(/<button[^>]*data-mode="map"[^>]*>.*?<\/button>/, '')}
+  </main>`
+  }
   return `<main class="screen g-screen g-3d g-morning" data-screen="morning">
     ${hud(district, run)}
     <p class="g-goal${left <= 15 ? ' late' : ''}" role="status"><span>\u{1F3AF} Get to your 9:00 lecture on time.</span><b>${left > 0 ? `${left} min left` : `${-left} min late`}</b></p>

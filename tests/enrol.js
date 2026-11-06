@@ -2,12 +2,13 @@
 // vibe -> your card -> Enter campus. Shared by every test that needs a new student.
 // t: a page or a frame. house: 1-based, in houses.json order (the old house list's
 // index); course: 1-based index into the course list, or a course name.
-export async function enrolUI(t, { name = 'Thandi', house = 1, course = 1, gender, bio, vibe, looking } = {}) {
+export async function enrolUI(t, { name = 'Thandi', house = 1, course = 1, gender, bio, vibe, looking, from } = {}) {
   await t.locator('.en[data-step="look"]').waitFor({ timeout: 30000 })
   if (gender) await t.locator(`[data-gender="${gender}"]`).first().tap()
   await t.locator('[data-act="enrol-next"]').tap()
   await t.locator('.en[data-step="who"] #name').fill(name)
   await t.locator('[data-house-pick]').nth(Math.max(0, (house || 1) - 1)).tap()
+  if (from) await t.locator(`[data-k="from"][data-v="${from}"]`).tap()
   await t.locator('[data-act="enrol-next"]').tap()
   await t.locator('.en[data-step="vibe"]').waitFor()
   if (typeof course === 'string') await t.locator(`[data-pick="course"][data-v="${course}"]`).tap()
