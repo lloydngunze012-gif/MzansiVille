@@ -65,11 +65,13 @@ async function dismissCards(page) {
 // Open the place's actions: your common room (Things to do), or the place's sheet.
 async function openPlace(page, place) {
   if (place === 'house') {
-    await page.goto(`/?fast=1&morning=0&load=${++loads}#/play`)
+    // (you start at the Quad now, owner 6 Nov: at your house's door, its sheet)
+    await page.goto(`/?fast=1&morning=0&spawn=res_o&load=${++loads}#/play`)
     await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
-    await expect(page.locator('#world')).toHaveAttribute('data-house', /.+/, { timeout: 15000 })
     await dismissCards(page)
-    await page.locator('.house-do').tap()
+    await page.evaluate(() => { location.hash = '#/place/res_o' })
+    await page.waitForTimeout(1500)
+    await dismissCards(page)
     return
   }
   await page.goto(`/?fast=1&morning=0&spawn=${place}&load=${++loads}#/play`)
