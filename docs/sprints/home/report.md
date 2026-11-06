@@ -29,7 +29,7 @@ Bus stop: `13_bus_stop.png`, `14_bus_stop_card.png`, `15_greenway_after_bus.png`
 | `public/models/home/town-kit.glb` (Quaternius Ultimate Textured Buildings, recoloured) | 290 KB |
 | `public/models/home/dog.glb` (Quaternius Shiba Inu, 3 clips) | 381 KB |
 | `public/draco/` (Draco decoder, wasm) | 245 KB |
-| `home` code chunk (minified) | 34 KB |
+| `home` code chunk + DRACOLoader chunk (minified) | 36 KB (28.5 + 7.5) |
 | **Total** | **about 1.15 MB** (budget 2 MB) |
 
 The drop-off (`dropoff.js`) is in the campus chunk and reuses the campus's own car models: no new downloads. Every pack, source URL and licence: `docs/credits.md`.
@@ -68,7 +68,7 @@ The township street costs ~10 fps more than the suburban one (the Quaternius bui
 ## Still open
 
 - The hug is the two of you stepping close and swaying (no arm-around animation in the character pack).
-- The window view is a fixed shot through the bedroom window, not free look.
+- The window view is a fixed shot through the bedroom window, not free look, and it frames the road and the houses across it: the neighbour and the dog it talks about are out of frame (to the left, in the yard). Needs a re-aim.
 - Inside the house, the walls are Kenney furniture-kit walls (plain); the outside shell is a kit house. You switch between them at the front door with a short fade.
 - The family's look copies your skin and hair colour; faces are the pack's.
 - The family car keeps the Car Kit's own colours (the tint in homes.json multiplies a light grey, so it barely shows).
