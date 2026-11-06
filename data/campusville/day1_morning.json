@@ -11,25 +11,30 @@
     "role": "Your roommate in the house. Your bestie from day one.",
     "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
     "intro": "That is Zanele. She will borrow things all year and return them with interest.",
-    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go."
+    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go.",
+    "wave_day2": "Morning, roomie! First real morning in res 👋 Sleep okay?"
   },
   "steps": {
     "wake": {
       "caption": "{house}, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
-      "bubbles": [
-        {
+      "bubbles": {
+        "0": {
           "who": "player",
           "text": "07:00. Alarm. Day one… snooze."
         },
-        {
+        "1": {
           "who": "player",
           "text": "Zzz… snooze."
         },
-        {
+        "2": {
           "who": "player",
           "text": "Up, up, up!"
+        },
+        "day2": {
+          "who": "player",
+          "text": "07:00. Alarm. Day two in res… snooze."
         }
-      ],
+      },
       "zanele": {
         "who": "zanele",
         "text": "Mm. You snoozed {n} times. I counted. We are going to be friends."
@@ -72,15 +77,33 @@
     "choice_breakfast": {
       "title": "Breakfast?",
       "options": [
-        { "label": "🍜 Noodles in res", "note": "Free · +35 Fullness · 15 min" },
-        { "label": "🛒 Tuck shop on the way", "note": "R12 · +25 Fullness · 10 min" },
-        { "label": "🍳 Caf breakfast on campus", "note": "R30 · +40 Fullness · 10 min there" },
-        { "label": "🚶 Head out hungry", "note": "−15 Fullness · out the door now" }
+        {
+          "label": "🍜 Noodles in res",
+          "note": "Free · +35 Fullness · 15 min"
+        },
+        {
+          "label": "🛒 Tuck shop on the way",
+          "note": "R12 · +25 Fullness · 10 min"
+        },
+        {
+          "label": "🍳 Caf breakfast on campus",
+          "note": "R30 · +40 Fullness · 10 min there"
+        },
+        {
+          "label": "🚶 Head out hungry",
+          "note": "−15 Fullness · out the door now"
+        }
       ]
     },
-    "caf_later": { "bubble": "Caf pap on campus. Hold on, stomach." },
-    "caf-later": { "caption": "Breakfast can wait for the caf on campus. Your stomach disagrees." },
-    "caf-breakfast": { "caption": "Out the door and straight into the caf queue. Pap and egg, R30." },
+    "caf_later": {
+      "bubble": "Caf pap on campus. Hold on, stomach."
+    },
+    "caf-later": {
+      "caption": "Breakfast can wait for the caf on campus. Your stomach disagrees."
+    },
+    "caf-breakfast": {
+      "caption": "Out the door and straight into the caf queue. Pap and egg, R30."
+    },
     "choice_no_noodles": {
       "title": "No noodles left. What now?",
       "options": [
@@ -179,10 +202,18 @@
     "hungry": {
       "bubble": "No breakfast, no problem. Probably. Bus, here I come."
     },
-    "head-out": { "caption": "Bag, student card, charger. Walk to the stop, or let the morning blur by." },
-    "meet": { "caption": "Same bus, same wait. They have nice shoes and a very judgemental eyebrow for the timetable." },
-    "skip-ride": { "caption": "Shower, the stop, the bus, the gate. UMzansi appears like a jump cut." },
-    "out-door": { "caption": "Out of your own front door. Campus is right here: no bus, no queue at the stop." }
+    "head-out": {
+      "caption": "Bag, student card, charger. Walk to the stop, or let the morning blur by."
+    },
+    "meet": {
+      "caption": "Same bus, same wait. They have nice shoes and a very judgemental eyebrow for the timetable."
+    },
+    "skip-ride": {
+      "caption": "Shower, the stop, the bus, the gate. UMzansi appears like a jump cut."
+    },
+    "out-door": {
+      "caption": "Out of your own front door. Campus is right here: no bus, no queue at the stop."
+    }
   },
   "late_variants": {
     "bus_late": {
@@ -225,7 +256,8 @@
       "steps.wake.zanele": "Snoozed {n} times, bra. I was keeping score.",
       "late_variants.snoozed_too_long.zanele": "I tried, my guy. You fought the alarm and lost. Go!",
       "steps.roommate.bubble": "Eish, sorry! Last packet 😅 I’ll sort you out at lunch.",
-      "steps.roommate.bare": "The shelf is empty. Sipho is holding the last packet like a trophy."
+      "steps.roommate.bare": "The shelf is empty. Sipho is holding the last packet like a trophy.",
+      "zanele.wave_day2": "Ayy, roomie! First real morning in res 👋 Sleep okay?"
     }
   }
 }
