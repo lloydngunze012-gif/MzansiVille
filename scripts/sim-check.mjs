@@ -362,11 +362,17 @@ check('hunger blocks study and debt blocks paid meals', () => {
   assert.equal(actionState(district, run, noodles).disabled, false)
 })
 
-check('the fifth slot ends the day', () => {
+check('the fifth slot brings late night, not the end of the day; sleep ends it', () => {
   const run = createRun(district, character)
   run.slotsLeft = 1
   applyAction(district, run, 'wake_noodles', () => 0.99)
-  assert.equal(run.mode, 'summary')
+  // (owner, 6 Nov: no end-of-the-day screen; night falls and you carry on, or go to bed)
+  assert.equal(run.mode, 'play')
+  assert.equal(run.phase, 'night')
+  assert.equal(run.lateNight, run.day)
+  const bed = district.activities.find((action) => action.tags.includes('sleep') && action.phases.includes('night'))
+  assert.ok(bed, 'a bed at night')
+  assert.equal(actionState(district, run, bed).disabled, false, 'bed with no slots left')
 })
 
 check('three days under 20 excludes', () => {

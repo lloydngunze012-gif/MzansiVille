@@ -311,6 +311,7 @@ function ctaBar(district, run) {
     return `<div class="g-cta g-hint" role="status"><p>\ud83d\udc46 Tap a glowing place to see what you can do.</p><button type="button" class="g-go ghost" data-act="hint-ok" aria-label="Dismiss hint">Got it</button></div>`
   }
   if (run.phase === 'night') {
+    if (run.lateNight === run.day) line = `\u{1F319} Late night on campus. ${atHome ? 'Bed is right here.' : 'Carry on, or head home to bed.'}`
     return `<div class="g-cta"><p>${esc(line)}</p><button type="button" class="g-go" data-act="place-open" data-id="${sleepPlace}">${atHome ? 'Sleep' : 'Go home'}</button></div>`
   }
   const skipLabel = next ? `Skip to ${PHASE_SHORT[next.id]} ${next.start}` : 'End day'

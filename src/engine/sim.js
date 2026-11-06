@@ -110,7 +110,8 @@ export function actionState(district, run, action) {
   if (run.noodlesOnly && action.tags.includes('meal') && action.deltas.money < 0 && action.id !== 'wake_noodles') {
     return { disabled: true, hidden: false, reason: 'Noodles only until a shift' }
   }
-  if (action.slots > run.slotsLeft) return { disabled: true, hidden: false, reason: `Needs ${action.slots} slots` }
+  // (going to bed is always possible: late at night with nothing left, bed is the way on)
+  if (action.slots > run.slotsLeft && !action.tags.includes('sleep')) return { disabled: true, hidden: false, reason: `Needs ${action.slots} slots` }
   return { disabled: false, hidden: false, reason: '' }
 }
 
@@ -555,6 +556,19 @@ export function beginNextDay(district, run, now = new Date()) {
   return run
 }
 
+// The day's time is used up: it's night (the sky darkens with the clock), and the day
+// goes on until you sleep. run.lateNight: the day it happened (a soft line shows once).
+export function lateNight(district, run) {
+  const night = district.meta.phases.find((p) => p.id === 'night')
+  if (night && run.phase !== 'night') {
+    run.phase = 'night'
+    run.minutes = Math.max(run.minutes, toMinutes(night.start))
+  }
+  run.slotsLeft = Math.max(0, run.slotsLeft)
+  run.lateNight = run.day
+  return run
+}
+
 export function advancePhase(district, run, rng = Math.random) {
   if (run.mode !== 'play') return run
   const phases = district.meta.phases
@@ -719,8 +733,12 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   for (const goal of checkGoals(run)) cards.push({ id: `goal-${goal.id}-${run.day}`, kind: 'goal', title: 'Goal done', text: goalText(run, goal) })
   rememberStat(run)
   run.queue = cards.concat(run.queue.filter((card) => !cards.some((item) => item.id === card.id)))
-  if (run.excluded || action.tags.includes('sleep') || run.slotsLeft <= 0) {
+  if (run.excluded || action.tags.includes('sleep')) {
     endDay(district, run, { slept: action.tags.includes('sleep') })
+  } else if (run.slotsLeft <= 0) {
+    // (owner, 6 Nov) No "end of the day" screen: the day's time is used up, so night falls
+    // and you carry on, or go to bed. Bed (sleep) is what ends the day.
+    lateNight(district, run)
   } else if (!run.noMoments) {
     // A surprise, now and then (always one by the third thing you do in a day).
     const done = (run.slotsTotal || 5) - (run.slotsLeft || 0)

@@ -434,6 +434,8 @@ function paint() {
     location.hash = '#/play'
     return
   }
+  // (a save left on the old end-of-day screen: straight on to the next morning)
+  if (!shot && save.run?.mode === 'summary') { startNextDay(); return }
   if (!shot && save.run?.mode === 'play' && route().name === 'summary') {
     location.hash = '#/play'
     return
@@ -837,7 +839,8 @@ function autoAdvance() {
   const run = save.run
   let guard = 0
   const skipped = []
-  while (run && run.mode === 'play' && !run.queue.some((card) => card.choices) && !anyEnabled(district, run) && guard < 6) {
+  // (never past night: the day ends when you sleep, not by itself)
+  while (run && run.mode === 'play' && run.phase !== 'night' && !run.queue.some((card) => card.choices) && !anyEnabled(district, run) && guard < 6) {
     if (guard) skipped.push(run.phase)
     advancePhase(district, run)
     guard += 1
@@ -973,11 +976,36 @@ function gameAct(act, button) {
   return false
 }
 
+// The next day: you wake in your room (the wake-up plays), today's goals come after.
+function startNextDay() {
+  const district = districtNow()
+  beginNextDay(district, save.run, new Date())
+  const home = homePlaceId(district, save.run.character.residence)
+  save.run.at = home
+  ui.delta = null
+  finishTurn()
+  // You wake up in your room, not on the path outside; today's goals come after.
+  if (save.run.mode === 'play' && document.body.dataset.world === '1') {
+    const held = save.run.queue.filter((card) => card.kind === 'goals')
+    save.run.queue = save.run.queue.filter((card) => card.kind !== 'goals')
+    paint()
+    setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-act', { detail: { placeId: home, actionId: 'talk_wake', commit() { save.run.queue = [...held, ...save.run.queue]; persist(); paint() } } })), 600)
+  }
+}
+
 function finishTurn() {
   persist()
   const mode = save.run?.mode
-  if (mode === 'summary') go('summary')
-  else if (mode === 'over') go('over')
+  // (owner, 6 Nov) No "end of the day" screen: you slept, so the next day starts (you wake
+  // in your room; last night's text comes with the day's goals).
+  if (mode === 'summary') { startNextDay(); return }
+  // The day's time ran out: night falls, one soft line, and you carry on.
+  if (mode === 'play' && save.run.lateNight === save.run.day && save.run.lateNightShown !== save.run.day) {
+    save.run.lateNightShown = save.run.day
+    persist()
+    flash('\u{1F319} Late night on campus')
+  }
+  if (mode === 'over') go('over')
   else if (mode === 'locked') go('locked')
   else go('play')
   if (mode === 'summary' || mode === 'over') sync()
@@ -1420,21 +1448,7 @@ app.addEventListener('click', async (event) => {
     paint()
     return
   }
-  if (act === 'next') {
-    beginNextDay(district, save.run, new Date())
-    const home = homePlaceId(district, save.run.character.residence)
-    save.run.at = home
-    ui.delta = null
-    finishTurn()
-    // You wake up in your room, not on the path outside; today's goals come after.
-    if (save.run.mode === 'play' && document.body.dataset.world === '1') {
-      const held = save.run.queue.filter((card) => card.kind === 'goals')
-      save.run.queue = save.run.queue.filter((card) => card.kind !== 'goals')
-      paint()
-      setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-act', { detail: { placeId: home, actionId: 'talk_wake', commit() { save.run.queue = [...held, ...save.run.queue]; persist(); paint() } } })), 600)
-    }
-    return
-  }
+  if (act === 'next') { startNextDay(); return }
   if (act === 'restart') {
     save.run = createRun(district, save.run.character)
     persist()
