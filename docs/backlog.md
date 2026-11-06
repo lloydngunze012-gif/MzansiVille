@@ -52,3 +52,45 @@ Fixed in the Motion sprint (docs/sprints/motion/report.md): the blocky stand-in 
 - (Piece 0) The day-1 morning still rides the bus to campus from the house; with every house on campus, the bus ride needs a reason (or a walk).
 - (Piece 0) Housemates in a common room can't be talked to yet (they're part of the room); the house's actions are behind "Things to do".
 - (Piece 0) In a common room you're "away" for presence: two real players in the same house don't see each other inside it (Piece 6, hosting a room, is where shared rooms come in).
+
+## Activities: wire the new common-room, cafeteria and sports rows
+
+The rows are in `data/campusville/activities.csv`. Every scene below already exists in `src/world/scenes.js`. The sim check "every action plays a visible scene" fails until these ids are added to `SCENE_OF` (paste after `house_late`). No new scene functions.
+
+- house_noodles: cook, what noodles
+- house_dishes: cook, what dishes
+- house_airtime: phone, call false
+- house_toast: cook, what toast
+- house_leftovers: cook, what leftovers
+- house_notes: sitRead, room lounge
+- house_nap: couch
+- house_tut: chat, who x8, lines "Walk me through question three." / "Start from the formula, not the panic." / "The panic was my whole plan."
+- house_wifi: sitRelax, room lounge, line "This corner. One bar. Do not tell the whole passage."
+- house_fifty: chat, who x8, lines "Eish, can I borrow R50 till Friday?" / "Friday again?" / "Sharp. I will send it now."
+- house_partner: sitRelax, room lounge, line "Their partner has the couch, a mug, and the remote. Again."
+- house_speaker: sitRelax, room lounge, line "The speaker is on the table and the whole passage is the dance floor."
+- house_visitor: chat, who x2 and x6, lines "These are my people from home." / "We brought koeksisters." / "Sit. Tell us about campus."
+- house_braai: cook, what "a corridor braai", friend true
+- house_hair: chat, who x6, lines "Sit. Your hair is doing its own degree." / "Is this going to hurt?" / "Only a little. Hold still."
+- house_laundry: laundry
+- house_meeting: chat, who x2 and x8, lines "House meeting. Phones down." / "The passage light is still broken." / "And the sink. We know. We know."
+- house_couch_study: sitRead, room lounge
+- house_shedding: sitRelax, room lounge, line "The lights go. Someone finds a candle. Nobody leaves."
+- house_oil: cook, what "a midnight pot", friend true
+- caf_coffee: queueBuy, food coffee, eat true
+- caf_porridge: queueBuy, food porridge, eat true
+- caf_russian: queueBuy, food "a Russian and chips", eat true
+- caf_tut: study, room library
+- caf_window: sitRelax, line "Window seat. You can see who skipped from here."
+- caf_supper: queueBuy, food "early supper", eat true
+- caf_plug: sitRelax, line "One plug. Four phones. A treaty is forming."
+- sport_track: exercise, kind run
+- sport_hoops: exercise, kind ball
+- sport_aerobics: exercise, kind stretch
+- sport_lineup: chat, who x2 and luke, lines "I am starting. Obviously." / "You were late to warm-up." / "The bibs are in a room somewhere."
+- sport_trials: exercise, kind ball
+- sport_fountain: sitRelax, line "Cold water. A sit-down. The match can survive without you."
+
+## Queues and taps (6 Nov)
+
+- Auntie Pinky can be hidden behind her queue, so a tap opens a student's chat instead of joining the line.
