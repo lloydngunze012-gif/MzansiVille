@@ -26,12 +26,25 @@ async function cams(page, name) {
   await page.locator('.g-view[data-mode="sims"]').tap()
 }
 
+// The same three cameras while the reply cards are up: the cards cover the camera buttons,
+// so the camera is switched with the event those buttons send (screenshots only).
+async function camsUnderCards(page, name) {
+  for (const mode of ['top', 'sims', 'eye']) {
+    await page.evaluate((m) => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: m })), mode)
+    await page.waitForTimeout(900)
+    await page.screenshot({ path: `${OUT}/${name}_${mode}.png` })
+  }
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: 'sims' })))
+}
+
 for (const [style, from] of [['suburban', 'Durban'], ['township', 'Soweto']]) {
   test(`day 1 home: ${style} (${from})`, async ({ page }) => {
     test.setTimeout(300000)
     fs.mkdirSync(OUT, { recursive: true })
     const errors = []
     page.on('pageerror', (e) => errors.push(String(e)))
+    // (a model missing from a kit is an error: the chairs once silently never appeared)
+    page.on('console', (m) => { if (/home: no model/.test(m.text())) errors.push(m.text()) })
     const host = page.locator('#home3d')
     const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 60000 })
     const go = () => page.locator('#home-ui .mm-bar:not([hidden]) .mm-go').first().tap()
@@ -56,8 +69,22 @@ for (const [style, from] of [['suburban', 'Durban'], ['township', 'Soweto']]) {
     await expect(host).toHaveAttribute('data-plate', '1', { timeout: 30000 })
     await page.waitForTimeout(500)
     await page.screenshot({ path: `${OUT}/${style}_3_breakfast.png` })
+    await expect(host).toHaveAttribute('data-seated', '1', { timeout: 30000 })
     await expect(page.locator('#home-ui .mm-choice')).toHaveCount(3, { timeout: 30000 })
     await page.screenshot({ path: `${OUT}/${style}_4_sibling.png` })
+    // everyone on a chair, facing the table: read where they are, then Top, Sims and Eye
+    const seats = await page.evaluate(() => window.mzansiHomeSeats?.())
+    console.log('SEATS', style, JSON.stringify(seats))
+    for (const who of ['player', 'sibling', 'parent']) {
+      expect(seats[who].pose, `${who} sits`).toBe('sit')
+      expect(Math.abs(seats[who].seatY - 0.48), `${who} on the chair seat`).toBeLessThan(0.02)
+      expect(seats[who].offChair, `${who} on their chair`).toBeLessThan(0.05)
+      expect(Math.abs(seats[who].facingOff), `${who} faces the table`).toBeLessThan(0.05)
+      expect(Math.abs(seats[who].seatGap), `${who}'s trousers on the seat`).toBeLessThan(0.05)
+      expect(Math.abs(seats[who].footGap), `${who}'s feet on the floor`).toBeLessThan(0.05)
+      expect(Math.abs(seats[who].tilt), `${who} upright`).toBeLessThan(0.05)
+    }
+    await camsUnderCards(page, `${style}_4_breakfast`)
     await page.locator('#home-ui .mm-choice').nth(1).tap()
     await atStep('bags')
     await go()

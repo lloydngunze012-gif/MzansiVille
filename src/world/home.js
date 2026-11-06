@@ -8,7 +8,7 @@ import * as THREE from 'three'
 import HOMES from '../../data/campusville/homes.json'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf } from '../avatar.js'
-import { createAvatar, layDown, poseAvatar } from './avatar3d.js'
+import { createAvatar, layDown, measureBody, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createPlayer } from './player.js'
 import { bindInput } from './input.js'
@@ -22,6 +22,13 @@ export function homeStyleId(character) {
 }
 
 const UP = 2.68 // the upstairs floor (the kit's stairs climb exactly this)
+const SEAT_Y = 0.48 // the kit chair's seat top (0.24 x FURN)
+// The kitchen chairs (x, z, facing: the way you face sitting in it). The kit's chair faces +z.
+const CHAIRS = {
+  me: { x: -1.45, z: 1.1, rot: Math.PI }, // south of the table, facing it
+  sibling: { x: -1.45, z: -0.7, rot: 0 }, // north of it, straight across from you (Eye view looks at them)
+  parent: { x: -3.05, z: 0.2, rot: Math.PI / 2 }, // at the west end
+}
 const FURN = 2 // Kenney furniture kit: one unit is half a metre
 const STREET_Z = 11 // middle of the road in front of the house
 const ROAD_W = 7
@@ -172,8 +179,14 @@ async function loader() {
 const kits = {}
 function kit(name) {
   kits[name] ||= loader().then((l) => l.loadAsync(KITS[name])).then((gltf) => {
+    // Keyed by the node's name in the file: three.js renames duplicates ("chair" is also a
+    // part inside chairDesk, so the kit's own chair loaded as "chair_1" and never appeared).
     const parts = {}
-    for (const child of gltf.scene.children) parts[child.name] = child
+    const nodes = gltf.parser.json.nodes || []
+    for (const child of gltf.scene.children) {
+      const ref = gltf.parser.associations.get(child)
+      parts[(ref?.nodes !== undefined && nodes[ref.nodes]?.name) || child.name] = child
+    }
     return parts
   })
   return kits[name]
@@ -366,9 +379,7 @@ function buildHouse(furnParts, homeParts) {
   solid(0, -2.2, -2.55, 3.5, 0.95)
   k('table', -1.9, 0.2, 0)
   solid(0, -1.9, 0.2, 1.7, 0.95)
-  k('chair', -1.45, 1.1, Math.PI) // yours, facing the table
-  k('chair', -2.35, -0.7, 0) // your sibling's
-  k('chair', -3.05, 0.2, -Math.PI / 2) // your parent's
+  for (const c of Object.values(CHAIRS)) k('chair', c.x, c.z, c.rot)
   k('loungeSofa', 1.0, 2.45, Math.PI)
   solid(0, 1.0, 2.45, 2.0, 0.9)
   k('tableCoffee', 1.0, 1.35, 0)
@@ -592,6 +603,7 @@ async function buildPeople() {
   parent.rotation.y = Math.PI
   sibling = person(familyLook(style.sibling))
   sibling.scale.setScalar(0.86)
+  seat(sibling, CHAIRS.sibling) // (at the table already when you come down)
   neighbour = person(style.neighbour.look)
   neighbour.position.set(-style.spacing + 2.5, 0, 5.6)
   neighbour.rotation.y = Math.PI * 0.75
@@ -691,7 +703,7 @@ function setLevel(n) {
 }
 function levelY() { return level === 1 ? UP : 0 }
 function onTap(ndc) {
-  if (override || !running) return
+  if (override || !running || player?.userData.scripted) return
   ray.setFromCamera(ndc, camera)
   if (tapTargets.length) {
     const hit = ray.intersectObjects(tapTargets, true)[0]
@@ -807,7 +819,7 @@ function tick(now) {
     if (s) mover.setStick(s.x, s.z, s.run, s.mag)
     else mover.setStick(0, 0)
   }
-  mover.update(dt)
+  if (!player.userData.scripted) mover.update(dt)
   if (!player.userData.scripted) player.position.y = levelY()
   const stepping = mover.moving || Boolean(player.userData.walkingScript)
   soundLoop('footsteps', stepping && player.visible)
@@ -836,6 +848,8 @@ function tick(now) {
   } else {
     rig.apply(camera, player.position, dt, null)
     camera.position.y += levelY()
+    // (Eye view sitting down: your eyes are lower than standing)
+    if (rig.mode === 'eye' && player.userData.pose === 'sit') camera.position.y -= 0.3
   }
   // Eye view looks out of your eyes: your own head is hidden.
   for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye' || Boolean(override)
@@ -934,15 +948,13 @@ async function play() {
   await talk(L('downstairs'), player)
   // 3. breakfast with your parent and sibling
   setStep('breakfast')
-  await goTo(`\u{1F373} Sit down for breakfast`, -1.45, 1.55, 0.5)
+  await goTo(`\u{1F373} Sit down for breakfast`, CHAIRS.me.x + 0.55, CHAIRS.me.z + 0.05, 0.35)
   await sitAtTable()
   plate.visible = true
   host.dataset.plate = '1'
-  face(parent, player.position.x, player.position.z)
   await talk(L('parentHello'), parent)
   await talk(L('embarrass'), parent)
   await talk(L('embarrassReply'), player)
-  face(sibling, player.position.x, player.position.z)
   await talk(L('sibling'), sibling)
   const replies = style.replies.map((r) => ({ ...r, label: fill(r.label) }))
   const pick = await choices(fill('{sibling} wants your room.'), replies.map((r) => r.label))
@@ -953,7 +965,9 @@ async function play() {
   plate.visible = false
   changeStats({ hunger: style.breakfast.fullness, energy: style.breakfast.energy })
   run.home = { style: styleId, sibling: replies[pick].id, siblingName: style.sibling.name, call: style.parent.call, dog: style.dog.name, pocket: style.pocket, parentLook: familyLook(style.parent) }
-  standUp()
+  await Promise.all([standUp(player), standUp(parent)])
+  player.userData.scripted = false
+  mover.attach(player)
   // 4. the bags by the door
   setStep('bags')
   await goTo('\u{1F9F3} Grab your bags', 2.6, 1.85, 0.55, [bags])
@@ -965,7 +979,8 @@ async function play() {
   await talk(L('bags'), player)
   // parent heads out to the car first
   parent.userData.walking = true
-  const toCar = tween(2.2, (k) => { parent.position.set(-3.05 + k * 6.2, 0, 0.2 + k * 2.4); face(parent, 3.2, 2.7) }, (x) => x)
+  const from = { x: parent.position.x, z: parent.position.z }
+  const toCar = tween(2.2, (k) => { parent.position.set(from.x + (3.15 - from.x) * k, 0, from.z + (2.6 - from.z) * k); face(parent, 3.2, 2.7) }, (x) => x)
   toCar.then(() => { parent.visible = false; parent.userData.walking = false })
   // 5. out of the front door: the yard, the dog, the car
   setStep('door')
@@ -1017,27 +1032,38 @@ async function descend() {
   mover.attach(player)
 }
 
+// On a chair: the body at the seat top, facing the way the chair faces, feet on the floor
+// (avatar3d fits the hips to the seat and lowers them from where they stood, if close).
+function seat(who, c) {
+  who.position.set(c.x, SEAT_Y, c.z)
+  who.rotation.y = c.rot
+  who.userData.seatFloor = 0
+  who.userData.pose = 'sit'
+}
 async function sitAtTable() {
   player.userData.scripted = true
   mover.stop()
-  face(player, -1.45, 0.5)
-  player.position.set(-1.45, 0, 1.15)
-  player.userData.pose = 'sit'
-  player.userData.seatFloor = 0
-  sibling.position.set(-2.35, 0, -0.75)
-  sibling.rotation.y = 0
-  sibling.userData.pose = 'sit'
-  sibling.userData.seatFloor = 0
-  parent.position.set(-2.9, 0, 0.2)
-  face(parent, -1.45, 1.1)
-  await wait(0.5)
+  // your parent comes over from the stove and sits at the end of the table with you
+  parent.userData.walking = true
+  const start = { x: parent.position.x, z: parent.position.z }
+  const beside = { x: CHAIRS.parent.x - 0.2, z: CHAIRS.parent.z - 0.55 }
+  const over = tween(1.2, (k) => { parent.position.set(start.x + (beside.x - start.x) * k, 0, start.z + (beside.z - start.z) * k); face(parent, beside.x, beside.z + 1) }, (x) => x)
+  seat(player, CHAIRS.me)
+  rig.turnBehind(CHAIRS.me.rot) // (the camera comes round with you: Eye looks across the table)
+  await over
+  parent.userData.walking = false
+  await wait(0.05)
+  seat(parent, CHAIRS.parent)
+  await wait(0.05) // (the sit-down starts on the next frame)
+  await task(() => !player.userData.sitMove && !parent.userData.sitMove)
+  host.dataset.seated = '1'
 }
-function standUp() {
-  player.userData.pose = 'stand'
-  player.userData.seatFloor = undefined
-  player.position.set(-1.45, 0, 1.6)
-  player.userData.scripted = false
-  mover.attach(player)
+// Up from the chair: the rise plays (avatar3d), then they stand in front of the seat.
+async function standUp(who) {
+  who.userData.pose = 'stand'
+  await wait(0.05)
+  await task(() => !who.userData.sitMove)
+  who.userData.seatFloor = undefined
 }
 
 async function drive() {
@@ -1129,5 +1155,17 @@ export function stopHome() {
 
 // Tests (read only): where everyone is and what is on screen.
 if (typeof window !== 'undefined') {
+  // Breakfast: each of you on your chair? (seat height, off the chair's middle, facing,
+  // trousers on the seat and soles on the floor from avatar3d's measure, tipped over)
+  window.mzansiHomeSeats = () => {
+    if (!player || !parent || !sibling) return null
+    const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a))
+    const out = {}
+    for (const [who, a, c] of [['player', player, CHAIRS.me], ['sibling', sibling, CHAIRS.sibling], ['parent', parent, CHAIRS.parent]]) {
+      const m = measureBody(a)
+      out[who] = { pose: a.userData.pose, seatY: +a.position.y.toFixed(3), offChair: +Math.hypot(a.position.x - c.x, a.position.z - c.z).toFixed(3), facingOff: +wrapA(a.rotation.y - c.rot).toFixed(3), seatGap: m.seatGap ?? null, footGap: m.footGap ?? null, tilt: +Math.hypot(a.rotation.x, a.rotation.z).toFixed(3), moving: Boolean(a.userData.sitMove) }
+    }
+    return out
+  }
   window.mzansiHome = () => (scene ? { style: styleId, level, step: host?.dataset.step, player: player && [player.position.x, player.position.y, player.position.z].map((n) => +n.toFixed(2)), dog: dog && [dog.position.x, dog.position.z].map((n) => +n.toFixed(2)), cam: rig?.mode, meshes: (() => { let n = 0; scene.traverse((o) => { if (o.isMesh && o.visible) n++ }); return n })() } : null)
 }
