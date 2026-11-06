@@ -69,7 +69,7 @@ check('csv quotes and district size', () => {
   const quad = district.places.find((place) => place.id === 'quad')
   assert.equal(quad.name, 'The Quad')
   assert.match(quad.blurb, /cafeteria/)
-  assert.equal(district.places.length, 18) // 11 places + the 7 houses
+  assert.equal(district.places.length, 19) // 12 places (the bus stop by the gate since 6 Nov) + the 7 houses
   assert.ok(district.activities.some((action) => action.id === 'organt_rep'))
   assert.equal(district.residences.length, 7)
   assert.equal(district.houses.filter((h) => district.places.some((p) => p.id === h.place && p.kind === 'residence')).length, 7)

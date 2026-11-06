@@ -1,5 +1,6 @@
-// Day 1 morning slice: wake in your house room, noodles at the kettle, walk to the
-// bus stop, ride the bus to campus. Loaded lazily (own chunk) from main.js.
+// Your first morning in res (day 2; day 1 is leaving home, world/home.js): wake in your
+// house room with your roommate, noodles at the kettle, the shower, out of your door.
+// Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { loop as soundLoop, sfx, water } from '../audio.js'
 import { genderOf, roommateOf } from '../avatar.js'
@@ -757,8 +758,10 @@ async function play() {
   opts.onUpdate()
   // Zanele says hi first.
   setStep('greet')
-  await Promise.all([wave(roommate), talk(line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}'), roommate)])
-  bubble(line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
+  // (on day 2 you met at the house door yesterday, the day you moved in: world/dropoff.js)
+  const hello = run.day > 1 ? line('zanele.wave_day2', 'Morning, roomie! First real morning in res \u{1F44B} Sleep okay?') : line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}')
+  await Promise.all([wave(roommate), talk(hello, roommate)])
+  bubble(run.day > 1 ? line('steps.wake.bubbles.day2', '07:00. Alarm. Day two in res\u2026 snooze.') : line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
   setStep('wake')
   clockShow(true)
   let snoozes = 0

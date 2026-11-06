@@ -141,3 +141,4 @@ sport_aerobics,social,sports_centre,Join the aerobics class,0,-10,0,5,-4,1,"You 
 sport_lineup,social,sports_centre,Argue the house lineup,0,-2,0,4,0,1,"House lineup talks on the sideline, everyone is captain, and the bibs are missing."
 sport_trials,leisure,sports_centre,House trials on the field,0,-12,0,6,-6,1,"House trials in borrowed boots, with a whistle and no place to hide."
 sport_fountain,leisure,sports_centre,Sit by the water fountain,0,3,0,2,0,0,"Water from the fountain and a seat in the shade, because the score can wait."
+bus_town,leisure,bus_stop,Bus to town,-10,-2,0,0,0,1,"R10 each way; Greenway Grocer and the shops, back by the next bus"

@@ -22,11 +22,27 @@ async function newGame(page, query, gender = 'female') {
   await page.goto(`/${query}&fast=1#/new`)
   await page.locator(`[data-part="gender"][data-id="${gender}"]`).tap()
   await enrolUI(page, { name: gender === 'male' ? 'Lethabo' : 'Thandi', house: 1, course: 1 })
+  await toDay2(page, `/${query}&fast=1`)
+}
+
+// Day 1 is leaving home (tests/e2e/home.spec.js); the res morning is day 2. Start the
+// save on the morning of day 2, then load the game.
+async function toDay2(page, url) {
+  await expect(page).toHaveURL(/#\/morning/)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { day: 2, phase: 'wake', minutes: 7 * 60, morningDone: true, mode: 'play' })
+    delete save.run.morningStart
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto(`${url}#/play`)
+  await page.reload()
+  await expect(page).toHaveURL(/#\/morning/, { timeout: 20000 })
 }
 
 const OUT = process.env.MORNING_SHOTS || 'test-results/morning'
 
-test('day 1 morning: room to campus', async ({ page }) => {
+test('day 2 res morning: room to campus', async ({ page }) => {
   test.setTimeout(360000)
   fs.mkdirSync(OUT, { recursive: true })
   const errors = []
@@ -58,6 +74,8 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await page.locator('[data-act="agree"]').tap()
   // Enrolment: look, who you are, your vibe, your card (src/ui/enrol.js).
   await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
+  // (day 1 is leaving home now: tests/e2e/home.spec.js; this is the res morning, day 2)
+  await toDay2(page, '/?fast=1&roommate=1&latebus=0&snooze=1&talk=auto')
 
   await expect(page).toHaveURL(/#\/morning/)
   await expect(page.locator('.g-goal')).toContainText('Get to your 9:00 lecture on time.')
@@ -139,9 +157,9 @@ test('day 1 morning: room to campus', async ({ page }) => {
   // Arrival: today's three goals slide in (must, story, dream) with the year dream.
   await expect(page.locator('.g-goals')).toBeVisible({ timeout: 20000 })
   await expect(page.locator('.g-goal-list li')).toHaveCount(3)
-  await expect(page.locator('.g-goal-list li').first()).toContainText('9:00 lecture')
+  await expect(page.locator('.g-goal-list li').first()).toContainText(/lecture/i) // (day 2: "Go to your lecture at SMIG")
   await expect(page.locator('.g-dream')).toContainText("Dean's List") // (the default dream: enrolment has no story step since 6 Nov)
-  await expect(page.locator('.g-goal-list li.dream')).toContainText('Study once')
+  await expect(page.locator('.g-goal-list li.dream')).toHaveCount(1)
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
@@ -150,7 +168,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   }
   await expect(page.locator('.g-route')).toContainText('Your lecture is at SMIG')
   // Goal ladder: the right-now chip points at the lecture; the goal count opens today's card again.
-  await expect(page.locator('.g-now')).toContainText('Lecture at SMIG')
+  await expect(page.locator('.g-now')).toContainText(/lecture at SMIG/i)
   await expect(page.locator('.g-goalsbtn')).toContainText('0/3')
   await shot('10b_now_chip')
   // Home keeps the save: Continue appears.
@@ -213,7 +231,7 @@ async function cardOnTop(page) {
   expect(top, 'the Continue button is on top').toBe(true)
 }
 
-test('day 1 to the end without a caf breakfast (Sipho, out hungry)', async ({ page }) => {
+test('the res morning to the end without a caf breakfast (Sipho, out hungry)', async ({ page }) => {
   test.setTimeout(240000)
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
@@ -238,7 +256,7 @@ test('day 1 to the end without a caf breakfast (Sipho, out hungry)', async ({ pa
   expect(run.bestieName).toBe('Sipho')
 })
 
-test('day 1 to the end with a caf breakfast', async ({ page }) => {
+test('the res morning to the end with a caf breakfast', async ({ page }) => {
   test.setTimeout(240000)
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })

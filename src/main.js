@@ -1626,6 +1626,8 @@ app.addEventListener('click', async (event) => {
             ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(save.run.stats[k] - before[k])]))
             autoAdvance()
             finishTurn()
+            // The bus to town is the way to Greenway Grocer: off the bus, it's your stop.
+            if (id === 'bus_town') setTimeout(() => window.dispatchEvent(new CustomEvent('mzansi-go-place', { detail: { id: 'greenway' } })), 300)
           },
         },
       }))

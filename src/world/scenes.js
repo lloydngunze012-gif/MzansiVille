@@ -14,6 +14,7 @@ export const SCENE_OF = {
   wake_phone: ['phone', { call: false }],
   go_walk: ['walkPath', { far: true }],
   go_bus: ['busRide', { to: 'campus' }],
+  bus_town: ['busRide', { to: 'town', side: 'east' }],
   lecture_attend: ['lecture', {}],
   talk_eat: ['orderEat', {}],
   talk_queue: ['queueOrder', {}],
@@ -927,7 +928,7 @@ export function createScenes(api) {
 
     async busRide(place, opt) {
       // The stop is on the west side of the station, away from the gate.
-      const stop = { x: place.b.minX - 3, z: place.b.z }
+      const stop = opt.side === 'east' ? { x: place.b.maxX + 3, z: place.b.z } : { x: place.b.minX - 3, z: place.b.z }
       const bus = new THREE.Group()
       const body = api.box(3, 2.2, 8, 0xf0c400, 0, 0, 0)
       body.removeFromParent()

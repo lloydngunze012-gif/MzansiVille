@@ -210,6 +210,19 @@ export function buildSpecial(group, building) {
     group.add(sign)
     return true
   }
+  // The bus stop by the gate: a shelter, a bench, a sign. (The bus to town: scenes.js busRide.)
+  if (building.id === 'bus_stop') {
+    const { w, d } = building
+    const steel = mat(0x2f4f6f, { metalness: 0.4 })
+    add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), steel), 0, 2.5, 0).name = 'shelter roof'
+    for (const x of [-w / 2 + 0.15, w / 2 - 0.15]) add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 0.12), steel), x, 1.25, -d / 2 + 0.2)
+    add(new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 1.6, 0.06), mat(0xcfe6f2, { transparent: true, opacity: 0.45 })), 0, 1.5, -d / 2 + 0.15)
+    add(new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.08, 0.45), mat(0x8a5a3a)), 0, 0.48, -d / 2 + 0.55).name = 'bench'
+    const sign = facadeSign('BUS TO TOWN', '#2f4f6f', 2.4)
+    sign.position.set(0, 2.15, d / 2 - 0.02)
+    group.add(sign)
+    return true
+  }
   if (building.id === 'gate') {
     const { w } = building
     add(new THREE.Mesh(new THREE.BoxGeometry(3, 2.8, 3), mat(0xeadcbc)), -w / 2 + 1.5, 1.4, 0).name = 'gatehouse'
