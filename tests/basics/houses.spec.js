@@ -29,7 +29,7 @@ async function closeSheet(page, f) {
   if (await close.isVisible().catch(() => false)) { await tapOn(page, f, close); await page.waitForTimeout(600) }
 }
 
-test('H1 every house door opens into its own common room; Head out and back in', async ({ page }) => {
+test('H1 start at the Quad; every house door opens into its own common room; Head out and back in', async ({ page }) => {
   // (no ?spawn: where a player really starts)
   await student(page, { spawn: '' })
   const f = await finger(page)
@@ -37,8 +37,10 @@ test('H1 every house door opens into its own common room; Head out and back in',
   const mine = await page.evaluate(() => document.querySelector('#world').dataset.spawn)
   out.start = { spawn: mine, house: await inHouse(page) }
   await page.screenshot({ path: `${OUT}/H1-start.png` })
-  expect(mine).toBe('house')
-  expect(out.start.house?.name, 'start in your own house').toBe(HOUSES[0].name)
+  // (owner, 6 Nov: you start outside at the Quad, where people are; the common room is
+  // somewhere you choose to go)
+  expect(mine).toBe('quad')
+  expect(out.start.house, 'not inside a common room at the start').toBeNull()
 
   for (const h of HOUSES) {
     await mapTo(page, f, h.place)

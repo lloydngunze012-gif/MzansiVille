@@ -2199,7 +2199,13 @@ function respawn(district, run) {
   host.dataset.look = JSON.stringify(player.userData.look)
   const home = campus.layout.buildings.find((building) => building.id === homeId) || campus.layout.buildings[0]
   const gate = run.at === 'gate' && campus.layout.buildings.find((building) => building.id === 'gate')
-  const open = nearestOpen(campus.grid, gate ? { x: gate.x, z: gate.minZ - 12 } : doorPoint(home))
+  // (owner, 6 Nov) You start where people are: at the Quad. Straight after the morning
+  // you're at your own house's door (you walked out of it); the common room is somewhere
+  // you choose to go.
+  const quadB = campus.layout.buildings.find((building) => building.id === 'quad')
+  const atDoor = Boolean(run.outDoor)
+  const startAt = gate ? { x: gate.x, z: gate.minZ - 12 } : atDoor || !quadB ? doorPoint(home) : doorPoint(quadB)
+  const open = nearestOpen(campus.grid, startAt)
   const spot = cellCenter(open.c, open.r)
   player.position.set(spot.x, 0, spot.z)
   // ?spawn=<place id> starts at that place (tests and screenshots).
@@ -2227,12 +2233,17 @@ function respawn(district, run) {
   // You start in your own house's common room (build plan, Piece 0), among
   // housemates; off the bus you're at the gate; ?spawn=<place> at that place (tests).
   const homeBuilding = campus.layout.buildings.find((building) => building.id === homeId)
-  const spawnKind = gate ? 'gate' : spawnAt ? 'place' : homeBuilding?.house ? 'house' : 'home'
+  const spawnKind = gate ? 'gate' : spawnAt ? 'place' : atDoor ? 'door' : quadB ? 'quad' : 'home'
+  // Out of your door: facing away from it, towards the Quad.
+  if (atDoor && !spawnAt && quadB) {
+    player.rotation.y = Math.atan2(quadB.x - player.position.x, quadB.z - player.position.z)
+    rig.facing = player.rotation.y
+    rig.yaw = player.rotation.y + Math.PI
+  }
   host.dataset.spawn = spawnKind
   host.dataset.facing = player.rotation.y.toFixed(2)
   scene.add(player)
   mover.attach(player)
-  if (spawnKind === 'house') enterHouse(homeBuilding, { spawn: true })
   clearGuide()
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'

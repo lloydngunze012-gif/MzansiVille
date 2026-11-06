@@ -79,6 +79,8 @@ function loadSave() {
 // about them turn them off (?moments=1 turns them back on).
 const NO_MOMENTS = Boolean(navigator.webdriver) && new URLSearchParams(location.search).get('moments') !== '1'
 let save = loadSave()
+// A new visit starts where people are (the Quad), not at the door you walked out of earlier.
+if (save.run?.outDoor) delete save.run.outDoor
 if (save.run) save.run.noMoments = NO_MOMENTS
 // The houses replaced the residences (build plan, Piece 0): an old residence moves into
 // its house (houses.json "was"; any other old name, a house of its own, always the same).
@@ -228,11 +230,14 @@ function endMorning(skip, result) {
   morningPromise?.then((mod) => mod.stopMorning())
   if (!skip) {
     const district = districtNow()
-    // advancePhase resets the clock to 09:00; campus starts when the bus got in.
+    // advancePhase resets the clock to 09:00; campus starts when you walked out of the door.
     const arrived = result?.arrived || run.minutes
     for (let i = 0; i < 3 && run.phase !== 'lecture'; i++) advancePhase(district, run)
     run.minutes = arrived
-    run.at = 'gate'
+    // (no bus: you walked out of your house's door, and campus starts there; the flag is
+    // for this arrival only, a later visit starts at the Quad)
+    run.at = homePlaceId(district, run.character?.residence)
+    run.outDoor = true
     run.lectureRoute = true
   }
   // Arrival: today's goals slide in. (A skipped morning still has someone from the bus to find.)

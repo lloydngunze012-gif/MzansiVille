@@ -821,7 +821,7 @@ async function play() {
     noodles: { label: line('steps.choice_breakfast.options.0.label', '\u{1F35C} Noodles in res'), note: line('steps.choice_breakfast.options.0.note', 'Free \u00b7 +35 Fullness \u00b7 15 min') },
     tuck: { label: line('steps.choice_breakfast.options.1.label', '\u{1F6D2} Tuck shop on the way'), note: line('steps.choice_breakfast.options.1.note', 'R12 \u00b7 +25 Fullness \u00b7 10 min') },
     caf: { label: line('steps.choice_breakfast.options.2.label', '\u{1F373} Caf breakfast on campus'), note: line('steps.choice_breakfast.options.2.note', 'R30 \u00b7 +40 Fullness \u00b7 10 min there') },
-    hungry: { label: line('steps.choice_breakfast.options.3.label', '\u{1F6B6} Walk to the bus hungry'), note: line('steps.choice_breakfast.options.3.note', '\u221215 Fullness \u00b7 out the door now') },
+    hungry: { label: line('steps.choice_breakfast.options.3.label', '\u{1F6B6} Head out hungry'), note: line('steps.choice_breakfast.options.3.note', '\u221215 Fullness \u00b7 out the door now') },
   }
   const first = await choices(line('steps.choice_breakfast.title', 'Breakfast?'), [OPT.noodles, OPT.tuck, OPT.caf, OPT.hungry])
   let plan = ['noodles', 'tuck', 'caf', 'hungry'][first]
@@ -909,183 +909,31 @@ async function play() {
     await eat()
     changeStats({ hunger: 35, energy: 5 })
   }
-  // 3. Head out: one choice. Walk (the bus stop, where someone is waiting) or skip
-  // straight to the gate. Both take the same time; only the walk has the meet-cute.
-  const crushData = run.crush || (run.crush = newCrush(run.character))
-  setStep('head-out')
-  const routeFlag = q.get('route')
-  const route = routeFlag === 'skip' ? 1 : routeFlag === 'walk' ? 0 : await choices('Ready for campus?', [
-    { label: '\u{1F68F} Walk to the bus', note: 'Shower, the walk, the stop · someone’s already waiting' },
-    { label: '⏩ Skip to campus', note: 'Same time · straight to the gate' },
-  ])
-  host.dataset.route = route ? 'skip' : 'walk'
-  const delay = lateBus ? BUS_DELAY : MEET_DELAY
-  if (route === 1) {
-    // Skip: the shower, the walk and the ride pass in one fade; the clock still runs.
-    setStep('skip-ride')
-    await fadeOut('\u{1F6BF} Shower · \u{1F68C} bus · UMzansi…')
-    const ride = busAfter(run.minutes + 15 + 8, delay)
-    await addMinutes(ride.next + RIDE - run.minutes, 1.6)
-    player.position.set(ANCHORS.arrive[0] - 1.5, 0, 6.2)
-    player.visible = true
-    camera.position.set(ANCHORS.arrive[0], 5, 14)
-    follow(player, [0, 5, 8])
-    await fadeIn()
-    await walk(player, [ANCHORS.arrive])
-  } else {
-    setStep('exit')
-    await walkTo(player, -0.9, 0.9)
-    face(player, -2.2, 1.5)
-    bubble('Quick shower, get dressed…', player)
-    await tapNext(uiq('.mm-bubble'))
-    bubble('')
-    // The shower: a short fade with the sound of water (no spinning on the spot).
-    water(2.4)
-    await fadeOut('\u{1F6BF} Shower…')
-    await Promise.all([wait(1.4), addMinutes(15, 1.4)])
-    await fadeIn()
-    // The door opens as you walk up to it, then you walk through the middle of the doorway.
-    sfx('door')
-    await Promise.all([walkTo(player, 2.3, 1.2), tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })])
-    camOffset.set(0, 6, 7)
-    await walkTo(player, 3.7, 1.2)
-    // Someone is already at the stop.
-    crushAv.position.set(CRUSH_AT[0], 0, CRUSH_AT[1])
-    face(crushAv, CRUSH_AT[0] + 0.4, ANCHORS.bus_lane[1])
-    crushAv.visible = true
-    setStep('walk-stop')
-    // Round the end of the shelter (never through the bench) to the bench, and sit down.
-    await Promise.all([walk(player, [[5.5, 1.2], [9, 1.2], [13.9, 1.6], [13.9, 6.0], [STOP_SEAT.x, STOP_SEAT.z + 0.32]], 3.6), addMinutes(8, 3.2)])
-    player.position.set(STOP_SEAT.x, STOP_SEAT.y, STOP_SEAT.z)
-    player.rotation.y = 0
-    player.userData.seatFloor = 0
-    player.userData.pose = 'sit'
-    await task(() => !inTransition(player) && player.userData.prevPose === 'sit')
-    // 4. The bus stop: the meet-cute.
-    setStep('stop')
-    const { due, missed, next } = busAfter(run.minutes, delay)
-    const signNode = uiq('.mm-sign')
-    signNode.hidden = false
-    const showSign = () => {
-      const left = Math.max(0, next - run.minutes)
-      const missLine = missed ? `<em>${line('steps.stop.sign_missed', 'Missed the {time}.', { time: fmt(due - BUS_EVERY) })}</em> ` : ''
-      signNode.innerHTML = `${missLine}Bus <b>${fmt(due)}</b> · <em class="mm-delayed">Delayed</em> · ~${left} min`
-    }
-    showSign()
-    signNode.classList.add('late')
-    host.dataset.nextbus = fmt(next)
-    // Low and in front (from the road), under the shelter roof; the sign steps aside while you talk.
-    frameOn(() => [player, crushAv], [0.5, 0.35, 1])
-    await wait(1.2)
-    signNode.hidden = true
-    if (lateBus) await talk(line('late_variants.bus_late.bubble', 'Come on, come on, come ON.'), player)
-    await talk('Oh. Someone’s here already.', player)
-    // Up off the bench to talk (standing up plays out, avatar3d).
-    player.userData.pose = 'stand'
-    await task(() => !inTransition(player) && player.userData.prevPose === 'stand')
-    player.userData.seatFloor = undefined
-    // Two people talking face each other.
-    face(crushAv, player.position.x, player.position.z)
-    face(player, crushAv.position.x, crushAv.position.z)
-    await talk('Delayed. Again. This bus has never once been on time.', crushAv)
-    setStep('meet')
-    const meetFlag = q.get('meet')
-    const opener = meetFlag ? ['funny', 'bus', 'headphones'].indexOf(meetFlag) : await choices('They’re right there. Say something?', [
-      { label: '\u{1F602} Say something funny', note: 'Risky · could be the start of something' },
-      { label: '\u{1F68C} Ask about the bus', note: 'Safe · you might learn their name' },
-      { label: '\u{1F3A7} Put on headphones', note: 'Keep to yourself · +5 Energy' },
-    ])
-    crushData.met = 'bus'
-    crushData.opener = ['funny', 'bus', 'headphones'][Math.max(0, opener)]
-    addIdentity(run, { funny: { creative: 1, socialite: 1 }, bus: { socialite: 1 }, headphones: { creative: 1 } }[crushData.opener])
-    host.dataset.opener = crushData.opener
-    if (crushData.opener === 'funny') {
-      await talk('At this rate we’ll graduate at this bus stop.', player)
-      await Promise.all([wave(crushAv, 1.2), talk('Ha! Okay… that was actually funny.', crushAv)])
-      crushData.closeness += 3
-      changeStats({ social: 2 })
-    } else if (crushData.opener === 'bus') {
-      await talk('Is the 8:20 always this late?', player)
-      crushData.nameKnown = true
-      await talk(`Always. I’m ${crushData.name}, second year. You’ll learn.`, crushAv)
-      crushData.closeness += 1
-      changeStats({ social: 1 })
-    } else {
-      bubble('\u{1F3A7} ♪ Amapiano on, world off…', player)
-      face(crushAv, CRUSH_AT[0] + 0.4, ANCHORS.bus_lane[1])
-      await Promise.all([tapNext(uiq('.mm-bubble')), addMinutes(1, 0.8)])
-      bubble('')
-      await talk('(They glance at you. Then back at their phone.)', crushAv)
-      changeStats({ energy: 5 })
-    }
-    host.dataset.crushKnown = crushData.nameKnown ? '1' : '0'
-    // The bus pulls in while the clock runs.
-    endFrame()
-    const waitMin = next - run.minutes
-    setStep('bus-arriving')
-    signNode.hidden = false
-    soundLoop('bus_engine', true)
-    camOffset.set(-6, 4.5, 8)
-    await Promise.all([
-      (async () => { const from = run.minutes; await tween(Math.max(1.2, Math.min(4, waitMin * 0.15)), (k) => { const m = Math.round(from + waitMin * k); if (m !== run.minutes) { run.minutes = m; showSign(); opts.onUpdate() } }, (x) => x) })(),
-      (async () => { bus.position.x = -40; camTarget.set(8, 0.8, 6); await wait(Math.max(0, Math.min(4, waitMin * 0.15) - 2.4)); stopFollow(player); follow(bus, [-4, 5, 10]); await tween(2.4, (k) => { bus.position.x = -40 + 54 * (1 - (1 - k) * (1 - k)) }, (x) => x) })(),
-    ])
-    run.minutes = next
-    opts.onUpdate()
-    bubble('')
-    signNode.hidden = true
-    await tween(0.5, (k) => { busDoor.position.x = 2.4 - k * 0.95 })
-    // Both of you get on (no button: getting on the bus is not a choice).
-    setStep('boarding')
-    stopFollow(bus)
-    follow(player, [-3, 4.5, 7])
-    await walk(crushAv, [ANCHORS.bus_stop], 2.4)
-    crushAv.visible = false
-    await walk(player, [ANCHORS.bus_stop])
-    await tween(0.4, (k) => { player.scale.setScalar(1 - k * 0.9) })
-    player.visible = false
-    player.scale.setScalar(1)
-    await tween(0.4, (k) => { busDoor.position.x = 1.45 + k * 0.95 })
-    // 5. The ride: sit next to them, or not.
-    setStep('riding')
-    stopFollow(player)
-    follow(bus, [-6, 6, 8])
-    const from = run.minutes
-    const ride = tween(3.2, (k) => { bus.position.x = 14 + 28 * k; const m = Math.round(from + RIDE * 0.5 * k); if (m !== run.minutes) { run.minutes = m; opts.onUpdate() } })
-    const seatFlag = q.get('seat')
-    const seat = seatFlag ? (seatFlag === 'next' ? 0 : 1) : await choices('Where do you sit?', [
-      { label: `\u{1F4BA} Next to ${crushData.nameKnown ? crushData.name : 'them'}`, note: 'The seat beside them is free' },
-      { label: '\u{1FA9F} Window seat at the back', note: 'Quiet ride · +5 Energy' },
-    ])
-    crushData.sat = seat === 0
-    host.dataset.seat = seat === 0 ? 'next' : 'back'
-    await ride
-    if (seat === 0) {
-      const say = { funny: 'The comedian! Sit, sit. What else have you got?', bus: `Hi again. ${crushData.name}, remember? The seat’s free.`, headphones: 'What were you listening to? You looked like you were at a festival.' }[crushData.opener]
-      await talk(say, bus)
-      if (!crushData.nameKnown) await talk('You talk the whole way. You forget to ask their name.', bus)
-      crushData.closeness += 2
-    } else {
-      await talk('Window seat. Deep breaths. Day one.', bus)
-      changeStats({ energy: 5 })
-    }
-    const from2 = run.minutes
-    await tween(2.4, (k) => {
-      bus.position.x = 42 + 28 * k
-      const m = Math.round(from2 + (from + RIDE - from2) * k)
-      if (m !== run.minutes) { run.minutes = m; opts.onUpdate() }
-    })
-    await tween(0.5, (k) => { busDoor.position.x = 2.4 - k * 0.95 })
-    soundLoop('bus_engine', false)
-    player.position.set(bus.position.x + 1.5, 0, 6.2)
-    player.visible = true
-    stopFollow(bus)
-    follow(player, [0, 5, 8])
-    await walk(player, [ANCHORS.arrive])
-  }
-  // 6. at the gate
+  // 3. Head out (owner, 6 Nov: no bus on day 1; you live on campus, so the morning ends at
+  // your house's door and campus starts there). The crush is still made for the week; the
+  // two of you meet on campus instead of at a bus stop.
+  if (!run.crush) run.crush = newCrush(run.character)
+  setStep('exit')
+  host.dataset.route = 'door'
+  await walkTo(player, -0.9, 0.9)
+  face(player, -2.2, 1.5)
+  bubble('Quick shower, get dressed…', player)
+  await tapNext(uiq('.mm-bubble'))
+  bubble('')
+  // The shower: a short fade with the sound of water (no spinning on the spot).
+  water(2.4)
+  await fadeOut('\u{1F6BF} Shower…')
+  await Promise.all([wait(1.4), addMinutes(15, 1.4)])
+  await fadeIn()
+  // The door opens as you walk up to it, then you walk out through the middle of it.
+  sfx('door')
+  await Promise.all([walkTo(player, 2.3, 1.2), tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })])
+  camOffset.set(0, 6, 7)
+  await Promise.all([walkTo(player, 3.7, 1.2), addMinutes(2, 0.8)])
+  setStep('out-door')
+  await fadeOut('\u{1F6AA} Out the door · UMzansi')
+  // 4. Out of the house
   setStep('arrive')
-  face(player, ANCHORS.campus[0], ANCHORS.campus[1])
   if (cafBreakfast) {
     setStep('caf-breakfast')
     await fadeOut('\u{1F373} Caf breakfast\u2026 R30 pap and egg')
@@ -1107,8 +955,7 @@ async function play() {
   card.innerHTML = `<p class="mm-kind">${line(`steps.done.${res}.kind`, onTime ? 'On time' : 'Running late')}</p>
     <h2>${line(`steps.done.${res}.title`, onTime ? 'You made it to campus' : 'You made it\u2026 just')}</h2>
     <p class="mm-times"><span>Arrived <b>${fmt(arrived)}</b></span><span>Lecture <b>${fmt(LECTURE)}</b></span></p>
-    <p>${onTime ? line('steps.done.on_time.line', '{min} minutes to find your venue and a seat.', { min: LECTURE - arrived }) : line('steps.done.late.line', 'You slip in after it started. \u22122 Grades.')}${lateBus ? ' The bus was delayed.' : ''}</p>
-    ${crushData.met && !crushData.nameKnown ? '<p class="mm-hook">\u{1F440} You still don\u2019t know the name of the one from the bus stop.</p>' : ''}
+    <p>${onTime ? line('steps.done.on_time.line', '{min} minutes to find your venue and a seat.', { min: LECTURE - arrived }) : line('steps.done.late.line', 'You slip in after it started. \u22122 Grades.')}</p>
     <button type="button" class="mm-go" data-mm="continue">Continue to the lecture \u203a</button>`
   card.hidden = false
   await new Promise((resolve) => { card.querySelector('button').onclick = resolve })
