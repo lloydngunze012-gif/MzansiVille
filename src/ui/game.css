@@ -308,6 +308,17 @@
 .sc-flt{display:inline-block;margin-top:3px;padding:0 6px;border-radius:6px;background:#ffe9d6;color:#a4501b;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .sc-more{all:unset;cursor:pointer;width:36px;height:30px;margin:-6px -6px -6px 0;border-radius:8px;text-align:center;font:900 18px/30px system-ui;color:#5b23c9}
 .sc-more:active{background:#ece3fb}
+/* Leaderboard (owner, 6 Nov): white, no dark purple; the scores are what you see. */
+.sc-card{background:#fff;border-color:#e3d9c6;box-shadow:0 6px 0 #0004,0 24px 50px #0006}
+.sc-card h1,.sc-card{color:#1c1915}
+.sc-tab{border-color:#d9cfbd;color:#1c1915}
+.sc-tab.on{background:#fff;color:#1c1915;border:3px solid #f0c400;box-shadow:0 3px 0 #c99a00}
+.sc-scope{border-color:#d9cfbd;color:#1c1915}
+.sc-list li{border-color:#ece5d8}
+.sc-list li>b,.sc-you>b{color:#1c1915;font-size:17px}
+.sc-list li:nth-child(n+4) .sc-rank{background:#f1ede6;color:#1c1915}
+.sc-list small,.sc-you small,.sc-note{color:#6b6359}
+.sc-sample{background:#1c1915}
 .sc-menu{margin-top:8px;display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:12px;background:#2a1846;animation:gpop .15s ease-out}
 .sc-menu p{margin:2px 6px 4px;color:#ffd23f;font-size:12.5px;font-weight:700}
 .sc-menu button{all:unset;cursor:pointer;min-height:40px;padding:0 10px;border-radius:9px;color:#fff6e6;font:600 14px system-ui;display:flex;align-items:center}

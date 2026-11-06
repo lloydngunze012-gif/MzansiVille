@@ -79,3 +79,12 @@ test('reduced motion: a still outline, no animation', async ({ browser }) => {
   expect(s.outline).toBe('solid')
   await context.close()
 })
+
+test('leaderboard: screenshot', async ({ page }) => {
+  fs.mkdirSync(OUT, { recursive: true })
+  await student(page, { money: 1500, energy: 85, hunger: 55, grades: 30, social: 18 })
+  await page.evaluate(() => { location.hash = '#/board' })
+  await expect(page.locator('.sc-card')).toBeVisible({ timeout: 15000 })
+  await page.waitForTimeout(2500)
+  await page.screenshot({ path: `${OUT}/board.png` })
+})
