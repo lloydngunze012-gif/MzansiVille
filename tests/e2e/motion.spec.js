@@ -7,6 +7,7 @@ import { fpsGate } from '../fps.js'
 // npx playwright test tests/e2e/motion.spec.js --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'docs/sprints/motion'
 test.use({ viewport: { width: 412, height: 915 }, video: { mode: 'on', size: { width: 412, height: 915 } } })
@@ -18,11 +19,7 @@ async function campus(page, spawn, extra = '') {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
@@ -158,11 +155,7 @@ test('M2d sit on a lecture bench (day 1 lecture)', async ({ page }) => {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
@@ -192,11 +185,7 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
@@ -250,11 +239,7 @@ test('M3b day 1 morning: on the mattress, then a natural get-up', async ({ page 
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await expect(page).toHaveURL(/#\/morning/)
   // Back to normal speed for the get-up itself.
   await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto#/morning')
@@ -348,11 +333,7 @@ test('M4c a bed in res: you walk round the furniture to the bed, never through',
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

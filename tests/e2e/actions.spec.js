@@ -4,6 +4,7 @@
 // Run: npx playwright test tests/e2e/actions.spec.js --config playwright.edge.config.js --workers=1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'docs/sprints/actions'
 const FAST = Boolean(process.env.FAST)
@@ -19,11 +20,7 @@ async function student(page, set = {}) {
   await page.goto(q('a=0#/new'))
   await page.evaluate(() => localStorage.clear())
   await page.goto(q('a=0#/new'))
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate((x) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

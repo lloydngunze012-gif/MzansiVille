@@ -6,6 +6,7 @@
 import { expect } from '@playwright/test'
 import fs from 'node:fs'
 import { fpsGate } from '../fps.js'
+import { enrolUI } from '../enrol.js'
 
 export const OUT = 'docs/sprints/basics'
 // (on the real GPU: the software one draws about 5 fps, below the movement tests' 20)
@@ -18,12 +19,7 @@ export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
   await page.goto('/?morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  if (gender) await page.locator(`[data-gender="${gender}"]`).first().tap().catch(() => {})
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1, gender: gender })
   await page.waitForURL(/#\/play/)
   await page.evaluate((r) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

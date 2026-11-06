@@ -2,6 +2,7 @@
 // phone-sized screen, with screenshots mid-scene.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'test-results/scenes'
 test.use({ viewport: { width: 412, height: 915 } })
@@ -27,11 +28,7 @@ async function setup(page, place, phase, minutes) {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ label: 'O Block' }).catch(() => page.locator('#residence').selectOption({ index: 1 }))
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(([ph, m]) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

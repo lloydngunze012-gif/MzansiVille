@@ -2,6 +2,7 @@
 // buttons get the taps (Chat Send, Save "Send a magic link").
 // Run: npx playwright test tests/e2e/menu.spec.js --config playwright.edge.config.js
 import { test, expect } from '@playwright/test'
+import { enrolUI } from '../enrol.js'
 
 // The game loads the 3D campus behind these screens; give slower runs room.
 test.describe.configure({ mode: 'serial', timeout: 90000 })
@@ -10,11 +11,7 @@ async function newGame(page) {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
     await page.locator('.g-result [data-act]').first().tap()

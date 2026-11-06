@@ -1,6 +1,7 @@
 // Bug 1 (plan 2): the student looks the same in the creator, morning, campus and lecture.
 // Run: npx playwright test tests/e2e/avatar.spec.js --config playwright.edge.config.js
 import { test, expect } from '@playwright/test'
+import { enrolUI } from '../enrol.js'
 
 test('a dark-skinned female in a dress looks identical in every scene', async ({ page }) => {
   test.setTimeout(180000)
@@ -17,11 +18,7 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   expect(look).toMatchObject({ gender: 'female', outfitFile: 'dress', headFile: 'long', skin: '#2c1b12', top: '#e8497a', dress: true, curvy: true })
   await page.screenshot({ path: 'test-results/avatar-1-creator.png' })
 
-  await page.locator('#name').fill('Naledi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Naledi', house: 1, course: 1 })
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.character.avatar)
   expect(saved).toMatchObject({ gender: 'female', skin: 'ebony', hair: 'braids', outfit: 'dress', body: 'curvy' })
 

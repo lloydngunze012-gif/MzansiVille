@@ -4,6 +4,7 @@
 // no screen that stops play at any point.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'test-results/latenight'
 test.use({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } })
@@ -16,11 +17,7 @@ test('last slot at night: Late night on campus, carry on; bed starts the next da
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.goto('/audio/CREDITS.md')
   await page.evaluate(() => {

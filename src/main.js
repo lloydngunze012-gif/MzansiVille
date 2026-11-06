@@ -33,7 +33,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
-import { outfitsFor, roommateOf } from './avatar.js'
+import { genderOf, outfitsFor, roommateOf } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
@@ -56,6 +56,7 @@ import { clearErrors, installErrorReporting, readErrors } from './errors.js'
 import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
+import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import { playerCardHtml } from './ui/card.js'
 
 installErrorReporting()
@@ -292,7 +293,7 @@ function cycleFlavour() {
 // The creator shows the real 3D student, so what you dress is what you play.
 function syncPreview(viewState) {
   const stage = viewState?.screen === 'create' && hasGL() ? app.querySelector('.cc-stage') : null
-  if (!stage) { previewPromise?.then((mod) => mod.hidePreview()); return }
+  if (!stage) { previewPromise?.then((mod) => mod.hidePreview()); if (viewState?.screen === 'create') hydrateThumbs(); return }
   if (!previewPromise) previewPromise = import('./ui/preview3d.js')
   previewPromise.then((mod) => {
     const now = app.querySelector('.cc-stage')
@@ -308,7 +309,12 @@ let thumbsPromise = null
 const lastThumb = new Map() // part|id -> the last picture that chip showed
 function hydrateThumbs() {
   const chips = [...app.querySelectorAll('.cc-chip.th[data-part]')].filter((chip) => ['outfit', 'hair', 'body'].includes(chip.dataset.part))
-  if (!chips.length) return
+  // (the card at the end of enrolment: your portrait as dressed, made on the look screen)
+  if (!chips.length) {
+    const photo = app.querySelector('.cc-photo')
+    if (photo && lastThumb.get('photo')) photo.innerHTML = `<img src="${lastThumb.get('photo')}" alt="">`
+    return
+  }
   if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
   const show = (chip, url) => {
     const box = chip.isConnected && chip.querySelector('.cc-thumb')
@@ -326,12 +332,13 @@ function hydrateThumbs() {
   const stageReady = previewPromise ? previewPromise.then((mod) => mod.ready?.()).catch(() => {}) : Promise.resolve()
   Promise.all([thumbsPromise, stageReady]).then(([{ thumbFor, thumbNow }]) => {
     const look = draft.avatar
-    const putPhoto = (url) => { const node = app.querySelector('.cc-photo'); if (url && node) { lastThumb.set('photo', url); node.innerHTML = `<img src="${url}" alt="">` } }
+    // (kept even with no card on screen: the enrolment card at the end shows it)
+    const putPhoto = (url) => { if (!url) return; lastThumb.set('photo', url); const node = app.querySelector('.cc-photo'); if (node) node.innerHTML = `<img src="${url}" alt="">` }
     // (and the whole student, kept for the stage's still next time this look opens)
     if (!thumbNow(look, 'body')) thumbFor(look, 'body', () => Boolean(app.querySelector('.cc-stage')))
     const ready = thumbNow(look, 'hair')
     if (ready) putPhoto(ready)
-    else thumbFor(look, 'hair', () => Boolean(app.querySelector('.cc-photo'))).then(putPhoto)
+    else thumbFor(look, 'hair', () => Boolean(app.querySelector('.cc-photo, .cc-stage'))).then(putPhoto)
     const order = [...chips].sort((a, b) => Number(b.classList.contains('on') || b.getAttribute('aria-pressed') === 'true') - Number(a.classList.contains('on') || a.getAttribute('aria-pressed') === 'true'))
     for (const chip of order) {
       const part = chip.dataset.part
@@ -498,6 +505,8 @@ function captureForm() {
   if (course) draft.course = course.value
   const handle = document.getElementById('handle')
   if (handle) draft.handle = handle.value
+  const bio = document.getElementById('bio')
+  if (bio) draft.bio = bio.value
   const email = document.getElementById('email')
   if (email) draft.email = email.value
   const composer = document.getElementById('composer')
@@ -1011,6 +1020,13 @@ function finishTurn() {
   if (mode === 'summary' || mode === 'over') sync()
 }
 
+// Skipping your name: a name to start with (change it any time from your card).
+const DEFAULT_NAMES = { female: ['Thandi', 'Lerato', 'Ayanda', 'Naledi', 'Zinhle'], male: ['Sipho', 'Kabelo', 'Lwazi', 'Thabo', 'Neo'] }
+function enrolDefaultName() {
+  const list = DEFAULT_NAMES[genderOf(draft.avatar)] || DEFAULT_NAMES.female
+  return list[Math.floor(Math.random() * list.length)]
+}
+
 function readCharacter() {
   captureForm()
   const district = districtNow()
@@ -1124,6 +1140,7 @@ app.addEventListener('focusin', (event) => {
 
 app.addEventListener('input', (event) => {
   if (event.target.id === 'pc-bio') { const n = app.querySelector('[data-pc-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
+  if (event.target.id === 'bio') { draft.bio = event.target.value; const n = app.querySelector('[data-bio-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
   if (event.target.id === 'name') draft.name = event.target.value
   if (event.target.id === 'handle') draft.handle = event.target.value
   if (event.target.id === 'email') draft.email = event.target.value
@@ -1199,7 +1216,7 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
-    draft = { ...emptyDraft(), name: c.name, residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, edit: true }
+    draft = { ...emptyDraft(), name: c.handle && c.handle === c.name ? `@${c.handle}` : c.name, residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: c.from || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return
@@ -1299,6 +1316,81 @@ app.addEventListener('click', async (event) => {
     save.rulesAccepted = true
     persist()
     go('new')
+    return
+  }
+  // ---- Enrolment: look, who you are, your vibe, your card (src/ui/enrol.js) ----
+  if (act === 'enrol-pick') {
+    captureForm()
+    const { k, v } = button.dataset
+    // (a second tap on the chosen one clears an optional pick)
+    draft[k] = draft[k] === v && ['from', 'vibe', 'looking', 'bio'].includes(k) ? '' : v
+    if (k === 'bio') draft.notice = ''
+    draft.error = ''
+    paint()
+    return
+  }
+  if (act === 'enrol-next' || act === 'enrol-skip') {
+    captureForm()
+    const skip = act === 'enrol-skip'
+    if (draft.step === 'who') {
+      const raw = draft.name.trim()
+      if (skip && raw.length < 2) draft.name = enrolDefaultName()
+      if (skip && !draft.residence) draft.residence = district.houses?.[Math.floor(Math.random() * (district.houses?.length || 1))]?.name || district.residences[0]?.name || ''
+      const name = draft.name.trim().replace(/^@/, '')
+      if (name.length < 2) { draft.error = 'Your name or handle needs at least 2 letters.'; paint(); return }
+      if (draft.name.trim().startsWith('@') && !/^@[A-Za-z0-9._]{2,30}$/.test(draft.name.trim())) { draft.error = 'Handles use letters, numbers, dots and underscores.'; paint(); return }
+      if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
+      if (!draft.residence) { draft.error = 'Tap the house you live in.'; paint(); return }
+    }
+    if (draft.step === 'vibe') {
+      if (!draft.course) draft.course = district.courses[0]
+      const res = cleanBio(draft.bio || '')
+      if (res.blocked) { draft.notice = 'That line can’t go on your card. Try another.'; paint(); return }
+      draft.notice = res.removed.join(' ')
+      draft.bio = res.text
+    }
+    draft.error = ''
+    const i = ENROL_STEPS.indexOf(draft.step)
+    draft.step = ENROL_STEPS[Math.min(ENROL_STEPS.length - 1, i + 1)]
+    paint()
+    window.scrollTo(0, 0)
+    return
+  }
+  if (act === 'enrol-back') {
+    captureForm()
+    const i = ENROL_STEPS.indexOf(draft.step)
+    draft.step = ENROL_STEPS[Math.max(0, i - 1)]
+    draft.error = ''
+    paint()
+    window.scrollTo(0, 0)
+    return
+  }
+  if (act === 'enrol-enter') {
+    const card = draftCard(district, draft)
+    const character = {
+      name: card.name,
+      handle: card.handle,
+      residence: draft.residence,
+      course: draft.course || district.courses[0],
+      avatar: { ...draft.avatar },
+      bio: card.bio,
+      vibe: draft.vibe,
+      looking: draft.looking,
+      from: draft.from,
+    }
+    if (draft.edit && save.run) {
+      save.run.character = { ...save.run.character, ...character }
+      draft = emptyDraft()
+      persist()
+      saveMyCard(save.run)
+      go('title')
+      return
+    }
+    save.run = createRun(district, { ...character, ...storyWithDefaults(draft.story) })
+    draft = emptyDraft()
+    persist()
+    saveMyCard(save.run)
+    go('play')
     return
   }
   if (act === 'avatar') {

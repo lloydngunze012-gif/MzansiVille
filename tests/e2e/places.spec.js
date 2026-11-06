@@ -2,6 +2,7 @@
 // Run: npx playwright test tests/e2e/places.spec.js --config playwright.edge.config.js
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'test-results/places'
 test.describe.configure({ mode: 'serial', timeout: 120000 })
@@ -10,11 +11,7 @@ async function newGame(page) {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

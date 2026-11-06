@@ -4,6 +4,7 @@
 // Writes test-results/ux-audit.json and .md.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 test.use({ viewport: { width: 412, height: 915 } })
 test.describe.configure({ timeout: 600000 })
@@ -16,11 +17,7 @@ async function freshPlayer(page, extra = {}) {
     await page.goto('/?fast=1&morning=0#/new')
     await page.evaluate(() => localStorage.clear())
     await page.goto('/?fast=1&morning=0#/new')
-    await page.locator('#name').fill('Thandeka')
-    await page.locator('#residence').selectOption({ index: 1 })
-    await page.locator('#course').selectOption({ index: 1 })
-    await page.locator('[data-act="begin"]').tap()
-    await page.locator('[data-step="story"] [data-act="begin"]').tap()
+    await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
     await page.waitForURL(/#\/play/)
     SAVE = await page.evaluate(() => localStorage.getItem('mzansiville.v1'))
   }
@@ -95,7 +92,7 @@ async function talkSetup(p, id, a) {
 const SCREENS = [
   { name: 'Cover', setup: async (p) => { await p.goto('/?fast=1#/'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1#/') } },
   { name: 'Creator: look', setup: async (p) => { await p.goto('/?fast=1&morning=0#/new'); await p.evaluate(() => localStorage.clear()); await p.goto('/?fast=1&morning=0#/new') } },
-  { name: 'Creator: story', setup: async (p) => { await p.goto('/?fast=1&morning=0#/'); await p.evaluate(() => localStorage.clear()); await p.goto(`/?fast=1&morning=0&r=${Math.random()}#/new`); await p.locator('#name').fill('T'.repeat(3)); await p.locator('#residence').selectOption({ index: 1 }); await p.locator('#course').selectOption({ index: 1 }); await p.locator('[data-act="begin"]').tap() } },
+  { name: 'Creator: vibe', setup: async (p) => { await p.goto('/?fast=1&morning=0#/'); await p.evaluate(() => localStorage.clear()); await p.goto(`/?fast=1&morning=0&r=${Math.random()}#/new`); await p.locator('[data-act="enrol-next"]').tap(); await p.locator('#name').fill('T'.repeat(3)); await p.locator('[data-house-pick]').first().tap(); await p.locator('[data-act="enrol-next"]').tap() } },
   { name: 'Campus (3D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=1#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }) } },
   { name: 'Campus map (2D)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=2#/play'); await expect(p.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 }); await p.locator('[data-act="view"][data-mode="map"]').tap() } },
   { name: 'Menu (gear)', setup: async (p) => { await freshPlayer(p); await p.goto('/?fast=1&morning=0&a=3#/play'); await p.locator('[data-act="gear"]').first().tap() } },

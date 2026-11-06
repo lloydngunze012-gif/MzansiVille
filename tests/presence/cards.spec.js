@@ -4,6 +4,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { measureFps } from '../fps.js'
+import { enrolUI } from '../enrol.js'
 
 const OUT = 'docs/sprints/presence'
 const ROOM = `test-${Date.now().toString(36)}`
@@ -23,12 +24,7 @@ async function enrol(frame, origin, name, gender) {
   await frame.goto(`${origin}/?${q}#/new`)
   await frame.evaluate(() => localStorage.clear())
   await frame.goto(`${origin}/?${q}#/new`)
-  await frame.locator('#name').fill(name)
-  await frame.locator('#residence').selectOption({ index: gender === 'male' ? 3 : 5 })
-  await frame.locator('#course').selectOption({ index: 1 })
-  await frame.locator(`[data-gender="${gender}"]`).first().tap().catch(() => {})
-  await frame.locator('[data-act="begin"]').tap()
-  await frame.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(frame, { name: name, house: gender === 'male' ? 3 : 5, course: 1, gender: gender })
   await frame.waitForURL(/#\/play/, { timeout: 30000 })
   await frame.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

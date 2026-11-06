@@ -1,0 +1,21 @@
+// Enrolment, tapped through like a player (src/ui/enrol.js): look -> who you are -> your
+// vibe -> your card -> Enter campus. Shared by every test that needs a new student.
+// t: a page or a frame. house: 1-based, in houses.json order (the old house list's
+// index); course: 1-based index into the course list, or a course name.
+export async function enrolUI(t, { name = 'Thandi', house = 1, course = 1, gender, bio, vibe, looking } = {}) {
+  await t.locator('.en[data-step="look"]').waitFor({ timeout: 30000 })
+  if (gender) await t.locator(`[data-gender="${gender}"]`).first().tap()
+  await t.locator('[data-act="enrol-next"]').tap()
+  await t.locator('.en[data-step="who"] #name').fill(name)
+  await t.locator('[data-house-pick]').nth(Math.max(0, (house || 1) - 1)).tap()
+  await t.locator('[data-act="enrol-next"]').tap()
+  await t.locator('.en[data-step="vibe"]').waitFor()
+  if (typeof course === 'string') await t.locator(`[data-pick="course"][data-v="${course}"]`).tap()
+  else await t.locator('[data-pick="course"]').nth(Math.max(0, (course || 1) - 1)).tap()
+  if (vibe) await t.locator(`[data-pick="vibe"][data-v="${vibe}"]`).tap()
+  if (looking) await t.locator(`[data-pick="looking"][data-v="${looking}"]`).tap()
+  if (bio) await t.locator('#bio').fill(bio)
+  await t.locator('[data-act="enrol-next"]').tap()
+  await t.locator('.en[data-step="card"]').waitFor()
+  await t.locator('[data-act="enrol-enter"]').tap()
+}

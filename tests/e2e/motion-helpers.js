@@ -2,6 +2,7 @@ import { fpsGate } from '../fps.js'
 // Shared by the motion tests (not a spec: importing a spec file runs all its tests).
 import { expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a))
 const DEG = 180 / Math.PI
@@ -13,11 +14,7 @@ async function campus(page, spawn, extra = '', run = {}) {
   await page.goto('/?fast=1&morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&morning=0#/new')
-  await page.locator('#name').fill('Thandeka')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
   await page.waitForURL(/#\/play/)
   await page.evaluate((r) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))

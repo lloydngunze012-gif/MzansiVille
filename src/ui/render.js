@@ -10,6 +10,7 @@ import { boardScreen, lobbyScreen } from './social.js'
 import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, ui, withHud } from './game.js'
 import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
+import { enrolScreen } from './enrol.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
 import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
@@ -49,6 +50,10 @@ export function emptyDraft() {
     avatar: { gender: 'female', skin: 'amber', hair: 'crop', outfit: 'hoodie' },
     story: {},
     step: 'look',
+    bio: '',
+    vibe: '',
+    looking: '',
+    from: '',
     email: '',
     notice: '',
     error: '',
@@ -656,14 +661,8 @@ function title(state) {
       <img src="/cover.jpg" alt="" width="1024" height="1536" decoding="async" fetchpriority="high">
     </picture></div>
     <div class="tc-foot">
-      <p class="tc-tag">Res, lectures, bunny chows and besties. Survive first year.</p>
-      ${day ? `<button class="btn tc-start" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : ''}
-      <button class="${day ? 'tc-continue' : 'btn tc-start'}" type="button" data-act="start">New student</button>
-      <div class="tc-row">
-        ${day ? '<button class="tc-small" type="button" data-act="edit-char">Edit character</button>' : ''}
-        <button class="tc-small" type="button" data-act="nav" data-go="save">${state.save.run?.userId ? 'Account' : 'Sign in'}</button>
-        <button class="tc-small" type="button" data-act="nav" data-go="settings">Settings</button>
-      </div>
+      <p class="tc-tag">First year at the University of Mzansi. Your house, your crew, your story.</p>
+      ${day ? `<button class="btn tc-start" type="button" data-act="continue">Continue \u00b7 day ${day}</button>` : '<button class="btn tc-start" type="button" data-act="start">Enrol</button>'}
       <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a></nav>
     </div>
   </main>`
@@ -727,7 +726,9 @@ export function view(state) {
       'Full terms to follow.',
     ])
   }
-  if (screen === 'create') return create(state)
+  // (enrolment: three quick screens and your card, src/ui/enrol.js; the old one-page form
+  // is kept below as create() but no longer shown)
+  if (screen === 'create') return enrolScreen(state, { still: stillOf(state.draft.avatar) })
   if (screen === 'morning' && state.run) return morningScreen(state)
   if (screen === 'lecture' && state.run) return lectureScreen(state)
   if (screen === 'world' || screen === 'map' || screen === 'play' || screen === 'summary') return mapHome(state, '')

@@ -2,6 +2,7 @@
 // Run: npx playwright test tests/e2e/morning.spec.js --config playwright.edge.config.js
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import { enrolUI } from '../enrol.js'
 
 // Both runs are heavy 3D scenes; one at a time keeps frame timing honest.
 test.describe.configure({ mode: 'serial' })
@@ -20,11 +21,7 @@ async function newGame(page, query, gender = 'female') {
   await page.evaluate(() => localStorage.clear())
   await page.goto(`/${query}&fast=1#/new`)
   await page.locator(`[data-part="gender"][data-id="${gender}"]`).tap()
-  await page.locator('#name').fill(gender === 'male' ? 'Lethabo' : 'Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  await enrolUI(page, { name: gender === 'male' ? 'Lethabo' : 'Thandi', house: 1, course: 1 })
 }
 
 const OUT = process.env.MORNING_SHOTS || 'test-results/morning'
@@ -51,25 +48,16 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await expect(page.locator('[data-act="start"]')).toBeVisible()
   await expect(page.locator('[data-act="continue"]')).toHaveCount(0)
   await expect(page.locator('[data-act="edit-char"]')).toHaveCount(0)
-  await expect(page.getByText('Sign in')).toBeVisible()
-  await expect(page.getByText('Settings')).toBeVisible()
+  // (owner, 6 Nov: one line about UMzansi and one button)
+  await expect(page.locator('.tc-foot button')).toHaveCount(1)
+  await expect(page.locator('[data-act="start"]')).toHaveText('Enrol')
   await shot('0_home')
   await page.locator('[data-act="start"]').tap()
   await expect(page).toHaveURL(/#\/rules/) // first time: the campus rules come first
   await page.locator('#agree').check()
   await page.locator('[data-act="agree"]').tap()
-  await page.locator('#name').fill('Thandi')
-  await page.locator('#residence').selectOption({ index: 1 })
-  await page.locator('#course').selectOption({ index: 1 })
-  await page.locator('[data-act="begin"]').tap()
-  // Part 2: your story. The Hustler path sets the dream; interest picks who waits at the bus stop.
-  await expect(page.locator('main[data-step="story"]').last()).toBeVisible()
-  await page.locator('[data-act="story"][data-k="funding"][data-id="bursary"]').tap()
-  await page.locator('[data-act="story"][data-k="path"][data-id="hustler"]').tap()
-  await page.locator('[data-act="story"][data-k="interest"][data-id="girls"]').tap()
-  await expect(page.locator('[data-k="dream"][data-id="hustle"]')).toHaveAttribute('aria-pressed', 'true')
-  await shot('0b_story')
-  await page.locator('[data-step="story"] [data-act="begin"]').tap()
+  // Enrolment: look, who you are, your vibe, your card (src/ui/enrol.js).
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
 
   await expect(page).toHaveURL(/#\/morning/)
   await expect(page.locator('.g-goal')).toContainText('Get to your 9:00 lecture on time.')
@@ -126,8 +114,9 @@ test('day 1 morning: room to campus', async ({ page }) => {
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.phase).toBe('lecture')
   expect(run.morningDone).toBe(true)
-  expect(run.crush?.id).toBe('amahle') // (made for the week; you meet on campus now)
-  expect(run.character).toMatchObject({ funding: 'bursary', path: 'hustler', dream: 'hustle', interest: 'girls' })
+  expect(run.crush?.id, 'a crush made for the week (you meet on campus)').toBeTruthy()
+  // (enrolment has no story step since 6 Nov: the defaults)
+  expect(run.character).toMatchObject({ funding: 'nsfas', path: 'scholar', dream: 'deans', interest: 'everyone' })
   expect(run.outDoor).toBe(true) // (campus starts at your house's door)
   // The clock keeps the arrival time, and Zanele (met in the room) is the bestie with no repeat card.
   const hhmm = `${String(Math.floor(run.minutes / 60)).padStart(2, '0')}:${String(run.minutes % 60).padStart(2, '0')}`
@@ -151,8 +140,8 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await expect(page.locator('.g-goals')).toBeVisible({ timeout: 20000 })
   await expect(page.locator('.g-goal-list li')).toHaveCount(3)
   await expect(page.locator('.g-goal-list li').first()).toContainText('9:00 lecture')
-  await expect(page.locator('.g-dream')).toContainText('R5,000')
-  await expect(page.locator('.g-goal-list li.dream')).toContainText('Earn your first R50')
+  await expect(page.locator('.g-dream')).toContainText("Dean's List") // (the default dream: enrolment has no story step since 6 Nov)
+  await expect(page.locator('.g-goal-list li.dream')).toContainText('Study once')
   await shot('10_campus')
   // Any queued result cards (bestie, etc.) come first; clear them.
   for (let i = 0; i < 6 && await page.locator('.g-result [data-act]').count(); i++) {
