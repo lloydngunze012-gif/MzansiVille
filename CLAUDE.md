@@ -1,17 +1,6 @@
 # MzansiVille: plan and rules
 
-You're the only developer on MzansiVille (GitHub: lloydngunze012-gif/MzansiVille), a 3D campus life-sim set at a South African university, benchmarked against Lagos Life and The Sims. Other agents are stopped.
-
-First: save this whole message into CLAUDE.md at the repo root, so future sessions remember the plan and rules.
-
-Rules: work on main. Commit and push after each item. After each push, reply with three lines: what changed, what to test on my phone, what's still broken.
-
-STEP 0, set up and bring in finished work:
-- checkpoint-b has nothing committed. Switch to main and pull the latest from GitHub.
-- Merge origin/content-writer. On conflicts in day1_morning.json and day1_lecture.json, keep main's version. Make sure the game uses the new activities.csv (108 actions) so every place has things to do.
-- From origin/world-designer, take ONLY public/audio/ (sounds + CREDITS.md) and docs/world-designer/. Do not take its src/ changes, places.csv, residences.csv or seed.sql.
-- Merge origin/qa-reports (docs only). Read docs/benchmark.md; it's our target.
-- Leave origin/backend unmerged.
+This file is for Claude Code, the engineer. Cursor reads it too: Cursor is the content designer and owns data/ only. Read docs/team.md and docs/now.md first. Update docs/now.md before you finish.
 
 THEN, in order:
 1. Clock bug: the morning ends at e.g. 08:42 but campus loads at 09:00. Keep the time where the morning ended.
