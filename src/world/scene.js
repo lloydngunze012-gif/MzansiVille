@@ -242,7 +242,7 @@ function ensureRenderer() {
   ps = createPlayerState({ host, onExit: leaveState, alive: stateAlive })
   mapUi = createCampusMap(host)
   // (the map is an order: whatever you were doing, you leave it and go)
-  mapUi.setHandler((x, z) => { interrupt(); walkTo(x, z) })
+  mapUi.setHandler((x, z) => { interrupt(); walkTo(x, z, null, { arrive: true }) })
   mapUi.setGo((id) => { interrupt(); goTo(id) })
 
   hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
@@ -440,6 +440,9 @@ function pick(point, x, y) {
     return node ? { kind: 'player', id: node.userData.remote } : null
   }
   if (onSelf(x, y)) return (!mover.hasTarget && playerHit()) || { kind: 'self' }
+  // The glowing ring at your lecture's door: a tap on it walks you there, all the way.
+  const ring = guide?.getObjectByName('lecture-marker')
+  if (ring && lectureVenue() && raycaster.intersectObject(ring, false).length) return { kind: 'building', id: lectureVenue() }
   const other = playerHit()
   if (other) return other
   if (inHouse && room) {
@@ -501,10 +504,24 @@ function walkTo(x, z, done, opts = {}) {
   const pace = mover.walkTo(points, {
     ...opts,
     done: (how) => {
-      if (how === 'arrived' || (how === 'stalled' && (opts.always || Math.hypot(x - player.position.x, z - player.position.z) < 1.5))) done?.()
+      const left = Math.hypot(x - player.position.x, z - player.position.z)
+      // (owner, 6 Nov) A walk to a marker or a place goes all the way: held up on the way
+      // (a bench, someone stepping in), it finds a new route from where you are and
+      // carries on, up to 8 times, instead of stopping there. Only a walk that makes no
+      // progress at all ends where it stopped.
+      if (how === 'stalled' && opts.arrive && left > 1.5) {
+        const tries = (opts.tries || 0) + 1
+        const progress = opts.lastLeft === undefined || left < opts.lastLeft - 0.3
+        if (tries <= 8 && (progress || tries <= 3)) {
+          requestAnimationFrame(() => walkTo(x, z, done, { ...opts, tries, lastLeft: left }))
+          return
+        }
+      }
+      if (how === 'arrived' || (how === 'stalled' && (opts.always || left < 1.5))) done?.()
     },
   })
   host.dataset.walkSeconds = (mover.remaining() / pace).toFixed(1)
+  host.dataset.walkTries = String(opts.tries || 0)
 }
 // People are in the way too: while a route is found, the cells they stand in are closed
 // (the grid itself only knows buildings and props), so it goes round them, never
@@ -590,8 +607,9 @@ function approach(id, onArrive) {
     openPlace(id)
   }
   if (dist < 2.2) there()
-  // (held up on the way: the place opens where you stopped, never nothing)
-  else walkTo(door.x, door.z, there, { always: true })
+  // (held up on the way: a new route and on again; only if it truly can't get there does
+  // the place open where you stopped, never nothing)
+  else walkTo(door.x, door.z, there, { always: true, arrive: true })
 }
 // Arrived: turn on the spot to face the place (the body turns, the feet stay put).
 let faceTo = null

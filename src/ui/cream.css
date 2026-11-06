@@ -242,3 +242,13 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .cc-ready.ok { background: #2fa866; color: #fff; }
 .cc-top h1.cc-logo { color: var(--cr-ink); -webkit-text-stroke: 0; text-shadow: 0 3px 0 #f0c40099; }
 .cc-id .lg-kicker, .cc-id small:first-child { color: #a86400; }
+
+/* The campus map (in the 3D view) and the old glass sheets: cream too */
+.map-overlay { background: #efe4cff2; }
+.map-card, .map-detail, .sheet, .glass-card, .summary-panel, .onboard { background: var(--cr-bg); color: var(--cr-ink); backdrop-filter: none; border: 1.5px solid var(--cr-line); }
+.map-head h2 { color: var(--cr-ink); }
+.sheet .blurb, .glass-card .blurb, .map-detail .blurb { color: var(--cr-muted); }
+.map-pin .lbl { color: var(--cr-ink); text-shadow: 0 1px 0 #fffaf0, 0 0 4px #fffaf0; }
+.map-pin .ico { border: 1.5px solid var(--cr-line); }
+.kind { color: #a86400; }
+.act { background: #fff; color: var(--cr-ink); border-color: var(--cr-line); }
