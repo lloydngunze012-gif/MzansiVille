@@ -276,7 +276,12 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .en-sub span { text-transform: none; letter-spacing: 0; color: var(--cr-muted); font-weight: 700; }
 /* Look: the student fills the screen, cards in rows under it */
 .en-look { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.en-stage { min-height: 46dvh; flex: 1; border-radius: 22px; }
+/* The preview stays put (owner, 6 Nov): the top bar and the student are pinned, about
+   the top 40% of the screen and never under 300 px; only the options scroll beneath. */
+.en[data-step="look"] { padding-top: 0; }
+.en[data-step="look"] .en-top { position: sticky; top: 0; z-index: 8; background: var(--cr-bg-2); margin: 0 -14px; padding: calc(6px + var(--safe-t, 0px)) 14px 0; }
+.en .en-stage { position: sticky; top: calc(54px + var(--safe-t, 0px)); z-index: 7; flex: none; width: 100%; min-height: 0; height: max(300px, 40dvh); border-radius: 22px; box-shadow: 0 0 0 8px var(--cr-bg-2), 0 16px 0 8px var(--cr-bg-2); }
+.en-rows { position: relative; z-index: 1; padding-top: 18px; }
 .en-rows { display: flex; flex-direction: column; gap: 6px; }
 .en-row h3 { margin: 0 0 4px; font: 800 12px system-ui; letter-spacing: .06em; text-transform: uppercase; color: #8a5a00; }
 .en-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }

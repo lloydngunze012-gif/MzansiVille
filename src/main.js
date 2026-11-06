@@ -1453,7 +1453,13 @@ app.addEventListener('click', async (event) => {
     draft.avatar = { ...draft.avatar, [button.dataset.part]: button.dataset.id }
     // (a new gender keeps the outfit only if that gender has it: men have no dress)
     if (button.dataset.part === 'gender' && !outfitsFor(button.dataset.id).some((o) => o.id === draft.avatar.outfit)) draft.avatar.outfit = 'hoodie'
+    // The preview changes at once; the options stay where you scrolled them (down the
+    // page, and along each row of cards).
+    const y = window.scrollY
+    const rows = [...app.querySelectorAll('.en-strip')].map((el) => el.scrollLeft)
     paint()
+    app.querySelectorAll('.en-strip').forEach((el, i) => { el.scrollLeft = rows[i] || 0 })
+    window.scrollTo(0, y)
     return
   }
   if (act === 'begin') {
