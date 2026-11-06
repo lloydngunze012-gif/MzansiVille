@@ -31,6 +31,7 @@ import { reportError } from '../errors.js'
 import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
+import { startDropOff } from './dropoff.js'
 import { SPEED, ms } from '../speed.js'
 
 const host = document.getElementById('world')
@@ -74,6 +75,7 @@ let frameFrom = null // where the player was before this frame's step
 let against = 0 // seconds walking at something without going anywhere
 let againstFrames = 0
 let gateDay = ''
+let dropOff = null // day 1: the car at the Main Gate, then your bags to your door (dropoff.js)
 let guide = null
 let guideFrom = null
 
@@ -93,8 +95,13 @@ function clearGuide() {
   if (host) host.dataset.route = '0'
 }
 
-function buildGuide() {
-  const door = lectureDoor()
+// Day 1 after the drop-off: your own house's door, with your suitcase.
+function homeDoor() {
+  const id = currentRun && currentDistrict ? homePlaceId(currentDistrict, currentRun.character?.residence) : ''
+  const b = campus?.layout.buildings.find((building) => building.id === id)
+  return b ? doorPoint(b) : null
+}
+function buildGuide(door = lectureDoor()) {
   if (!door || !player) return clearGuide()
   if (guide) scene.remove(guide)
   guide = new THREE.Group()
@@ -147,6 +154,15 @@ function lectureArrive() {
 
 function updateGuide() {
   if (!player || !campus) return
+  if (dropOff?.wantsDoor) {
+    const home = homeDoor()
+    if (!home) return
+    if (!paused() && Math.hypot(home.x - player.position.x, home.z - player.position.z) < 2.4) { clearGuide(); mover.stop(); dropOff.arrive(); return }
+    if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide(home)
+    const mark = guide?.getObjectByName('lecture-marker')
+    if (mark) { mark.scale.setScalar(1 + Math.sin(clock * 4) * 0.22); mark.material.opacity = 0.6 + Math.sin(clock * 4) * 0.3 }
+    return
+  }
   const door = lectureDoor()
   if (lectureDue() && !paused() && !acting && door && Math.hypot(door.x - player.position.x, door.z - player.position.z) < 2.4) { lectureArrive(); return }
   if (!currentRun?.lectureRoute) { if (guide) clearGuide(); return }
@@ -365,6 +381,7 @@ function activePlaces(district, run) {
 // an event, the map, the day summary). Nothing else ever holds the stick or taps.
 function paused() {
   if (mapUi?.isOpen()) return true
+  if (dropOff?.holding) return true
   // (on screen: a sheet slid away below the screen as its action starts doesn't count)
   for (const el of document.querySelectorAll('[role="dialog"]')) {
     const r = el.getBoundingClientRect()
@@ -2280,6 +2297,22 @@ function respawn(district, run) {
   scene.add(player)
   mover.attach(player)
   clearGuide()
+  // Day 1: dropped off at the gate by your parent (dropoff.js); campus proper starts at your door.
+  dropOff?.stop()
+  dropOff = null
+  if (run.dropOff && gate && homeBuilding) {
+    dropOff = startDropOff({
+      scene, host, player, run, gate,
+      door: doorPoint(homeBuilding),
+      house: homeBuilding.name,
+      roommate: roommateOf(run.character?.avatar),
+      boom: campus.buildings.getObjectByName('boom'),
+      walkTo: (x, z) => walkTo(x, z, null, { arrive: true }),
+      rig,
+      onUpdate: () => window.dispatchEvent(new CustomEvent('mzansi-dropoff-update')),
+      onDone: () => { const d = dropOff; dropOff = null; d?.stop(); window.dispatchEvent(new CustomEvent('mzansi-dropoff-done')) },
+    })
+  }
   spawnedKey = spawnKey(district, run)
   host.dataset.ready = '1'
 }
@@ -2608,6 +2641,7 @@ function frameBody(now) {
       player.rotation.y = Math.atan2(facing.x, facing.z)
     }
     clock += dt
+    dropOff?.update(dt)
     soundLoop('footsteps', walking)
     poseAvatar(player, walking, clock)
     // (only while you cover ground: turning on the spot never swings the view)

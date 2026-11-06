@@ -804,6 +804,22 @@ window.addEventListener('mzansi-talk-leave', () => {
   paint()
 })
 
+// Day 1: the drop-off at the Main Gate (world/dropoff.js). The money lands as it is handed
+// over; at your house door your roommate meets you and the day proper starts (goals, the route
+// to your lecture).
+window.addEventListener('mzansi-dropoff-update', () => { persist(); paint() })
+window.addEventListener('mzansi-dropoff-done', () => {
+  const run = save.run
+  if (!run) return
+  delete run.dropOff
+  run.at = homePlaceId(districtNow(), run.character?.residence)
+  run.outDoor = true
+  run.lectureRoute = true
+  startGoals(run)
+  run.queue = [goalsCard(run), ...run.queue.filter((card) => card.kind !== 'goals')]
+  persist()
+  paint()
+})
 window.addEventListener('mzansi-lecture-arrive', () => {
   if (save.run) delete save.run.lectureCard
   persist()

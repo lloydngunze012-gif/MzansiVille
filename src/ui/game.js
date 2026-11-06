@@ -327,6 +327,10 @@ function ctaBar(district, run) {
   const next = nextPhase(district, run)
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
+  if (run.dropOff) {
+    const house = district.places.find((p) => p.id === sleepPlace)
+    return `<div class="g-cta g-route" role="status"><p>\u{1F9F3} Roll your suitcase to ${esc(house?.name || 'your house')}. Follow the gold dots.</p></div>`
+  }
   if (run.lectureRoute && !run.lectureResolved) {
     return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at ${esc(venueFor(run).name)}</p></div>`
   }
