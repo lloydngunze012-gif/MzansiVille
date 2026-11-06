@@ -12,3 +12,5 @@ blob-report
 # Test videos and screenshots stay on this machine; reports name them by file.
 docs/sprints/**/*.webm
 docs/sprints/**/*.png
+# Test reports (JSON) stay on this machine too; docs/sprints/presence/results.json was committed before this and stays.
+docs/sprints/**/*.json
