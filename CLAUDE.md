@@ -2,28 +2,6 @@
 
 This file is for Claude Code, the engineer. Cursor reads it too: Cursor is the content designer and owns data/ only. Read docs/team.md and docs/now.md first. Update docs/now.md before you finish.
 
-THEN, in order:
-1. Clock bug: the morning ends at e.g. 08:42 but campus loads at 09:00. Keep the time where the morning ended.
-2. Remove the Zanele bestie card after the morning; the player already met her as their roommate.
-3. Fix the dark label cut off on the left edge of the campus screen after arriving.
-4. Real names: change "Business Hall" back to SMIG everywhere, including the route hint. Keep Westville, O/R/S Block, the Quad and NSFAS. No official university logos or crests anywhere, including the share card.
-5. Sound: wire up public/audio. Footsteps while walking, kettle at the kettle, door when leaving, bus engine for the bus, crowd on campus, background music, and a mute toggle in the menu.
-6. Replace the capsule avatar with a free rigged low-poly character (Quaternius or Kenney, CC0) with arms, legs, and walk, idle and sit animations. Recolour from the character creator, including the Organt tee.
-7. Other students on campus: 10–15 people walking between buildings and sitting at the Quad, using the same character model.
-8. Walking into SMIG starts a playable 9:00 lecture: walk in, find a seat, something happens, a choice, a result.
-9. Bugs from QA (B02): sending a chat message lands on the rules page, and the sign-in link resets the player.
-
-Golden rule: every tap must show movement or something happening, never just a progress bar and numbers.
-
-Added by the owner during the build (keep these):
-- Characters have a gender, picked in the creator. The day 1 roommate is the same gender: Zanele for female students, Sipho for male students.
-- Include feminine clothing (Dress, Skirt & top, Shweshwe so far) and keep adding variety.
-- In the character creator the student dances and South African house music plays. A mute button is fine, but music and dancing are the default.
-
-Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a).
-
----
-
 # DAY 1: LEAVING HOME (owner, 6 Nov). Push after each numbered part. Don't deploy until the owner says so. Time-box 4 hours.
 1. Fix the stuck fade first: leaving the house on day 1 stuck on "Out the door · UMzansi" (fadeOut with no fadeIn without a caf breakfast, covering the Continue card). Every fadeOut has a matching fadeIn on every path; a test plays day 1 to the end with and without caf breakfast.
 2. The home scene replaces the day-1 opening. About 60 s, playable, not a cutscene: wake in your bedroom at your family home; through the window a real street (neighbouring houses, a fence or wall, a tree, a parked car, a neighbour watering a garden, a dog in the yard that follows you). Downstairs a parent and a sibling, a proper home breakfast, one short exchange (the parent says something warm and a little embarrassing; the sibling asks if they can have your room). Your bags by the door.
