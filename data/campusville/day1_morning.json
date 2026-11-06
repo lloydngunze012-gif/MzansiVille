@@ -224,6 +224,7 @@
     "note": "Sipho has his own lines. Keys mirror the Zanele ones they replace (path in the morning code -> Sipho line).",
     "lines": {
       "zanele.wave": "Ayy, roomie! I’m Sipho 👊 Your alarm is about to scream.",
+      "zanele.wave_day2": "Ayy, roomie! First real morning in res 👊 Sleep okay, bra?",
       "steps.wake.zanele": "Snoozed {n} times, bra. I was keeping score.",
       "late_variants.snoozed_too_long.zanele": "I tried, my guy. You fought the alarm and lost. Go!",
       "steps.roommate.bubble": "Eish, sorry! Last packet 😅 I’ll sort you out at lunch.",
