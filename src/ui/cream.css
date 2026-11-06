@@ -1,0 +1,152 @@
+/* Cream theme (owner, 6 Nov): "change the entire theme to cream white like the card showing
+   the options; drop the purple; it shouldn't look like dark mode." Loaded last (game.js),
+   so it repaints the dark purple surfaces in one place: cream panels, dark ink text, gold
+   kept for what's selected or to be tapped. The 3D world itself is untouched. */
+:root {
+  --cr-bg: #fffaf0;      /* cream panel (the place sheet's colour) */
+  --cr-bg-2: #f4ecdc;    /* a step darker: chips, rows, quiet buttons */
+  --cr-line: #e3d8c4;    /* borders */
+  --cr-ink: #1c1915;     /* text */
+  --cr-muted: #6b6359;   /* secondary text */
+  --cr-gold: #f0c400;
+  --cr-gold-dk: #a87400;
+  --cr-shadow: 0 4px 14px #0002;
+}
+
+/* ---- Screens behind the cards ---- */
+.g-screen { background: var(--cr-bg-2); color: var(--cr-ink); }
+.lg { background: linear-gradient(180deg, #f7efdf, #efe4cf); color: var(--cr-ink); }
+.lg-back { color: var(--cr-ink); border-color: var(--cr-line) !important; background: var(--cr-bg) !important; }
+
+/* ---- HUD ---- */
+.g-hud { background: var(--cr-bg); color: var(--cr-ink); border-bottom: 2px solid var(--cr-line); box-shadow: var(--cr-shadow); backdrop-filter: none; }
+.g-day { opacity: 1; color: var(--cr-ink); }
+.g-clock { color: #b8860b; text-shadow: none; }
+.g-gear, .g-home-float { background: var(--cr-bg-2); border: 1.5px solid var(--cr-line); color: var(--cr-ink); box-shadow: none; }
+.g-online { color: #0f5132; background: #e3f6ea; border-color: #8fd6ab; }
+.g-phases li { background: var(--cr-bg-2); color: var(--cr-ink); opacity: .7; }
+.g-phases li.past { opacity: .45; }
+.g-phases li.now { opacity: 1; background: linear-gradient(180deg, #ffd23f, #f0b400); color: #2a1206; box-shadow: 0 2px 0 var(--cr-gold-dk); }
+.g-slots small { color: var(--cr-muted); opacity: 1; }
+.g-slots i { border-color: var(--cr-gold-dk); }
+.g-slots i.full { background: var(--cr-gold); box-shadow: none; }
+.g-chips span { color: #8a1f17; }
+
+/* ---- Chips over the 3D view: right-now, goal, toast ---- */
+.g-now, .g-goal, .g-toast, .lc-caption, .mm-q, .mm-float, .mm-sign, .mm-tag, .mm-clock, .go-skip {
+  background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: var(--cr-shadow);
+}
+.g-now.urgent { border-color: #e0573c; color: #a3301b; }
+.g-now.win { border-color: #2fa866; color: #12693c; }
+.g-goal b { color: #a87400; }
+.g-goal.late b { color: #c0392b; }
+.mm-float .up { color: #128a4a; } .mm-float .down { color: #c0392b; }
+.mm-sign { border-color: var(--cr-gold); }
+.mm-sign em { color: #c0392b; }
+.go-skip { border-color: var(--cr-gold); }
+
+/* ---- Camera buttons (Top / Sims / Eye / Map) ---- */
+.g-view { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: var(--cr-shadow); }
+.g-view[aria-pressed="true"] { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
+
+/* ---- The bottom bar (Skip to..., hints) ---- */
+.g-cta { background: var(--cr-bg); color: var(--cr-ink); border-top: 2px solid var(--cr-line); }
+.g-go.ghost { background: var(--cr-bg-2); color: var(--cr-ink); border: 1.5px solid var(--cr-line); }
+
+/* ---- Old-style dark sheet and the menu ---- */
+.g-sheet { background: var(--cr-bg); color: var(--cr-ink); border-top: 3px solid var(--cr-gold); }
+.g-grab { background: #1c191533; }
+.g-act { background: #fff; border-color: var(--cr-line); color: var(--cr-ink); }
+.g-act.busy { background: #fff3c4; }
+.g-why { color: #a3761a; }
+.g-warn { color: #b3261e; }
+.g-fx.up { background: #e3f6ea; color: #12693c; }
+.g-fx.down { background: #ffe5e0; color: #a3261b; }
+.g-menu { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: 0 20px 40px #0003; }
+.g-menu h3 { color: #a87400; }
+.g-menu button { color: var(--cr-ink); }
+.g-menu button:hover, .g-menu button:active { background: var(--cr-bg-2); }
+.g-menu .danger { color: #b3261e; }
+.g-scrim, .g-3d .g-scrim { background: #1c191555; }
+.g-scrim.soft { background: #1c191533; }
+
+/* ---- Full-screen cards (events, consequences, graduation) ---- */
+.g-3d .g-full { background: linear-gradient(180deg, #f7efdfcc, #efe4cff2 45%) !important; }
+.g-cons.over { background: linear-gradient(180deg, #efe4cf, #e2d4ba); }
+.g-grad { background: radial-gradient(120% 70% at 50% 0%, #ffd23f66, transparent 60%), linear-gradient(180deg, #fff3c4, #efe4cf); }
+
+/* Purple accents on cream cards become dark ink or gold */
+.g-result { border-color: var(--cr-line); box-shadow: 0 6px 0 #0001, 0 24px 60px #0004; color: var(--cr-ink); }
+.g-result h2, .lg-card h1, .sc-off h2 { color: var(--cr-ink); }
+.g-talk-ic { background: var(--cr-gold); color: #2a1206; }
+.g-talk-level { background: var(--cr-bg-2); color: var(--cr-ink); }
+.g-twistline { background: #fff3c4; color: var(--cr-ink); }
+.lg-card { border-color: var(--cr-line); box-shadow: 0 6px 0 #0001, 0 24px 50px #0003; }
+.sc-off { background: var(--cr-bg-2); border-color: var(--cr-line); }
+.sc-off .g-go.ghost, .sc-menu { background: var(--cr-bg-2); color: var(--cr-ink); }
+.mm-card, .mm-choice { border-color: var(--cr-line); box-shadow: 0 5px 0 #0001, 0 24px 60px #0004; }
+.mm-card .mm-hook { background: #fff3c4; }
+.mm-choice small { color: var(--cr-muted); }
+.mm-bubble, .lc-say { border-color: var(--cr-line); }
+
+/* Fades between scenes: warm, not black-purple */
+.mm-fade, #world .scene-fade { background: #efe4cf; }
+.mm-fade p { color: #a87400; }
+
+/* ---- 3D overlays the scene draws: common-room bar, the reload card ---- */
+#world .house-bar button { background: var(--cr-bg); color: var(--cr-ink); border-color: var(--cr-gold); box-shadow: var(--cr-shadow); }
+.world-fail { background: #efe4cfee; color: var(--cr-ink); }
+
+/* ---- Player card: your profile screen, the slide-up sheet ---- */
+.pc-screen { background: var(--cr-bg-2); color: var(--cr-ink); }
+.pc-edit { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); }
+.pc-sheet { background: var(--cr-bg); color: var(--cr-ink); }
+.pc-sheet-body { color: var(--cr-ink); }
+.pc-scrim { background: #1c191555; }
+.pc-sheet-acts button, .pc-report button, .pc-acts .btn { background: #fff; color: var(--cr-ink); border: 2px solid var(--cr-line); }
+.pc-sheet-acts button[data-pc="wave"] { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
+.pc-sheet-acts button.bad { border-color: #e7a59e; color: #b3261e; }
+.pc-close { color: var(--cr-muted) !important; }
+.pc-report small { color: var(--cr-muted); }
+
+/* ---- Chat panel (Piece 3) ---- */
+body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
+.chat-head small { color: var(--cr-muted); }
+.chat-x { color: var(--cr-ink); border-color: var(--cr-line); }
+.chat-log { background: #fff; border: 1.5px solid var(--cr-line); color: var(--cr-ink); }
+.chat-log li.me b { color: #a87400; }
+.chat-log .chat-who { color: #12693c; }
+.chat-log .chat-empty { color: var(--cr-muted); }
+.chat-quick button { background: #fff; color: var(--cr-ink); border-color: var(--cr-line); }
+.chat-quick button:active { background: var(--cr-gold); }
+.chat-form input { border-color: var(--cr-line); }
+.chat-count { color: var(--cr-muted); }
+.chat-note { color: #12693c; }
+.chat-note.bad { color: #b3261e; }
+#world .chat-btn { background: var(--cr-gold); color: #2a1206; border-color: #fff; }
+
+/* ---- Settings, creator ---- */
+.set { background: var(--cr-bg-2); color: var(--cr-ink); }
+.set .btn { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); }
+.cc { background: var(--cr-bg-2); color: var(--cr-ink); }
+.cc-stage { background: #efe4cf; box-shadow: 0 0 0 3px var(--cr-line); }
+.cc-stage::after { background: linear-gradient(to bottom, #efe4cf00, #efe4cfaa); }
+.cc-ready { background: var(--cr-gold); color: #2a1206; }
+.cc-pick { background: #fff; color: var(--cr-ink); border-color: var(--cr-line); }
+.cc-mute { background: var(--cr-bg); color: var(--cr-ink); }
+.tc-small { background: #fffaf0e6; color: var(--cr-ink); }
+
+/* Second pass, from the screenshots: white text left on cream, lilac tints */
+.door-prompt, .floater { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: var(--cr-shadow); }
+.pc-bar { color: var(--cr-ink); }
+.pc-back { color: #8a5a00; }
+.pc-stats-btn { color: #8a5a00; border-color: var(--cr-gold); }
+.pc-stats-btn.on { color: #2a1206; }
+.pc-acts .btn.primary { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
+.pc-acts .btn.ghost { background: transparent; color: var(--cr-ink); border: 2px solid var(--cr-line); }
+.pc-facts div { background: var(--cr-bg-2); }
+.pc-facts dt { color: var(--cr-muted); }
+.set .btn.set-danger-ghost { color: #b3261e; }
+.set .btn.set-danger { color: #fff; border-color: #c43b3b; }
+.lg-agree { background: #fff3c4; border-color: var(--cr-gold); }
+.sc-list li:nth-child(n+4) .sc-rank { background: #f1ede6; color: var(--cr-ink); }
