@@ -16,3 +16,5 @@ docs/sprints/**/*.jpg
 docs/sprints/**/*.jpeg
 # Test reports (JSON) stay on this machine too; docs/sprints/presence/results.json was committed before this and stays.
 docs/sprints/**/*.json
+# Claude preview pane config (local tool setting)
+.claude/launch.json
