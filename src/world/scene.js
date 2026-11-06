@@ -3,7 +3,7 @@ import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId, houseOf } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, gesture, inTransition, layDown, lookOf, poseAvatar, standSpotFor } from './avatar3d.js'
+import { createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { lookForPerson, nameOf } from './cast.js'
@@ -950,6 +950,23 @@ function speakerHead(id) {
   return a ? headOf(a) : null
 }
 window.mzansiBubbles = () => bubbles?.report() || []
+// Tests (seats, read only): everyone seated here, the seat of their trousers against the
+// real furniture straight under their hips (a ray down, people ignored). gap < 0: sinking.
+window.mzansiSeats = () => {
+  const ray = new THREE.Raycaster()
+  const solids = [campus?.group, room?.group, tempGroup].filter(Boolean)
+  const pool = [player, ...everyone(), ...temps, ...(inHouse?.folk || [])]
+  return pool.filter((a, i) => a && pool.indexOf(a) === i && a.userData.pose === 'sit' && !a.userData.sitMove && a.userData.rigged).map((a) => {
+    const m = measureBody(a)
+    const hips = a.getObjectByName('Hips') || a.userData.bones?.Hips
+    const at = hips ? hips.getWorldPosition(new THREE.Vector3()) : a.getWorldPosition(new THREE.Vector3())
+    ray.set(new THREE.Vector3(at.x, (m.seatOfPants ?? at.y) + 0.4, at.z), new THREE.Vector3(0, -1, 0))
+    ray.far = 2
+    const person = (o) => { for (let n = o; n; n = n.parent) if (n.userData?.personId || n.userData?.isPlayer || n.userData?.remote || n.userData?.rigged) return true; return false }
+    const hit = ray.intersectObjects(solids, true).find((h) => h.object.visible && h.object.isMesh && !h.object.isSprite && !person(h.object) && h.object.name !== 'hit' && h.object.name !== 'room-floor')
+    return { id: a.userData.isPlayer ? 'player' : a.userData.personId || 'extra', sop: m.seatOfPants, seatTop: hit ? +hit.point.y.toFixed(3) : null, gap: hit && m.seatOfPants != null ? +(m.seatOfPants - hit.point.y).toFixed(3) : null, on: hit?.object.name || hit?.object.parent?.name || null, at: [+at.x.toFixed(2), +at.z.toFixed(2)] }
+  })
+}
 // Opening the chat: the nearest real player within 4 m, else the nearest person here.
 function nearestToTalk() {
   if (!player) return null

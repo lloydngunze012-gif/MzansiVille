@@ -88,7 +88,7 @@ export function buildRoom(kind, opts = {}) {
       box(3.2, 0.8, 0.3, 0x6a2fd0, -1.5, 0.75, -3.45)
       box(1.4, 0.45, 0.8, 0x9a6a40, -1.5, 0.22, -1.6)
       box(2.4, 1.4, 0.1, 0x1c1915, 2.6, 1.6, -D / 2 + 0.15)
-      anchors.sit = { ...at(-1.5, -3.05), rot: 0, y: 0.55 }
+      anchors.sit = { ...at(-1.5, -3.05), rot: 0, y: 0.5 } // (the couch seat's top)
       anchors.look = at(2.6, -3)
     }
   }
@@ -209,10 +209,12 @@ export function buildRoom(kind, opts = {}) {
     anchors.door = at(-W / 2 + 1.1, 2.7) // just inside the door out
     anchors.spawn = at(-0.6, 1.4)
     anchors.look = at(-1, -1.6)
+    // (seat heights are the real surfaces: the couch's cushions top out at 0.67 m, the
+    // armchair's seat at 0.45 m; owner, 6 Nov: people sank into the couch at 0.55)
     anchors.seats = [
-      { ...at(-2.4, -3.0), rot: 0, y: 0.55 },
-      { ...at(-0.4, -3.0), rot: 0, y: 0.55 },
-      { ...at(1.3, -2.35), rot: 0, y: 0.5 },
+      { ...at(-2.4, -3.0), rot: 0, y: 0.67 },
+      { ...at(-0.4, -3.0), rot: 0, y: 0.67 },
+      { ...at(1.3, -2.35), rot: 0, y: 0.45 },
     ]
     anchors.stand = [{ ...at(-W / 2 + 1.4, 1.6), rot: -Math.PI / 2 }]
   }
