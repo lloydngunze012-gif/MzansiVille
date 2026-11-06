@@ -11,11 +11,13 @@
     "role": "Your roommate in the house. Your bestie from day one.",
     "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
     "intro": "That is Zanele. She will borrow things all year and return them with interest.",
-    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go."
+    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go.",
+    "wave_day2": "Morning, roomie! First real morning in res 👋 Sleep okay?"
   },
   "steps": {
     "wake": {
       "caption": "{house}, 07:00. Your phone buzzes on the pillow. Your stomach buzzes louder.",
+      "bubble_day2": "07:00. Alarm. Day two in res… snooze.",
       "bubbles": [
         {
           "who": "player",
