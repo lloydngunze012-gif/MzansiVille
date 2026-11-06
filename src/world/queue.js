@@ -5,18 +5,24 @@
 
 // opts: slot(i) where the i-th person stands; face: the way the line faces;
 // server: who serves; aside(n): where the n-th served person steps to eat;
-// move(avatar, x, z, speed) -> Promise; gesture(avatar, name);
+// move(avatar, x, z, speed) -> Promise of how it ended (walks.js: 'arrived', 'stalled',
+// 'replaced', 'stopped'); stop(avatar): end someone's walk; gesture(avatar, name);
 // isPlayer(avatar): the player (moved by their own walk, not by the line).
+// One walk per person (owner, 6 Nov): a newer walk replaces an older one, and what was to
+// follow the older one (facing the counter, the next leg round the line) doesn't happen.
 import { ms } from '../speed.js'
+import { ended } from './walks.js'
 
-export function createLine({ slot, face, server, aside, outside, move, gesture, isPlayer }) {
+export function createLine({ slot, face, server, aside, outside, move, stop = () => {}, gesture, isPlayer }) {
   const line = []
   const eating = [] // served, stepped aside, back in line later
+  const id = Symbol('line')
   let serving = null
   let moving = 0
   let rest = 2 // seconds until the front person is served
   let lastMove = 0
   let late = 0
+  let changed = 0 // (tests) when the line last changed: someone joined, left or was served
 
   const now = () => performance.now()
   function walk(avatar, x, z, speed) {
@@ -24,13 +30,30 @@ export function createLine({ slot, face, server, aside, outside, move, gesture, 
     lastMove = now()
     return move(avatar, x, z, speed).finally(() => { moving -= 1; lastMove = now() })
   }
+  // Held back on the way to place i (someone stands on it): close enough, like the front
+  // person served from where they are. Their place changes, and they walk again.
+  const heldAt = (a, i) => a.userData.lineHeld?.line === id && a.userData.lineHeld.i === i
+  // Walk to place i, then face the counter (only if the walk ended there, never after a
+  // newer walk replaced it).
+  function toPlace(a, i, speed) {
+    const s = slot(i)
+    a.userData.lineHeld = null
+    return walk(a, s.x, s.z, speed).then((how) => {
+      if (!ended(how)) return how
+      a.rotation.y = face
+      if (how === 'stalled') a.userData.lineHeld = { line: id, i }
+      return how
+    })
+  }
   // Everyone (but the player, who walks up by themself) steps up to their place.
   function shuffle() {
+    changed = now()
     return Promise.all(line.map((a, i) => {
       if (isPlayer(a)) return null
       const s = slot(i)
-      if (Math.hypot(a.position.x - s.x, a.position.z - s.z) < 0.05) return null
-      return walk(a, s.x, s.z, 1.5).then(() => { a.rotation.y = face })
+      // (already there, or held back right by it: any walk left over from before ends)
+      if (Math.hypot(a.position.x - s.x, a.position.z - s.z) < 0.05 || heldAt(a, i)) { stop(a); return null }
+      return toPlace(a, i, 1.5)
     }))
   }
 
@@ -43,8 +66,9 @@ export function createLine({ slot, face, server, aside, outside, move, gesture, 
     line.shift()
     serving = null
     eating.push(a)
+    a.userData.lineHeld = null
     const spot = aside(eating.length - 1)
-    walk(a, spot.x, spot.z, 1.4).then(() => gesture(a, 'emote-yes'))
+    walk(a, spot.x, spot.z, 1.4).then((how) => { if (ended(how)) gesture(a, 'emote-yes') })
     await shuffle()
     // Back to the end of the line after eating (whoever is there by then is ahead).
     setTimeout(() => {
@@ -58,13 +82,15 @@ export function createLine({ slot, face, server, aside, outside, move, gesture, 
   function join(a) {
     if (line.includes(a)) return line.indexOf(a)
     line.push(a)
+    changed = now()
     if (!isPlayer(a)) {
       const i = line.length - 1
       const s = slot(i)
-      // (round the outside of the line, not through the people in it)
+      // (round the outside of the line, not through the people in it; the second leg only
+      // if the first one ended, and only while they are still in the line)
       const o = outside ? outside(i) : null
-      const there = () => walk(a, slot(line.indexOf(a)).x, slot(line.indexOf(a)).z, 1.4).then(() => { a.rotation.y = face })
-      if (o && Math.hypot(a.position.x - s.x, a.position.z - s.z) > 1.5) walk(a, o.x, o.z, 1.4).then(there)
+      const there = () => (line.includes(a) ? toPlace(a, line.indexOf(a), 1.4) : null)
+      if (o && Math.hypot(a.position.x - s.x, a.position.z - s.z) > 1.5) walk(a, o.x, o.z, 1.4).then((how) => { if (ended(how)) there() })
       else there()
     }
     return line.length - 1
@@ -87,7 +113,7 @@ export function createLine({ slot, face, server, aside, outside, move, gesture, 
     if (isPlayer(front)) return
     const s = slot(0)
     // (still stepping up; someone held back by the crowd is served from where they are)
-    if (Math.hypot(front.position.x - s.x, front.position.z - s.z) > 0.3 && (late += dt) < 4) return
+    if (Math.hypot(front.position.x - s.x, front.position.z - s.z) > 0.3 && !heldAt(front, 0) && (late += dt) < 4) return
     late = 0
     rest -= dt
     if (rest > 0) return
@@ -98,12 +124,17 @@ export function createLine({ slot, face, server, aside, outside, move, gesture, 
 
   return {
     get people() { return line.filter((a) => !isPlayer(a)) },
+    // (tests) everyone the line moves: those in it and those stepped aside to eat
+    get members() { return line.filter((a) => !isPlayer(a)).concat(eating) },
     get order() { return line.slice() },
     get serving() { return serving },
     indexOf: (a) => line.indexOf(a),
     hasPlayer: () => line.some(isPlayer),
     // Something is happening: someone being served or walking to their place.
     active: () => Boolean(serving) || moving > 0 || now() - lastMove < ms(2500) || rest < 1.5,
+    // (tests, read only) when the line last changed, and how many walks are under way
+    get changed() { return changed },
+    get walking() { return moving },
     join,
     leave,
     update,

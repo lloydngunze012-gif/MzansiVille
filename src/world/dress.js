@@ -11,6 +11,7 @@ import { lookForPerson } from './cast.js'
 import { CHAIR_SEAT, makeChair } from './furniture.js'
 import { ms } from '../speed.js'
 import { createLine } from './queue.js'
+import { createWalks } from './walks.js'
 
 const PROPS = '/models/props/'
 const propCache = {}
@@ -95,10 +96,10 @@ export function dressPlaces(layout, floor) {
   const srcTables = []
   const freeTables = []
   let performer = null
-  const movers = [] // short straight walks for the place's own people
-  function moveAvatar(avatar, x, z, speed = 1.8) {
-    return new Promise((resolve) => movers.push({ avatar, x, z, speed, resolve }))
-  }
+  // Short straight walks for the place's own people: one per person (walks.js); a new
+  // walk replaces the old one, which settles as 'replaced'.
+  const walks = createWalks()
+  const moveAvatar = (avatar, x, z, speed = 1.8) => walks.start(avatar, x, z, speed)
 
   // (kind: what it is, for its collider, colliders.js; loading is tracked so the
   // colliders are built once every model is in)
@@ -289,6 +290,7 @@ export function dressPlaces(layout, floor) {
       aside: (n) => ({ x: front.x + side.x * (3 + n * 1.2) + up.x * 1.5, z: front.z + side.z * (3 + n * 1.2) + up.z * 1.5 }),
       outside: (i) => ({ x: slot(i).x + side.x * 1.1, z: slot(i).z + side.z * 1.1 }),
       move: moveAvatar,
+      stop: walks.stop,
       gesture,
       isPlayer: (a) => Boolean(a.userData.isPlayer),
     })
@@ -407,6 +409,7 @@ export function dressPlaces(layout, floor) {
       aside: (n) => ({ x: cx + 2.8 - 3.2 - n * 0.9, z: front + 4.2 }),
       outside: (i) => ({ x: cafQueue.slot(i).x - 1.1, z: cafQueue.slot(i).z }),
       move: moveAvatar,
+      stop: walks.stop,
       gesture,
       isPlayer: (a) => Boolean(a.userData.isPlayer),
     })
@@ -460,20 +463,7 @@ export function dressPlaces(layout, floor) {
   function update(dt) {
     cafQueue.line?.update(dt)
     queue.stall?.line.update(dt)
-    const moving = new Set()
-    for (let i = movers.length - 1; i >= 0; i--) {
-      const m = movers[i]
-      const a = m.avatar.position
-      const dx = m.x - a.x
-      const dz = m.z - a.z
-      const d = Math.hypot(dx, dz)
-      const step = m.speed * dt
-      if (d <= step) { a.x = m.x; a.z = m.z; movers.splice(i, 1); m.resolve(); continue }
-      a.x += (dx / d) * step
-      a.z += (dz / d) * step
-      m.avatar.rotation.y = Math.atan2(dx, dz)
-      moving.add(m.avatar)
-    }
+    const moving = walks.step(dt)
     for (const p of people) {
       if (p.avatar.userData.following) continue // walking with the player (scene.js)
       p.clock += dt
@@ -486,5 +476,5 @@ export function dressPlaces(layout, floor) {
   }
 
   queue.caf = cafQueue
-  return { group, obstacles, ready: () => Promise.all(loading), vendorTaps, isMoving: (a) => movers.some((m) => m.avatar === a), spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
+  return { group, obstacles, ready: () => Promise.all(loading), vendorTaps, isMoving: (a) => walks.has(a), walks, spots, benches, queue, srcTables, freeTables, get performer() { return performer }, statics: people.map((p) => p.avatar), applyNight, update }
 }

@@ -32,6 +32,7 @@ import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
+import { createWalks } from './walks.js'
 import { SPEED, ms } from '../speed.js'
 
 const host = document.getElementById('world')
@@ -1314,6 +1315,17 @@ window.mzansiShot = () => {
   }
 }
 window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.line.order.length), people: q.people.length, order: q.line.order.map((a) => (a.userData.isPlayer ? 'player' : a.userData.personId)), serving: q.line.serving ? (q.line.serving.userData.isPlayer ? 'player' : q.line.serving.userData.personId) : null, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }
+// Tests (read only): a queue's people right now: where each stands, which way they face,
+// how many walks they have (never more than one), and when the line last changed.
+window.mzansiQueueWalks = (which = 'stall') => {
+  const q = campus?.dressing.queue?.[which]
+  const walks = campus?.dressing.walks
+  if (!q || !walks) return null
+  return {
+    changed: q.line.changed, now: performance.now(), maxPer: walks.maxPer, endings: walks.endings, slots: [0, 1, 2, 3, 4, 5].map((i) => q.slot(i)),
+    npcs: q.line.members.map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(3), z: +a.position.z.toFixed(3), rot: +a.rotation.y.toFixed(3), walks: walks.count(a), inLine: q.line.order.includes(a), place: q.line.order.indexOf(a) })),
+  }
+}
 window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.atan2(x - player.position.x, z - player.position.z); rig.facing = a; player.rotation.y = a }
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
 window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
@@ -1714,7 +1726,8 @@ function activityApi() {
       temps.push(avatar)
       return avatar
     },
-    moveNpc: (avatar, x, z, pace = 1.8) => new Promise((resolve) => { npcMoves.push({ avatar, x, z, pace, resolve }) }),
+    // (one walk per person, walks.js: a new one replaces the old, which settles 'replaced')
+    moveNpc: (avatar, x, z, pace = 1.8) => npcWalks.start(avatar, x, z, pace),
     prop: (url, x, z, { s = 2.2, rot = 0, y = 0 } = {}) => {
       const holder = new THREE.Group()
       holder.position.set(x, y, z)
@@ -1808,7 +1821,7 @@ let temps = []
 let tempSolids = [] // colliders of what an activity built (benches, steps, stalls, props)
 let tempSolidsDirty = false
 let roomSolids = []
-let npcMoves = []
+const npcWalks = createWalks() // an activity's people walking (moveNpc)
 let room = null
 let scriptMove = null
 let activityFocus = null
@@ -1835,7 +1848,7 @@ function clearTemps() {
   temps = []
   tempSolids = []
   tempSolidsDirty = false
-  npcMoves = []
+  npcWalks.drop() // (their people are gone: nothing waits on these walks)
   tempGroup.clear()
 }
 function clearRoom() {
@@ -2031,21 +2044,8 @@ window.mzansiCompanion = () => companion && { id: companion.avatar.userData.pers
 
 function sceneTick(dt) {
   if (!tempGroup.parent) scene.add(tempGroup)
-  const moving = new Set()
-  for (let i = npcMoves.length - 1; i >= 0; i--) {
-    const m = npcMoves[i]
-    const a = m.avatar.position
-    const dx = m.x - a.x
-    const dz = m.z - a.z
-    const d = Math.hypot(dx, dz)
-    const step = m.pace * dt
-    if (d <= step) { a.x = m.x; a.z = m.z; npcMoves.splice(i, 1); m.resolve(); continue }
-    a.x += (dx / d) * step
-    a.z += (dz / d) * step
-    m.avatar.rotation.y = Math.atan2(dx, dz)
-    moving.add(m.avatar)
-  }
-  if (npcMoves.length || scriptMove) ps.busy(0.4)
+  const moving = npcWalks.step(dt)
+  if (npcWalks.size || scriptMove) ps.busy(0.4)
   for (const a of temps) poseAvatar(a, moving.has(a), clock)
   // The camera frames you and what you are doing, re-aimed as you move.
   if (acting && activityFocus) {
