@@ -115,7 +115,7 @@ house_noodles,morning,house,Two-minute noodles,-8,0,0,0,15,0,"Two minutes on the
 house_dishes,morning,house,Wash the sink dishes,0,-3,0,2,0,0,"The sink has been full since yesterday, so you wash it, and nobody claps."
 house_airtime,morning,house,Borrow airtime,0,-1,0,3,0,0,"Please call me, and they send airtime plus a voice note that is mostly laughing."
 house_toast,morning,house,Toast from the labelled loaf,-4,2,0,1,10,0,"The loaf has a name on it, so you check twice and then toast two slices."
-house_leftovers,lecture,house,Heat last night's leftovers,0,-2,0,1,15,1,"Last night's pot, two minutes in the microwave, the whole passage alerted."
+house_leftovers,lecture,house,Eat last night's leftovers,0,-2,0,1,15,1,"Last night's pot, two minutes in the microwave, the whole passage alerted."
 house_notes,lecture,house,Copy a housemate's notes,0,-4,3,2,0,1,"You copy their notes before the tut, and the handwriting is a second module."
 house_nap,lecture,house,Nap on the common room couch,0,6,-1,0,-3,1,"A couch nap between classes, and the alarm loses to the cushion."
 house_tut,lecture,house,A housemate explains the tut,0,-6,4,3,-3,1,"A housemate teaches the tut with a wooden spoon, and it lands."
