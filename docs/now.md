@@ -13,10 +13,8 @@ Last updated: 6 Nov, Claude Code (housekeeping, no code changes).
 3. **Sound: the radio.** Stations synced to the server clock, a phone radio in the menu, world speakers that get louder as you walk closer. The music itself is Lloyd's outreach (3 stations, an hour each), listed by Cursor in data/campusville/music.json.
 
 ## Left uncommitted on the owner's PC
-- `.claude/launch.json`: the dev-server config for Claude's preview pane (local tool setting).
-- `docs/design/cover-check/3-link-preview-standin.png`: a cover-check image, not in the housekeeping list.
-- Ignored, staying local: sprint screenshots (.png, .jpg, .jpeg), videos (.webm) and test reports (.json), e.g. `docs/sprints/home/poster_tone_*.jpg`, `fps.json`, `docs/sprints/queue-jitter/*.json`.
+- Nothing. Ignored and staying local: `.claude/launch.json` (Claude's preview pane config), sprint screenshots (.png, .jpg, .jpeg), videos (.webm) and test reports (.json).
 
 ## Loose ends
-- `origin/fix/zanele-wave-day2` (Cursor, 6 Nov 12:26) is stale: main has had the day-2 lines since 89780d0, and `npm run check` passes (51). Not merged; safe to delete.
-- Backlog: activities wiring list for the new common-room, caf and sports rows; Auntie Pinky hidden behind her queue.
+- The first plan (STEP 0, items 1-9, the owner's "keep these" rules: roommate matches gender, feminine clothing, creator dance and music) now lives in docs/history.md, not CLAUDE.md.
+- Backlog, newest: the activities wiring list for the new common-room, caf and sports rows; Auntie Pinky hidden behind her queue; on day 1 the parent walks through the coffee table on the way to the car.
