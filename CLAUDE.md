@@ -35,6 +35,19 @@ Status: the first plan (Step 0 and items 1-9) is done and pushed (up to 86d3a1a)
 
 ---
 
+# DAY 1: LEAVING HOME (owner, 6 Nov). Push after each numbered part. Don't deploy until the owner says so. Time-box 4 hours.
+1. Fix the stuck fade first: leaving the house on day 1 stuck on "Out the door · UMzansi" (fadeOut with no fadeIn without a caf breakfast, covering the Continue card). Every fadeOut has a matching fadeIn on every path; a test plays day 1 to the end with and without caf breakfast.
+2. The home scene replaces the day-1 opening. About 60 s, playable, not a cutscene: wake in your bedroom at your family home; through the window a real street (neighbouring houses, a fence or wall, a tree, a parked car, a neighbour watering a garden, a dog in the yard that follows you). Downstairs a parent and a sibling, a proper home breakfast, one short exchange (the parent says something warm and a little embarrassing; the sibling asks if they can have your room). Your bags by the door.
+3. Two home styles from the player's "From" answer: a suburban house with a garden, and a township street house, each with its own street dressing. Styles in a data file so more can be added. The family's look matches the player's chosen look.
+4. The neighbourhood never looks empty: at least six surrounding houses, fences, trees, street lamps and a few people. Nothing like a box floating in a void from any of the three cameras.
+5. Assets from free CC0 packs, not hand-built boxes: Kenney City Kit (Suburban) glTF (houses, fences, driveways, trees); Quaternius Ultimate Textured Building Pack recoloured to South African palettes for the township. Only CC0; record every pack, source URL and licence in docs/credits.md. glTF, Draco-compressed, everything this scene adds under 2 MB, loaded only for day 1.
+6. The drop-off: your parent drives you on a fixed scripted path (never player-driven) through a few streets, a fade, and pulls up at UMzansi's Main Gate. A short goodbye, a hug, the parent hands you money ("for food, not for parties"), the car drives off. You walk through the gate with your suitcase and are guided to your house door, where the normal game begins.
+7. The noodles, kettle and shower move to your first morning in res (day 2); from day 2 you wake in your house. A bus stop near the gate with "Bus to town" as the way off campus, ready for Greenway Grocer.
+Report: screenshots of both home styles from all three cameras by day, the drop-off at the gate, the size added, and fps before and after.
+Status (6 Nov): part 1 done (morning.js underFade pairs every fade; tests/e2e/morning.spec.js plays day 1 to the end without and with the caf breakfast).
+
+---
+
 # RETENTION SPEC, ITEM 1: PRESENCE (owner, 4 Nov). Time-box 2 hours, push, redeploy, report, then STOP and wait for the phone verdict.
 New spec: docs/design/retention-spec.md, read with the player experience spec. It renames the campus to the University of Mzansi (UMzansi) and sets the build order (section 8).
 Item 1 only: other real players visible on the same campus; position and pose broadcast through Supabase a few times a second and interpolated; names and student numbers above their heads; players pass through each other (no collision); nobody ever spawns alone; an "X students on campus" count. Supabase Realtime, not polling. A player closing the tab disappears within 10 seconds. Test with two browsers side by side at phone size and record a video of both. Nothing from items 2 to 7 yet.

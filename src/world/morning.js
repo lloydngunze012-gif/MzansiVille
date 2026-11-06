@@ -853,17 +853,16 @@ async function play() {
     await tween(0.6, (k) => { door.rotation.y = -k * 1.4 })
     await walkTo(player, 3.6, 1.2)
     await walk(player, [[6.5, 1.2]])
-    await fadeOut('\u{1F6D2} Tuck shop\u2026 R12 noodles')
-    await addMinutes(10, 1.2)
-    player.position.set(6.5, 0, 1.2)
-    face(player, 2, 1.2)
-    steamGroup.visible = true
-    const held = holdBowl()
-    await fadeIn()
+    await underFade('\u{1F6D2} Tuck shop\u2026 R12 noodles', async () => {
+      await addMinutes(10, 1.2)
+      player.position.set(6.5, 0, 1.2)
+      face(player, 2, 1.2)
+      steamGroup.visible = true
+      holdBowl()
+    })
     await walk(player, [[3.6, 1.2]])
     await walkTo(player, 2.2, 1.2)
     await tween(0.5, (k) => { door.rotation.y = -1.4 * (1 - k) })
-    void held
     await eat()
     changeStats({ money: -12, hunger: 25 })
   } else if (plan === 'caf') {
@@ -922,26 +921,26 @@ async function play() {
   bubble('')
   // The shower: a short fade with the sound of water (no spinning on the spot).
   water(2.4)
-  await fadeOut('\u{1F6BF} Shower…')
-  await Promise.all([wait(1.4), addMinutes(15, 1.4)])
-  await fadeIn()
+  await underFade('\u{1F6BF} Shower…', () => Promise.all([wait(1.4), addMinutes(15, 1.4)]))
   // The door opens as you walk up to it, then you walk out through the middle of it.
   sfx('door')
   await Promise.all([walkTo(player, 2.3, 1.2), tween(0.6, (k) => { door.rotation.y = -1.4 * Math.max(k, Math.abs(door.rotation.y) / 1.4) })])
   camOffset.set(0, 6, 7)
   await Promise.all([walkTo(player, 3.7, 1.2), addMinutes(2, 0.8)])
   setStep('out-door')
-  await fadeOut('\u{1F6AA} Out the door · UMzansi')
-  // 4. Out of the house
-  setStep('arrive')
-  if (cafBreakfast) {
+  // 4. Out of the house. The fade always lifts again (it used to stay down without a caf
+  // breakfast and cover the Continue card for good).
+  await underFade('\u{1F6AA} Out the door · UMzansi', async () => {
+    setStep('arrive')
+    await wait(0.6)
+    if (!cafBreakfast) return
     setStep('caf-breakfast')
-    await fadeOut('\u{1F373} Caf breakfast\u2026 R30 pap and egg')
+    fadeText('\u{1F373} Caf breakfast… R30 pap and egg')
     await addMinutes(10, 1.2)
     steamGroup.visible = true
-    const held = holdBowl()
-    await fadeIn()
-    void held
+    holdBowl()
+  })
+  if (cafBreakfast) {
     await eat()
     changeStats({ money: -30, hunger: 40, energy: 5 })
   }
@@ -963,17 +962,26 @@ async function play() {
   opts.onDone({ arrived, onTime })
 }
 
+// Fades are only ever used through underFade, so every fade down is lifted again on
+// every path (an error inside still lifts it).
+async function underFade(text, during) {
+  await fadeOut(text)
+  try { await during?.() } finally { await fadeIn() }
+}
+function fadeText(text) { uiq('.mm-fade p').textContent = text }
 async function fadeOut(text) {
   const f = uiq('.mm-fade')
-  f.querySelector('p').textContent = text
+  fadeText(text)
   f.hidden = false
   f.style.opacity = 0
+  host.dataset.fade = '1'
   await tween(0.4, (k) => { f.style.opacity = k })
 }
 async function fadeIn() {
   const f = uiq('.mm-fade')
   await tween(0.4, (k) => { f.style.opacity = 1 - k })
   f.hidden = true
+  host.dataset.fade = '0'
 }
 function holdBowl() {
   bowl.visible = true

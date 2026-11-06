@@ -102,7 +102,7 @@ test('day 1 morning: room to campus', async ({ page }) => {
   await shot('5_door_exit')
 
   await atStep('done')
-  await expect(page.locator('.mm-card')).toBeVisible()
+  await cardOnTop(page)
   await expect(page.locator('.mm-card')).toContainText('Lecture 09:00')
   await expect(host).toHaveAttribute('data-ontime', '1')
   await expect(page.locator('.mm-card')).toContainText('On time')
@@ -199,33 +199,49 @@ test.skip('day 1 morning: forced late bus is Running late (no bus on day 1 since
   expect(errors).toEqual([])
 })
 
-test('day 1 morning: Sipho has his own lines, and you can walk to the bus hungry', async ({ page }) => {
+// The morning always ends on the arrival card with the fade lifted (it used to stay down
+// over the card when there was no caf breakfast). Played to the end both ways.
+async function cardOnTop(page) {
+  await expect(page.locator('.mm-card')).toBeVisible()
+  await expect(page.locator('.mm-fade')).toBeHidden()
+  await expect(page.locator('#morning3d')).toHaveAttribute('data-fade', '0')
+  // nothing covers the Continue button: the topmost element at its middle is the button
+  const top = await page.locator('[data-mm="continue"]').evaluate((b) => {
+    const r = b.getBoundingClientRect()
+    return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('[data-mm="continue"]') === b
+  })
+  expect(top, 'the Continue button is on top').toBe(true)
+}
+
+test('day 1 to the end without a caf breakfast (Sipho, out hungry)', async ({ page }) => {
   test.setTimeout(240000)
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
   await newGame(page, '?roommate=1&latebus=0&snooze=0&talk=auto', 'male')
   await expect(page.locator('.mm-bubble')).toContainText('Sipho', { timeout: 30000 })
   await expect(page.locator('.mm-bubble')).not.toContainText('Zanele')
-  await page.screenshot({ path: `${OUT}/s1_bed.png` })
   await atStep('kettle')
-  await page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
-  await expect(page.locator('.mm-bubble')).toContainText('Sipho', { timeout: 30000 }) // his own "last packet" line
-  await expect(page.locator('.mm-choice')).toHaveCount(3, { timeout: 30000 })
-  await expect(page.locator('.mm-choice').nth(2)).toContainText('Head out hungry')
-  await page.locator('.mm-choice').nth(2).tap()
+  const options = page.locator('.mm-choice')
+  await expect(options).toHaveCount(4)
+  await expect(options.nth(3)).toContainText('hungry')
+  await options.nth(3).tap()
   await expect(host).toHaveAttribute('data-choice', 'hungry')
-  // Then the one head-out choice; walking goes straight out of the room.
-  await atStep('head-out')
-  await page.locator('.mm-choice').first().tap()
   await atStep('exit')
-  await atStep('stop')
+  await atStep('done')
+  await page.waitForTimeout(800)
+  await cardOnTop(page)
+  await page.screenshot({ path: `${OUT}/e1_end_hungry.png` })
+  await page.locator('[data-mm="continue"]').tap()
+  await expect(page).toHaveURL(/#\/play/)
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.morningDone).toBe(true)
+  expect(run.bestieName).toBe('Sipho')
 })
 
-test('day 1 morning: four breakfasts; the caf one is eaten on campus', async ({ page }) => {
+test('day 1 to the end with a caf breakfast', async ({ page }) => {
   test.setTimeout(240000)
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
-  const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
   await newGame(page, '?roommate=0&latebus=0&snooze=0&talk=auto')
   await atStep('kettle')
   const options = page.locator('.mm-choice')
@@ -234,20 +250,17 @@ test('day 1 morning: four breakfasts; the caf one is eaten on campus', async ({ 
   await expect(options.nth(1)).toContainText('Tuck shop')
   await expect(options.nth(2)).toContainText('Caf breakfast')
   await expect(options.nth(3)).toContainText('hungry')
-  await page.screenshot({ path: `${OUT}/b1_breakfast_choices.png` })
   const money = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.money)
   await options.nth(2).tap()
   await expect(host).toHaveAttribute('data-choice', 'caf')
-  // Skip to campus: one fade from res to the gate, the clock still runs.
-  await atStep('head-out')
-  await page.locator('.mm-choice').nth(1).tap()
-  await expect(host).toHaveAttribute('data-route', 'skip')
-  await atStep('caf-breakfast')
-  await page.waitForTimeout(2500)
-  await page.screenshot({ path: `${OUT}/b2_caf_breakfast.png` })
-  await atStep('done')
+  await atStep('done') // (the caf breakfast is eaten under the fade on the way: the R30 below)
+  await page.waitForTimeout(800)
+  await cardOnTop(page)
+  await page.screenshot({ path: `${OUT}/e2_end_caf.png` })
   const after = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.money)
   expect(after).toBe(money - 30)
-  const arrived = (await page.locator('.mm-times b').first().textContent()).trim()
-  expect(arrived >= '08:40' && arrived <= '08:59').toBe(true)
+  await page.locator('[data-mm="continue"]').tap()
+  await expect(page).toHaveURL(/#\/play/)
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.morningDone).toBe(true)
 })
