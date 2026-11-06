@@ -62,7 +62,8 @@ onSay((m) => {
   if (!(Math.hypot((m.x || 0) - here.x, (m.z || 0) - here.z) <= HEAR)) return
   const res = cleanChat(m.text)
   if (res.blocked || !res.text) return
-  push({ id: m.i, name: filterText(String(m.n || 'Student').slice(0, 24)).text || 'Student', num: String(m.s || ''), text: res.text, t: Date.now(), me: false })
+  const handle = /^[a-z0-9_]{3,20}$/.test(m.h || '') ? m.h : ''
+  push({ id: m.i, name: filterText(String(m.n || 'Student').slice(0, 24)).text || 'Student', handle, num: String(m.s || ''), text: res.text, t: Date.now(), me: false })
 })
 
 // Tests (read only): the log this phone shows.

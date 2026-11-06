@@ -18,7 +18,7 @@ export function createBubbles(host) {
   const live = new Map() // speaker -> { el, start, text, name }
   const at = new THREE.Vector3()
 
-  function show(speaker, name, text, mine = false) {
+  function show(speaker, name, text, mine = false, handle = '') {
     let b = live.get(speaker)
     if (!b) {
       const el = document.createElement('div')
@@ -31,7 +31,7 @@ export function createBubbles(host) {
     b.start = performance.now()
     b.text = text
     b.name = name
-    b.el.innerHTML = `<b>${esc(name)}</b><span>${esc(text)}</span>`
+    b.el.innerHTML = `<b>${esc(name)}${handle ? ` <i>@${esc(handle)}</i>` : ''}</b><span>${esc(text)}</span>`
   }
 
   function hide(speaker) {

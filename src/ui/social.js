@@ -39,7 +39,7 @@ export function boardScreen(state, local) {
     const ranked = rankRows(rows, tab, scope, myRes).slice(0, 20)
     body = `<ol class="sc-list">${ranked.map((r, i) => scope === 'houses'
       ? `<li class="${r.mine ? 'me' : ''}"><span class="sc-rank">${i + 1}</span><div><strong>${esc(r.residence)}</strong><small>${r.n} student${r.n === 1 ? '' : 's'} \u00b7 average</small></div><b>${esc(fmt(tab, r.score))}</b></li>`
-      : `<li class="${r.you || r.user_id === run?.userId ? 'me' : ''}"><span class="sc-rank">${i + 1}</span><div><strong>${esc(r.display_name)}${r.you ? ' (you)' : ''}</strong><small>${esc(r.residence || '')}</small></div><b>${esc(fmt(tab, r.score))}</b></li>`).join('') || '<li class="sc-empty">Nobody here yet.</li>'}</ol>`
+      : `<li class="${r.you || r.user_id === run?.userId ? 'me' : ''}"><span class="sc-rank">${i + 1}</span><div><strong>${esc(r.display_name)}${r.you ? ' (you)' : ''}</strong><small>${r.handle ? `@${esc(r.handle)} · ` : ''}${esc(r.residence || '')}</small></div><b>${esc(fmt(tab, r.score))}</b></li>`).join('') || '<li class="sc-empty">Nobody here yet.</li>'}</ol>`
   }
   return `<main class="screen g-screen lg" data-screen="leaderboard">
     ${hud(district, run, { strip: false })}

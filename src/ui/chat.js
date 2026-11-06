@@ -34,7 +34,7 @@ export function mountChat(host) {
   const note = panel.querySelector('.chat-note')
   let open = false
 
-  const row = (m) => `<li class="${m.me ? 'me' : ''}">${m.me ? '<b>You</b>' : `<button type="button" class="chat-who" data-id="${esc(m.id)}" data-text="${esc(m.text)}">${esc(m.name)}</button>`} ${esc(m.text)}</li>`
+  const row = (m) => `<li class="${m.me ? 'me' : ''}">${m.me ? '<b>You</b>' : `<button type="button" class="chat-who" data-id="${esc(m.id)}" data-text="${esc(m.text)}">${esc(m.name)}${m.handle ? ` <small>@${esc(m.handle)}</small>` : ''}</button>`} ${esc(m.text)}</li>`
   function paint() {
     const lines = chatLog()
     list.innerHTML = lines.length ? lines.map(row).join('') : '<li class="chat-empty">Nobody has said anything near you yet. Say howzit!</li>'

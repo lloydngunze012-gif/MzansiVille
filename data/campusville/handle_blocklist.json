@@ -1,0 +1,24 @@
+{
+  "note": "Handles may not contain any of these (impersonation of staff, the game or the university). Slurs are blocked too, from src/engine/filter.js. Matched anywhere in the handle.",
+  "reserved": [
+    "admin",
+    "administrator",
+    "umzansi",
+    "mzansiville",
+    "softlife",
+    "official",
+    "support",
+    "moderator",
+    "staff",
+    "system",
+    "security",
+    "helpdesk",
+    "verified",
+    "university",
+    "lecturer",
+    "registrar",
+    "nsfas",
+    "src_president"
+  ],
+  "exact": ["mod", "mods", "root", "help", "team", "null", "undefined", "you", "player", "student"]
+}

@@ -3,6 +3,7 @@ import { LOOKING, VIBES, CLASS_OF } from '../cards.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
+import { tidyHandle } from '../handles.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
 // a progress dot, back and skip; then the finished player card, "This is what other
@@ -29,11 +30,9 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 // The card the draft makes (the same card others will see on campus).
 export function draftCard(district, draft) {
-  const raw = draft.name.trim()
-  const handle = raw.startsWith('@') ? raw.slice(1) : (draft.handle || '').replace(/^@/, '')
   return {
-    name: (raw.startsWith('@') ? raw.slice(1) : raw) || 'Student',
-    handle,
+    name: draft.name.trim().replace(/^@/, '') || 'Student',
+    handle: tidyHandle(draft.handle),
     num: myNumber(),
     house: draft.residence,
     bio: draft.bio || '',
@@ -86,8 +85,11 @@ function whoStep(state) {
   const from = FROM.map((f) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="from" data-v="${esc(f)}" aria-pressed="${draft.from === f}">${esc(f)}</button>`).join('')
   return `<div class="en-who">
       <h2 class="en-q">Who are you?</h2>
-      <label class="en-field"><span>Name or @handle</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="nickname" placeholder="Thandi, or @thandi_m" enterkeyhint="done"></label>
+      <label class="en-field"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Thandi" enterkeyhint="next"></label>
+      <label class="en-field en-handle"><span>Your @handle</span><span class="en-at"><b aria-hidden="true">@</b><input id="handle" maxlength="20" value="${esc(tidyHandle(draft.handle))}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="thandi_m" enterkeyhint="done"${draft.handleLocked ? ' disabled' : ''}></span></label>
+      <p class="en-hint" data-handle-note>${esc(draft.handleLocked ? `You can change your handle again on ${draft.handleLocked}.` : draft.handleNote || '3 to 20: lowercase letters, numbers, underscores. You can change it once a month.')}</p>
       ${draft.error ? `<p class="en-err" role="alert">${esc(draft.error)}</p>` : ''}
+      ${(draft.handleSuggest || []).length ? `<div class="en-chips en-suggest"><span>Free:</span>${draft.handleSuggest.map((h) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="handle" data-v="${esc(h)}">@${esc(h)}</button>`).join('')}</div>` : ''}
       <h3 class="en-sub">Your house</h3>
       <div class="en-houses">${houses}</div>
       <h3 class="en-sub">Where you're from <span>optional</span></h3>

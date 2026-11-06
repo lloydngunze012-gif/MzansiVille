@@ -775,3 +775,94 @@ begin
   values (left(p_reporter, 64), left(p_reported, 64), left(p_reason, 80), p_card, left(p_message, 600));
 end $$;
 grant execute on function public.report_player(text, text, text, jsonb, text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Handles (owner, 6 Nov). Run this block once in the Supabase SQL editor. Every
+-- @handle is unique: claimed by one player (their presence id + its secret, the same
+-- phone's identity as the card), changeable once every 30 days. The game checks the
+-- rules (3-20 lowercase letters, numbers, underscores; no slurs or official-looking
+-- names) before it asks; here the format is enforced again.
+create table if not exists public.player_handles (
+  handle text primary key check (handle ~ '^[a-z0-9_]{3,20}$'),
+  owner_id text not null unique,
+  owner_secret text not null,
+  changed_at timestamptz not null default now()
+);
+alter table public.player_handles enable row level security;
+-- (no read policy: only through the two functions below, which never show secrets)
+
+create or replace function public.handles_taken(p_handles text[], p_id text)
+returns text[] language sql security definer set search_path = public as $$
+  select coalesce(array_agg(handle), '{}') from player_handles where handle = any(p_handles) and owner_id <> p_id;
+$$;
+grant execute on function public.handles_taken(text[], text) to anon, authenticated;
+
+create or replace function public.claim_handle(p_id text, p_secret text, p_handle text)
+returns text language plpgsql security definer set search_path = public as $$
+declare mine player_handles;
+begin
+  if p_handle !~ '^[a-z0-9_]{3,20}$' then return 'invalid'; end if;
+  select * into mine from player_handles where owner_id = p_id;
+  if found then
+    if mine.owner_secret <> p_secret then return 'not-yours'; end if;
+    if mine.handle = p_handle then return 'ok'; end if;
+    if mine.changed_at > now() - interval '30 days' then return 'cooldown'; end if;
+  end if;
+  if exists (select 1 from player_handles where handle = p_handle and owner_id <> p_id) then return 'taken'; end if;
+  delete from player_handles where owner_id = p_id;
+  insert into player_handles (handle, owner_id, owner_secret) values (p_handle, p_id, p_secret);
+  return 'ok';
+exception when unique_violation then return 'taken';
+end $$;
+grant execute on function public.claim_handle(text, text, text) to anon, authenticated;
+
+-- The leaderboard shows handles too (signed-in players' profiles.handle): the same
+-- function as above, with the handle column added (a new return type: drop first).
+drop function if exists public.leaderboard();
+create or replace function public.leaderboard()
+returns table (
+  user_id uuid,
+  display_name text,
+  handle text,
+  residence text,
+  money integer,
+  grades integer,
+  balanced integer,
+  rich_avg numeric,
+  dean_avg numeric,
+  balanced_avg numeric
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    p.id,
+    p.display_name,
+    p.handle,
+    p.residence,
+    p.money,
+    p.grades,
+    p.balanced,
+    coalesce((
+      select avg((item->>'money')::numeric)
+      from jsonb_array_elements(p.history) item
+      where (item->>'at')::timestamptz > now() - interval '7 days'
+    ), p.money::numeric),
+    coalesce((
+      select avg((item->>'grades')::numeric)
+      from jsonb_array_elements(p.history) item
+      where (item->>'at')::timestamptz > now() - interval '7 days'
+    ), p.grades::numeric),
+    coalesce((
+      select avg((item->>'balanced')::numeric)
+      from jsonb_array_elements(p.history) item
+      where (item->>'at')::timestamptz > now() - interval '7 days'
+    ), p.balanced::numeric)
+  from public.profiles p
+  where not p.suspended
+    and p.display_name is not null
+    and p.state is not null;
+$$;
+grant execute on function public.leaderboard() to anon, authenticated;

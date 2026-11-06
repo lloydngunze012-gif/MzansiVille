@@ -59,6 +59,7 @@ import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
+import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
 import { playerCardHtml } from './ui/card.js'
 
 installErrorReporting()
@@ -1145,7 +1146,21 @@ app.addEventListener('focusin', (event) => {
 app.addEventListener('input', (event) => {
   if (event.target.id === 'pc-bio') { const n = app.querySelector('[data-pc-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
   if (event.target.id === 'bio') { draft.bio = event.target.value; const n = app.querySelector('[data-bio-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
-  if (event.target.id === 'name') draft.name = event.target.value
+  if (event.target.id === 'name') {
+    draft.name = event.target.value
+    // (the handle follows your name until you type your own)
+    if (!draft.handleEdited && app.querySelector('.en #handle')) {
+      draft.handle = candidates(draft.name)[0] || ''
+      app.querySelector('.en #handle').value = draft.handle
+    }
+  }
+  if (event.target.id === 'handle' && app.querySelector('.en #handle')) {
+    draft.handleEdited = true
+    const tidy = tidyHandle(event.target.value)
+    if (tidy !== event.target.value) event.target.value = tidy
+    const note = app.querySelector('[data-handle-note]')
+    if (note) { const r = checkRules(tidy); note.textContent = r.ok ? `@${tidy} looks good.` : r.why }
+  }
   if (event.target.id === 'handle') draft.handle = event.target.value
   if (event.target.id === 'email') draft.email = event.target.value
   if (event.target.id === 'composer') chat.draft = event.target.value
@@ -1220,7 +1235,8 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
-    draft = { ...emptyDraft(), name: c.handle && c.handle === c.name ? `@${c.handle}` : c.name, residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: c.from || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
+    const locked = nextChange(c)
+    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: c.from || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return
@@ -1340,6 +1356,7 @@ app.addEventListener('click', async (event) => {
     // (a second tap on the chosen one clears an optional pick)
     draft[k] = draft[k] === v && ['from', 'vibe', 'looking', 'bio'].includes(k) ? '' : v
     if (k === 'bio') draft.notice = ''
+    if (k === 'handle') { draft.handleEdited = true; draft.handleSuggest = []; draft.handleNote = `@${v} is free.` }
     draft.error = ''
     paint()
     return
@@ -1352,9 +1369,19 @@ app.addEventListener('click', async (event) => {
       if (skip && raw.length < 2) draft.name = enrolDefaultName()
       if (skip && !draft.residence) draft.residence = district.houses?.[Math.floor(Math.random() * (district.houses?.length || 1))]?.name || district.residences[0]?.name || ''
       const name = draft.name.trim().replace(/^@/, '')
-      if (name.length < 2) { draft.error = 'Your name or handle needs at least 2 letters.'; paint(); return }
-      if (draft.name.trim().startsWith('@') && !/^@[A-Za-z0-9._]{2,30}$/.test(draft.name.trim())) { draft.error = 'Handles use letters, numbers, dots and underscores.'; paint(); return }
+      if (name.length < 2) { draft.error = 'Your name needs at least 2 letters.'; paint(); return }
       if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
+      // The @handle: the rules here, then free on campus (Supabase); taken: three free ones.
+      draft.handle = tidyHandle(draft.handle) || (skip || !draft.handleEdited ? (await suggestFor(name))[0] || '' : '')
+      const rules = checkRules(draft.handle)
+      if (!rules.ok) { draft.error = rules.why; draft.handleSuggest = await suggestFor(name, draft.handle); paint(); return }
+      const status = await handleStatus(draft.handle)
+      if (status === 'taken') {
+        if (skip) draft.handle = (await suggestFor(name, draft.handle))[0] || draft.handle
+        else { draft.error = `@${draft.handle} is taken.`; draft.handleSuggest = await suggestFor(name, draft.handle); paint(); return }
+      }
+      draft.handleSuggest = []
+      draft.handleNote = status === 'free' ? `@${draft.handle} is yours if you want it.` : ''
       if (!draft.residence) { draft.error = 'Tap the house you live in.'; paint(); return }
     }
     if (draft.step === 'vibe') {
@@ -1381,6 +1408,19 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'enrol-enter') {
+    // Claim the handle (someone may have taken it a moment ago: back to step 2 if so).
+    const was = save.run?.character?.handle || ''
+    if (tidyHandle(draft.handle) !== was) {
+      const claim = await claimHandle(draft.handle)
+      if (claim === 'taken' || claim === 'invalid') {
+        draft.step = 'who'
+        draft.error = claim === 'taken' ? `@${tidyHandle(draft.handle)} was just taken.` : checkRules(draft.handle).why
+        draft.handleSuggest = await suggestFor(draft.name, draft.handle)
+        paint()
+        return
+      }
+      if (claim === 'cooldown') { draft.step = 'who'; draft.error = 'You changed your handle less than 30 days ago.'; paint(); return }
+    }
     const card = draftCard(district, draft)
     const character = {
       name: card.name,
@@ -1392,6 +1432,7 @@ app.addEventListener('click', async (event) => {
       vibe: draft.vibe,
       looking: draft.looking,
       from: draft.from,
+      handleChangedAt: tidyHandle(draft.handle) !== (save.run?.character?.handle || '') ? new Date().toISOString() : save.run?.character?.handleChangedAt,
     }
     if (draft.edit && save.run) {
       save.run.character = { ...save.run.character, ...character }

@@ -284,7 +284,7 @@ function ensureRenderer() {
   // as a bubble over the speaker's head (yours too).
   chatUi = mountChat(host)
   bubbles = createBubbles(host)
-  onChat((m) => bubbles.show(m.me ? 'me' : m.id, m.me ? String(currentRun?.character?.name || 'You').split(' ')[0] : String(m.name).split(' ')[0], m.text, m.me))
+  onChat((m) => bubbles.show(m.me ? 'me' : m.id, m.me ? String(currentRun?.character?.name || 'You').split(' ')[0] : String(m.name).split(' ')[0], m.text, m.me, m.me ? currentRun?.character?.handle || '' : m.handle || ''))
   window.addEventListener('mzansi-block', (event) => { bubbles.hide(event.detail?.id); chatUi.repaint() })
   // In a house's common room: the way out, and what there is to do here.
   host.insertAdjacentHTML('beforeend', '<div class="house-bar" hidden><button type="button" class="house-out">🚪 Head out</button><button type="button" class="house-do">Things to do</button></div>')

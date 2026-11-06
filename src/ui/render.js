@@ -765,6 +765,7 @@ export function localBoardRow(run) {
   return {
     user_id: run.userId || 'you',
     display_name: run.character.name,
+    handle: run.character.handle || '',
     residence: run.character.residence,
     money: run.stats.money,
     grades: run.stats.grades,

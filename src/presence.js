@@ -243,7 +243,7 @@ export function onSay(fn) {
 }
 export function sendSay(text) {
   if (!channel || !live || !meta || local.a !== 'campus') return false
-  channel.send({ type: 'broadcast', event: 'say', payload: { i: me.id, t: Date.now(), x: round(local.x), z: round(local.z), text: String(text).slice(0, 120), n: meta.n, s: meta.s } }).catch(() => {})
+  channel.send({ type: 'broadcast', event: 'say', payload: { i: me.id, t: Date.now(), x: round(local.x), z: round(local.z), text: String(text).slice(0, 120), n: meta.n, s: meta.s, h: meta.c?.handle || '' } }).catch(() => {})
   return true
 }
 // Where this phone's player is (what the scene last reported).
