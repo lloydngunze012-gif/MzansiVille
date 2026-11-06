@@ -1,3 +1,4 @@
+import { isStaleLoad, reloadForUpdate } from './stale.js'
 import { districtById, defaultDistrictId } from './districts/registry.js'
 import { filterText, cleanBio, canSend } from './engine/filter.js'
 import { loadBoardRows, loadLobby } from './social.js'
@@ -261,7 +262,7 @@ function syncMorning(viewState) {
       onUpdate() { persist(); paint() },
       onDone(result) { endMorning(false, result) },
     })
-  }).catch((error) => console.error(error))
+  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
   return true
 }
 
@@ -296,7 +297,7 @@ function syncPreview(viewState) {
   previewPromise.then((mod) => {
     const now = app.querySelector('.cc-stage')
     if (now) mod.showPreview(now, draft.avatar)
-  }).catch((error) => console.error(error))
+  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
   hydrateThumbs()
 }
 
@@ -341,7 +342,7 @@ function hydrateThumbs() {
       if (ready) { put(ready); continue }
       thumbFor(look, kind, () => chip.isConnected).then(put)
     }
-  }).catch((error) => console.error(error))
+  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
 }
 
 // The day-1 lecture is the 3D scene; it can never be skipped by a button.
@@ -377,7 +378,7 @@ function syncLecture(viewState) {
   lecturePromise.then((mod) => {
     if (route().name !== 'lecture') return
     mod.startLecture({ run: save.run, district: districtNow(), onDone: endLecture })
-  }).catch((error) => console.error(error))
+  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
   return true
 }
 
@@ -402,6 +403,8 @@ function syncWorld(viewState) {
     if (ticket !== worldTicket) return
     mod.showCampus(viewState.district, viewState.run)
   }).catch((error) => {
+    // (a game file gone after a redeploy: "Updating..." and a reload, never a green screen)
+    if (isStaleLoad(error) && reloadForUpdate(error?.message)) return
     console.error(error)
   })
 }
