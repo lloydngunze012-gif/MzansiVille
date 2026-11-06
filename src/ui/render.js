@@ -658,7 +658,7 @@ function title(state) {
     <h1 class="sr-only">UMzansi · University of Mzansi</h1>
     <div class="tc-art" aria-hidden="true"><picture>
       <source srcset="/cover.webp" type="image/webp">
-      <img src="/cover.jpg" alt="" width="1024" height="1536" decoding="async" fetchpriority="high">
+      <img src="/cover.jpg" alt="" width="1086" height="1448" decoding="async" fetchpriority="high">
     </picture></div>
     <div class="tc-foot">
       <p class="tc-tag">First year at the University of Mzansi. Your house, your crew, your story.</p>
