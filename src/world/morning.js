@@ -761,7 +761,7 @@ async function play() {
   // (on day 2 you met at the house door yesterday, the day you moved in: world/dropoff.js)
   const hello = run.day > 1 ? line('zanele.wave_day2', 'Morning, roomie! First real morning in res \u{1F44B} Sleep okay?') : line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}')
   await Promise.all([wave(roommate), talk(hello, roommate)])
-  bubble(run.day > 1 ? line('steps.wake.bubbles.day2', '07:00. Alarm. Day two in res\u2026 snooze.') : line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
+  bubble(run.day > 1 ? line('steps.wake.bubble_day2','07:00. Alarm. Day two in res\u2026 snooze.') : line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
   setStep('wake')
   clockShow(true)
   let snoozes = 0
