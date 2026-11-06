@@ -15,8 +15,7 @@ Last updated: 6 Nov, Claude Code (housekeeping, no code changes).
 ## Left uncommitted on the owner's PC
 - `.claude/launch.json`: the dev-server config for Claude's preview pane (local tool setting).
 - `docs/design/cover-check/3-link-preview-standin.png`: a cover-check image, not in the housekeeping list.
-- `docs/sprints/home/poster_tone_compare.jpg`, `poster_tone_faces.jpg`: test screenshots (.gitignore only covers .png and .webm).
-- Now ignored, staying local: `docs/sprints/home/fps.json`, `docs/sprints/queue-jitter/caf.json`, `stall.json`.
+- Ignored, staying local: sprint screenshots (.png, .jpg, .jpeg), videos (.webm) and test reports (.json), e.g. `docs/sprints/home/poster_tone_*.jpg`, `fps.json`, `docs/sprints/queue-jitter/*.json`.
 
 ## Loose ends
 - `origin/fix/zanele-wave-day2` (Cursor, 6 Nov 12:26) is stale: main has had the day-2 lines since 89780d0, and `npm run check` passes (51). Not merged; safe to delete.
