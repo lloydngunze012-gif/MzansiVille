@@ -853,6 +853,27 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .tc-small { flex: 1; min-height: 44px; border-radius: 14px; border: 2px solid #f0c400; background: rgba(28,14,52,.85); color: #fff; font: 800 14px var(--display, system-ui); cursor: pointer; }
 .tc-small:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .tc-row { animation: none; opacity: 1; } }
+/* Desktop start screen (owner, 6 Nov): wide screens only; the phone layout above is untouched.
+   The blurred poster fills the whole window; the poster (3:4, uncropped) on the left, the
+   tagline and buttons in a 420px column on the right, centred together with a 48px gap. */
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  #app:has(> .tc) { width: 100%; }
+  .tc { box-sizing: border-box; width: 100%; max-width: none; height: 100vh; height: 100dvh; min-height: 0; margin: 0; padding: 48px;
+    display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 48px; box-shadow: none; }
+  .tc .tc-art { position: relative; left: auto; top: auto; transform: none; flex: none; z-index: 1;
+    /* as tall as the window minus 48px top and bottom, or narrower if the window is narrow */
+    height: min(calc(100dvh - 96px), calc((100vw - 96px - 48px - 420px) * 4 / 3)); width: auto; aspect-ratio: 3 / 4;
+    border-radius: 20px; box-shadow: 0 26px 70px rgba(0,0,0,.55), 0 6px 18px rgba(0,0,0,.35); }
+  .tc .tc-art::after { content: none; } /* no dark band: the tagline is in the right column */
+  .tc .tc-foot { position: relative; left: auto; right: auto; bottom: auto; z-index: 1; flex: none; width: 420px;
+    padding: 0; gap: 16px; background: none; }
+  .tc .tc-tag { max-width: none; font-size: 22px; line-height: 1.35; }
+  .tc .tc-start { min-height: 72px; border-radius: 20px; font-size: 26px; }
+  .tc .tc-over { font-size: 16px; }
+  .tc .tc-restart { font-size: 16px; }
+  .tc .tc-links { gap: 28px; }
+  .tc .tc-links a { font-size: 15px; }
+}
 .set { background: #1c0e34; color: #fff; min-height: 100dvh; }
 .set-list .btn { text-align: center; }
 .set-warn { color: #ffd23f; font-weight: 700; }

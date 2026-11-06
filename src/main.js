@@ -1951,6 +1951,17 @@ arm()
 if (save.run && route().name === 'chat') loadChat()
 if (save.run && route().name === 'board') loadBoard()
 
+// The start screen: Enter presses the main button (Enrol, or Continue · day N). A focused
+// button or link keeps its own Enter; nothing happens while the start-over confirm is open.
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  const start = document.querySelector('.tc .tc-start')
+  if (!start || document.querySelector('.tc-restart')) return
+  if (event.target?.closest?.('button, a, input, textarea, select, [contenteditable="true"]')) return
+  event.preventDefault()
+  start.click()
+})
+
 window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return
   if (new URLSearchParams(location.search).get('shot')) return
