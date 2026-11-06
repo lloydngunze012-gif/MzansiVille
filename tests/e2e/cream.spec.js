@@ -78,5 +78,17 @@ test('cream screens', async ({ page }) => {
   await page.waitForTimeout(1500)
   await page.screenshot({ path: `${OUT}/7-settings.png` })
   dark.settings = await darkPanels(page)
+  // Today's event (the full-screen card) and a consequence card.
+  for (const [name, card] of [
+    ['8-event', { id: 'event-cafeteria_special-1', kind: 'event', title: 'Cafeteria special', text: 'Bunny chow special: half price until two. The queue is already round the corner and past the notice board.', choices: ['Join the queue', 'Skip it and save'], eventId: 'cafeteria_special' }],
+    ['9-hungry', { id: 'hungry-1', kind: 'consequence', tone: 'hungry', title: 'Running on empty', text: 'Your stomach is louder than the lecturer. Eat something before you study.' }],
+  ]) {
+    await page.goto('/audio/CREDITS.md')
+    await page.evaluate((c) => { const s = JSON.parse(localStorage.getItem('mzansiville.v1')); s.run.queue = [c]; localStorage.setItem('mzansiville.v1', JSON.stringify(s)) }, card)
+    await page.goto(`/?fast=1&morning=0&spawn=quad&n=${name}#/play`)
+    await page.waitForTimeout(3500)
+    await page.screenshot({ path: `${OUT}/${name}.png` })
+    dark[name] = await darkPanels(page)
+  }
   console.log('DARK', JSON.stringify(dark, null, 1))
 })

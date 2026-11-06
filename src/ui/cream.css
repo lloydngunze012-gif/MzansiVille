@@ -150,3 +150,95 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .set .btn.set-danger { color: #fff; border-color: #c43b3b; }
 .lg-agree { background: #fff3c4; border-color: var(--cr-gold); }
 .sc-list li:nth-child(n+4) .sc-rank { background: #f1ede6; color: var(--cr-ink); }
+
+/* Third pass (owner, 6 Nov: "make sure the colours are all in sync"): every leftover
+   purple accent becomes gold, every lilac tint becomes cream or pale gold, every light
+   text colour made for the old dark panels becomes ink. One palette everywhere. */
+:root { --cr-tint: #fff3c4; /* pale gold: highlights, "you", chosen */ }
+
+/* Full-screen event / consequence / graduation cards */
+.g-full { background: radial-gradient(120% 70% at 85% 0%, #ffd23f33, transparent 60%), linear-gradient(180deg, #fbf4e6f5, #f1e6d0f8); }
+.g-3d .g-full { background: radial-gradient(120% 70% at 85% 0%, #ffd23f33, transparent 60%), linear-gradient(180deg, #fbf4e6ee, #f1e6d0f8) !important; }
+.g-full .g-kind { color: #b35a00; }
+.g-full h2 { color: var(--cr-ink); }
+.g-lede { color: #4a4238; }
+.g-chipnote { color: var(--cr-muted); }
+.g-chipnote b { color: #8a5a00; }
+.g-choice { background: #fff; color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: 0 5px 0 #c99a00, 0 12px 24px #0002; }
+.g-choice + .g-choice { background: #fff; box-shadow: 0 5px 0 #d6cab2, 0 12px 24px #0002; }
+.g-choice:active { box-shadow: 0 2px 0 #c99a00; }
+.g-choice .g-fx { background: var(--cr-bg-2); color: var(--cr-ink); border-color: var(--cr-line); }
+.g-cons.hungry .g-emblem { background: radial-gradient(circle at 35% 30%, #ffe0b0, #ffb347 60%, #c97a12); box-shadow: 0 0 0 8px #ffb34722, 0 0 40px #ffb34755; }
+.g-cons.over .g-emblem { box-shadow: 0 0 0 8px #0000000d; }
+.g-grad h2, .g-cons h2 { color: var(--cr-ink); }
+
+/* Status chips under the HUD */
+.g-chip.exam { background: var(--cr-tint); border-color: var(--cr-gold); color: #6b4a00; }
+.g-chip.hungry { background: #ffe9cf; border-color: #f0a24c; color: #7a3f00; }
+
+/* 2D map pins */
+.g-name, .g-pin small { background: #fffaf0ee; color: var(--cr-ink); border-color: var(--cr-line); }
+.g-pin.open .g-name { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
+.g-pin.mine .g-name { border-color: var(--cr-gold-dk); }
+.g-pin small { color: #8a5a00; }
+.map-pin .lbl { color: var(--cr-ink); }
+
+/* Place sheet, talk card, goal list: lilac tints and purple accents */
+.g-sheet2 .g-sheet-ic, .g-spot:active, .g-act.g-card .g-fx, .g-talk .g-fx, .g-talk-level { background: var(--cr-bg-2); color: var(--cr-ink); }
+.g-talk-reply:active { background: var(--cr-tint); border-color: var(--cr-gold-dk); }
+.g-talk-level i { background: var(--cr-gold); }
+.story .g-gk { background: #b86e00; }
+.g-shift { background: var(--cr-tint); color: var(--cr-ink); }
+.mm-card .mm-hook { background: var(--cr-tint); color: var(--cr-ink); }
+.lg-back { color: var(--cr-ink); }
+.lg-agree { background: var(--cr-tint); border-color: var(--cr-gold); color: var(--cr-ink); }
+
+/* Lobby chat and board extras */
+.sc-tab.on { background: #fff; color: var(--cr-ink); border: 3px solid var(--cr-gold); box-shadow: 0 3px 0 #c99a00; }
+.sc-off { background: var(--cr-bg-2); border-color: var(--cr-line); }
+.sc-off .g-go.ghost { background: var(--cr-gold); color: #2a1206; }
+.sc-chat li.me { background: var(--cr-tint); }
+.sc-more { color: #8a5a00; }
+.sc-more:active { background: var(--cr-bg-2); }
+.sc-menu { background: #fff; border: 1.5px solid var(--cr-line); }
+.sc-menu button { color: var(--cr-ink); }
+
+/* Your card: edit form, report */
+.pc-edit .fine, .pc-report small, .pc-close { color: var(--cr-muted); }
+.pc-report .ghost { border-color: var(--cr-line); color: var(--cr-ink); }
+
+/* Creator: text that was white on the dark creator */
+.cc-top h1.cc-logo, .cc-back, .cc-lede, .cc-crest { color: var(--cr-ink); }
+.cc-chip[aria-pressed="true"] { background: var(--cr-tint); border-color: var(--cr-gold-dk); box-shadow: 0 3px 0 var(--cr-gold-dk); }
+.cc-pick[aria-pressed="true"] { background: var(--cr-tint); color: var(--cr-ink); border-color: var(--cr-gold-dk); box-shadow: 0 0 0 2px var(--cr-gold); }
+.cc-field input:focus, .cc-field select:focus { box-shadow: 0 0 0 2px var(--cr-gold); }
+.cc .ts-start { box-shadow: 0 5px 0 #a87400; }
+.id-title[data-title="new"] { background: var(--cr-bg-2); color: var(--cr-ink); }
+/* The old purple accent variable (creator, title sign) is dark gold now */
+:root { --grape: #a87400; }
+.cc-top h1.cc-logo { color: #fff; -webkit-text-stroke: 6px #1c1915; text-shadow: 0 3px 0 #a87400; }
+.cc-stage { box-shadow: 0 0 0 3px var(--cr-line); }
+.g-kind, .g-full .g-kind, .lg-card .lg-kicker { color: #a86400 !important; }
+
+/* Creator, in sync with the rest: no dark blurred backdrop, cream page, cream-line chips,
+   gold for the chosen one, ink text. (The 3D stage keeps its own little scene.) */
+.cc-backdrop { display: none; }
+.cc:not(.cc-step2) .cc-preview { background: var(--cr-bg-2); box-shadow: 0 8px 14px -8px #0003; }
+.cc-strip { opacity: .9; }
+.cc-group legend { color: #8a5a00; }
+.cc-chip { background: #fff; border: 2px solid var(--cr-line); color: var(--cr-ink); }
+.cc-chip[aria-pressed="true"] { background: var(--cr-tint); border-color: var(--cr-gold-dk); box-shadow: 0 3px 0 var(--cr-gold-dk); }
+.cc-thumb.gender { color: var(--cr-ink); }
+.cc-id { border-color: var(--cr-line); box-shadow: 0 4px 0 var(--cr-gold); }
+.cc-gem { filter: drop-shadow(0 0 4px #f0c40099); }
+.cc-ready { background: var(--cr-ink); border-color: var(--cr-gold); }
+.cc-field { color: #8a5a00; }
+.cc-field .fine { color: var(--cr-muted); }
+.cc-field input, .cc-field select { border-color: var(--cr-line); color: var(--cr-ink); background: #fff; }
+.cc .error { color: #b3261e; }
+.cc-stage { border-color: var(--cr-gold); }
+.cc-stage::after { background: linear-gradient(to bottom, #00000000, #00000040); }
+.cc-ready { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
+.cc-ready.ok { background: #2fa866; color: #fff; }
+.cc-top h1.cc-logo { color: var(--cr-ink); -webkit-text-stroke: 0; text-shadow: 0 3px 0 #f0c40099; }
+.cc-id .lg-kicker, .cc-id small:first-child { color: #a86400; }
