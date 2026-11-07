@@ -1,4 +1,4 @@
-import { avatarSvg, bodiesFor, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
+import { avatarSvg, bodiesFor, genderOf, genders, HAIR_BLACK, hairColors, hairsFor, outfitsFor, skins } from '../avatar.js'
 import { LOOKING, VIBES, CLASS_OF } from '../cards.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
@@ -55,7 +55,7 @@ function lookStep(state, still) {
   const { district, draft } = state
   const code = district.meta.dialCode
   const g = genderOf(draft.avatar)
-  const chosen = (key, id) => (draft.avatar[key] || (key === 'body' ? 'regular' : '')) === id
+  const chosen = (key, id) => (draft.avatar[key] || (key === 'body' ? 'regular' : key === 'hairColor' ? HAIR_BLACK : '')) === id
   const row = (label, items, key) => `<section class="en-row"><h3>${label}</h3><div class="en-strip">${items.map((item) =>
     `<button class="cc-chip en-card${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${chosen(key, item.id)}">${
       item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
@@ -74,6 +74,7 @@ function lookStep(state, still) {
         ${row('Skin', skins, 'skin')}
         ${g === 'male' ? '' : row('Body', bodiesFor(g), 'body')}
         ${row('Hair', hairsFor(g), 'hair')}
+        ${row('Hair colour', hairColors, 'hairColor')}
         ${row('Outfit', outfitsFor(g), 'outfit')}
       </div>
     </div>`

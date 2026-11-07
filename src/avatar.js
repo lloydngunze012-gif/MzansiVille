@@ -1,9 +1,24 @@
 export const skins = [
+  { id: 'fair', label: 'Fair', fill: '#f5d4bc' },
   { id: 'sand', label: 'Sand', fill: '#f0c7a0' },
   { id: 'amber', label: 'Amber', fill: '#d2956b' },
   { id: 'brown', label: 'Brown', fill: '#8a5a3a' },
   { id: 'deep', label: 'Deep', fill: '#4a2e1f' },
   { id: 'ebony', label: 'Ebony', fill: '#2c1b12' },
+]
+
+// Hair colours (the creator's Hair colour row; avatar.hairColor holds the hex, the 3D student
+// and the cast already read it). Black is what everyone had before.
+export const HAIR_BLACK = '#1c1915'
+export const hairColors = [
+  { id: HAIR_BLACK, label: 'Black', fill: HAIR_BLACK },
+  { id: '#3a2416', label: 'Dark brown', fill: '#3a2416' },
+  { id: '#6b4529', label: 'Brown', fill: '#6b4529' },
+  { id: '#9a3f22', label: 'Auburn', fill: '#9a3f22' },
+  { id: '#e0b85c', label: 'Blond', fill: '#e0b85c' },
+  { id: '#f1e6c4', label: 'Platinum', fill: '#f1e6c4' },
+  { id: '#ff5ea8', label: 'Pink', fill: '#ff5ea8' },
+  { id: '#3b82ff', label: 'Blue', fill: '#3b82ff' },
 ]
 
 export const genders = [
@@ -80,7 +95,7 @@ const cloth = {
   shweshwe: ['#2456a6', '#163a78', '#2456a6', '#c58a3a'],
 }
 
-const HAIR = '#1c1915'
+const HAIR = HAIR_BLACK
 
 function shade(hex, amt) {
   const n = parseInt(hex.slice(1), 16)
@@ -89,7 +104,7 @@ function shade(hex, amt) {
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
 }
 
-function hairBack(id) {
+function hairBack(id, HAIR = HAIR_BLACK) {
   if (id === 'braids') {
     return `<g stroke="${HAIR}" stroke-width="4.2" stroke-linecap="round" fill="none">
       <path d="M25 30c-4 10-4 22-2 32"/><path d="M55 30c4 10 4 22 2 32"/>
@@ -101,7 +116,7 @@ function hairBack(id) {
   return ''
 }
 
-function hairFront(id) {
+function hairFront(id, HAIR = HAIR_BLACK) {
   if (id === 'curls') {
     return `<g fill="${HAIR}"><circle cx="24" cy="28" r="6"/><circle cx="56" cy="28" r="6"/>
       <circle cx="29" cy="18" r="7"/><circle cx="40" cy="14" r="8"/><circle cx="51" cy="18" r="7"/>
@@ -161,8 +176,9 @@ function top(id, c, skin, code) {
 }
 
 export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
-  const skin = (skins.find((item) => item.id === avatar.skin) || skins[1]).fill
+  const skin = (skins.find((item) => item.id === avatar.skin) || skins.find((item) => item.id === 'amber')).fill
   const hair = avatar.hair || 'crop'
+  const hairFill = avatar.hairColor || HAIR
   const outfit = cloth[avatar.outfit] ? avatar.outfit : 'hoodie'
   const c = cloth[outfit]
   const code = String(dialCode || '').replace(/\D/g, '').slice(0, 3) || '000'
@@ -173,7 +189,7 @@ export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
   const ink = dark ? '#0b0705' : HAIR
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 102" width="${size}" height="${height}" role="img" aria-label="Avatar">
     <ellipse cx="40" cy="99" rx="20" ry="3" fill="#000" opacity=".18"/>
-    ${hairBack(hair)}
+    ${hairBack(hair, hairFill)}
     <g${wide}><path d="M28 80h10l-1 15h-8zM42 80h10l-1 15h-8z" fill="${SKIRTED.has(outfit) ? skin : c[2]}"/>
     <path d="M26 94h12v4H25zM42 94h12l1 4H42z" fill="${c[3]}"/>
     <rect x="35" y="42" width="10" height="9" rx="3" fill="${skin}"/>
@@ -181,7 +197,7 @@ export function avatarSvg(avatar = {}, dialCode = '', size = 96) {
     ${top(outfit, c, skin, code)}</g>
     <circle cx="23.5" cy="33" r="3.4" fill="${skin}"/><circle cx="56.5" cy="33" r="3.4" fill="${skin}"/>
     <ellipse cx="40" cy="30" rx="16" ry="17" fill="${skin}"/>
-    ${hairFront(hair)}
+    ${hairFront(hair, hairFill)}
     <path d="M31.5 29.5q2.5-2 5 0M43.5 29.5q2.5-2 5 0" stroke="${dark ? '#120b07' : HAIR}" stroke-width="${dark ? 1.9 : 1.5}" fill="none" stroke-linecap="round"/>
     ${dark ? '<ellipse cx="34" cy="34" rx="2.9" ry="3" fill="#f7f1ea"/><ellipse cx="46" cy="34" rx="2.9" ry="3" fill="#f7f1ea"/><ellipse cx="40" cy="22" rx="7" ry="3" fill="#fff" opacity=".1"/>' : ''}
     <ellipse cx="34" cy="34" rx="1.9" ry="2.3" fill="${ink}"/><ellipse cx="46" cy="34" rx="1.9" ry="2.3" fill="${ink}"/>

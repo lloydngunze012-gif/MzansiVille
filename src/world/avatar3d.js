@@ -121,6 +121,9 @@ function recolour(model, look) {
       if (part === 'feet' && /^skin/i.test(name)) return shared('upper', () => mat(new THREE.Color(look.shoes).multiplyScalar(0.72)))
       if (/^skin/i.test(name)) return shared(`skin${name}`, () => { const m = mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)); m.userData.skin = true; return m })
       if (part === 'head') {
+        // Eyebrows follow a chosen hair colour (a darker shade of it): blond hair over black
+        // brows is the first thing that looks wrong. (The women's brows are "Hair_Brown".)
+        if (look.tone && /eyebrow|^hair_brown$/i.test(name)) return shared('brows', () => mat(new THREE.Color(look.hair).multiplyScalar(0.62)))
         if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x1c120c))
         if (/earring|yellow|moustache/i.test(name)) return shared(`own${m.uuid}`, () => m.clone())
         return shared('hair', () => { const m = mat(look.hair); m.userData.hair = true; return m })
@@ -136,18 +139,45 @@ function recolour(model, look) {
     })
     node.material = Array.isArray(node.material) ? next : next[0]
     node.castShadow = true
+    if (look.tone && part === 'head' && next.some((m) => m.userData.hair)) tintHair(node)
   })
+}
+
+// Chosen hair colours: not one flat colour, which reads as a painted-on cap. Each vertex of
+// the hair takes a shade of it, darker towards the roots and the lower locks, a little
+// different from its neighbours, so the flat facets read as clumps of strands.
+function tintHair(mesh) {
+  const geo = mesh.geometry.clone() // (heads of one file share their geometry)
+  const pos = geo.attributes.position
+  geo.computeBoundingBox()
+  const { min, max } = geo.boundingBox
+  const span = Math.max(1e-4, max.y - min.y)
+  const colors = new Float32Array(pos.count * 3)
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getY(i) - min.y) / span
+    const h = Math.sin(pos.getX(i) * 91.7 + pos.getY(i) * 53.1 + pos.getZ(i) * 77.3) * 43758.5453
+    const jitter = (h - Math.floor(h) - 0.5) * 0.2
+    const shade = 0.74 + 0.3 * Math.pow(t, 0.7) + jitter
+    colors[i * 3] = colors[i * 3 + 1] = colors[i * 3 + 2] = shade
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  mesh.geometry = geo
+  for (const m of [].concat(mesh.material)) if (m.userData.hair) { m.vertexColors = true; m.needsUpdate = true }
 }
 
 // The Organt tee print, like the cover: a big black "031" (the dialling code)
 // with "ORGANT" in purple underneath, on the chest, carried by the chest bone.
-let printTexture = null
-function organtPrint(code = '031') {
-  if (printTexture) return printTexture
+const printTextures = {}
+// (the creator's stage draws it four times as big and sharpened for the angles it turns
+// through; campus keeps the small one)
+function organtPrint(code = '031', hi = false) {
+  const k = hi ? 4 : 1
+  if (printTextures[k]) return printTextures[k]
   const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 192
+  canvas.width = 256 * k
+  canvas.height = 192 * k
   const ctx = canvas.getContext('2d')
+  ctx.scale(k, k)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#1c1915'
@@ -156,14 +186,16 @@ function organtPrint(code = '031') {
   ctx.fillStyle = '#7b3fe4'
   ctx.font = '900 40px "Arial Black", Impact, sans-serif'
   ctx.fillText('ORGANT', 128, 160, 230)
-  printTexture = new THREE.CanvasTexture(canvas)
-  printTexture.colorSpace = THREE.SRGBColorSpace
-  return printTexture
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  if (hi) tex.anisotropy = 8
+  printTextures[k] = tex
+  return tex
 }
 
 const worldOf = (node) => node.getWorldPosition(new THREE.Vector3())
 
-function addOrgantMark(model) {
+function addOrgantMark(model, hi = false) {
   const chest = model.getObjectByName('Chest')
   const neck = model.getObjectByName('Neck')
   const torso = model.getObjectByName('Torso') || model.getObjectByName('Abdomen')
@@ -173,7 +205,7 @@ function addOrgantMark(model) {
   const low = worldOf(torso)
   const shoulders = worldOf(model.getObjectByName('UpperArmL') || neck).distanceTo(worldOf(model.getObjectByName('UpperArmR') || neck)) || 0.3
   const w = shoulders * 0.95
-  const mark = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.75), new THREE.MeshStandardMaterial({ map: organtPrint(), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }))
+  const mark = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.75), new THREE.MeshStandardMaterial({ map: organtPrint('031', hi), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }))
   mark.name = 'organt-mark'
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(model.getWorldQuaternion(new THREE.Quaternion()))
   const at = new THREE.Vector3().lerpVectors(low, top, 0.42).addScaledVector(forward, shoulders * 0.72)
@@ -308,21 +340,44 @@ function addHoodie(model, look) {
   const low = worldOf(torso)
   const shoulders = worldOf(model.getObjectByName('UpperArmL') || neck).distanceTo(worldOf(model.getObjectByName('UpperArmR') || neck)) || 0.3
   const local = (v) => model.worldToLocal(v.clone())
-  // The hood, down at the back of the neck.
+  // The hood: a thick ring round the neck (what you see from the front), bunched up into
+  // a fuller hood at the back, a front pocket, drawstrings with tips, and ribbed cuffs.
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.036, 8, 18), shade)
+  collar.scale.set(1.22, 1.0, 0.95)
+  collar.rotation.x = Math.PI / 2 + 0.28
+  collar.position.copy(local(top.clone().addScaledVector(forward, 0.03).add(new THREE.Vector3(0, -0.04, 0))))
+  put(collar, chest)
   const hood = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.6), cloth)
-  hood.scale.set(shoulders * 0.42, 0.1, 0.07)
+  hood.scale.set(shoulders * 0.46, 0.12, 0.09)
   hood.rotation.x = Math.PI * 0.62
-  hood.position.copy(local(top.clone().addScaledVector(forward, -0.07).add(new THREE.Vector3(0, -0.04, 0))))
+  hood.position.copy(local(top.clone().addScaledVector(forward, -0.08).add(new THREE.Vector3(0, -0.06, 0))))
   put(hood, chest)
-  // The front pocket (a darker band across the belly) and two drawstrings.
-  const pocket = new THREE.Mesh(new THREE.BoxGeometry(shoulders * 0.62, 0.075, 0.012), shade)
+  const pocket = new THREE.Mesh(new THREE.BoxGeometry(shoulders * 0.7, 0.085, 0.014), shade)
   pocket.position.copy(local(new THREE.Vector3().lerpVectors(low, top, 0.02).addScaledVector(forward, shoulders * 0.5)))
   put(pocket, torso)
+  const tip = new THREE.MeshStandardMaterial({ color: 0xf7f4ee, roughness: 0.6 })
   for (const side of [-1, 1]) {
-    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.12, 4), new THREE.MeshStandardMaterial({ color: 0xf7f4ee, roughness: 0.6 }))
-    const at = top.clone().addScaledVector(forward, shoulders * 0.42).add(new THREE.Vector3(side * 0.03, -0.1, 0))
-    cord.position.copy(local(at))
+    const cordAt = top.clone().addScaledVector(forward, shoulders * 0.52).add(new THREE.Vector3(side * 0.034, -0.15, 0))
+    const cord = new THREE.Mesh(new THREE.CylinderGeometry(0.0055, 0.0055, 0.2, 4), tip)
+    cord.position.copy(local(cordAt))
     put(cord, chest)
+    const end = new THREE.Mesh(new THREE.SphereGeometry(0.011, 6, 4), tip)
+    end.position.copy(local(cordAt.clone().add(new THREE.Vector3(0, -0.1, 0))))
+    put(end, chest)
+  }
+  // Ribbed cuffs: a darker band at each wrist.
+  for (const side of ['L', 'R']) {
+    const lower = model.getObjectByName(`LowerArm${side}`)
+    const wrist = model.getObjectByName(`Wrist${side}`)
+    if (!lower || !wrist) continue
+    const from = worldOf(lower)
+    const to = worldOf(wrist)
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.047, 0.047, 0.035, 8), shade)
+    cuff.position.copy(from.clone().lerp(to, 0.94))
+    cuff.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize())
+    cuff.position.copy(model.worldToLocal(cuff.position.clone()))
+    cuff.quaternion.premultiply(model.getWorldQuaternion(new THREE.Quaternion()).invert())
+    put(cuff, lower)
   }
 }
 
@@ -350,6 +405,10 @@ export function lookOf(avatar = {}) {
     organt: avatar.outfit === 'organt',
     hoodie: Boolean(outfit.hoodie),
     hairStyle: byModel ? '' : HAIR_STYLE[gender]?.[avatar.hair] || '',
+    // (a hair colour beyond the default black gets light and dark in it, see tintHair)
+    tone: Boolean(avatar.hairColor) && avatar.hairColor.toLowerCase() !== HAIR,
+    // (the creator's stage: the chest print is drawn at high resolution)
+    studio: Boolean(avatar.studio),
     // (a curvy body is a women's option: the men's creator doesn't offer it)
     curvy: gender === 'female' && avatar.body === 'curvy',
     build: avatar.build ?? 0,
@@ -663,7 +722,7 @@ async function attachModel(group, look) {
   const soles = solePoints(model, bones)
   const gaitKey = `${g}:${look.outfitFile}`
   gaits[gaitKey] ||= calibrate(model, animGltf.animations, bones, footInShin)
-  if (look.organt) addOrgantMark(model)
+  if (look.organt) addOrgantMark(model, look.studio)
   if (look.hairStyle === 'locs') addLocs(model, heads, look)
   if (look.hairStyle === 'fade') hairCap(model, heads, look, false)
   if (look.hoodie) addHoodie(model, look)
