@@ -1,0 +1,137 @@
+{
+  "note": "The Soft Life website's words (site/ builds the page from this file). Cursor owns the wording. Houses come from data/campusville/houses.json (name, vibe, blurb, colours), the day's times from data/campusville/meta.json phases, and the Organt shop link from data/campusville/shop.json url, so none of those are repeated here. {game} in any line becomes the game's address without https:// (gameUrl below). Images live in site/public/img/ as WebP (site/scripts/images.mjs makes them from site/img-src/); an image that isn't there yet shows the drawn tee instead. brands.email empty = the For brands section is hidden. next.show false = the Coming next section is hidden. Rules: no real university names or logos, no real brands except Organt, no invented numbers.",
+  "siteUrl": "https://softlifeza-site.vercel.app",
+  "gameUrl": "https://softlifeza.vercel.app",
+  "meta": {
+    "title": "Soft Life: first year at the University of Mzansi",
+    "description": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from across Mzansi.",
+    "shareAlt": "Soft Life: University of Mzansi. Students from the seven houses on the campus steps."
+  },
+  "header": {
+    "wordmark": "Soft Life",
+    "links": [
+      { "label": "Your day", "href": "#day" },
+      { "label": "Houses", "href": "#houses" },
+      { "label": "Organt", "href": "#organt" },
+      { "label": "Get the app", "href": "#phone" }
+    ],
+    "play": "Play free"
+  },
+  "hero": {
+    "title": "First year at the University of Mzansi",
+    "text": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from across Mzansi.",
+    "play": "Play free",
+    "phone": "Put it on your phone",
+    "card": {
+      "label": "Your UMzansi student card",
+      "prefix": "26",
+      "blanks": 6,
+      "spoken": "26 and six digits",
+      "note": "Yours when you enrol. The first 500 students get the Founders badge on their card."
+    },
+    "poster": {
+      "image": "img/poster.webp",
+      "alt": "The Soft Life poster: students in Thekwini, Peak, Oakwinds, Braam, Kingsway and Jakaranda colours and Organt tees on the campus steps, under the house banners."
+    }
+  },
+  "day": {
+    "title": "A day on campus",
+    "text": "Your day runs on the clock, in the same six slots. Keep your money, energy, fullness, grades and social from running low.",
+    "slots": {
+      "wake": { "label": "Wake", "text": "The alarm goes off in res. Your roommate is already up." },
+      "transit": { "label": "Go", "text": "Walk to campus and join the caf queue for breakfast." },
+      "lecture": { "label": "Lecture", "text": "Sit in, stay awake, keep your grades up." },
+      "social": { "label": "Social", "text": "Hit the Quad, meet people and chat with whoever's around." },
+      "leisure": { "label": "Free", "text": "Shop at Greenway Grocer, stock the house fridge or pick up a shift." },
+      "night": { "label": "Night", "text": "Back to your house common room, or out with your crew." }
+    }
+  },
+  "houses": {
+    "title": "Seven houses. Pick yours.",
+    "text": "Every student lives in a house. It's your crew, your common room and your colours for the year."
+  },
+  "organt": {
+    "title": "Only Organt on campus",
+    "text": "Every outfit in Soft Life is a real Organt design. See it on campus, then wear it for real.",
+    "lookbook": {
+      "image": "img/organt-lookbook.webp",
+      "alt": "Organt's new limited collection: four students in Area Code and Matcha Girly tees.",
+      "heading": "New",
+      "sub": "Limited collection"
+    },
+    "items": [
+      {
+        "name": "Area Code tee",
+        "text": "Washed black, in 011, 012, 021 and 031. Rep where you're from.",
+        "image": "img/organt-area-code.webp",
+        "alt": "The Area Code tee in washed black with 021 on the chest.",
+        "tee": { "colour": "#3a3836", "print": "021", "ink": "#e8e2d4" }
+      },
+      {
+        "name": "Jozi Number 10",
+        "text": "Forest green and mustard, with joggers to match.",
+        "image": "img/organt-jozi-10.webp",
+        "alt": "The Jozi Number 10 tee in forest green with a mustard 10.",
+        "tee": { "colour": "#1f4a2c", "print": "10", "ink": "#d9a92e" }
+      },
+      {
+        "name": "Matcha Girly baby tee",
+        "text": "Cropped, in tan, white or brown.",
+        "image": "img/organt-matcha-girly.webp",
+        "alt": "The Matcha Girly baby tee, cropped, in tan.",
+        "tee": { "colour": "#c9a27a", "print": "Matcha Girly", "ink": "#5a3b22", "cropped": true }
+      }
+    ],
+    "shop": "Shop Organt",
+    "note": "Coming to the game: your first tee is your hometown's area code. Durban gets 031."
+  },
+  "phone": {
+    "title": "Put Soft Life on your phone",
+    "text": "No app store and no big download. It goes on your home screen straight from your browser and opens like an app.",
+    "android": {
+      "title": "Android",
+      "steps": [
+        "Open {game} in Chrome.",
+        "Tap the three-dot menu at the top right.",
+        "Tap Install app, or Add to home screen."
+      ]
+    },
+    "iphone": {
+      "title": "iPhone",
+      "steps": [
+        "Open {game} in Safari.",
+        "Tap the Share button at the bottom.",
+        "Tap Add to Home Screen."
+      ]
+    },
+    "qr": "On a computer? Scan this with your phone camera to play.",
+    "qrAlt": "QR code to play Soft Life at {game}"
+  },
+  "next": {
+    "show": true,
+    "title": "Coming next",
+    "items": [
+      { "name": "UMzansi FM", "text": "Campus radio that everyone hears at the same moment, playing South African producers." },
+      { "name": "Chats that stay", "text": "Message your friends and your house group. Your conversations are waiting when you come back." },
+      { "name": "Clubs", "text": "Start a club for anything, from science jokes to Sunday soccer, with its own spot on campus." }
+    ]
+  },
+  "brands": {
+    "title": "Reach South African students",
+    "text": "Sponsored hunts, campus events and slots on UMzansi FM. Built into the game, never in the way.",
+    "button": "Talk to us",
+    "email": "",
+    "subject": "Soft Life: brands"
+  },
+  "footer": {
+    "wordmark": "Soft Life",
+    "text": "The University of Mzansi, its houses and its students are fictional. Clothing by Organt.",
+    "copyright": "© 2026 Soft Life",
+    "links": [
+      { "label": "Play", "path": "/" },
+      { "label": "Rules", "path": "/#/rules" },
+      { "label": "Privacy", "path": "/#/privacy" },
+      { "label": "Terms", "path": "/#/terms" }
+    ]
+  }
+}
