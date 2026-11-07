@@ -31,6 +31,7 @@ const ICON = {
 const SHORT = {
   'SMIG': 'SMIG', 'Health Sciences Lecture Venue': 'Health Sci', 'Science Lecture Venue': 'Science',
   'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Main Bus Station': 'Bus station',
+  'Greenway Grocer': 'Grocer', 'Sports Centre': 'Sports', 'Main Gate': 'Gate', 'Cafeteria': 'Caf',
 }
 const CHIP_TIPS = [
   ['exam', '', '', 'Exam week: study counts double and the exam is at the Sports Centre on the last day.'],
@@ -495,9 +496,11 @@ export function mapHome(state, openPlace = '') {
     const mine = place.id === home ? ' mine' : ''
     const house = district.houses?.find((h) => h.place === place.id)
     const art = house ? residence(house.short[0], house.main) : (ART[place.id] || ART.library)()
-    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%">
+    const label = house ? house.short : placeName(place)
+    const called = `${house ? house.name : place.name}${place.id === home ? ', your house' : ''}${st.label ? ', ' + st.label : ''}`
+    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%" aria-label="${esc(called)}">
       ${st.open ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
-      <span class="g-name">${esc(placeName(place))}${place.id === home ? ' \u00b7 home' : ''}</span>
+      <span class="g-name">${esc(label)}</span>
       ${st.open ? '' : st.label ? `<small>${esc(st.label)}</small>` : ''}
     </button>`
   }).join('')

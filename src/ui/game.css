@@ -167,14 +167,14 @@
 .lg-fine{font-size:13px;color:#6b5a85;margin-top:14px;line-height:1.5}
 
 /* ---------- Pass 2: flat-vector campus ---------- */
-.g-map{background:#3f6e3c}
+.g-map{background:#3f6e3c;container-type:size}
 .g-paths-edge path{stroke:#b9925a;stroke-width:15px;vector-effect:non-scaling-stroke;opacity:.55}
 .g-paths path{stroke:#f3dfb4;stroke-width:11px;vector-effect:non-scaling-stroke}
 .g-decor{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .g-tree{position:absolute;transform:translate(-50%,-90%)}
 .g-tree svg{display:block}
 .g-sun{position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,#ffd27a88,#ff8a3d00 70%);animation:gsun 6s ease-in-out infinite alternate}
-.g-cloud{position:absolute;width:240px;height:90px;border-radius:50%;background:#1a0f2e;opacity:.1;filter:blur(14px);animation:gcloud 46s linear infinite}
+.g-cloud{position:absolute;width:240px;height:90px;border-radius:50%;background:#fffaf0;opacity:.45;filter:blur(10px);animation:gcloud 46s linear infinite}
 .g-cloud.c1{top:18%;left:-260px}
 .g-cloud.c2{top:58%;left:-260px;animation-duration:64s;animation-delay:-30s;width:300px}
 .g-npc{position:absolute;width:7px;height:7px;border-radius:50%;border:1.5px solid #fff8;box-shadow:0 2px 3px #0006;animation:gwalk1 22s ease-in-out infinite}
@@ -192,19 +192,20 @@
 @keyframes ghalo{0%,100%{opacity:.55;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}
 
 .g-pin{max-width:none;transform:translate(-50%,-62%)}
-.g-art{display:block;transition:transform .14s ease-out;filter:drop-shadow(0 2px 0 #1a0f2e55)}
+.g-art{display:block;transition:transform .14s ease-out;filter:drop-shadow(0 2px 0 #1a0f2e55);zoom:.88}
 .g-art svg{display:block}
 .g-pin:active .g-art,.g-pin.sel .g-art{transform:translateY(-3px) scale(1.06)}
 .g-halo{position:absolute;left:50%;top:40%;width:110%;aspect-ratio:1.4;border-radius:50%;background:radial-gradient(closest-side,#ffd23fbb,#ffd23f44 55%,#ffd23f00);transform:translate(-50%,-50%);animation:ghalo 2.4s ease-in-out infinite;z-index:-1;pointer-events:none}
 .g-pin.open .g-art{filter:drop-shadow(0 0 4px #ffe58a) drop-shadow(0 2px 0 #1a0f2e55)}
-.g-pin.dim .g-art{filter:grayscale(.75) brightness(.62)}
+.g-pin.dim .g-art{filter:none;opacity:.82}
 .g-pin.dim{opacity:1;filter:none}
-.g-name{margin-top:-2px;font-size:12px;font-weight:800;line-height:1.15;padding:3px 9px;border-radius:999px;background:#1a0f2ee6;color:#fff;border:1px solid #ffffff22;white-space:nowrap;box-shadow:0 2px 6px #0005}
-.g-pin.open .g-name{background:#2a1846;border-color:#f0c400;color:#ffe58a}
-.g-pin.dim .g-name{color:#d9cdea}
-.g-pin small{margin-top:2px;font-size:11px;font-weight:800;color:#ffb36b;background:#1a0f2ee6;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.g-name{margin-top:-2px;font-size:12px;font-weight:800;line-height:1.15;padding:3px 9px;border-radius:999px;background:#5b23c9;color:#fff;border:1px solid #3d1570;white-space:nowrap;box-shadow:0 2px 6px #0005}
+.g-pin.open .g-name,.g-pin.dim .g-name{background:#5b23c9;border-color:#3d1570;color:#fff}
+.g-pin.dim .g-art{opacity:.45;filter:grayscale(.35) brightness(.9)}
+.g-pin small{margin-top:2px;font-size:11px;font-weight:800;color:#f0c400;background:#2a1846;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .g-pin.mine .g-name{border-color:#b48cff}
-.g-b-quad{z-index:1}
+.g-b-quad{z-index:8}
+.g-b-bus_stop{z-index:3}
 .g-b-quad .g-name{margin-top:-14px}
 
 .g-me{transform:translate(-50%,-150%);z-index:4;display:flex;flex-direction:column;align-items:center}
@@ -214,6 +215,11 @@
 @keyframes gme{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 
 @media (max-width:374px){.g-art{zoom:.84}.g-name{font-size:11px;padding:2px 7px}.g-pin small{font-size:10px}}
+@container (max-height: 520px) {
+  .g-art { zoom: .68; }
+  .g-name { font-size: 10px; padding: 1px 6px; }
+  .g-pin small { font-size: 9px; padding: 0 6px; }
+}
 @media (min-width:420px){.g-art{zoom:1.08}}
 @media (prefers-reduced-motion:reduce){.g-npc,.g-cloud,.g-sun,.g-halo,.g-me span.g-me-head{animation:none}.g-npc{display:none}}
 
@@ -271,7 +277,10 @@
 .g-ms-list li.got small{color:#14783e}
 .g-screen.lg{overflow:auto}
 /* Fix 2 (pass 2): avatar stands beside the building, not on top of neighbours' labels */
-.g-me{transform:translate(calc(-50% + 34px),-118%)}
+.g-me{transform:translate(calc(-50% + 14px),-130%)}
+.g-me span.g-me-head{width:24px;height:24px;font-size:12px;border-width:2px}
+.g-me span.g-me-tag{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.g-me::after{display:none}
 /* Fix 3 (pass 2): Quad name sat under its own lawn */
 .g-name,.g-pin small{position:relative;z-index:2}
 .g-b-quad .g-name{margin-top:-30px}

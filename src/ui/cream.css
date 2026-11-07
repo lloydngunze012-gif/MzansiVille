@@ -176,11 +176,13 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .g-chip.exam { background: var(--cr-tint); border-color: var(--cr-gold); color: #6b4a00; }
 .g-chip.hungry { background: #ffe9cf; border-color: #f0a24c; color: #7a3f00; }
 
-/* 2D map pins */
-.g-name, .g-pin small { background: #fffaf0ee; color: var(--cr-ink); border-color: var(--cr-line); }
-.g-pin.open .g-name { background: var(--cr-gold); color: #2a1206; border-color: var(--cr-gold-dk); }
-.g-pin.mine .g-name { border-color: var(--cr-gold-dk); }
-.g-pin small { color: #8a5a00; }
+/* 2D map pins: plum badges, white names. Closed places fade; the opens time stays gold. */
+.g-map .g-name { background: #5b23c9; color: #fff; border-color: #3d1570; }
+.g-map .g-pin.open .g-name,
+.g-map .g-pin.dim .g-name { background: #5b23c9; color: #fff; border-color: #3d1570; }
+.g-map .g-pin.dim .g-art { opacity: .45; filter: grayscale(.35) brightness(.9); }
+.g-map .g-pin.mine .g-name { border-color: #f0c400; }
+.g-map .g-pin small { background: #2a1846; color: #f0c400; border: 0; }
 .map-pin .lbl { color: var(--cr-ink); }
 
 /* Place sheet, talk card, goal list: lilac tints and purple accents */

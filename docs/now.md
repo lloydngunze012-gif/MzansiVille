@@ -1,11 +1,11 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Cursor (cover with the 031 shirt number fixed, live on the game and the website).
+Last updated: 7 Nov, Cursor (map home: Quad clear, labels fit at 360px, plum badges, deploying).
 
 ## Waiting for Lloyd
 - **Cover** (7 Nov, later): public/cover.jpg, public/cover.webp, the three website poster sizes, and public/share.jpg are the poster with the 031 shirt number fixed. Covers stayed 1086x1448 (no crop). share.jpg is the same window as before: full width, from 381px down, 1200x630. cover-new.png deleted. Live: the game at https://softlifeza.vercel.app from e19a331, and the website at https://softlifeza-site.vercel.app.
-- **Campus map** (7 Nov): the Quad is a bigger gold hub labelled "The Quad". Other labels are shorter and staggered so they don't sit on each other. Buildings were not moved. Pushed, not deployed.
+- **Map home** (7 Nov): the map Lloyd sees is src/ui/campus.js. The Quad sits in the middle with nothing on it. At 360px wide, on a short phone and a tall one, no name or "opens" line is off the screen or on another place. Name badges are plum with white writing. A closed place is faded, and its "opens" time is gold. House names on the map are the short ones. Deploying to production.
 - **English-only lines** (7 Nov): suggested names are Thandi, Lerato, Naledi, Emma, Chloe and Sipho, Luyanda, Thabo, Daniel, Ethan. The vetkoek stall hello is "Yes!". Day-1 brother stays Nathan. Pushed, not deployed.
 - **Creator redesign, direction A "Gem stage"** (7 Nov, Lloyd's pick; on main, NOT on production): night plum and gold from the title (the title shares the palette), violet-lit stage with the gem on the plinth, small dark cards, pink Female / cyan Male, the stage no longer jumps when you scroll. QA pass 1 fixed: one student at a time, Curvy dress falls as an A-line, ORGANT legible, faces on Deep and Ebony. "Where you're from" is the nine provinces + Elsewhere in Africa + Overseas (old saves keep their city and show its province). Wave House and Goldrush House show everywhere. Screenshots before/after (390x844, 360x740) in docs/sprints/creator-redesign/ (on the PC, not committed). **Lloyd: open the Vercel preview link on your phone, then QA in chat, then your verdict before production.**
 - **For Cursor:** data/campusville/homes.json "from" needs the new answers: Gauteng, KwaZulu-Natal, Western Cape, Northern Cape (the other provinces are already there). Until then the code uses the first old city in that province (Gauteng = Joburg, KwaZulu-Natal = Durban, Western Cape = Cape Town) and Northern Cape gets the default style.

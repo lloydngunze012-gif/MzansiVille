@@ -18,7 +18,7 @@ function lecture(roof, glyph) {
     ${[13, 21, 39, 47].map((x) => `<rect x="${x}" y="25" width="4" height="21" fill="#fffaf0"/>`).join('')}
     <rect x="27" y="33" width="10" height="17" rx="5" fill="#2a1846"/>
     <rect x="6" y="48" width="52" height="3" fill="#d8c29a"/>
-    <circle cx="32" cy="16" r="5" fill="#ffd23f"/><text x="32" y="19" font-size="7" text-anchor="middle">${glyph}</text>`)
+    <circle cx="32" cy="16" r="6.5" fill="#1d6fbf" stroke="#fffaf0" stroke-width="1.2"/><text x="32" y="19" font-size="8" text-anchor="middle">${glyph}</text>`)
 }
 
 function library() {
@@ -76,6 +76,7 @@ function grocer() {
   return svg(76, 52, `${SHADOW}
     <rect x="8" y="14" width="56" height="30" rx="3" fill="#f6f7f3" stroke="#2f8f5b" stroke-width="2"/>
     <rect x="6" y="10" width="60" height="7" rx="2" fill="#2f8f5b"/>
+    <circle cx="64" cy="14" r="7" fill="#f0c400" stroke="#1c1915" stroke-width="1.3"/>
     ${[10, 22, 34, 46, 58].map((x) => `<rect x="${x}" y="17" width="6" height="5" fill="#3aa86b"/>`).join('')}
     <rect x="14" y="26" width="16" height="12" rx="1" fill="#cfeee0"/><rect x="42" y="26" width="16" height="12" rx="1" fill="#cfeee0"/>
     <rect x="32" y="28" width="8" height="16" rx="1" fill="#2f8f5b"/>`)
@@ -83,7 +84,7 @@ function grocer() {
 
 function busStation() {
   return svg(76, 52, `${SHADOW}
-    <rect x="4" y="12" width="30" height="4" rx="1.5" fill="#5b23c9"/>
+    <rect x="4" y="12" width="30" height="4" rx="1.5" fill="#c47a32"/>
     <rect x="7" y="16" width="2.5" height="28" fill="#2a1846"/><rect x="28" y="16" width="2.5" height="28" fill="#2a1846"/>
     <rect x="9" y="17" width="19" height="16" fill="#bfe6ff" opacity=".35"/>
     <rect x="10" y="36" width="17" height="3" rx="1" fill="#8a5a3a"/>
@@ -92,7 +93,8 @@ function busStation() {
     ${[39, 48, 57].map((x) => `<rect x="${x}" y="23" width="7" height="8" rx="1" fill="#2a1846" opacity=".8"/>`).join('')}
     <rect x="65" y="23" width="5" height="13" rx="1" fill="#2a1846" opacity=".8"/>
     <circle cx="44" cy="43" r="4" fill="#1a0f2e"/><circle cx="64" cy="43" r="4" fill="#1a0f2e"/>
-    <circle cx="44" cy="43" r="1.6" fill="#ccc"/><circle cx="64" cy="43" r="1.6" fill="#ccc"/>`)
+    <circle cx="44" cy="43" r="1.6" fill="#ccc"/><circle cx="64" cy="43" r="1.6" fill="#ccc"/>
+    <circle cx="66" cy="12" r="7" fill="#f0c400" stroke="#1c1915" stroke-width="1.3"/>`)
 }
 
 function gate() {
@@ -116,7 +118,8 @@ function quad() {
     <circle cx="62" cy="26" r="15" fill="#2f7d3a"/><circle cx="52" cy="31" r="9" fill="#3a8f45"/><circle cx="73" cy="30" r="10" fill="#3a8f45"/>
     <circle cx="57" cy="22" r="5" fill="#6cc25a" opacity=".7"/>
     ${bench(18, 40)}${bench(95, 40)}${bench(38, 60)}${bench(76, 60)}
-    <circle cx="26" cy="54" r="2.2" fill="#ffd23f"/><circle cx="31" cy="55" r="2.2" fill="#d77bff"/><circle cx="96" cy="54" r="2.2" fill="#6fb6ff"/>`)
+    <circle cx="100" cy="16" r="7" fill="#f0c400" stroke="#1c1915" stroke-width="1.3"/>
+    <circle cx="26" cy="54" r="2.2" fill="#ffd23f"/><circle cx="31" cy="55" r="2.2" fill="#ff8a3d"/><circle cx="96" cy="54" r="2.2" fill="#6fb6ff"/>`)
 }
 
 export const ART = {
@@ -131,37 +134,40 @@ export const ART = {
   engineering: () => lecture('#d0782a', '\u2699\uFE0F'),
   greenway: grocer,
   gate: gate,
+  bus_stop: busStation,
 }
 
 // Display positions (percent of the map box), following the brief: Quad in
 // the centre, cafeteria beside it, sports east, lecture venues around, res
 // south-west, bus station and gate south.
 export const LAYOUT = {
-  science: [27, 10], law: [70, 10],
-  engineering: [13, 26], library: [42, 25], sports_centre: [80, 27],
-  smig: [17, 41], quad: [47, 45], cafeteria: [79, 43],
-  health_sciences: [80, 59], res_other: [13.5, 57], res_j: [4, 60],
-  res_r: [43, 66], res_o: [15, 75], res_s: [31, 90], res_k: [52, 76],
-  greenway: [65, 75], gate: [57, 93], off_campus: [83, 88],
+  science: [22, 8], law: [76, 8],
+  engineering: [20, 20], library: [50, 18], sports_centre: [78, 20],
+  smig: [20, 33], quad: [50, 35], cafeteria: [78, 33],
+  res_other: [20, 48], res_r: [48, 48], health_sciences: [78, 48],
+  res_j: [20, 61], res_k: [48, 61], greenway: [78, 61],
+  res_o: [20, 73], res_s: [48, 73], off_campus: [78, 73],
+  gate: [32, 89], bus_stop: [70, 89],
 }
 
 // Curved paved paths (viewBox 0-100, stretched). Hand-placed to avoid the
 // spoke look: a ring round the Quad, a spine to the gate, branches that bend.
 const PATHS = [
-  'M57 97 C56 84 48 70 47 55',
-  'M47 55 C60 62 64 68 65 78',
-  'M33 45 C33 36 40 31 47 31 C56 31 62 37 62 45 C62 54 55 58 47 58 C39 58 33 53 33 45',
-  'M33 45 C26 44 20 45 15 47',
-  'M40 33 C36 26 33 20 31 15',
-  'M55 32 C60 24 66 18 70 14',
-  'M43 31 C40 28 30 28 13 30',
-  'M62 42 C68 41 73 42 79 46',
-  'M60 38 C66 34 72 32 80 31',
-  'M60 52 C68 56 74 60 80 62',
-  'M44 57 C44 61 43 64 43 68',
-  'M43 68 C34 71 24 75 15 78 M43 68 C39 77 34 84 31 92',
-  'M15 78 C14 72 13 68 13 63',
-  'M65 78 C72 84 79 88 86 92',
+  'M64 96 C58 84 52 64 48 52',
+  'M48 52 C56 60 62 68 66 74',
+  'M66 74 C74 80 82 86 86 90',
+  'M33 45 C33 36 40 31 48 31 C56 31 64 37 64 45 C64 54 56 58 48 58 C40 58 33 53 33 45',
+  'M33 45 C26 44 20 44 16 43',
+  'M40 32 C34 24 30 18 26 14',
+  'M56 32 C62 24 68 18 74 14',
+  'M42 30 C34 28 24 27 16 27',
+  'M60 42 C68 42 74 42 80 43',
+  'M60 36 C68 32 74 30 80 27',
+  'M58 52 C62 54 64 56 66 58',
+  'M44 56 C42 58 40 59 40 60',
+  'M40 60 C28 66 20 70 16 75',
+  'M16 75 C16 82 16 86 16 91',
+  'M66 58 C74 58 82 59 88 60',
 ]
 
 const TREES = [[6, 8, 'p'], [93, 6, 'p'], [52, 7, 't'], [24, 33, 't'], [93, 46, 'p'], [60, 63, 't'], [4, 44, 'p'],
@@ -181,14 +187,12 @@ export function groundHtml() {
     <defs>
       <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8aa64a"/><stop offset=".55" stop-color="#5e9445"/><stop offset="1" stop-color="#3f6e3c"/></linearGradient>
       <radialGradient id="gs" cx="88%" cy="0%" r="70%"><stop offset="0" stop-color="#ffb35c" stop-opacity=".75"/><stop offset=".5" stop-color="#ff8a3d" stop-opacity=".22"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
-      <radialGradient id="gv" cx="50%" cy="48%" r="75%"><stop offset=".6" stop-color="#2a1846" stop-opacity="0"/><stop offset="1" stop-color="#2a1846" stop-opacity=".75"/></radialGradient>
     </defs>
     <rect width="100" height="100" fill="url(#gg)"/>
     <g fill="#79a84f" opacity=".5"><ellipse cx="20" cy="18" rx="14" ry="6"/><ellipse cx="78" cy="70" rx="16" ry="7"/><ellipse cx="25" cy="92" rx="18" ry="5"/></g>
     <g class="g-paths-edge" fill="none" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
     <g class="g-paths" fill="none" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
     <rect width="100" height="100" fill="url(#gs)"/>
-    <rect width="100" height="100" fill="url(#gv)"/>
   </svg>
   <div class="g-decor" aria-hidden="true">
     ${TREES.map(([x, y, k]) => `<span class="g-tree" style="left:${x}%;top:${y}%">${tree(k)}</span>`).join('')}
