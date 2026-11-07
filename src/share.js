@@ -127,7 +127,7 @@ export async function drawShareCard(canvas, { district, run, url, milestone = nu
   ctx.textBaseline = 'alphabetic'
   ctx.fillStyle = GOLD
   ctx.font = `900 78px ${DISPLAY}`
-  ctx.fillText('MzansiVille', 270, 150)
+  ctx.fillText('Soft Life', 270, 150)
   ctx.fillStyle = ORANGE
   ctx.font = `900 28px ${DISPLAY}`
   ctx.fillText(kicker.toUpperCase(), 274, 196)

@@ -1723,13 +1723,13 @@ app.addEventListener('click', async (event) => {
     if (note) note.textContent = 'Making your image\u2026'
     const blob = await (shareBlob || exportCard(document.getElementById('share-card')))
     if (!blob) return
-    const name = `mzansiville-day${save.run?.day || 1}.png`
+    const name = `soft-life-day${save.run?.day || 1}.png`
     const file = new File([blob], name, { type: 'image/png' })
     const url = `https://${shareUrl()}`
-    const text = shareMilestone ? `${save.run.character.name} unlocked ${shareMilestone.title} in MzansiVille` : `${save.run.character.name}'s day ${save.run.day} in MzansiVille`
+    const text = shareMilestone ? `${save.run.character.name} unlocked ${shareMilestone.title} in Soft Life` : `${save.run.character.name}'s day ${save.run.day} in Soft Life`
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: 'MzansiVille', text, url })
+        await navigator.share({ files: [file], title: 'Soft Life', text, url })
       } catch { /* cancelled */ }
     } else {
       const link = document.createElement('a')

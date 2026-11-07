@@ -1,7 +1,7 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (deployed the game from ff06c10 on Lloyd's go).
+Last updated: 7 Nov, Claude Code (old names fixed, game deployed).
 
 ## Waiting for Lloyd
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.

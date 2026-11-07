@@ -659,7 +659,7 @@ function admin(state) {
 function title(state) {
   const day = state.save.run?.day
   return `<main class="screen tc" data-screen="title">
-    <h1 class="sr-only">UMzansi · University of Mzansi</h1>
+    <h1 class="sr-only">Soft Life: University of Mzansi</h1>
     <div class="tc-art" aria-hidden="true"><picture>
       <source srcset="/cover.webp" type="image/webp">
       <img src="/cover.jpg" alt="" width="1086" height="1448" decoding="async" fetchpriority="high">
@@ -729,7 +729,7 @@ export function view(state) {
   }
   if (screen === 'terms') {
     return legalText('terms', 'Terms', [
-      'MzansiVille is a game in progress. In-game money is not real money.',
+      'Soft Life is a game in progress. In-game money is not real money.',
       'The Organt rep job can open a real shop. That screen says so before you leave.',
       'Full terms to follow.',
     ])
