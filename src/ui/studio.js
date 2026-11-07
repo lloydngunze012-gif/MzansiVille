@@ -29,7 +29,9 @@ function blobTexture() {
 }
 
 // The set: lights, plinth, shadow. The student stands at the origin, soles on y = 0.
-export function buildStudio() {
+// theme: colours from the stage's CSS (--cc-plinth, --cc-plinth-foot, --cc-ring, --cc-gem), so the
+// set matches the page around it.
+export function buildStudio(theme = {}) {
   const scene = new THREE.Scene()
   // Soft key (warm, high, front right), a cool fill from the left, and two rims from
   // behind (warm left, cool right) so the edges of hair and sleeves come away from the backdrop.
@@ -49,14 +51,14 @@ export function buildStudio() {
 
   const plinth = new THREE.Group()
   plinth.name = 'plinth'
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.7, 0.12, 56), new THREE.MeshStandardMaterial({ color: 0xd8cbb0, roughness: 0.7 }))
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.66, 0.7, 0.12, 56), new THREE.MeshStandardMaterial({ color: theme.plinth || 0xd8cbb0, roughness: 0.7 }))
   top.position.y = -0.063 // (its top face is a hair below the soles)
   plinth.add(top)
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.665, 0.012, 6, 64), new THREE.MeshStandardMaterial({ color: 0xf0c400, roughness: 0.4, emissive: 0x7a5f00 }))
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.665, 0.012, 6, 64), new THREE.MeshStandardMaterial({ color: theme.ring || 0xf0c400, roughness: 0.4, emissive: new THREE.Color(theme.ring || 0xf0c400).multiplyScalar(0.5) }))
   ring.rotation.x = Math.PI / 2
   ring.position.y = -0.004
   plinth.add(ring)
-  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.72, 0.05, 56), new THREE.MeshStandardMaterial({ color: 0xb3a484, roughness: 0.85 }))
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.72, 0.05, 56), new THREE.MeshStandardMaterial({ color: theme.foot || 0xb3a484, roughness: 0.85 }))
   foot.position.y = -0.145
   plinth.add(foot)
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.52, 32), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false }))
@@ -64,6 +66,13 @@ export function buildStudio() {
   shadow.position.y = 0.002
   shadow.scale.set(1, 0.8, 1)
   plinth.add(shadow)
+  // The title's gem, set into the front of the plinth.
+  if (theme.gem) {
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), new THREE.MeshStandardMaterial({ color: theme.gem, roughness: 0.25, metalness: 0.1, emissive: new THREE.Color(theme.gem).multiplyScalar(0.45), flatShading: true }))
+    gem.scale.set(0.8, 1.15, 0.5)
+    gem.position.set(0, 0.07, 0.6)
+    plinth.add(gem)
+  }
   scene.add(plinth)
 
   const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 50)

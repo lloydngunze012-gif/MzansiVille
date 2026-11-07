@@ -17,12 +17,14 @@ let clock = 0
 let last = 0
 const turner = createTurner()
 
-function setup() {
+function setup(stage) {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.domElement.className = 'cc-3d'
-  const studio = buildStudio()
+  const css = stage ? getComputedStyle(stage) : null
+  const v = (name) => css?.getPropertyValue(name).trim() || undefined
+  const studio = buildStudio({ plinth: v('--cc-plinth'), foot: v('--cc-plinth-foot'), ring: v('--cc-ring'), gem: v('--cc-gem') })
   scene = studio.scene
   camera = studio.camera
   fitStudio(camera, 1, 1)
@@ -98,7 +100,7 @@ function tick(now) {
 export function showPreview(stage, look) {
   if (!stage) return
   // (no 3D here: the flat drawing is the preview)
-  if (!renderer) { try { setup() } catch { stage.classList.add('cc-no3d'); return } }
+  if (!renderer) { try { setup(stage) } catch { stage.classList.add('cc-no3d'); return } }
   const next = JSON.stringify(lookOf({ ...look, studio: true }))
   if (next !== key) {
     // (a pick: show the front, so the chest print and the neckline read)

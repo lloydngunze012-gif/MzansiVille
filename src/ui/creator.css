@@ -1,0 +1,104 @@
+/* ---- Soft Life palette (owner, 7 Nov): taken from the title screen (public/cover.jpg: the purple gem,
+   the white-and-purple logo, the gold crown; the title page's night plum). The creator and the title
+   share it. ---- */
+:root {
+  --sl-night: #140a24;   /* page */
+  --sl-plum: #1f1036;    /* panels */
+  --sl-plum-2: #2b1650;  /* cards */
+  --sl-plum-3: #3a1f6b;  /* raised */
+  --sl-violet: #7b3fe4;  /* the logo's purple */
+  --sl-gem: #8b4dff;     /* the gem */
+  --sl-lilac: #b48cff;   /* the gem's light face */
+  --sl-gold: #f5c400;    /* the crown */
+  --sl-gold-dk: #b88600;
+  --sl-text: #f7f2ff;
+  --sl-muted: #a998cc;
+  --sl-her: #ff5fa8;     /* Female */
+  --sl-him: #3ec7e6;     /* Male */
+}
+
+/* ===== Direction previews (?cc=a|b|c). Only the look step of enrolment. ===== */
+.en[data-cc] { background: var(--sl-night); color: var(--sl-text); }
+.en[data-cc] .en-top { background: transparent; }
+.en[data-cc][data-step="look"] .en-top { background: var(--sl-night); }
+.en[data-cc] .en-back, .en[data-cc] .en-skip { color: var(--sl-text); }
+.en[data-cc] .en-skip { color: var(--sl-muted); }
+.en[data-cc] .en-dots li { background: #ffffff22; }
+.en[data-cc] .en-dots li.done { background: var(--sl-lilac); }
+.en[data-cc] .en-dots li.now { background: var(--sl-gold); }
+.en[data-cc] .en-stage { box-shadow: 0 0 0 8px var(--sl-night), 0 16px 0 8px var(--sl-night); }
+.en[data-cc] .en-foot { background: linear-gradient(#140a2400, var(--sl-night) 34%); }
+.en[data-cc] .en-row h3 { color: var(--sl-lilac); }
+.en[data-cc] .cc-mute { background: #1f1036cc; border-color: var(--sl-gold); color: #fff; }
+.en[data-cc] .cc-loading { background: linear-gradient(100deg, #ffffff10 30%, #ffffff30 50%, #ffffff10 70%); background-size: 220% 100%; }
+.en[data-cc] .cc-chip b { color: inherit; }
+.en-title { display: none; }
+
+/* --- A. Gem stage: night plum everywhere, a violet spotlight on the student, small dark cards,
+   gold for what is chosen. --- */
+.en[data-cc="a"] .en-stage { border: 2px solid #f5c40099; background: radial-gradient(ellipse 70% 62% at 50% 40%, #5a33a8 0%, #2c1658 48%, #160a2b 100%); }
+.en[data-cc="a"] .en-row h3 { font: 800 10.5px system-ui; letter-spacing: .14em; margin-bottom: 6px; }
+.en[data-cc="a"] .en-rows { gap: 12px; }
+.en[data-cc="a"] .en-strip { gap: 6px; }
+.en[data-cc="a"] .en-card { min-width: 56px; min-height: 58px; border-radius: 14px !important; background: var(--sl-plum-2); border: 1.5px solid #ffffff14; color: var(--sl-text); box-shadow: none; padding: 2px 2px 4px; font-size: 10.5px; }
+.en[data-cc="a"] .en-card .cc-thumb { width: 46px; height: 36px; }
+.en[data-cc="a"] .en-card.sw { min-width: 50px; min-height: 54px; }
+.en[data-cc="a"] .en-card.sw i { width: 26px; height: 26px; border: 2px solid #ffffff30; }
+.en[data-cc="a"] .en-card b { font: 700 10.5px system-ui; }
+.en[data-cc="a"] .en-card[aria-pressed="true"] { background: var(--sl-plum-3); border: 2px solid var(--sl-gold); box-shadow: 0 0 0 3px #f5c40033, 0 0 18px #8b4dff66; animation: none; }
+.en[data-cc="a"] .cc-thumb.gender { font-size: 22px; }
+.en[data-cc="a"] [data-gender="female"] { border-color: #ff5fa866; } .en[data-cc="a"] [data-gender="female"] .cc-thumb { color: var(--sl-her); }
+.en[data-cc="a"] [data-gender="male"] { border-color: #3ec7e666; } .en[data-cc="a"] [data-gender="male"] .cc-thumb { color: var(--sl-him); }
+.en[data-cc="a"] [data-gender="female"][aria-pressed="true"] { background: #ff5fa82a; border-color: var(--sl-her); box-shadow: 0 0 16px #ff5fa855; }
+.en[data-cc="a"] [data-gender="male"][aria-pressed="true"] { background: #3ec7e62a; border-color: var(--sl-him); box-shadow: 0 0 16px #3ec7e655; }
+.en[data-cc="a"] .en-go { background: linear-gradient(180deg, #ffd84a, #f0b400); color: #1c0c33; box-shadow: 0 4px 0 #8a6300, 0 8px 22px #f5c40033; min-height: 52px; line-height: 52px; font-size: 19px; border-radius: 16px; }
+
+/* --- B. Neon grid: near-black, every choice visible at once in tight grids, and the accent follows
+   who you are (pink for Female, cyan for Male). --- */
+.en[data-cc="b"] { --acc: var(--sl-her); background: #0e0719; }
+.en[data-cc="b"]:has([data-gender="male"][aria-pressed="true"]) { --acc: var(--sl-him); }
+.en[data-cc="b"][data-step="look"] .en-top { background: #0e0719; }
+.en[data-cc="b"] .en-stage { border: 2px solid transparent; background: radial-gradient(ellipse 70% 60% at 50% 42%, #3d1f74 0%, #1a0d33 55%, #0e0719 100%) padding-box, linear-gradient(135deg, var(--acc), var(--sl-gem) 50%, var(--sl-gold)) border-box; box-shadow: 0 0 0 8px #0e0719, 0 16px 0 8px #0e0719, 0 0 28px color-mix(in srgb, var(--acc) 30%, transparent); }
+.en[data-cc="b"] .en-foot { background: linear-gradient(#0e071900, #0e0719 34%); }
+.en[data-cc="b"] .en-row { display: grid; grid-template-columns: 74px 1fr; align-items: start; gap: 8px; }
+.en[data-cc="b"] .en-row h3 { margin: 10px 0 0; font: 800 10px system-ui; letter-spacing: .12em; color: var(--sl-muted); }
+.en[data-cc="b"] .en-rows { gap: 8px; }
+.en[data-cc="b"] .en-strip { flex-wrap: wrap; overflow: visible; gap: 5px; padding: 0; }
+.en[data-cc="b"] .en-card { min-width: 0; width: 52px; min-height: 52px; border-radius: 12px !important; background: #1d1033; border: 1.5px solid #ffffff12; color: #e9e0ff; box-shadow: none; padding: 1px; }
+.en[data-cc="b"] .en-card .cc-thumb { width: 44px; height: 34px; }
+.en[data-cc="b"] .en-card b { font: 700 9.5px system-ui; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50px; }
+.en[data-cc="b"] .en-card.sw { width: 40px; min-height: 40px; border-radius: 50% !important; padding: 3px; }
+.en[data-cc="b"] .en-card.sw b { display: none; }
+.en[data-cc="b"] .en-card.sw i { width: 30px; height: 30px; margin: 0; border: 0; }
+.en[data-cc="b"] .en-card[aria-pressed="true"] { border: 2px solid var(--acc); background: color-mix(in srgb, var(--acc) 18%, #1d1033); box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 55%, transparent); animation: none; }
+.en[data-cc="b"] [data-gender] { width: 84px; }
+.en[data-cc="b"] [data-gender="female"] .cc-thumb { color: var(--sl-her); } .en[data-cc="b"] [data-gender="male"] .cc-thumb { color: var(--sl-him); }
+.en[data-cc="b"] .en-go { background: linear-gradient(90deg, var(--sl-violet), var(--acc)); color: #fff; box-shadow: 0 0 24px color-mix(in srgb, var(--acc) 40%, transparent); min-height: 52px; line-height: 52px; font-size: 19px; border-radius: 26px; text-shadow: 0 1px 2px #0006; }
+
+/* --- C. Poster: the title page continued. Logo-style heading (white with a purple edge, gold rule),
+   the stage glowing over a faint, dark cover, white cards with purple type, the gold Enrol button. --- */
+.en[data-cc="c"] { background: linear-gradient(180deg, #2a1258 0%, #170a30 46%, #120822 100%); }
+.en[data-cc="c"][data-step="look"] .en-top { background: #2a1258; }
+.en[data-cc="c"] .en-title { display: block; margin: 0 0 6px; text-align: center; font: 900 26px/1 var(--display, system-ui); color: #fff; -webkit-text-stroke: 6px var(--sl-violet); paint-order: stroke fill; text-shadow: 0 3px 0 #3a1590; letter-spacing: -.01em; }
+.en[data-cc="c"] .en-title::after { content: ''; display: block; width: 120px; height: 4px; margin: 6px auto 0; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--sl-gold), transparent); }
+.en[data-cc="c"] .en-stage { top: calc(88px + var(--safe-t, 0px)); border: 3px solid var(--sl-gold); background: radial-gradient(ellipse 66% 58% at 50% 42%, #5a33b8e6 0%, #2d1663f5 55%, #170a30 100%), url(/cover.webp) 50% 30% / cover; box-shadow: 0 0 0 6px #1d0d3d, 0 14px 0 6px #170a30; }
+.en[data-cc="c"] .en-foot { background: linear-gradient(#12082200, #120822 34%); }
+.en[data-cc="c"] .en-row h3 { font: 900 11px var(--display, system-ui); letter-spacing: .1em; color: var(--sl-gold); }
+.en[data-cc="c"] .en-strip { gap: 6px; }
+.en[data-cc="c"] .en-card { min-width: 64px; min-height: 64px; border-radius: 14px !important; background: #f7f2ff; border: 2px solid #d9c9ff; color: #2b1360; box-shadow: 0 3px 0 #5b23c9; }
+.en[data-cc="c"] .en-card .cc-thumb { width: 52px; height: 42px; }
+.en[data-cc="c"] .en-card b { font: 800 10.5px system-ui; }
+.en[data-cc="c"] .en-card.sw { min-width: 56px; min-height: 60px; }
+.en[data-cc="c"] .en-card.sw i { width: 28px; height: 28px; }
+.en[data-cc="c"] .en-card[aria-pressed="true"] { background: #fff; border-color: var(--sl-gold); box-shadow: 0 0 0 3px var(--sl-violet), 0 4px 0 var(--sl-gold); animation: none; }
+.en[data-cc="c"] [data-gender="female"] .cc-thumb { color: #e8338a; } .en[data-cc="c"] [data-gender="male"] .cc-thumb { color: #1aa3c4; }
+.en[data-cc="c"] [data-gender="female"][aria-pressed="true"] { box-shadow: 0 0 0 3px var(--sl-her), 0 4px 0 var(--sl-gold); }
+.en[data-cc="c"] [data-gender="male"][aria-pressed="true"] { box-shadow: 0 0 0 3px var(--sl-him), 0 4px 0 var(--sl-gold); }
+.en[data-cc="c"] .en-go { background: var(--sl-gold); color: #1c1915; border: 3px solid #1c1915; box-shadow: 0 5px 0 #1c1915; min-height: 54px; line-height: 48px; font-size: 20px; border-radius: 18px; box-sizing: border-box; }
+/* The 3D set's colours per direction (read by preview3d.js when the stage is first built). */
+.en[data-cc="a"] .en-stage { --cc-plinth: #2f1a5c; --cc-plinth-foot: #1a0d33; --cc-ring: #f5c400; --cc-gem: #8b4dff; }
+.en[data-cc="b"] .en-stage { --cc-plinth: #1d1036; --cc-plinth-foot: #0e0719; --cc-ring: #8b4dff; --cc-gem: #b48cff; }
+.en[data-cc="c"] .en-stage { --cc-plinth: #efe8ff; --cc-plinth-foot: #b9a3ee; --cc-ring: #f5c400; --cc-gem: #8b4dff; }
+/* (the stage's height from the small viewport height: it no longer changes, and the student no longer
+   jumps, when a phone's address bar slides away during a scroll) */
+.en[data-cc] .en-stage { height: max(300px, 40svh); }

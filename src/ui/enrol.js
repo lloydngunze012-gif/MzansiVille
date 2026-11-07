@@ -64,6 +64,7 @@ function lookStep(state, still) {
   const genderRow = `<section class="en-row"><h3>You are</h3><div class="en-strip">${genders.map((item) =>
     `<button class="cc-chip en-card th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" data-gender="${item.id}" aria-pressed="${g === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '♀' : '♂'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></section>`
   return `<div class="en-look">
+      <h2 class="en-title">Who's arriving?</h2>
       <div class="cc-stage en-stage">
         <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
         ${still ? `<img class="cc-still" src="${still}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>
@@ -133,7 +134,9 @@ export function enrolScreen(state, { still = '', photo = '' } = {}) {
   const last = step === 'card'
   const go = last ? `<button class="en-go" type="button" data-act="enrol-enter">${draft.edit ? 'Save changes' : 'Enter campus ›'}</button>`
     : `<button class="en-go" type="button" data-act="enrol-next">Next ›</button>`
-  return `<main class="screen en" data-screen="create" data-step="${step}">
+  // (design previews: ?cc=a|b|c picks a direction for the look)
+  const cc = new URLSearchParams(location.search).get('cc')
+  return `<main class="screen en" data-screen="create" data-step="${step}"${/^[abc]$/.test(cc || '') ? ` data-cc="${cc}"` : ''}>
     <header class="en-top">
       ${first ? '<a class="en-back" href="#/">‹ Back</a>' : '<button class="en-back" type="button" data-act="enrol-back">‹ Back</button>'}
       ${dots(step)}
