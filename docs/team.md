@@ -31,6 +31,13 @@ Two tools never edit the same files in the same piece. If a piece needs both cod
 
 **Standing rules:** one piece at a time. Out-of-scope problems go to `docs/backlog.md`, not into the piece. No movement test counts below 20 fps. Lloyd's phone verdict beats any test. Test videos and screenshots are never committed.
 
+## Speed rules
+
+- Hotfix: if a live bug hurts players, Lloyd uses Vercel Instant Rollback first; then one bug per prompt, medium effort, only that area's tests, 10-15 min.
+- Build: one or two items per prompt, medium effort (high only for design and database), screenshots at 390x844 unless layout work; the full test run once, before going live.
+- Cursor: data/ plus small self-contained jobs in one screen or file. 3D, saves, database and tests stay with Claude Code.
+- No open-ended audits unless Lloyd asks for one.
+
 ## The QA pass ("run checks")
 
 Every time, in this order, nothing skipped:

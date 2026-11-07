@@ -934,7 +934,11 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .go-skip{position:absolute;z-index:6;right:12px;bottom:calc(120px + env(safe-area-inset-bottom));min-height:44px;padding:0 16px;border-radius:999px;border:2px solid #f0c400;background:#22143be6;color:#fff6e6;font:800 14px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
 .go-skip[hidden]{display:none}
 /* Map labels read on any background, and stay small */
-.map-pin .lbl { color: #fff; font: 800 10px/1.1 system-ui; text-shadow: 0 1px 2px #000, 0 0 4px #000; max-width: 76px; text-align: center; white-space: normal; }
+.map-pin .lbl { color: #fff; font: 800 12px/1.15 system-ui; text-shadow: 0 1px 2px #000, 0 0 4px #000; max-width: 64px; text-align: center; white-space: normal; }
+.map-pin.above { flex-direction: column-reverse; }
+.map-pin.hub { z-index: 4; }
+.map-pin.hub .ico { width: 44px; height: 44px; font-size: 22px; background: #f0c400; border: 2px solid #1c1915; box-shadow: 0 2px 0 #a87400; }
+.map-pin.hub .lbl { max-width: 92px; font-size: 13px; color: #1c1915; background: #f0c400; text-shadow: none; border-radius: 999px; padding: 2px 8px; }
 .phone-list{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
 .phone-list li{display:grid;padding:6px 10px;border-radius:10px;background:#2a18460d}
 .phone-list small{opacity:.75}

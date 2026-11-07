@@ -250,6 +250,8 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .sheet .blurb, .glass-card .blurb, .map-detail .blurb { color: var(--cr-muted); }
 .map-pin .lbl { color: var(--cr-ink); text-shadow: 0 1px 0 #fffaf0, 0 0 4px #fffaf0; }
 .map-pin .ico { border: 1.5px solid var(--cr-line); }
+.map-pin.hub .ico, .map-pin.hub .lbl { background: var(--cr-gold); color: var(--cr-ink); text-shadow: none; }
+.map-pin.hub .ico { border-color: var(--cr-ink); }
 .kind { color: #a86400; }
 .act { background: #fff; color: var(--cr-ink); border-color: var(--cr-line); }
 

@@ -2,8 +2,9 @@ import { actionsAt, actionState } from '../engine/sim.js'
 const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
-  'Engineering Lecture Venue': 'Engineering', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
-  'Health Sciences Lecture Venue': 'Health Sci', 'Greenway Grocer': 'Greenway',
+  'Engineering Lecture Venue': 'Eng', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
+  'Health Sciences Lecture Venue': 'Health', 'Greenway Grocer': 'Grocer', 'Sports Centre': 'Sports',
+  'Cafeteria': 'Caf', 'Main Gate': 'Gate', 'Bus Stop': 'Bus',
 }
 
 // The map's frame: every building fits, with a little margin.
@@ -87,23 +88,39 @@ export function createCampusMap(host) {
         svg.append(line)
       }
     }
-    // Pin spots in % of the map; pins too close together are pushed apart so each stays tappable.
+    // Pin spots in % of the map. The Quad stays on its building; neighbours move aside
+    // so every pin has room for a 44px tap. The buildings themselves are not moved.
     const spot = new Map(buildings.map((b) => [b.id, { x: ((b.x - f.x) / f.w) * 100, y: ((b.z - f.z) / f.h) * 100 }]))
-    const minGap = 12
-    for (let pass = 0; pass < 6; pass++) {
+    const minGap = 14
+    const clamp = (n) => Math.max(8, Math.min(92, n))
+    for (let pass = 0; pass < 10; pass++) {
       for (const a of buildings) for (const b of buildings) {
-        if (a === b) continue
+        if (a.id >= b.id) continue
         const p = spot.get(a.id)
         const q = spot.get(b.id)
         const dx = q.x - p.x
         const dy = q.y - p.y
         const d = Math.hypot(dx, dy)
         if (d >= minGap) continue
-        const push = (minGap - d) / 2
         const ux = d ? dx / d : 1
         const uy = d ? dy / d : 0
-        p.x -= ux * push; p.y -= uy * push; q.x += ux * push; q.y += uy * push
+        const push = minGap - d
+        if (a.id === 'quad') { q.x = clamp(q.x + ux * push); q.y = clamp(q.y + uy * push) }
+        else if (b.id === 'quad') { p.x = clamp(p.x - ux * push); p.y = clamp(p.y - uy * push) }
+        else {
+          p.x = clamp(p.x - ux * push / 2); p.y = clamp(p.y - uy * push / 2)
+          q.x = clamp(q.x + ux * push / 2); q.y = clamp(q.y + uy * push / 2)
+        }
       }
+    }
+    // A label goes above its icon when a neighbour sits just below, so the words don't stack.
+    const above = new Set()
+    for (const a of buildings) for (const b of buildings) {
+      if (a.id >= b.id) continue
+      const p = spot.get(a.id)
+      const q = spot.get(b.id)
+      if (Math.abs(p.x - q.x) > 18 || Math.abs(p.y - q.y) > 9) continue
+      above.add(p.y <= q.y ? a.id : b.id)
     }
     for (const building of buildings) {
       const line = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -115,11 +132,13 @@ export function createCampusMap(host) {
       line.setAttribute('fill', active.has(building.id) ? '#f0c400' : '#fffaf2')
       svg.append(line)
       const button = document.createElement('button')
+      const hub = building.id === 'quad'
       button.type = 'button'
-      button.className = `map-pin${active.has(building.id) ? ' live' : ''}`
-      button.style.left = `${Math.max(6, Math.min(94, spot.get(building.id).x))}%`
-      button.style.top = `${Math.max(5, Math.min(95, spot.get(building.id).y))}%`
-      button.innerHTML = `<span class="ico">${KIND_ICON[building.kind] || '•'}</span><span class="lbl">${SHORT[building.name] || building.name.replace(/ House$/, '')}</span>`
+      button.className = `map-pin${hub ? ' hub' : ''}${above.has(building.id) ? ' above' : ''}${active.has(building.id) ? ' live' : ''}`
+      button.style.left = `${hub ? spot.get(building.id).x : Math.max(6, Math.min(94, spot.get(building.id).x))}%`
+      button.style.top = `${hub ? spot.get(building.id).y : Math.max(5, Math.min(95, spot.get(building.id).y))}%`
+      button.setAttribute('aria-label', hub ? 'The Quad' : building.name)
+      button.innerHTML = `<span class="ico">${hub ? KIND_ICON.hub : (KIND_ICON[building.kind] || '•')}</span><span class="lbl">${hub ? 'The Quad' : (SHORT[building.name] || building.name.replace(/ House$/, ''))}</span>`
       button.dataset.place = building.id
       button.addEventListener('click', () => { close(); onGo ? onGo(building.id) : select(building) })
       stage.append(button)
