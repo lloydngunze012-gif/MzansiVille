@@ -1,18 +1,18 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (old names fixed, game deployed).
+Last updated: 7 Nov, Claude Code (Flow 1, smoothness reports, started).
 
 ## Waiting for Lloyd
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
 ## Waiting for Lloyd's phone verdict
+- Lloyd's phone verdict 7 Nov: the day 1 breakfast chairs are fine (done). The install fix is still waiting for his phone check (the first line below).
 - **Live 7 Nov: the game** at https://softlifeza.vercel.app from ff06c10 (the install fix, the shop link, and the start screen's Install Soft Life + Website links). Check on the phone: Chrome offers Install (or menu > Install Soft Life), the home-screen name is Soft Life. On the live site Edge already offered to install, no installability errors.
 - **Live 7 Nov 12:45: the website** at https://softlifeza-site.vercel.app (Vercel project softlifeza-site) from 549ccd3. Lighthouse mobile live 100/100/100/100. Deploy: from site/ `npm run build`, `npm run prebuilt`, `npx vercel deploy --prebuilt --prod` (site/README.md). Reports: docs/sprints/website/report.md, docs/sprints/install/report.md.
-- **Day 1 home: the breakfast chairs** (6c3bd77). The kitchen chairs load in both home styles, and you, your sibling and your parent each sit on one, facing the table. Before it: queue NPCs stop vibrating (3594dd8).
 
 ## Next three pieces (month1-focus.md; the order is its proposal, Lloyd decides)
-1. **Flow: smoothness reports from real phones.** A small report every few minutes to Supabase (device, fps typical and worst 10%, long frames, load time, stuck or stalled walks and where), plus a page for Lloyd per place.
+1. **Flow: smoothness reports from real phones (in progress 7 Nov; spec docs/design/smoothness-reports.md).** A small report every few minutes to Supabase (device, fps typical and worst 10%, long frames, load time, stuck or stalled walks and where), plus a page for Lloyd per place.
 2. **Talk: friends and saved direct messages.** Add a friend, chat one-to-one between friends only, saved so it's still there tomorrow, with unread counts.
 3. **Sound: the radio.** Stations synced to the server clock, a phone radio in the menu, world speakers that get louder as you walk closer. The music itself is Lloyd's outreach (3 stations, an hour each), listed by Cursor in data/campusville/music.json.
 
