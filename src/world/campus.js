@@ -170,7 +170,9 @@ function buildingMesh(building, home) {
     new THREE.SphereGeometry(0.22, 12, 10),
     new THREE.MeshStandardMaterial({ color: 0xf0c400, emissive: 0xf0c400, emissiveIntensity: 0.9, roughness: 0.4 }),
   )
-  beacon.position.set(0, 1.35, building.d / 2 + 0.55)
+  // (the Quad's stage step has a student sitting on it, middle front: the glowing ball
+  // goes to the side of the stage, clear of heads)
+  beacon.position.set(building.id === 'quad' ? building.w / 2 + 0.9 : 0, 1.35, building.d / 2 + 0.55)
   beacon.name = 'beacon'
   beacon.visible = false
   group.add(beacon)

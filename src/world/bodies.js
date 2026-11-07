@@ -124,6 +124,8 @@ export function resolveBodies(bodies, boxesNear) {
   for (const b of live) {
     const a = b.avatar
     if (b.fixed || settled(a)) continue
+    // Standing on something (the open-mic stage): not inside it, so not pushed out of it.
+    if (a.position.y > 0.25 && !a.userData.isPlayer) continue
     const boxes = boxesNear(a.position.x, a.position.z)
     if (!boxes?.length) continue
     // Someone stepping in to a seat ('in') or just up from one ('out') is among the

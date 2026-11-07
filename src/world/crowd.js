@@ -114,6 +114,8 @@ export function createCrowd(scene, campus, opts = {}) {
     const start = nearestOpen(campus.grid, person.avatar.position)
     person.route = start ? findPath(campus.grid, start, to.cell) : []
     person.from = to
+    person.anchor = null
+    person.walkT = 0
     if (!person.route.length) person.wait = 2
   }
 
@@ -186,6 +188,18 @@ export function createCrowd(scene, campus, opts = {}) {
           person.route = step.route
           walking = !step.done
           if (step.done || step.blocked) person.wait = 1.5 + Math.random() * 4
+          // Pressed against someone who stands still, the walk and the personal-space
+          // push cancel out and the body shakes on the spot: a walk that has gone
+          // nowhere in a second is dropped, and a new trip starts after a pause.
+          person.walkT = (person.walkT || 0) + dt
+          person.anchor ||= { x: avatar.position.x, z: avatar.position.z }
+          if (person.walkT >= 1) {
+            // (net, after the personal-space push: a walk is ~1.5 m a second)
+            const net = Math.hypot(avatar.position.x - person.anchor.x, avatar.position.z - person.anchor.z)
+            if (net < 0.3 && !step.done) { person.route = []; person.wait = 0.8 + Math.random() * 1.5; walking = false }
+            person.anchor = null
+            person.walkT = 0
+          }
         } else {
           person.wait = 1 + Math.random() * 3
         }

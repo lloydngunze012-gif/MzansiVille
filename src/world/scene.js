@@ -1466,7 +1466,12 @@ function updateTags() {
     // In Eye view, someone right in front of you needs no label over their face.
     const want = d < TAG_NEAR && !acting && !talk && !(rig.mode === 'eye' && d < 2.2)
     const tag = want ? nameTag(avatar) : avatar.userData.tag
-    if (tag) tag.visible = want
+    if (tag) {
+      tag.visible = want
+      // Over the head, not over where the head would be standing: a seated person's
+      // origin is the seat, so their head is only ~0.9 m above it.
+      tag.position.y = avatar.userData.pose === 'sit' && !avatar.userData.sitMove ? 1.15 : 1.98
+    }
   }
 }
 
