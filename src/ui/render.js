@@ -41,7 +41,7 @@ const DEFAULT_LOOK = JSON.stringify({ gender: 'female', skin: 'amber', hair: 'cr
 function stillOf(avatar) {
   const key = JSON.stringify(avatar)
   try {
-    const kept = JSON.parse(localStorage.getItem('mzansiville.thumbs.v4') || '{}')[`body|${key}`]
+    const kept = JSON.parse(localStorage.getItem('mzansiville.thumbs.v5') || '{}')[`body|${key}`]
     if (kept) return kept
   } catch { /* nothing kept */ }
   return key === DEFAULT_LOOK ? '/creator-still.png' : ''

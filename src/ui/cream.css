@@ -403,3 +403,14 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
   .sm-stalls .sm-xz { font-size: 10px; }
   .sm-stalls .sm-how { word-break: break-word; }
 }
+
+/* ---- The creator's studio (src/ui/studio.js): a clean backdrop, no stairs. The plinth, lights
+   and the soft shadow are drawn in 3D; a horizontal drag on the stage turns the student. ---- */
+.cc-stage { background: radial-gradient(ellipse 90% 80% at 50% 42%, #fffaf0 0%, #f4eada 55%, #e2d4b8 100%); touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.cc-stage::before, .cc-stage::after { content: none; }
+
+/* The Next bar sits above the rows (owner, 7 Nov: the Body row ran under it, or over it): rows
+   scroll beneath its fade, only the button takes taps, and the last row ends above it. */
+.en-foot { z-index: 9; pointer-events: none; }
+.en-foot .en-go { pointer-events: auto; }
+.en[data-step="look"] .en-body { padding-bottom: 18px; }
