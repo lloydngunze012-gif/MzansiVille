@@ -602,3 +602,103 @@ body:has(.g-full) .door-prompt{visibility:hidden}
 .g-row .g-online{padding:3px 6px;font-size:10.5px}.g-row .g-gear,.g-row .g-soc{width:32px;height:32px}
 .g-cta p.g-open{font-size:12px;padding:6px 8px;gap:4px}.g-cta:has(.g-open) .g-go{padding:9px 8px;font-size:12px}
 .g-cta:has(.g-open){gap:6px;padding-left:8px;padding-right:8px}}
+
+/* Campus map: the live chip (the Quad's next event). */
+.g-live{position:absolute;z-index:4;left:50%;transform:translateX(-50%);white-space:nowrap;font:800 10.5px/1 system-ui;padding:3px 7px 3px 15px;border-radius:999px;top:auto;bottom:-16px;background:#2a1846;color:#f0c400;border:1.5px solid #f0c400}
+.g-live::before{content:"";position:absolute;left:5px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#2fbf71;animation:glive 1.6s ease-in-out infinite}
+@keyframes glive{50%{opacity:.35;transform:scale(.7)}}
+
+/* Campus map ("Campus Postcard", chosen 8 Nov). Zones, one place that calls you, quiet closed places, Main Road, light by the clock. */
+.g-campus{background:#4b843f}
+.g-campus .g-paths path{stroke:#f6ead0;stroke-width:9px}
+.g-campus .g-paths-edge path{stroke:#8a6a3a;stroke-width:12px;opacity:.45}
+.g-campus .g-lights{stroke:#fff3b0;stroke-width:3.5px;stroke-dasharray:.1 11}
+.g-campus::after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none}
+.g-map[data-tod="morning"]::after{background:linear-gradient(165deg,#d6ecff59,#d6ecff00 55%),linear-gradient(#0000 70%,#2a184614)}
+.g-map[data-tod="golden"]::after{background:radial-gradient(120% 70% at 100% 0,#ffb35c8c,#ff8a3d26 50%,#ff8a3d00),linear-gradient(#0000 55%,#5b23c92e)}
+.g-map[data-tod="night"]::after{background:radial-gradient(ellipse 38% 20% at 50% 45%,#f0c40040,#f0c40000),linear-gradient(#170c29f0,#2a1846db 45%,#170c29f2)}
+.g-zone{position:absolute;transform:translate(-50%,-50%);font:900 8.5px/1 var(--display);letter-spacing:.34em;color:#5a2a14;opacity:.55;white-space:nowrap}
+.g-zone.road{color:#fffaf0;opacity:.5}
+.g-lamps{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.g-lamp{position:absolute;width:2.5px;height:11px;margin:-11px 0 0 -1.25px;background:#2a1846;border-radius:2px}
+.g-lamp::before{content:"";position:absolute;left:-2.25px;top:-3px;width:7px;height:7px;border-radius:50%;background:#fff3c4;box-shadow:0 0 0 1.5px #2a1846}
+.g-lamp i{position:absolute;left:50%;top:100%;width:70px;height:34px;margin:-17px 0 0 -35px;border-radius:50%;background:radial-gradient(closest-side,#ffd23f8c,#ffd23f00);opacity:0;transition:opacity .6s}
+.g-map[data-tod="golden"] .g-lamp i{opacity:.4}
+.g-map[data-tod="night"] .g-lamp i{opacity:1}
+.g-map[data-tod="night"] .g-lamp::before{background:#ffe58a;box-shadow:0 0 0 1.5px #2a1846,0 0 10px 3px #ffd23f}
+.g-taxi{position:absolute;left:0;bottom:2.9%;animation:gtaxi 15s linear infinite;will-change:transform}
+.g-taxi.back{bottom:.2%;animation-name:gtaxib;animation-duration:21s;animation-delay:-8s}
+.g-taxi svg{display:block}
+@keyframes gtaxi{from{transform:translateX(-40px) scaleX(-1)}to{transform:translateX(calc(100cqw + 40px)) scaleX(-1)}}
+@keyframes gtaxib{from{transform:translateX(calc(100cqw + 40px))}to{transform:translateX(-40px)}}
+.g-campus .g-npc{left:0;top:0;width:8px;height:8px;border:1.5px solid #fff;animation:gc1 26s linear infinite alternate;will-change:transform}
+.g-campus .g-npc.n2{animation-name:gc2;animation-duration:30s}
+.g-campus .g-npc.n3{animation-name:gc3;animation-duration:28s;animation-delay:-9s}
+.g-campus .g-npc.n4{animation-name:gc4;animation-duration:24s;animation-direction:normal}
+.g-campus .g-npc.n5{animation-name:gc1;animation-delay:-14s}
+.g-campus .g-npc.n6{animation-name:gc4;animation-duration:24s;animation-direction:reverse;animation-delay:-8s}
+.g-map[data-tod="night"] .g-npc{box-shadow:0 0 6px 2px #ffd23f88}
+.g-campus .g-lit{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.g-quest-under{stroke:#1c1915;stroke-width:8px;opacity:.22;vector-effect:non-scaling-stroke}
+.g-quest{stroke:#ffd23f;stroke-width:5px;stroke-dasharray:.1 12;vector-effect:non-scaling-stroke;animation:gquest 1.1s linear infinite}
+@keyframes gquest{to{stroke-dashoffset:-12}}
+/* Pins: the Quad is the heart; open places full colour; closed places small with one quiet pill. */
+.g-campus .g-b-quad{z-index:5}
+.g-campus .g-b-quad .g-name{background:#f0c400;color:#1c1915;border-color:#a87400;font-size:13px}
+.g-campus .g-b-quad.open .g-halo{width:150%}
+.g-campus .g-b-quad .g-art{zoom:1.08}
+.g-campus .g-b-quad .g-name{margin-top:-12px}
+.g-campus .g-name{font-family:var(--display);font-weight:900;letter-spacing:.02em}
+.g-campus .g-name i{font-style:normal;margin-left:4px;font-family:system-ui;font-weight:800;font-size:.9em}
+.g-campus .g-pin.dim:not(.house):not(.hero) .g-art{zoom:.72;opacity:.82;filter:saturate(.35) brightness(.98) drop-shadow(0 2px 0 #1a0f2e44)}
+.g-campus .g-pin.dim:not(.house):not(.hero) .g-name{background:#fffaf0e8;color:#2a1846;border:1px solid #2a184633;font-size:11px}
+.g-campus .g-pin.dim:not(.house):not(.hero) .g-name i{color:#8a5a00}
+.g-campus .g-pin.open:not(.house) .g-art{filter:drop-shadow(0 0 5px #ffe58a) drop-shadow(0 3px 0 #1a0f2e66)}
+.g-campus .g-pin.house .g-art{zoom:.7;opacity:1;filter:drop-shadow(0 2px 0 #1a0f2e66)}
+.g-campus .g-pin.house .g-name,.g-campus .g-pin.house.dim .g-name,.g-campus .g-pin.house.open .g-name{background:var(--hc);color:var(--ht);border:1.5px solid #fffaf0aa;font-size:11px;padding:1px 7px}
+.g-campus .g-pin.house.mine{z-index:4}
+.g-campus .g-pin.house.mine .g-art{zoom:.86}
+.g-campus .g-pin.house.mine .g-name{border:2px solid #f0c400;box-shadow:0 2px 0 #1c1915;font-size:12px}
+.g-campus .g-pin.house .g-name i{color:#f0c400}
+.g-campus .g-pin.house .g-halo{display:none}
+.g-crowd{position:absolute;z-index:4;top:-4px;right:-16px;display:flex;align-items:center;background:#fffaf0;border:1.5px solid #2a1846;border-radius:999px;padding:2px 6px 2px 3px;font:800 10.5px/1 system-ui;color:#2a1846;box-shadow:0 2px 0 #2a1846;white-space:nowrap}
+.g-crowd b{width:9px;height:9px;border-radius:50%;border:1.5px solid #fffaf0;margin-right:-3px;background:#ff8a3d}
+.g-crowd b:nth-of-type(2){background:#6fb6ff}.g-crowd b:nth-of-type(3){background:#d77bff;margin-right:3px}
+/* The hero: a beam of light, a ripple at its feet, and a tag that says what to do. */
+.g-campus .g-pin.hero{z-index:7}
+.g-campus .g-pin.hero .g-art{zoom:1;opacity:1;filter:drop-shadow(0 0 8px #ffd23f) drop-shadow(0 3px 0 #1a0f2e66)}
+.g-campus .g-pin.hero .g-name{background:#f0c400;color:#1c1915;border:2px solid #1c1915}
+.g-campus .g-pin.hero .g-name i{color:#5b23c9}
+.g-beacon{position:absolute;left:50%;bottom:38%;width:54px;height:120px;margin-left:-27px;z-index:-1;pointer-events:none;background:linear-gradient(to top,#ffe58ad9,#ffe58a00);clip-path:polygon(36% 0,64% 0,100% 100%,0 100%);transform-origin:50% 100%;animation:gbeam 2.4s ease-in-out infinite}
+.g-beacon i{position:absolute;left:50%;bottom:-16px;width:76px;height:26px;margin-left:-38px;border-radius:50%;border:3px solid #ffd23f;animation:gring 1.8s ease-out infinite}
+.g-pin.hero-top .g-beacon{bottom:auto;top:30%;transform:scaleY(-1);transform-origin:50% 0;height:70px;animation:none;opacity:.7}
+@keyframes gbeam{50%{opacity:.55;transform:scaleY(.9)}}
+@keyframes gring{from{transform:scale(.45);opacity:1}to{transform:scale(1.35);opacity:0}}
+.g-next{position:absolute;z-index:3;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;background:#1c1915;color:#f0c400;font:900 12px/1 var(--display);letter-spacing:.04em;padding:6px 10px;border-radius:999px;box-shadow:0 3px 0 #a87400;animation:gnext 1.6s ease-in-out infinite}
+.g-next::after{content:"";position:absolute;left:50%;top:100%;margin-left:-6px;border:6px solid transparent;border-top-color:#1c1915}
+.g-pin.hero-top .g-next{bottom:auto;top:calc(100% + 10px)}
+.g-pin.hero-top .g-next::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:#1c1915}
+@keyframes gnext{50%{transform:translateX(-50%) translateY(-3px)}}
+/* Night: buildings settle into the dark, windows and the hero keep their glow. */
+.g-map[data-tod="night"] .g-pin:not(.hero) .g-art{filter:brightness(.72) saturate(.85) drop-shadow(0 0 5px #ffd23f66)}
+.g-map[data-tod="night"] .g-pin.dim:not(.house):not(.hero) .g-art{filter:brightness(.5) saturate(.4)}
+.g-map[data-tod="night"] .g-pin.dim:not(.house):not(.hero) .g-name{background:#2a1846d9;color:#d9cfe8;border-color:#fff2}
+.g-map[data-tod="night"] .g-pin.dim:not(.house):not(.hero) .g-name i{color:#f0c400}
+@media (prefers-reduced-motion:reduce){.g-live::before,.g-quest,.g-beacon,.g-beacon i,.g-next,.g-taxi,.g-campus .g-npc{animation:none}.g-taxi.back,.g-campus .g-npc{display:none}}
+@keyframes gc1{0.0%{transform:translate(calc(37cqw - 50%),calc(93cqh - 50%))} 15.4%{transform:translate(calc(40cqw - 50%),calc(82cqh - 50%))} 31.0%{transform:translate(calc(44cqw - 50%),calc(71cqh - 50%))} 44.0%{transform:translate(calc(48cqw - 50%),calc(62cqh - 50%))} 50.4%{transform:translate(calc(50cqw - 50%),calc(57.5cqh - 50%))} 61.6%{transform:translate(calc(38cqw - 50%),calc(56.5cqh - 50%))} 72.9%{transform:translate(calc(29cqw - 50%),calc(51cqh - 50%))} 81.4%{transform:translate(calc(27cqw - 50%),calc(45cqh - 50%))} 90.3%{transform:translate(calc(20cqw - 50%),calc(40.5cqh - 50%))} 100.0%{transform:translate(calc(12cqw - 50%),calc(36cqh - 50%))}}
+@keyframes gc2{0.0%{transform:translate(calc(6cqw - 50%),calc(71cqh - 50%))} 14.1%{transform:translate(calc(25cqw - 50%),calc(70.5cqh - 50%))} 28.1%{transform:translate(calc(44cqw - 50%),calc(71cqh - 50%))} 42.9%{transform:translate(calc(64cqw - 50%),calc(71.5cqh - 50%))} 54.9%{transform:translate(calc(78cqw - 50%),calc(77cqh - 50%))} 62.3%{transform:translate(calc(86cqw - 50%),calc(81cqh - 50%))} 73.3%{transform:translate(calc(87.5cqw - 50%),calc(71cqh - 50%))} 84.4%{transform:translate(calc(86cqw - 50%),calc(61cqh - 50%))} 92.8%{transform:translate(calc(78cqw - 50%),calc(55.5cqh - 50%))} 100.0%{transform:translate(calc(71cqw - 50%),calc(51cqh - 50%))}}
+@keyframes gc3{0.0%{transform:translate(calc(9cqw - 50%),calc(16.5cqh - 50%))} 15.4%{transform:translate(calc(30cqw - 50%),calc(15.3cqh - 50%))} 29.9%{transform:translate(calc(50cqw - 50%),calc(15.5cqh - 50%))} 39.2%{transform:translate(calc(50cqw - 50%),calc(24cqh - 50%))} 48.4%{transform:translate(calc(50cqw - 50%),calc(32.5cqh - 50%))} 57.1%{transform:translate(calc(62cqw - 50%),calc(33.2cqh - 50%))} 64.6%{transform:translate(calc(70cqw - 50%),calc(37.5cqh - 50%))} 71.5%{transform:translate(calc(79cqw - 50%),calc(39.5cqh - 50%))} 78.5%{transform:translate(calc(87cqw - 50%),calc(36cqh - 50%))} 89.7%{transform:translate(calc(91cqw - 50%),calc(26cqh - 50%))} 100.0%{transform:translate(calc(91cqw - 50%),calc(16.5cqh - 50%))}}
+@keyframes gc4{0.0%{transform:translate(calc(27cqw - 50%),calc(45cqh - 50%))} 8.8%{transform:translate(calc(30.5cqw - 50%),calc(37.5cqh - 50%))} 17.4%{transform:translate(calc(40cqw - 50%),calc(33.3cqh - 50%))} 25.0%{transform:translate(calc(50cqw - 50%),calc(32.5cqh - 50%))} 32.6%{transform:translate(calc(60cqw - 50%),calc(33.3cqh - 50%))} 41.2%{transform:translate(calc(69.5cqw - 50%),calc(37.5cqh - 50%))} 50.0%{transform:translate(calc(73cqw - 50%),calc(45cqh - 50%))} 58.8%{transform:translate(calc(69.5cqw - 50%),calc(52.5cqh - 50%))} 67.4%{transform:translate(calc(60cqw - 50%),calc(56.7cqh - 50%))} 75.0%{transform:translate(calc(50cqw - 50%),calc(57.5cqh - 50%))} 82.6%{transform:translate(calc(40cqw - 50%),calc(56.7cqh - 50%))} 91.2%{transform:translate(calc(30.5cqw - 50%),calc(52.5cqh - 50%))} 100.0%{transform:translate(calc(27cqw - 50%),calc(45cqh - 50%))}}
+/* Campus map: lean labels, lamps only when the light goes, a real golden hour, the hero house in gold. */
+.g-campus .g-name{font-family:system-ui,sans-serif;font-weight:900;letter-spacing:0}
+.g-campus .g-b-quad .g-name,.g-campus .g-pin.hero .g-name{font-family:var(--display);letter-spacing:.02em}
+.g-campus .g-lamp{opacity:0;transition:opacity .6s}
+.g-map[data-tod="golden"] .g-lamp{opacity:.85}
+.g-map[data-tod="night"] .g-lamp{opacity:1}
+.g-map[data-tod="golden"]::after{background:radial-gradient(130% 80% at 100% 0,#ff9a3da6,#ff8a3d40 45%,#ff8a3d14),linear-gradient(#0000 35%,#5b23c94d)}
+.g-map[data-tod="golden"] .g-pin .g-art{filter:sepia(.18) saturate(1.1) drop-shadow(-3px 3px 0 #2a184640)}
+.g-campus .g-pin.house.hero .g-art{zoom:.92}
+.g-campus .g-pin.house.hero .g-name{background:#f0c400;color:#1c1915;border:2px solid #1c1915;font-size:12.5px;box-shadow:0 3px 0 #a87400}
+.g-campus .g-pin.house.hero .g-name i{color:#5b23c9}
+.g-map[data-tod="golden"] .g-lamp::before{background:#ffe58a;box-shadow:0 0 0 1.5px #2a1846,0 0 8px 2px #ffd23f}
+.g-map[data-tod="golden"] .g-lamp i{opacity:.6}

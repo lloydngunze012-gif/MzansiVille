@@ -106,3 +106,8 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 ## Smoothness reports (7 Nov)
 - Smoothness page: the 5,000-row cap means a busy week shows only the newest rows; if the game gets busy, aggregate in SQL (a view or an rpc) instead of in the browser.
 - #/smooth: show a place's stalls as dots on the campus map instead of x, z.
+
+## Map home (8 Nov)
+- tests/e2e/map-go.spec.js "2D map: tap the cafeteria": under SwiftShader (~5 fps) the 3D walk from the house to the cafeteria sticks at the Quad stage ("Tap to enter The Quad", data-going stays cafeteria). Same on the code before the new map (checked by stashing), so not the map; fine on the real GPU. Movement checks below 20 fps are inconclusive anyway.
+- Map home crowd chips are a snapshot when the map draws; they don't follow players live until the map redraws.
+- Map home gold route is a smooth curve from you to the starred place, not traced along the paths.

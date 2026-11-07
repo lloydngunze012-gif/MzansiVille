@@ -1,10 +1,11 @@
-import { countLabel } from '../presence.js'
+import { countLabel, peersOnCampus } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { chatFor } from '../engine/people.js'
 import { cardHtml, esc, summaryRows } from './render.js'
-import { ART, LAYOUT, groundHtml, residence } from './campus.js'
+import { ART, LAYOUT, groundHtml, inkOn, residence, routeSvg, todOf } from './campus.js'
+import { csvToWorld } from '../world/layout.js'
 import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import { identityTitle } from '../engine/identity.js'
@@ -60,6 +61,75 @@ const PHASE_SHORT = { wake: 'Wake', transit: 'Go', lecture: 'Lecture', social: '
 
 export function placeName(place) { return SHORT[place.name] || place.name }
 export function layoutOf(id) { return LAYOUT[id] || [50, 50] }
+
+// The one place that calls you right now, and the words on its tag.
+function heroOf(district, run) {
+  const home = homePlaceId(district, run.character.residence)
+  if (run.dropOff) return { id: home, line: 'Your room' }
+  if (run.phase === 'night') return { id: home, line: 'Bed' }
+  const venue = venueFor(run)
+  if (venue && !run.lectureResolved && ['wake', 'transit', 'lecture'].includes(run.phase) && run.day <= 5) return { id: venue.id, line: run.day === 5 ? 'Test 9:00' : 'Lecture 9:00' }
+  const open = (id) => placeStatus(district, run, id).open
+  const s = run.stats || {}
+  if ((s.hunger ?? 100) < 45 && open('cafeteria')) return { id: 'cafeteria', line: 'Eat' }
+  const c = run.crush
+  if (c?.met && c.beats?.[run.day] === undefined && open('quad')) return { id: 'quad', line: 'Someone\u2019s here' }
+  if ((s.grades ?? 50) < 45 && open('library')) return { id: 'library', line: 'Study' }
+  for (const [id, line] of [['quad', 'Hang out'], ['cafeteria', 'Eat'], ['library', 'Study'], ['sports_centre', 'Play']]) if (open(id)) return { id, line }
+  return null
+}
+
+// Real students on campus right now (presence), each counted at the nearest place
+// within 15 m. Nobody near a place: no chip. Never a made-up number.
+function crowdAt(district) {
+  const out = {}
+  let peers = []
+  try { peers = peersOnCampus() } catch { return out }
+  if (!peers.length) return out
+  const spots = district.places.map((p) => ({ id: p.id, ...csvToWorld(p.x, p.y) }))
+  for (const peer of peers) {
+    let best = null
+    let bestD = 15
+    for (const s of spots) {
+      const d = Math.hypot(s.x - peer.x, s.z - peer.z)
+      if (d < bestD) { bestD = d; best = s.id }
+    }
+    if (best) out[best] = (out[best] || 0) + 1
+  }
+  return out
+}
+
+// The Quad's next event, from its stage sign (place_story.json, e.g. "OPEN MIC · FRIDAY 19:00").
+function quadEvent(district, run) {
+  const m = /^(.+?)\s*\u00b7\s*([A-Za-z]+)\s+(\d\d:\d\d)$/.exec(STORY.quad?.stage_sign || '')
+  if (!m) return ''
+  const name = m[1].charAt(0) + m[1].slice(1).toLowerCase()
+  const day = m[2].charAt(0) + m[2].slice(1, 3).toLowerCase()
+  const today = String(weekdayName(district.meta, run.day) || '').slice(0, 3).toLowerCase() === m[2].slice(0, 3).toLowerCase()
+  if (!today) return `\u{1F3A4} ${name} ${day}`
+  return run.minutes < toMinutes(m[3]) ? `\u{1F3A4} ${name} tonight ${m[3]}` : `\u{1F3A4} ${name} on now`
+}
+
+// A place on the campus map: the hero's beam and tag, a crowd chip, one quiet pill
+// for closed places, houses in their own colours.
+function pinHtml(place, st, { house, mine, sel, hero, art, label, called, crowd, event }) {
+  const [x, y] = layoutOf(place.id)
+  const isHero = hero?.id === place.id
+  const time = /^opens /.test(st.label) ? st.label.replace(/^opens 0?/, '') : st.label === 'done today' ? '\u2713' : ''
+  const name = house
+    ? (isHero ? `\u2605 ${esc(hero.line)} <i>\u2302 ${esc(house.short)}</i>` : `${esc(house.short)}${mine ? ' <i>\u2302 Home</i>' : ''}`)
+    : `${esc(label)}${!st.open && time && !isHero ? ` <i>${esc(time)}</i>` : ''}`
+  const state = st.open ? 'open' : st.public ? 'public' : 'dim'
+  const vars = house ? `;--hc:${house.main};--ht:${inkOn(house.main)}` : ''
+  const dots = '<b></b>'.repeat(Math.min(3, crowd))
+  return `<button type="button" class="g-pin g-b-${place.id} ${state}${mine ? ' mine' : ''}${house ? ' house' : ''}${isHero ? ` hero${y < 20 ? ' hero-top' : ''}` : ''}${sel ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%${vars}" aria-label="${esc(called)}${isHero ? `, next: ${esc(hero.line)}` : ''}${crowd && !house ? `, ${crowd} here now` : ''}">
+    ${isHero ? `<span class="g-beacon"><i></i></span>${house ? '' : `<span class="g-next">\u2605 ${esc(hero.line)}</span>`}` : ''}
+    ${st.open && !house ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
+    <span class="g-name">${name}</span>
+    ${crowd && !house ? `<span class="g-crowd">${dots}${crowd} here</span>` : ''}
+    ${place.id === 'quad' && event ? `<span class="g-live">${esc(event)}</span>` : ''}
+  </button>`
+}
 
 export function hereOf(district, run) {
   return run.at || homePlaceId(district, run.character.residence) || 'quad'
@@ -501,19 +571,16 @@ export function mapHome(state, openPlace = '') {
   const { district, run } = state
   const here = hereOf(district, run)
   const home = homePlaceId(district, run.character.residence)
-  const pins = district.places.map((place) => {
-    const [x, y] = layoutOf(place.id)
+  const hero = world ? null : heroOf(district, run)
+  const crowd = world ? {} : crowdAt(district)
+  const event = world ? '' : quadEvent(district, run)
+  const pins = world ? '' : district.places.map((place) => {
     const st = placeStatus(district, run, place.id)
-    const mine = place.id === home ? ' mine' : ''
     const house = district.houses?.find((h) => h.place === place.id)
     const art = house ? residence(house.short[0], house.main) : (ART[place.id] || ART.library)()
     const label = house ? house.short : placeName(place)
     const called = `${house ? house.name : place.name}${place.id === home ? ', your house' : ''}${st.label ? ', ' + st.label : ''}`
-    return `<button type="button" class="g-pin g-b-${place.id} ${st.open ? 'open' : st.public ? 'public' : 'dim'}${mine}${openPlace === place.id ? ' sel' : ''}" data-act="place-open" data-id="${place.id}" style="left:${x}%;top:${y}%" aria-label="${esc(called)}">
-      ${st.open ? '<span class="g-halo"></span>' : ''}<span class="g-art">${art}</span>
-      <span class="g-name">${esc(label)}</span>
-      ${st.open ? '' : st.label ? `<small>${esc(st.label)}</small>` : ''}
-    </button>`
+    return pinHtml(place, st, { house, mine: place.id === home, sel: openPlace === place.id, hero, art, label, called, crowd: crowd[place.id] || 0, event })
   }).join('')
   const [ax, ay] = layoutOf(here)
   let layer = ''
@@ -529,8 +596,9 @@ export function mapHome(state, openPlace = '') {
     ${hud(district, run)}
     ${run.mode === 'play' ? nowRow(run) : ''}
     ${viewBar(world)}
-    ${world ? '<section class="g-map g-world-gap" aria-label="3D campus"></section>' : `<section class="g-map" aria-label="Campus map">
+    ${world ? '<section class="g-map g-world-gap" aria-label="3D campus"></section>' : `<section class="g-map g-campus" data-tod="${todOf(run)}" aria-label="Campus map">
       ${groundHtml()}
+      ${hero && hero.id !== here ? routeSvg([ax, ay], layoutOf(hero.id)) : ''}
       ${pins}
       <span class="g-me" id="g-me" style="left:${ax}%;top:${ay}%" aria-label="You"><span class="g-me-head">${esc((run.character.name || '?').slice(0, 1).toUpperCase())}</span><span class="g-me-tag">You</span></span>
     </section>`}

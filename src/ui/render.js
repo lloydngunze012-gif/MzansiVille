@@ -813,6 +813,15 @@ export function shotState(name) {
   run.promptSave = false
   run.morningNote = ''
   run.bestieName = 'Thandi'
+  // Shot mode only: ?clock=HH:MM sets the time of day (map-direction screenshots).
+  const clock = new URLSearchParams(location.search).get('clock')
+  if (clock && /^\d\d:\d\d$/.test(clock)) {
+    const [h, m] = clock.split(':').map(Number)
+    const mins = h * 60 + m
+    const toMin = (t) => { const [a, b] = t.split(':').map(Number); return a * 60 + b }
+    const ph = district.meta.phases.find((p) => mins >= toMin(p.start) && mins < toMin(p.end))
+    if (ph) { run.phase = ph.id; run.minutes = mins; if (mins >= 13 * 60) run.lectureResolved = true }
+  }
   const draft = emptyDraft()
   const state = {
     screen: name,

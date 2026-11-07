@@ -107,19 +107,19 @@ function gate() {
     <rect x="22" y="38" width="9" height="10" fill="#2a1846"/><rect x="23" y="39.5" width="7" height="3" fill="#bfe6ff" opacity=".7"/>`)
 }
 
+// The heart of campus: a paved plaza ring, a plinth and the gold crown (the Soft Life mark).
 function quad() {
-  const bench = (x, y) => `<rect x="${x}" y="${y}" width="11" height="2.6" rx="1" fill="#8a5a3a"/><rect x="${x + 1}" y="${y + 2.6}" width="1.4" height="2.4" fill="#5b3a22"/><rect x="${x + 8.6}" y="${y + 2.6}" width="1.4" height="2.4" fill="#5b3a22"/>`
-  return svg(124, 76, `
-    <ellipse cx="62" cy="40" rx="60" ry="33" fill="#5fae4f"/>
-    <ellipse cx="62" cy="40" rx="60" ry="33" fill="none" stroke="#f6e7c8" stroke-width="3"/>
-    <ellipse cx="62" cy="42" rx="22" ry="11" fill="#e8d2a4"/>
-    <ellipse cx="62" cy="56" rx="13" ry="3" fill="#1a0f2e" opacity=".22"/>
-    <rect x="59" y="34" width="6" height="22" rx="2" fill="#7a4a2a"/>
-    <circle cx="62" cy="26" r="15" fill="#2f7d3a"/><circle cx="52" cy="31" r="9" fill="#3a8f45"/><circle cx="73" cy="30" r="10" fill="#3a8f45"/>
-    <circle cx="57" cy="22" r="5" fill="#6cc25a" opacity=".7"/>
-    ${bench(18, 40)}${bench(95, 40)}${bench(38, 60)}${bench(76, 60)}
-    <circle cx="100" cy="16" r="7" fill="#f0c400" stroke="#1c1915" stroke-width="1.3"/>
-    <circle cx="26" cy="54" r="2.2" fill="#ffd23f"/><circle cx="31" cy="55" r="2.2" fill="#ff8a3d"/><circle cx="96" cy="54" r="2.2" fill="#6fb6ff"/>`)
+  return svg(124, 84, `
+    <ellipse cx="62" cy="50" rx="60" ry="32" fill="#f0c400" opacity=".28"/>
+    <ellipse cx="62" cy="48" rx="54" ry="28" fill="#f6e7c8" stroke="#f0c400" stroke-width="3"/>
+    <ellipse cx="62" cy="48" rx="38" ry="19" fill="#e8d2a4"/>
+    <ellipse cx="62" cy="48" rx="26" ry="12.5" fill="none" stroke="#b9925a" stroke-width="1.4" stroke-dasharray="3 3"/>
+    <ellipse cx="62" cy="55" rx="14" ry="4" fill="#1a0f2e" opacity=".25"/>
+    <rect x="52" y="40" width="20" height="14" rx="3" fill="#5b23c9" stroke="#2a1846" stroke-width="1.4"/>
+    <path d="M47 38 L50 20 L56 29 L62 14 L68 29 L74 20 L77 38 Z" fill="#f0c400" stroke="#1c1915" stroke-width="1.6" stroke-linejoin="round"/>
+    <rect x="47" y="35" width="30" height="5" rx="1.5" fill="#ffd23f" stroke="#1c1915" stroke-width="1.4"/>
+    <circle cx="50" cy="19" r="2.6" fill="#ff8a3d"/><circle cx="62" cy="13" r="2.8" fill="#e53950"/><circle cx="74" cy="19" r="2.6" fill="#6fb6ff"/>
+    <rect x="14" y="52" width="11" height="2.6" rx="1" fill="#8a5a3a"/><rect x="99" y="52" width="11" height="2.6" rx="1" fill="#8a5a3a"/>`)
 }
 
 export const ART = {
@@ -128,50 +128,55 @@ export const ART = {
   library: library,
   sports_centre: sports,
   smig: () => lecture('#7b3fe4', '\u{1F4BC}'),
-  health_sciences: () => lecture('#2f9e8f', '\u2695\uFE0F'),
+  health_sciences: () => lecture('#2f9e8f', '⚕️'),
   science: () => lecture('#3d7be0', '\u{1F52C}'),
-  law: () => lecture('#8a3346', '\u2696\uFE0F'),
-  engineering: () => lecture('#d0782a', '\u2699\uFE0F'),
+  law: () => lecture('#8a3346', '⚖️'),
+  engineering: () => lecture('#d0782a', '⚙️'),
   greenway: grocer,
   gate: gate,
   bus_stop: busStation,
 }
 
-// Display positions (percent of the map box), following the brief: Quad in
-// the centre, cafeteria beside it, sports east, lecture venues around, res
-// south-west, bus station and gate south.
+// "Campus Postcard" (owner's pick, 8 Nov): zones, one place that calls you, quiet
+// closed places, a real road edge, and light that follows the clock.
+// Display positions (percent of the map box): the Lecture Walk on red-brick paving
+// along the top, the Quad lawn in the middle, the Res Village in the south-west,
+// Main Road along the bottom.
 export const LAYOUT = {
-  science: [22, 8], law: [76, 8],
-  engineering: [20, 20], library: [50, 18], sports_centre: [78, 20],
-  smig: [20, 33], quad: [50, 35], cafeteria: [78, 33],
-  res_other: [20, 48], res_r: [48, 48], health_sciences: [78, 48],
-  res_j: [20, 61], res_k: [48, 61], greenway: [78, 61],
-  res_o: [20, 73], res_s: [48, 73], off_campus: [78, 73],
-  gate: [32, 89], bus_stop: [70, 89],
+  science: [13, 8], engineering: [37, 7], law: [63, 7], health_sciences: [87, 8],
+  smig: [12, 32], library: [50, 22], cafeteria: [87, 32],
+  quad: [50, 45],
+  sports_centre: [87, 57],
+  res_other: [12, 63], res_r: [33, 64], res_j: [54, 63],
+  res_k: [12, 78], res_o: [33, 79], res_s: [54, 78],
+  greenway: [87, 78],
+  off_campus: [12, 91], gate: [37, 91], bus_stop: [65, 92],
 }
 
-// Curved paved paths (viewBox 0-100, stretched). Hand-placed to avoid the
-// spoke look: a ring round the Quad, a spine to the gate, branches that bend.
+// Paved paths (viewBox 0-100, stretched): the Lecture Walk, a ring round the Quad,
+// branches out to each side, the spine down through the village to the gate.
 const PATHS = [
-  'M64 96 C58 84 52 64 48 52',
-  'M48 52 C56 60 62 68 66 74',
-  'M66 74 C74 80 82 86 86 90',
-  'M33 45 C33 36 40 31 48 31 C56 31 64 37 64 45 C64 54 56 58 48 58 C40 58 33 53 33 45',
-  'M33 45 C26 44 20 44 16 43',
-  'M40 32 C34 24 30 18 26 14',
-  'M56 32 C62 24 68 18 74 14',
-  'M42 30 C34 28 24 27 16 27',
-  'M60 42 C68 42 74 42 80 43',
-  'M60 36 C68 32 74 30 80 27',
-  'M58 52 C62 54 64 56 66 58',
-  'M44 56 C42 58 40 59 40 60',
-  'M40 60 C28 66 20 70 16 75',
-  'M16 75 C16 82 16 86 16 91',
-  'M66 58 C74 58 82 59 88 60',
+  'M3 16.5 C30 15 70 15 97 16.5',
+  'M50 15.5 L50 32.5',
+  'M27 45 C27 37 38 32.5 50 32.5 C62 32.5 73 37 73 45 C73 53 62 57.5 50 57.5 C38 57.5 27 53 27 45',
+  'M27 43 C21 41 16 38 12 36',
+  'M12 36 C10 29 9 23 9 16',
+  'M73 43 C79 40 84 37 87 36',
+  'M87 36 C90 29 91 23 91 16',
+  'M71 51 C77 55 82 58 86 61',
+  'M50 57.5 C48 62 45 66 44 71 C42 78 39 85 37 93',
+  'M5 71 C20 70 34 71 44 71 C52 71 58 71 64 71.5',
+  'M64 71.5 C72 74 80 78 86 81',
+  'M86 61 C88 67 88 74 87 81',
+  'M37 92.5 C28 92 20 92 13 92',
+  'M37 93 C46 93.4 56 93.4 65 93',
 ]
 
-const TREES = [[6, 8, 'p'], [93, 6, 'p'], [52, 7, 't'], [24, 33, 't'], [93, 46, 'p'], [60, 63, 't'], [4, 44, 'p'],
-  [95, 72, 'p'], [46, 76, 't'], [6, 88, 'p'], [72, 95, 't'], [57, 18, 't'], [90, 16, 't'], [22, 58, 't']]
+const TREES = [[3, 26, 't'], [97, 25, 'p'], [29, 26, 't'], [71, 26, 't'], [6, 47, 'p'], [20, 52, 't'], [95, 45, 't'],
+  [72, 63, 't'], [96, 69, 'p'], [68, 84, 't'], [97, 89, 'p'], [51, 89, 't'], [23, 86, 't'], [4, 71, 't'], [79, 47, 't']]
+
+// Street lamps: hidden by day, on from golden hour.
+const LAMPS = [[27, 37], [73, 37], [27, 53], [73, 53], [47, 63], [41, 83], [22, 70.5], [58, 71], [50, 26], [9, 24], [91, 24], [80, 77], [55, 93]]
 
 function tree(kind) {
   if (kind === 'p') {
@@ -181,22 +186,80 @@ function tree(kind) {
   return svg(24, 28, `<ellipse cx="12" cy="26" rx="7" ry="2" fill="#1a0f2e" opacity=".25"/><rect x="10.5" y="16" width="3" height="10" fill="#7a4a2a"/><circle cx="12" cy="12" r="9" fill="#2f7d3a"/><circle cx="9" cy="9" r="3.5" fill="#6cc25a" opacity=".55"/>`)
 }
 
+// A minibus taxi: white body, a green stripe, dark windows.
+function taxi() {
+  return svg(34, 16, `<rect x="1" y="2" width="31" height="10" rx="3" fill="#fbfaf6" stroke="#1c1915" stroke-width="1"/>
+    <rect x="1" y="8" width="31" height="1.8" fill="#2f8f5b"/>
+    ${[4, 10, 16, 22].map((x) => `<rect x="${x}" y="3.6" width="5" height="3.4" rx=".8" fill="#2a1846"/>`).join('')}
+    <rect x="28" y="3.6" width="3" height="4.5" rx=".8" fill="#9fd0ff"/>
+    <circle cx="8" cy="12.5" r="2.6" fill="#1c1915"/><circle cx="25" cy="12.5" r="2.6" fill="#1c1915"/>
+    <circle cx="31.6" cy="9.6" r="1" fill="#ffe58a"/>`)
+}
+
+// Light follows the clock: morning, day, golden hour, night.
+export function todOf(run) {
+  if (run.phase === 'night') return 'night'
+  if (run.phase === 'wake' || run.phase === 'transit') return 'morning'
+  if (run.phase === 'leisure' && run.minutes >= 17 * 60 + 30) return 'golden'
+  return 'day'
+}
+
 export function groundHtml() {
   const paths = PATHS.map((d) => `<path d="${d}"/>`).join('')
+  const ns = 'vector-effect="non-scaling-stroke"'
   return `<svg class="g-ground" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
     <defs>
-      <linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8aa64a"/><stop offset=".55" stop-color="#5e9445"/><stop offset="1" stop-color="#3f6e3c"/></linearGradient>
-      <radialGradient id="gs" cx="88%" cy="0%" r="70%"><stop offset="0" stop-color="#ffb35c" stop-opacity=".75"/><stop offset=".5" stop-color="#ff8a3d" stop-opacity=".22"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></radialGradient>
+      <linearGradient id="gcg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cb04e"/><stop offset=".6" stop-color="#5e9a46"/><stop offset="1" stop-color="#4b843f"/></linearGradient>
+      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d79c72"/><stop offset="1" stop-color="#c7865e"/></linearGradient>
     </defs>
-    <rect width="100" height="100" fill="url(#gg)"/>
-    <g fill="#79a84f" opacity=".5"><ellipse cx="20" cy="18" rx="14" ry="6"/><ellipse cx="78" cy="70" rx="16" ry="7"/><ellipse cx="25" cy="92" rx="18" ry="5"/></g>
+    <rect width="100" height="100" fill="url(#gcg)"/>
+    <path d="M0 0H100V20.5C72 23 28 23 0 20.5Z" fill="url(#gcb)"/>
+    <g stroke="#a9653f" stroke-width="1" ${ns} opacity=".35">${[4, 8, 12, 16].map((y) => `<path d="M0 ${y}H100"/>`).join('')}</g>
+    <path d="M0 20.5C28 23 72 23 100 20.5" fill="none" stroke="#8a4a2c" stroke-width="2.5" ${ns} opacity=".55"/>
+    <rect x="1.5" y="57" width="68" height="31" rx="5" fill="#8cc866" opacity=".45"/>
+    <rect x="1.5" y="57" width="68" height="31" rx="5" fill="none" stroke="#2f7d3a" stroke-width="4" stroke-dasharray=".1 7" stroke-linecap="round" ${ns}/>
+    <ellipse cx="50" cy="45" rx="23" ry="12.5" fill="#74c257"/>
     <g class="g-paths-edge" fill="none" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
     <g class="g-paths" fill="none" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
-    <rect width="100" height="100" fill="url(#gs)"/>
+    <ellipse class="g-lights" cx="50" cy="45" rx="25.6" ry="14.2" fill="none" stroke-linecap="round" ${ns}/>
+    <rect x="33" y="92" width="8" height="2.2" fill="#e8d6ac"/>
+    <path d="M0 92.7H33M41 92.7H100" stroke="#2a1846" stroke-width="2.5" stroke-dasharray="1.5 4" ${ns} opacity=".6"/>
+    <rect y="94" width="100" height="6" fill="#3f3b4a"/>
+    <rect y="94" width="100" height=".6" fill="#e8dcc0"/>
+    <path d="M0 97.3H100" stroke="#f0c400" stroke-width="2" stroke-dasharray="10 9" ${ns}/>
   </svg>
   <div class="g-decor" aria-hidden="true">
     ${TREES.map(([x, y, k]) => `<span class="g-tree" style="left:${x}%;top:${y}%">${tree(k)}</span>`).join('')}
-    <span class="g-cloud c1"></span><span class="g-cloud c2"></span><span class="g-sun"></span>
+    <span class="g-zone" style="left:24%;top:19%">LECTURE WALK</span>
+    <span class="g-zone road" style="left:84%;top:96.2%">MAIN ROAD</span>
     ${[1, 2, 3, 4, 5, 6].map((i) => `<span class="g-npc n${i}"></span>`).join('')}
+  </div>
+  <div class="g-lamps" aria-hidden="true">
+    ${LAMPS.map(([x, y]) => `<span class="g-lamp" style="left:${x}%;top:${y}%"><i></i></span>`).join('')}
+    <span class="g-taxi">${taxi()}</span><span class="g-taxi back">${taxi()}</span>
   </div>`
+}
+
+// The gold quest line from you to the place that calls you. A gentle curve, under the pins.
+export function routeSvg(from, to) {
+  if (!from || !to) return ''
+  const [x1, y1] = from
+  const [x2, y2] = to
+  const mx = (x1 + x2) / 2
+  const my = (y1 + y2) / 2
+  const bend = 0.22
+  const d = `M${x1} ${y1 - 2} Q${mx - (y2 - y1) * bend} ${my + (x2 - x1) * bend} ${x2} ${y2 + 3}`
+  return `<svg class="g-lit" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+    <path class="g-quest-under" d="${d}" fill="none" stroke-linecap="round"/>
+    <path class="g-quest" d="${d}" fill="none" stroke-linecap="round"/>
+  </svg>`
+}
+
+// Text on a house colour: ink on light colours, white on dark ones.
+export function inkOn(hex) {
+  const n = parseInt(String(hex).replace('#', ''), 16)
+  if (Number.isNaN(n)) return '#fff'
+  const lin = (c) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4 }
+  const l = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255)
+  return l > 0.3 ? '#1c1915' : '#fff'
 }
