@@ -18,3 +18,8 @@ docs/sprints/**/*.jpeg
 docs/sprints/**/*.json
 # Claude preview pane config (local tool setting)
 .claude/launch.json
+# Lighthouse reports stay local too (the scores go in the sprint report).
+docs/sprints/**/*.report.html
+# The website's original photos (site/img-src/) are big; the WebP made from them is committed.
+site/img-src/*
+!site/img-src/README.md

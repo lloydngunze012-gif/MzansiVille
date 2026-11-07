@@ -98,3 +98,7 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 ## Day 1 home (6 Nov)
 
 - Day 1 home: on the way to the car, the parent walks in a straight line from the table to the door, through the coffee table. Route them round it.
+
+## Website (7 Nov)
+- Game: public/manifest.webmanifest still names the app "MzansiVille" (name and short_name), so the website's "Put it on your phone" steps install the game under the old name; it should be Soft Life.
+- Website: the Organt photos (lookbook and the three tees) aren't in the repo yet; the page draws stand-in tees until they're dropped into site/img-src/ (site/README.md).

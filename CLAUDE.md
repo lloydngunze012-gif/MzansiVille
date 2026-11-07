@@ -2,6 +2,15 @@
 
 This file is for Claude Code, the engineer. Cursor reads it too: Cursor is the content designer and owns data/ only. Read docs/team.md and docs/now.md first. Update docs/now.md before you finish.
 
+# SOFT LIFE WEBSITE (owner, 7 Nov). One piece. Push, don't deploy.
+A public page in site/ (its own Vercel project; the game and src/ untouched): explains Soft Life in 10 s, Play free / put it on your phone in one tap, the Organt shop. Design: Graduate headings, Figtree body, cream #F4EFE4, ink #1C1915, yellow #F0C400, house colours.
+Where it lives: site/build/page.mjs (Vite plugin: renders index.html from data/site/website.json (words, Cursor's), data/campusville/houses.json (pennants; white or ink text, whichever is >= 4.5:1), meta.json phases (slot times), shop.json url (Shop button hidden while empty); QR to the game drawn at build time (qrcode); emits sitemap.xml, robots.txt, share.jpg copied from the game's public/), site/src/site.css (inlined), site/public/ (fonts self-hosted, img/ WebP, favicon, apple-touch-icon), site/scripts/images.mjs (npm run images: the poster from public/cover.jpg + anything in site/img-src/ -> WebP <= 1000 px and a -600 copy), site/README.md (data map, run, deploy). No JavaScript in the page, no cookies, no analytics. brands.email empty hides For brands; next.show false hides Coming next; a missing Organt photo draws a stand-in tee.
+Deploy (only on the owner's go): linked from site/ (site/.vercel, ignored), built locally because the build reads ../data: from site/ `npx vercel pull --yes --environment=production`, `npx vercel build --prod`, `npx vercel deploy --prebuilt --prod`. Root Directory in Vercel stays empty. siteUrl in website.json must match the project's address.
+Tests: tests/site/site.check.js via playwright.site.config.js (Edge; W1-W6: widths 360/390/768/1440, 44 px targets, focus, images, weight, links, data, reduced motion). Report: docs/sprints/website/report.md.
+Status (7 Nov): done and pushed, not deployed; 9/9 checks; Lighthouse mobile 96-99 / 100 / 100 / 100. Waiting for the Organt photos and the owner's Vercel project.
+
+---
+
 # DAY 1: LEAVING HOME (owner, 6 Nov). Push after each numbered part. Don't deploy until the owner says so. Time-box 4 hours.
 1. Fix the stuck fade first: leaving the house on day 1 stuck on "Out the door · UMzansi" (fadeOut with no fadeIn without a caf breakfast, covering the Continue card). Every fadeOut has a matching fadeIn on every path; a test plays day 1 to the end with and without caf breakfast.
 2. The home scene replaces the day-1 opening. About 60 s, playable, not a cutscene: wake in your bedroom at your family home; through the window a real street (neighbouring houses, a fence or wall, a tree, a parked car, a neighbour watering a garden, a dog in the yard that follows you). Downstairs a parent and a sibling, a proper home breakfast, one short exchange (the parent says something warm and a little embarrassing; the sibling asks if they can have your room). Your bags by the door.

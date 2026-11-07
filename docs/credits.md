@@ -27,3 +27,14 @@ Also used in the home scene, already in the game (no new size): Kenney Nature Ki
 | Draco decoder | 245 KB |
 | Home scene code (`home` chunk, minified) | see the sprint report |
 | Total | under 2 MB, fetched only on day 1 |
+
+## The website (`site/`)
+
+| File | What | Author | Source | Licence |
+| --- | --- | --- | --- | --- |
+| `site/public/fonts/graduate-latin.woff2` (6 KB) | Graduate (headings), latin subset | Eduardo Tunni | https://fonts.google.com/specimen/Graduate | SIL Open Font License 1.1 |
+| `site/public/fonts/figtree-latin.woff2` (20 KB) | Figtree variable 400-700 (body), latin subset | Erik Kennedy | https://fonts.google.com/specimen/Figtree | SIL Open Font License 1.1 |
+| (build time only, not shipped) | `qrcode` npm package: draws the QR code to the game into the page | Ryan Day and contributors | https://www.npmjs.com/package/qrcode | MIT |
+| (local only, not shipped) | `sharp` npm package: makes the WebP images (`npm run images`) | Lovell Fuller and contributors | https://www.npmjs.com/package/sharp | Apache License 2.0 |
+
+The fonts are served from the site itself, not from Google, so no third party sees a visitor. The poster (`site/public/img/poster*.webp`) is made from the game's own cover (`public/cover.jpg`), and `share.jpg` is copied from the game at build time.

@@ -1,0 +1,18 @@
+{
+  "name": "softlife-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "The Soft Life website: a plain Vite static site built from data/site/website.json, data/campusville/houses.json, meta.json and shop.json.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4180",
+    "images": "node scripts/images.mjs"
+  },
+  "devDependencies": {
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "vite": "^6.4.5"
+  }
+}
