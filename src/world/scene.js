@@ -341,8 +341,29 @@ function ensureRenderer() {
   window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string') approach(event.detail) })
 }
 
+// The top panel (stats card, goal pill, Leave button) covers the top of the 3D view: the
+// follow camera shifts the picture down by half of what the panel covers beyond a fifth
+// of the screen, so the player stands in the clear area below it, not under it. Not in
+// Eye view or in a two-shot / close shot (those frame heads between the bars themselves).
+let viewShift = 0
+function keepClearOfHud(dt) {
+  const rect = host.getBoundingClientRect()
+  const h = window.innerHeight
+  let want = 0
+  if (rig.mode !== 'eye' && !closeShot && !convo && !easingOut() && !inHouse) {
+    const bottom = Math.max(0, ...[...document.querySelectorAll('.g-hud, .g-nowrow, .ps-leave')].filter((el) => el.getClientRects().length && !el.hidden).map((el) => el.getBoundingClientRect().bottom - rect.top))
+    // (the player sits at the screen centre: it needs the centre to be a margin below the panel)
+    want = Math.max(0, Math.min(h * 0.18, bottom + 60 - h * 0.5))
+  }
+  viewShift += (want - viewShift) * (1 - Math.exp(-dt * 6))
+  if (Math.abs(viewShift - (camera.view?.offsetY ? -camera.view.offsetY : 0)) < 0.5) return
+  if (viewShift < 0.5 && want === 0) camera.clearViewOffset()
+  else camera.setViewOffset(window.innerWidth, h, 0, -viewShift, window.innerWidth, h)
+}
+
 function resize() {
   if (!renderer) return
+  camera.clearViewOffset()
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
   renderer.setPixelRatio(pixelRatio())
@@ -2713,6 +2734,7 @@ function frameBody(now) {
     host.dataset.crowd = String(crowd?.people.length || 0)
     host.dataset.crowdWalking = String(crowd?.group.userData.walking || 0)
     rig.apply(camera, player.position, dt, campus.buildings)
+    keepClearOfHud(dt)
     sceneTick(dt)
     if (convo) { convo.timer -= dt; if (convo.timer <= 0) { convo.timer = 0.5; aimConvo(false) } }
     aimCamera(dt)

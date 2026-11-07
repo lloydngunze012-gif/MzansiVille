@@ -41,3 +41,5 @@ Last updated: 7 Nov, Cursor (map home live at https://softlifeza.vercel.app from
 ## Loose ends
 - The first plan (STEP 0, items 1-9, the owner's "keep these" rules: roommate matches gender, feminine clothing, creator dance and music) now lives in docs/history.md, not CLAUDE.md.
 - Backlog, newest: tests/e2e/menu.spec.js "chat Send" times out on main (before the install fix too); then the activities wiring list for the new common-room, caf and sports rows; Auntie Pinky hidden behind her queue; on day 1 the parent walks through the coffee table on the way to the car.
+
+- 7 Nov: top panel vs player. scene.js keepClearOfHud shifts the follow view (setViewOffset) so the player stays 60 px below the panel (not Eye, not two-shots); the red Leave button (.ps-leave) moved from top:150px (behind the goal pill) to 198px under it. Checked at 390x844 and 360x740.
