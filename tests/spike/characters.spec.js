@@ -348,7 +348,7 @@ async function setup(page, urls) {
         for (let a = 0; a < 24 && !best; a++) {
           const x = c.x + Math.cos((a / 24) * Math.PI * 2) * r
           const z = c.z + Math.sin((a / 24) * Math.PI * 2) * r
-          const row = [-2.1, -0.7, 0.7, 2.1].every((dx) => open(x + dx, z) && open(x + dx, z + 1.2))
+          const row = [-2.7, -1.35, 0, 1.35, 2.7].every((dx) => open(x + dx, z) && open(x + dx, z + 1.2))
           const cam = open(x, z + 2.7) && open(x, z + 5.2)
           const sims = [[-7, 3], [-3, 5], [3, 5], [7, 3]].every(([dx, dz]) => open(x + dx * 0.25, z + dz * 0.5 + 3))
           if (row && cam && sims) best = { x, z, r }
@@ -425,7 +425,7 @@ test('3b look and rig: Ara 3D Gen next to a current student and Universal Base C
     S.clear()
     const c = S.findSite()
     S.site = c
-    const kinds = ['current', 'ubc_male', 'ara_man', ...(S.loaded.ara_woman ? ['ara_woman'] : ['ubc_female'])]
+    const kinds = ['current', 'ubc_male', 'ubc_female', 'ara_man', ...(S.loaded.ara_woman ? ['ara_woman'] : [])]
     const spots = []
     kinds.forEach((kind, i) => {
       const a = S.make(kind, 0)
@@ -517,10 +517,13 @@ test('3b fps: 1 player + 20 NPCs, per kind (fresh page each)', async ({ context 
   test.skip(!UBC_DIR || !fs.existsSync(path.join(UBC_DIR, 'Superhero_Male_FullBody.gltf')), 'set UBC_DIR to the pack\'s Godot - UE folder')
   const base = `http://127.0.0.1:${port}`
   const urls = { ubc_male: `${base}/ubc/Superhero_Male_FullBody.gltf`, ara_man: `${base}/ara/Athletic_man.glb` }
-  const kinds = [['none', 0], ['current', 20], ['ubc_male', 20], ['ara_man', 20]]
+  const wf = path.join(ARA_DIR, 'Athletic_woman.glb')
+  const womanOk = fs.existsSync(wf) && fs.readFileSync(wf).subarray(0, 4).toString('latin1') === 'glTF'
+  if (womanOk) urls.ara_woman = `${base}/ara/Athletic_woman.glb`
+  const kinds = [['none', 0], ['current', 20], ['ubc_male', 20], ['ara_man', 20], ...(womanOk ? [['ara_woman', 20]] : [])]
   const rounds = MODE === 'gpu' ? 3 : 2
   const secs = MODE === 'gpu' ? 10 : 20
-  const orders = [kinds, [...kinds].reverse(), [kinds[2], kinds[0], kinds[3], kinds[1]]]
+  const orders = [kinds, [...kinds].reverse(), [...kinds.slice(2), ...kinds.slice(0, 2)]]
   const rs = {}
   for (let round = 0; round < rounds; round++) {
     for (const [kind, n] of orders[round]) {

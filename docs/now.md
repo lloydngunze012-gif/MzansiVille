@@ -1,10 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (characters spike 3b: waiting for the woman's export).
+Last updated: 7 Nov, Claude Code (characters spike 3b closed with the woman measured).
 
 ## Waiting for Lloyd
-- **Characters spike 3b (Ara 3D Gen)** (7 Nov): report in docs/sprints/characters-ara/report.md (verdict: it fights our flat low-poly world and costs about five times what our current students do on a weak GPU; not adopted). **Waiting for Lloyd to re-export the woman** (African, T-shirt and jeans, Low detail, game rig, A-pose, no face blend shapes) as a real `Athletic_woman.glb`; the two files of that name in Downloads (`Athletic_woman.glb`, `Athletic_woman_export.glb`) are 4.8 KB web pages and can be deleted. Then I run her through the same script. The first spike's (3a) fps test wasn't in the repo, so I wrote one; tell me if 3a's differs.
+- **Characters spike 3b (Ara 3D Gen)** (7 Nov): done, both Ara people measured, report in docs/sprints/characters-ara/report.md. Verdict: it fights our flat low-poly world, costs about 1.7x our current students on this GPU and about 5x on a weak one, 132 MB of texture a person; not adopted. The first spike's (3a) fps test wasn't in the repo, so I wrote one; tell me if 3a's differs.
 - **Delete the qa-live test row** (from S6): run `delete from public.smooth_reports where build = 'qa-live';` in the Supabase SQL editor (the anon key can't, and `.env` has no service-role key; add SUPABASE_SERVICE_ROLE_KEY there and S6 cleans up after itself).
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
