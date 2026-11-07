@@ -1,9 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (the game install fix and the Organt photos, pushed, not deployed).
+Last updated: 7 Nov, Cursor (Organt shop link set, pushed, not deployed).
 
 ## Waiting for Lloyd
+- **Organt shop link** (7 Nov): `data/campusville/shop.json` url is `https://organt.shop/?utm_source=softlife`. The Shop Organt button shows once the website is deployed. Pushed, not deployed.
 - **Game install fix** (7 Nov): pushed, not deployed. Manifest says Soft Life, cream colours, PNG + maskable icons, a service worker (page loads network-first, never cached), and "Install Soft Life" at the top of the game menu (#install opens it). Needs Lloyd's go to deploy, then a phone check: Chrome offers Install, the home-screen name is Soft Life. Report: docs/sprints/install/report.md.
 - **The Soft Life website** (site/, 7 Nov): pushed, not deployed, the Organt photos in. Needs Lloyd to create its Vercel project (steps in site/README.md), then a go to deploy. Words in data/site/website.json are Cursor's. For brands stays hidden until there's an email in website.json. Report: docs/sprints/website/report.md.
 

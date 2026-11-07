@@ -1,7 +1,7 @@
 {
   "jobId": "organt_rep",
   "brand": "Organt",
-  "url": "",
+  "url": "https://organt.shop/?utm_source=softlife",
   "codePrefix": "ORG-",
   "codeLength": 4,
   "warning": "This links to a real shop"
