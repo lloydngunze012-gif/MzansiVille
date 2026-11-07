@@ -378,8 +378,8 @@
   ],
   "fullName": "University of Mzansi",
   "smoothness": {
-    "settingLabel": "",
-    "settingHelp": "",
-    "privacyLine": ""
+    "settingLabel": "Send smoothness reports",
+    "settingHelp": "How smoothly the game runs, your phone type and where it slowed, never your name, messages or real location.",
+    "privacyLine": "It helps us make the game run better on cheaper phones. We keep how smoothly it runs, your phone type and where in the game it slowed for up to 30 days, never your name, messages or real location, and you can turn it off in Settings."
   }
 }
