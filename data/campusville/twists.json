@@ -69,7 +69,7 @@
   "lib_group": { "p": 0.2, "text": "The librarian shushes you by name. You have arrived.", "deltas": { "social": 1, "grades": -1 } },
   "lib_printer": { "p": 0.25, "text": "Printer says \"PC LOAD LETTER\". Nobody knows what that means. R5 gone.", "deltas": { "money": -5, "energy": -2 } },
   "lib_night": { "p": 0.15, "text": "Load shedding hits. The generator kicks in. Everyone claps quietly.", "deltas": { "energy": -2, "social": 2 } },
-  "sport_stretch": { "p": 0.15, "text": "Someone's gogo is doing better stretches than you. Respect.", "deltas": { "social": 1 } },
+  "sport_stretch": { "p": 0.15, "text": "Someone's gran is doing better stretches than you. Respect.", "deltas": { "social": 1 } },
   "sport_pass": { "p": 0.15, "text": "You get swept into a warm-up jog. You go with it.", "deltas": { "energy": -3, "social": 2 } },
   "sport_gap": { "p": 0.15, "text": "You arrive at your next lecture still sweating. Back row it is.", "deltas": { "social": -1 } },
   "sport_pickup": { "p": 0.2, "text": "You nutmeg a guy from Engineering. He will remember this.", "deltas": { "social": 3 } },

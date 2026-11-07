@@ -45,7 +45,7 @@
       },
       "interior": { "wall": "#efe7d8", "wallUp": "#dfe8ef", "floor": "#b88a5c", "floorUp": "#c9a57d", "accent": "#3f6fb0", "bedCover": "#4f7fc0" },
       "parent": { "role": "mom", "call": "Mom", "outfit": "jacket", "top": "#7a3b5c", "bottom": "#2b2b35" },
-      "sibling": { "role": "sister", "name": "Lesedi", "outfit": "hoodie", "top": "#f0a830", "bottom": "#3a4f7a" },
+      "sibling": { "role": "sister", "name": "Grace", "outfit": "hoodie", "top": "#f0a830", "bottom": "#3a4f7a" },
       "neighbour": { "name": "Mrs Pillay", "look": { "model": "female-d", "skin": "brown", "outfit": "dress", "topColor": "#c85a7c" } },
       "dog": { "name": "Biscuit" },
       "breakfast": { "label": "Eggs, boerewors and toast, with a mug of rooibos", "plate": ["#f6e27a", "#7a3b22", "#d9a35f"], "fullness": 45, "energy": 10 },
@@ -55,7 +55,7 @@
         "window": "{neighbour} is watering her roses again. {dog} is pacing the yard like she knows.",
         "downstairs": "Smells like boerewors. {call} is up early.",
         "parentHello": "There's my university student! Sit. Nobody leaves this house on an empty stomach.",
-        "embarrass": "I put a photo of you in your suitcase, the one in the bath, so you don't forget home. And I told the family WhatsApp group. Uncle Sizwe sent forty emojis.",
+        "embarrass": "I put a photo of you in your suitcase, the one in the bath, so you don't forget home. And I told the family WhatsApp group. Uncle David sent forty emojis.",
         "embarrassReply": "{call}! Not the bath photo.",
         "sibling": "So... can I have your room now?",
         "bags": "Everything I own, in one suitcase and a backpack.",
@@ -105,8 +105,8 @@
       },
       "interior": { "wall": "#f4e3c2", "wallUp": "#cfe3d8", "floor": "#9c6b4a", "floorUp": "#b48862", "accent": "#c0392b", "bedCover": "#d35f3a" },
       "parent": { "role": "mom", "call": "Ma", "outfit": "shweshwe", "top": "#2c4f8c", "bottom": "#2c4f8c" },
-      "sibling": { "role": "brother", "name": "Lwazi", "outfit": "tee", "top": "#2e8b57", "bottom": "#2b3a55" },
-      "neighbour": { "name": "Gogo Mokoena", "look": { "model": "female-b", "skin": "deep", "outfit": "dress", "topColor": "#8a4fb0" } },
+      "sibling": { "role": "brother", "name": "Nathan", "outfit": "tee", "top": "#2e8b57", "bottom": "#2b3a55" },
+      "neighbour": { "name": "Mrs Bennett", "look": { "model": "female-b", "skin": "deep", "outfit": "dress", "topColor": "#8a4fb0" } },
       "dog": { "name": "Tiger" },
       "breakfast": { "label": "Ma's vetkoek with eggs and sweet tea", "plate": ["#c8873e", "#f6e27a", "#b06a2c"], "fullness": 45, "energy": 10 },
       "pocket": 400,
@@ -124,7 +124,7 @@
         "gate1": "Here we are. UMzansi.",
         "gate2": "Phone me tonight. And eat properly, not just noodles.",
         "money": "Here. R{amount}. For food, not for parties.",
-        "gate3": "Hamba kahle, my child. Make us proud."
+        "gate3": "Go well, my child. Make us proud."
       },
       "replies": [
         { "label": "It's still my room.", "answer": "Eish. Fine. I'm still using your charger.", "id": "no" },

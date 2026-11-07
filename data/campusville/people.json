@@ -250,13 +250,13 @@
     "mam_gugu": {
       "name": "Mam' Gugu", "role": "Runs the vetkoek stall", "bio": "Has fed three generations of students. Knows who is broke by how they say hello.",
       "chats": [
-        { "line": "Yebo, my child. You're new, I can see. You look hungry.", "replies": [
-          { "text": "Yebo, Mam'. I'm very hungry.", "act": "order", "social": 2, "close": 12, "answer": "Then come to me first. Always first." },
+        { "line": "Hello, my child. You're new, I can see. You look hungry.", "replies": [
+          { "text": "Yes, Mam'. I'm very hungry.", "act": "order", "social": 2, "close": 12, "answer": "Then come to me first. Always first." },
           { "text": "How long have you been here?", "social": 2, "close": 8, "answer": "Since before your parents were students. Twenty-six years." },
           { "text": "Just looking.", "act": "bye", "social": 0, "close": 0, "answer": "Looking is free. Vetkoek is ten rand." }
         ] },
         { "warm": "There's my favourite! Extra polony for you today.", "cold": "Hmm. Still just looking?", "replies": [
-          { "text": "Ngiyabonga, Mam'!", "act": "order", "social": 3, "close": 8, "answer": "Eat, eat. You're too thin." },
+          { "text": "Thank you, Mam'!", "act": "order", "social": 3, "close": 8, "answer": "Eat, eat. You're too thin." },
           { "text": "Sorry, Mam'. Hello properly.", "social": 2, "close": 8, "answer": "That's better. Manners cost nothing." },
           { "text": "Hi.", "social": 0, "close": 0, "answer": "Hi." }
         ] },
