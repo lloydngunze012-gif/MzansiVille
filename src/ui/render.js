@@ -439,7 +439,7 @@ function create(state) {
       </div>
       <aside class="cc-preview">
         <div class="cc-stage">
-          <i class="cc-bg" aria-hidden="true"></i><svg class="cc-gem" viewBox="0 0 24 30" aria-hidden="true"><path d="M12 0l10 11-10 19L2 11z" fill="#8b4dff"/><path d="M12 0l4 11-4 19-4-19z" fill="#b48cff"/><path d="M2 11h20" stroke="#5b23c9" stroke-width="1"/></svg>
+          <i class="cc-bg" aria-hidden="true"></i><svg class="cc-crown" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="13" fill="#2f1a5c" stroke="#f5c400" stroke-width="1"/><path d="M6.5 18.5L5.5 10l4.6 3.6L14 8l3.9 5.6 4.6-3.6-1 8.5z" fill="#f5c400"/><rect x="6.5" y="19.6" width="15" height="2" rx="1" fill="#f5c400"/></svg>
           <span class="cc-ready${todo ? '' : ' ok'}" data-card="ready">${todo ? `${todo} to go` : 'Ready ✓'}</span>
           <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
           ${stageStillOf(draft.avatar) ? `<img class="cc-still" src="${stageStillOf(draft.avatar)}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>

@@ -830,7 +830,7 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .cc-bg { position: absolute; inset: 0; background: url(/cover.webp) 0% 99% / 300% auto no-repeat; filter: blur(2.5px) brightness(.72) saturate(1.15); }
 .cc-stage::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 38%; background: linear-gradient(to bottom, rgba(27,16,48,0), rgba(27,16,48,.75)); }
 .cc-bob { z-index: 2; }
-.cc-gem { position: absolute; z-index: 2; top: 8px; right: 10px; width: 20px; filter: drop-shadow(0 0 6px #b48cff); }
+.cc-crown { position: absolute; z-index: 2; top: 8px; right: 10px; width: 28px; height: 28px; filter: drop-shadow(0 0 6px #f5c40088); }
 .cc-ready { background: #5b23c9; border: 2px solid #f0c400; }
 .cc-ready.ok { background: #2fbf4f; }
 .cc-id { border: 3px solid #5b23c9; box-shadow: 0 4px 0 #f0c400; color: #1c1915; }

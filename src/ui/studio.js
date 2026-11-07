@@ -29,7 +29,7 @@ function blobTexture() {
 }
 
 // The set: lights, plinth, shadow. The student stands at the origin, soles on y = 0.
-// theme: colours from the stage's CSS (--cc-plinth, --cc-plinth-foot, --cc-ring, --cc-gem), so the
+// theme: colours from the stage's CSS (--cc-plinth, --cc-plinth-foot, --cc-ring), so the
 // set matches the page around it.
 export function buildStudio(theme = {}) {
   const scene = new THREE.Scene()
@@ -66,13 +66,6 @@ export function buildStudio(theme = {}) {
   shadow.position.y = 0.002
   shadow.scale.set(1, 0.8, 1)
   plinth.add(shadow)
-  // The title's gem, set into the front of the plinth.
-  if (theme.gem) {
-    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), new THREE.MeshStandardMaterial({ color: theme.gem, roughness: 0.25, metalness: 0.1, emissive: new THREE.Color(theme.gem).multiplyScalar(0.45), flatShading: true }))
-    gem.scale.set(0.8, 1.15, 0.5)
-    gem.position.set(0, 0.07, 0.6)
-    plinth.add(gem)
-  }
   scene.add(plinth)
 
   const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 50)

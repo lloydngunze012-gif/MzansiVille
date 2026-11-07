@@ -1,4 +1,4 @@
-/* ---- Soft Life palette (owner, 7 Nov): taken from the title screen (public/cover.jpg: the purple gem,
+/* ---- Soft Life palette (owner, 7 Nov): taken from the title screen (public/cover.jpg: the SL swirl,
    the white-and-purple logo, the gold crown; the title page's night plum). The title and enrolment
    share it. ---- */
 :root {
@@ -7,8 +7,8 @@
   --sl-plum-2: #2b1650;  /* cards */
   --sl-plum-3: #3a1f6b;  /* raised, chosen */
   --sl-violet: #7b3fe4;  /* the logo's purple */
-  --sl-gem: #8b4dff;     /* the gem */
-  --sl-lilac: #b48cff;   /* the gem's light face */
+  --sl-violet-2: #8b4dff; /* brighter violet */
+  --sl-lilac: #b48cff;   /* light violet */
   --sl-gold: #f5c400;    /* the crown */
   --sl-gold-dk: #b88600;
   --sl-text: #f7f2ff;
@@ -24,7 +24,7 @@
 .tc-start { background: var(--sl-gold); }
 @media (min-width: 520px) { body:has(.tc) { background: #0c0616; } }
 
-/* ===== Enrolment, direction A ("Gem stage", owner's pick, 7 Nov): night plum everywhere, a violet
+/* ===== Enrolment, direction A ("Night stage", owner's pick, 7 Nov): night plum everywhere, a violet
    spotlight on the student, small dark cards, gold for what is chosen, pink and cyan for who you are. ===== */
 .en { background: var(--sl-night); color: var(--sl-text); }
 .en .en-top, .en[data-step="look"] .en-top { background: var(--sl-night); }
@@ -40,7 +40,7 @@
 /* The stage: lit like a product shot; its height is fixed when the creator opens (main.js sets
    --cc-stage-h), so it never changes, and the student never moves, while the options scroll beneath. */
 .en .en-stage { height: var(--cc-stage-h, max(300px, 40svh)); border: 2px solid #f5c40099; background: radial-gradient(ellipse 70% 62% at 50% 40%, #5a33a8 0%, #2c1658 48%, #160a2b 100%); box-shadow: 0 0 0 8px var(--sl-night), 0 16px 0 8px var(--sl-night);
-  --cc-plinth: #2f1a5c; --cc-plinth-foot: #1a0d33; --cc-ring: #f5c400; --cc-gem: #8b4dff; }
+  --cc-plinth: #2f1a5c; --cc-plinth-foot: #1a0d33; --cc-ring: #f5c400; }
 .en .cc-mute { background: #1f1036cc; border-color: var(--sl-gold); color: #fff; }
 .en .cc-loading { background: linear-gradient(100deg, #ffffff10 30%, #ffffff30 50%, #ffffff10 70%); background-size: 220% 100%; }
 

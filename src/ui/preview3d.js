@@ -24,7 +24,7 @@ function setup(stage) {
   renderer.domElement.className = 'cc-3d'
   const css = stage ? getComputedStyle(stage) : null
   const v = (name) => css?.getPropertyValue(name).trim() || undefined
-  const studio = buildStudio({ plinth: v('--cc-plinth'), foot: v('--cc-plinth-foot'), ring: v('--cc-ring'), gem: v('--cc-gem') })
+  const studio = buildStudio({ plinth: v('--cc-plinth'), foot: v('--cc-plinth-foot'), ring: v('--cc-ring') })
   scene = studio.scene
   camera = studio.camera
   fitStudio(camera, 1, 1)

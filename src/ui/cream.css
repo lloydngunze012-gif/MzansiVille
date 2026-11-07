@@ -232,7 +232,7 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .cc-chip[aria-pressed="true"] { background: var(--cr-tint); border-color: var(--cr-gold-dk); box-shadow: 0 3px 0 var(--cr-gold-dk); }
 .cc-thumb.gender { color: var(--cr-ink); }
 .cc-id { border-color: var(--cr-line); box-shadow: 0 4px 0 var(--cr-gold); }
-.cc-gem { filter: drop-shadow(0 0 4px #f0c40099); }
+.cc-crown { filter: drop-shadow(0 0 4px #f0c40099); }
 .cc-ready { background: var(--cr-ink); border-color: var(--cr-gold); }
 .cc-field { color: #8a5a00; }
 .cc-field .fine { color: var(--cr-muted); }

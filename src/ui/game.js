@@ -344,10 +344,10 @@ function ctaBar(district, run) {
   let openHtml = ''
   if (run.dropOff) {
     const house = district.places.find((p) => p.id === sleepPlace)
-    return `<div class="g-cta g-route" role="status"><p>\u{1F9F3} Roll your suitcase to ${esc(house?.name || 'your house')}. Follow the gold dots.</p></div>`
+    return `<div class="g-cta g-route" role="status"><p>\u{1F9F3} Roll your suitcase to <b>${esc(house?.name || 'your house')}</b>. Follow the gold dots.</p></div>`
   }
   if (run.lectureRoute && !run.lectureResolved) {
-    return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at ${esc(venueFor(run).name)}</p></div>`
+    return `<div class="g-cta g-route" role="status"><p>\u{1F463} Tap the path to walk. Your lecture is at <b>${esc(venueFor(run).name)}</b></p></div>`
   }
   const atHome = hereOf(district, run) === sleepPlace
   if (run.phase === 'night') line = atHome ? 'Night. You are home \u2014 tap Sleep to end the day.' : 'Night. Go home and sleep to end the day.'
