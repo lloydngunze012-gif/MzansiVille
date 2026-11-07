@@ -225,24 +225,23 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
     const page = await context.newPage()
     await page.goto(`/?${ROOM}#/`)
     const links = page.locator('.tc-links a')
-    await expect(links).toHaveText(['Rules', 'Privacy', 'Terms', 'Install Soft Life', 'Website'])
+    await expect(links).toHaveText(['Install', 'Rules', 'Privacy', 'Terms', 'Website'])
     await expect(page.locator('.tc-links [data-link="install"]')).toHaveAttribute('href', '#/install')
     const web = page.locator('.tc-links [data-link="website"]')
     await expect(web).toHaveAttribute('href', site)
     await expect(web).toHaveAttribute('target', '_blank')
     // Website: same look as Rules (font, colour, padding). Install: the same on the computer;
-    // on a phone a pill with an icon, on its own line above the other four (one row).
+    // on a phone the first link of the row, with an icon.
     const look = (sel) => page.locator(sel).evaluate((el) => { const c = getComputedStyle(el); return [c.font, c.color, c.padding, c.textDecorationLine].join('|') })
     expect(await look('.tc-links [data-link="website"]')).toBe(await look('.tc-links a[href="#/rules"]'))
     const install = page.locator('.tc-links [data-link="install"]')
     if (phone) {
-      const pill = await install.evaluate((el) => { const c = getComputedStyle(el); const b = el.getBoundingClientRect(); return { radius: parseFloat(c.borderTopLeftRadius), border: c.borderTopStyle, icon: getComputedStyle(el.querySelector('.tc-ico')).display, top: b.top, h: b.height } })
-      expect(pill.radius).toBeGreaterThanOrEqual(pill.h / 2 - 1)
-      expect(pill.border).toBe('solid')
-      expect(pill.icon).toBe('block')
-      const tops = await page.locator('.tc-links a:not([data-link="install"])').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
-      expect(new Set(tops).size, 'Rules, Privacy, Terms, Website in one row').toBe(1)
-      expect(pill.top).toBeLessThan(tops[0])
+      // 9 Nov: Install is the first link of the one row, with its icon, no pill.
+      expect(await install.locator('.tc-ico').evaluate((el) => getComputedStyle(el).display)).toBe('block')
+      const tops = await page.locator('.tc-links a').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+      expect(new Set(tops).size, 'Install, Rules, Privacy, Terms, Website in one row').toBe(1)
+      const xs = await page.locator('.tc-links a').evaluateAll((els) => els.map((el) => el.getBoundingClientRect().left))
+      expect(xs[0]).toBe(Math.min(...xs))
     } else {
       expect(await look('.tc-links [data-link="install"]')).toBe(await look('.tc-links a[href="#/rules"]'))
       expect(await install.locator('.tc-ico').evaluate((el) => getComputedStyle(el).display)).toBe('none')

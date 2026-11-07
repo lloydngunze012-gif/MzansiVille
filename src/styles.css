@@ -904,14 +904,11 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
     box-shadow: 0 4px 0 #8a6300, 0 0 22px rgba(245,196,0,.42), 0 10px 32px rgba(245,196,0,.2); }
   .tc .tc-start:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a6300, 0 0 16px rgba(245,196,0,.32); }
   .tc .tc-over { min-height: 40px; font: 600 13px system-ui; color: rgba(247,242,255,.78); }
-  /* Install first, on a line of its own (the break follows it), then the four links in one row. */
-  .tc .tc-links { gap: 0 20px; }
+  /* Install first, then Rules, Privacy, Terms, Website: one row. */
+  .tc .tc-links { gap: 0 16px; }
   .tc .tc-links a { font: 600 12px system-ui; color: rgba(247,242,255,.58); padding: 12px 2px; text-shadow: none; }
-  .tc .tc-links .tc-break { order: -1; }
-  .tc .tc-links [data-link="install"] { order: -2; position: relative; display: inline-flex; align-items: center; gap: 7px; min-height: 34px; margin: 0 0 2px; padding: 0 14px 0 11px;
-    border-radius: 999px; border: 1px solid rgba(245,196,0,.5); background: rgba(255,255,255,.07); color: #f7f2ff; font: 700 12.5px system-ui; }
-  .tc .tc-links [data-link="install"]::before { content: ''; position: absolute; inset: -5px -2px; } /* 44px to tap */
-  .tc .tc-links .tc-ico { display: block; flex: none; width: 15px; height: 15px; color: #f5c400; }
+  .tc .tc-links [data-link="install"] { display: inline-flex; align-items: center; gap: 5px; color: #f7f2ff; font-weight: 700; }
+  .tc .tc-links .tc-ico { display: block; flex: none; width: 13px; height: 13px; color: #f5c400; }
 }
 @media (max-width: 519px) { html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #1a0d33 !important; } }
 .set { background: #1c0e34; color: #fff; min-height: 100dvh; }

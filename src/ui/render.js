@@ -680,7 +680,7 @@ function title(state) {
       ${day ? (ui.confirmRestart
         ? `<div class="tc-restart" role="alertdialog" aria-label="Start over"><p>Start over as a new student? <b>${esc(state.save.run.character?.name || 'This student')}</b> and day ${day} are deleted from this phone.</p><div><button type="button" class="tc-yes" data-act="restart-yes">Yes, start over</button><button type="button" class="tc-no" data-act="restart-no">Keep playing</button></div></div>`
         : '<button type="button" class="tc-over" data-act="restart-ask">Start over as a new student</button>') : ''}
-      <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a><span class="tc-break" aria-hidden="true"></span>${installMode() === 'done' ? '' : `<a href="#/install" data-link="install">${INSTALL_ICON}Install Soft Life</a>`}<a href="${esc(siteUrl)}" target="_blank" rel="noopener" data-link="website">Website</a></nav>
+      <nav class="tc-links">${installMode() === 'done' ? '' : `<a href="#/install" data-link="install">${INSTALL_ICON}Install</a>`}<a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a><a href="${esc(siteUrl)}" target="_blank" rel="noopener" data-link="website">Website</a></nav>
     </div>
   </main>`
 }
