@@ -15,6 +15,8 @@ const changed = () => { for (const fn of listeners) { try { fn() } catch { /* a 
 window.addEventListener('beforeinstallprompt', (event) => {
   event.preventDefault() // keep Chrome's own mini-bar away; the menu offers it instead
   deferred = event
+  // Chrome only offers the install when the app is NOT installed, so a stuck 'installed' flag (the app was uninstalled) is wrong: clear it.
+  try { localStorage.removeItem(KEY) } catch { /* private mode */ }
   changed()
 })
 window.addEventListener('appinstalled', () => {
