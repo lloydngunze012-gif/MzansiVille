@@ -45,10 +45,28 @@ test('cream screens', async ({ page }) => {
   await page.waitForTimeout(2500)
   await page.screenshot({ path: `${OUT}/1-campus.png` })
   dark.campus = await darkPanels(page)
-  await page.locator('.house-do').tap({ timeout: 3000 }).catch(() => {})
+  // Step into your own house (the minimap opens the map, your house's pin walks you in), then
+  // open "Things to do" there and check that panel.
+  const home = await page.evaluate(() => window.mzansiHomeId())
+  for (let i = 0; i < 4 && !(await page.locator(`.map-overlay [data-place="${home}"]`).isVisible()); i++) {
+    await page.locator('#world .minimap').tap()
+    await page.waitForTimeout(1000)
+  }
+  await page.locator(`.map-overlay [data-place="${home}"]`).tap()
+  await expect(page.locator('#world')).toHaveAttribute('data-house', /.+/, { timeout: 60000 })
+  // (walking in opens the house's "Things to do" sheet; close it and open it again from the bar)
+  await expect(page.locator('.g-sheet'), 'Things to do opens when you step in').toBeVisible({ timeout: 30000 })
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/2-sheet.png` })
   dark.sheet = await darkPanels(page)
+  await page.locator('.g-sheet [data-act="close-sheet"]').first().tap()
+  await expect(page.locator('.g-sheet')).toBeHidden({ timeout: 10000 })
+  await page.screenshot({ path: `${OUT}/2a-house.png` })
+  dark.house = await darkPanels(page)
+  await page.locator('.house-do').tap({ timeout: 10000 })
+  await expect(page.locator('.g-sheet'), 'the bar button opens it again').toBeVisible({ timeout: 10000 })
+  await page.waitForTimeout(800)
+  dark.sheetAgain = await darkPanels(page)
   await page.keyboard.press('Escape').catch(() => {})
   // Out on the Quad: the bottom bar, the camera buttons, the menu, the chat.
   await page.goto('/?fast=1&morning=0&spawn=quad&n=2#/play')
@@ -88,4 +106,5 @@ test('cream screens', async ({ page }) => {
     dark[name] = await darkPanels(page)
   }
   console.log('DARK', JSON.stringify(dark, null, 1))
+  expect(Object.entries(dark).filter(([, panels]) => panels.length), 'no big dark panel on any screen').toEqual([])
 })

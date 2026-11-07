@@ -14,16 +14,19 @@ test('a dark-skinned female in a dress looks identical in every scene', async ({
   // The creator stage shows the real 3D student.
   const stage = page.locator('.cc-stage')
   await expect(stage).toHaveClass(/cc-has3d/, { timeout: 20000 })
-  const look = JSON.parse(await stage.getAttribute('data-look'))
-  expect(look).toMatchObject({ gender: 'female', outfitFile: 'dress', headFile: 'bob', hairStyle: 'locs', skin: '#2c1b12', top: '#e8497a', dress: true, curvy: true })
+  const creatorLook = JSON.parse(await stage.getAttribute('data-look'))
+  expect(creatorLook.studio, 'the creator draws the print big').toBe(true)
+  const look = { ...creatorLook, studio: false }
+  expect(creatorLook).toMatchObject({ gender: 'female', outfitFile: 'dress', headFile: 'bob', hairStyle: 'locs', skin: '#2c1b12', top: '#e8497a', dress: true, curvy: true })
   await page.screenshot({ path: 'test-results/avatar-1-creator.png' })
 
   await enrolUI(page, { name: 'Naledi', house: 1, course: 1 })
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.character.avatar)
   expect(saved).toMatchObject({ gender: 'female', skin: 'ebony', hair: 'braids', outfit: 'dress', body: 'curvy' })
 
-  // (Day 1 now opens in the family home scene, not the morning scene, and the res morning is day 2:
-  // neither exposes the player's look, so the creator, campus and lecture are what is compared.)
+  // Home (day 1 opens in the family home scene, which carries the player's look like the others)
+  await expect(page.locator('#home3d')).toHaveAttribute('data-look', /"outfitFile":"dress"/, { timeout: 60000 })
+  expect(JSON.parse(await page.locator('#home3d').getAttribute('data-look'))).toEqual(look)
 
   // Campus (a reload without the forced morning)
   await page.goto('/?fast=1&morning=0#/play')
