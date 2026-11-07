@@ -1097,7 +1097,7 @@ function finishTurn() {
 }
 
 // Skipping your name: a name to start with (change it any time from your card).
-const DEFAULT_NAMES = { female: ['Thandi', 'Lerato', 'Ayanda', 'Naledi', 'Zinhle'], male: ['Sipho', 'Kabelo', 'Lwazi', 'Thabo', 'Neo'] }
+const DEFAULT_NAMES = { female: ['Thandi', 'Lerato', 'Ayanda', 'Naledi', 'Zinhle'], male: ['Sipho', 'Kabelo', 'Luyanda', 'Thabo', 'Neo'] }
 function enrolDefaultName() {
   const list = DEFAULT_NAMES[genderOf(draft.avatar)] || DEFAULT_NAMES.female
   return list[Math.floor(Math.random() * list.length)]
