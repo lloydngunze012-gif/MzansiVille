@@ -8,6 +8,7 @@ import { ART, LAYOUT, groundHtml, residence } from './campus.js'
 import STORY from '../../data/campusville/place_story.json'
 import { GOAL_KIND, dreamOf, dreamProgress, goalText, rightNow } from '../engine/goals.js'
 import { identityTitle } from '../engine/identity.js'
+import { installMode } from '../install.js'
 import { comeBackReasons } from '../engine/dayend.js'
 import { MOMENTS } from '../engine/moments.js'
 import { beatById } from '../engine/arcs.js'
@@ -198,6 +199,7 @@ function gearMenu(run) {
   return `<div class="g-scrim" data-act="gear"></div>
   <aside class="g-menu" role="dialog" aria-label="Menu">
     <h3>Menu</h3>
+    ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="nav" data-go="install">\u{1F4F2} Install Soft Life</button>'}
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>

@@ -1,9 +1,17 @@
 {
-  "name": "MzansiVille",
-  "short_name": "MzansiVille",
+  "id": "/",
+  "name": "Soft Life: University of Mzansi",
+  "short_name": "Soft Life",
+  "description": "First year at the University of Mzansi: a free 3D campus life sim in your phone's browser.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1c1915",
-  "theme_color": "#1c1915",
-  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+  "background_color": "#f4efe4",
+  "theme_color": "#f4efe4",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
 }

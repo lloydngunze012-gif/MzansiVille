@@ -1,4 +1,5 @@
 import { isStaleLoad, reloadForUpdate } from './stale.js'
+import { onInstallChange, promptInstall, registerWorker } from './install.js'
 import { districtById, defaultDistrictId } from './districts/registry.js'
 import { filterText, cleanBio, canSend } from './engine/filter.js'
 import { loadBoardRows, loadLobby } from './social.js'
@@ -63,6 +64,10 @@ import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestF
 import { playerCardHtml } from './ui/card.js'
 
 installErrorReporting()
+// Install Soft Life (src/install.js): the service worker in the built game, and the menu
+// and #/install screen redrawn when Chrome offers to install or it's been installed.
+registerWorker()
+onInstallChange(() => { if (route().name === 'install' || ui.gear) paint() })
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -999,6 +1004,7 @@ function gameAct(act, button) {
   if (act === 'talk-bye') { endTalk({ away: button.dataset.away === '1' }); paint(); return true }
   if (act === 'talk-phone') { endTalk(); go('profile'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
+  if (act === 'install-go') { promptInstall(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
     setMuted(!soundOn())

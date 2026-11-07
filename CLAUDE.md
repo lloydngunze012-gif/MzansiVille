@@ -2,12 +2,19 @@
 
 This file is for Claude Code, the engineer. Cursor reads it too: Cursor is the content designer and owns data/ only. Read docs/team.md and docs/now.md first. Update docs/now.md before you finish.
 
+# GAME INSTALL FIX (owner, 7 Nov). One piece. Push, don't deploy.
+Phones name the game "Soft Life" and offer to install it. Manifest (public/manifest.webmanifest): Soft Life: University of Mzansi / Soft Life, scope and start "/", standalone, cream #f4efe4 (index.html theme-color too). Icons: public/icons/ (192, 512, maskable 512, apple-touch 180) from scripts/app-icons.mjs, the website's mark; favicon the same mark.
+Where it lives: public/sw.js (network-first page loads, never cached; caches only offline.html + one icon; never touches /assets/, models, audio or Supabase, so stale.js's Updating... reload is unchanged), src/install.js (registerWorker in the built game only, ?sw=1 in dev; beforeinstallprompt kept for our button; installMode prompt/ios/manual/done; appinstalled -> localStorage mzansiville.installed), src/ui/install.js (#/install, also #install), game.js gearMenu (Install Soft Life on top, hidden when done), main.js (install-go, redraw on change). vercel.json: sw.js and the manifest no-cache. vite.config.js BUILD_TAG (optional) tells two builds apart.
+Tests: tests/install/install.check.js via playwright.install.config.js (builds, serves like vercel.json, I1-I5 incl. Edge installability and an atomic deploy). Report: docs/sprints/install/report.md. Status (7 Nov): done and pushed, not deployed; 8/8; Lighthouse 11 PWA 100.
+
+---
+
 # SOFT LIFE WEBSITE (owner, 7 Nov). One piece. Push, don't deploy.
 A public page in site/ (its own Vercel project; the game and src/ untouched): explains Soft Life in 10 s, Play free / put it on your phone in one tap, the Organt shop. Design: Graduate headings, Figtree body, cream #F4EFE4, ink #1C1915, yellow #F0C400, house colours.
 Where it lives: site/build/page.mjs (Vite plugin: renders index.html from data/site/website.json (words, Cursor's), data/campusville/houses.json (pennants; white or ink text, whichever is >= 4.5:1), meta.json phases (slot times), shop.json url (Shop button hidden while empty); QR to the game drawn at build time (qrcode); emits sitemap.xml, robots.txt, share.jpg copied from the game's public/), site/src/site.css (inlined), site/public/ (fonts self-hosted, img/ WebP, favicon, apple-touch-icon), site/scripts/images.mjs (npm run images: the poster from public/cover.jpg + anything in site/img-src/ -> WebP <= 1000 px and a -600 copy), site/README.md (data map, run, deploy). No JavaScript in the page, no cookies, no analytics. brands.email empty hides For brands; next.show false hides Coming next; a missing Organt photo draws a stand-in tee.
 Deploy (only on the owner's go): linked from site/ (site/.vercel, ignored), built locally because the build reads ../data: from site/ `npx vercel pull --yes --environment=production`, `npx vercel build --prod`, `npx vercel deploy --prebuilt --prod`. Root Directory in Vercel stays empty. siteUrl in website.json must match the project's address.
 Tests: tests/site/site.check.js via playwright.site.config.js (Edge; W1-W6: widths 360/390/768/1440, 44 px targets, focus, images, weight, links, data, reduced motion). Report: docs/sprints/website/report.md.
-Status (7 Nov): done and pushed, not deployed; 9/9 checks; Lighthouse mobile 96-99 / 100 / 100 / 100. Waiting for the Organt photos and the owner's Vercel project.
+Status (7 Nov): done and pushed, not deployed; 9/9 checks; Lighthouse mobile 96-99 / 100 / 100 / 100. The Organt photos are in (site/public/img/organt-*). Waiting for the owner's Vercel project.
 
 ---
 

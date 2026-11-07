@@ -99,6 +99,6 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 
 - Day 1 home: on the way to the car, the parent walks in a straight line from the table to the door, through the coffee table. Route them round it.
 
-## Website (7 Nov)
-- Game: public/manifest.webmanifest still names the app "MzansiVille" (name and short_name), so the website's "Put it on your phone" steps install the game under the old name; it should be Soft Life.
-- Website: the Organt photos (lookbook and the three tees) aren't in the repo yet; the page draws stand-in tees until they're dropped into site/img-src/ (site/README.md).
+## Install fix (7 Nov)
+- Tests: tests/e2e/menu.spec.js "chat Send stays on chat and magic link keeps the student" times out (90 s) on main before the install change too (checked with the change stashed); the other two menu tests pass.
+- Install: on Android, Chrome's offer (beforeinstallprompt) can only be checked on a real phone; headless Edge never fires it, so test I4c sends a stand-in.

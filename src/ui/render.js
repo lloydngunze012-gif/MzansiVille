@@ -11,6 +11,7 @@ import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen,
 import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
 import { enrolScreen } from './enrol.js'
+import { installScreen } from './install.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
 import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
@@ -714,6 +715,7 @@ export function view(state) {
   if (screen === 'errors') return errorLog()
   if (screen === 'title') return title(state)
   if (screen === 'rules') return rules()
+  if (screen === 'install') return installScreen(state)
   if (screen === 'privacy') {
     return legalText('privacy', 'Privacy', [
       'Guest progress stays in localStorage on this phone. Clearing the browser clears the guest.',

@@ -1,0 +1,244 @@
+// Install Soft Life (owner, 7 Nov), on the built game, served the way vercel.json serves it.
+// I1 the manifest, icons and theme colour.
+// I2 Edge's own installability check passes (no errors), the service worker controls the
+//    page, and it only answers page loads: game files and Supabase never go through it.
+// I3 no signal: the offline page, not the browser's dinosaur.
+// I4 the menu's "Install Soft Life" at phone sizes (screenshots), the install screen,
+//    the iPhone steps, #install, and hidden once installed.
+// I5 a deploy: build A open, build B deployed (switched in one step, A's files gone), reload,
+//    build B runs; and an old page that asks for a game file that's gone reloads into B.
+import { test, expect, chromium } from '@playwright/test'
+import { execSync } from 'node:child_process'
+import { createServer } from 'node:http'
+import { createReadStream, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { extname, join } from 'node:path'
+import sharp from 'sharp'
+import { enrolUI } from '../enrol.js'
+
+const OUT = 'docs/sprints/install'
+const ROOM = 'room=install-test' // never the live campus
+mkdirSync(OUT, { recursive: true })
+
+// The built game, served the way vercel.json serves it: a file if it exists; a missing
+// /assets/ file is a 404; any other path gets index.html (no-cache); /assets/ immutable.
+// A deploy builds into its own folder and switches in one step, as Vercel does (no gap
+// where the site is down).
+const BUILDS = 'node_modules/.cache/softlife-install'
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' }
+let root = ''
+let server = null
+function build(tag) {
+  const dir = `${BUILDS}/${tag}`
+  execSync(`npx vite build --outDir ${dir} --emptyOutDir`, { stdio: 'ignore', env: { ...process.env, BUILD_TAG: tag } })
+  return dir
+}
+function serve() {
+  server = createServer((req, res) => {
+    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname)
+    let file = join(root, path)
+    const asset = path.startsWith('/assets/')
+    if (!existsSync(file) || statSync(file).isDirectory()) {
+      if (asset) { res.writeHead(404); res.end(); return }
+      file = join(root, 'index.html')
+    }
+    const html = file.endsWith('index.html')
+    res.writeHead(200, {
+      'Content-Type': TYPES[extname(file)] || 'application/octet-stream',
+      'Cache-Control': asset ? 'public, max-age=31536000, immutable' : (html || path === '/sw.js' || path.endsWith('.webmanifest') ? 'no-cache' : 'public, max-age=3600'),
+    })
+    createReadStream(file).pipe(res)
+  })
+  return new Promise((resolve) => server.listen(4173, '127.0.0.1', resolve))
+}
+// The built page's own entry script (a build has more than one index-*.js chunk).
+const mainScript = () => readFileSync(join(root, 'index.html'), 'utf8').match(/src="\/assets\/(index-[^"]+\.js)"/)[1]
+
+test.beforeAll(async () => { root = build('A'); await serve() })
+test.afterAll(async () => { await new Promise((r) => (server ? server.close(r) : r())) })
+
+test('I1 manifest, icons and theme colour', async ({ page, request }) => {
+  const m = await (await request.get('/manifest.webmanifest')).json()
+  expect(m.name).toBe('Soft Life: University of Mzansi')
+  expect(m.short_name).toBe('Soft Life')
+  expect(m.start_url).toBe('/')
+  expect(m.scope).toBe('/')
+  expect(m.display).toBe('standalone')
+  expect(m.background_color.toLowerCase()).toBe('#f4efe4')
+  expect(m.theme_color.toLowerCase()).toBe('#f4efe4')
+  const want = [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]
+  for (const [sizes, purpose] of want) {
+    const icon = m.icons.find((i) => i.sizes === sizes && i.purpose === purpose && i.type === 'image/png')
+    expect(icon, `${sizes} ${purpose}`).toBeTruthy()
+    const buf = Buffer.from(await (await request.get(icon.src)).body())
+    const meta = await sharp(buf).metadata()
+    expect(`${meta.width}x${meta.height}`).toBe(sizes)
+  }
+  const apple = await sharp(Buffer.from(await (await request.get('/icons/apple-touch-icon.png')).body())).metadata()
+  expect(apple.width).toBe(180)
+  await page.goto(`/?${ROOM}#/`)
+  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#f4efe4')
+  expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('/icons/apple-touch-icon.png')
+})
+
+test('I2 installable, and the worker only answers page loads', async () => {
+  // A normal (not private) Edge profile: test windows are private, and the browser never
+  // offers to install from a private window ("in-incognito").
+  const dir = mkdtempSync(join(tmpdir(), 'softlife-install-'))
+  const context = await chromium.launchPersistentContext(dir, { channel: 'msedge', viewport: { width: 412, height: 915 } })
+  const page = context.pages()[0] || await context.newPage()
+  await page.goto(`http://127.0.0.1:4173/?${ROOM}#/`)
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  const responses = []
+  page.on('response', (r) => responses.push({ url: r.url(), sw: r.fromServiceWorker(), nav: r.request().isNavigationRequest() }))
+  await page.reload()
+  await page.waitForLoadState('networkidle')
+  expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
+  const cdp = await page.context().newCDPSession(page)
+  const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors')
+  console.log('installability errors:', JSON.stringify(installabilityErrors))
+  expect(installabilityErrors).toEqual([])
+  const { url, errors } = await cdp.send('Page.getAppManifest')
+  console.log('manifest:', url, errors.length ? JSON.stringify(errors) : 'no errors')
+  expect(errors).toEqual([])
+  const nav = responses.find((r) => r.nav)
+  expect(nav?.sw, 'the page load goes through the worker (network first)').toBe(true)
+  const assets = responses.filter((r) => /\/assets\//.test(r.url))
+  expect(assets.length).toBeGreaterThan(0)
+  expect(assets.filter((r) => r.sw), 'game files never go through the worker').toEqual([])
+  expect(responses.filter((r) => /supabase/.test(r.url) && r.sw), 'Supabase never goes through the worker').toEqual([])
+  await context.close()
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('I3 no signal: the offline page', async ({ page, context }) => {
+  await page.goto(`/?${ROOM}#/`)
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.reload()
+  await context.setOffline(true)
+  await page.goto(`/?${ROOM}#/`).catch(() => {})
+  await expect(page.locator('h1')).toHaveText("You're offline")
+  await page.screenshot({ path: `${OUT}/offline-390.png` })
+  await context.setOffline(false)
+})
+
+for (const [w, h] of [[360, 800], [412, 915]]) {
+  test(`I4 the menu option and install screen at ${w}x${h}`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
+    const page = await context.newPage()
+    await page.goto(`/?${ROOM}&morning=0#/new`)
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.view', 'map') })
+    await page.goto(`/?${ROOM}&morning=0#/new`)
+    await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
+    await page.locator('[data-act="gear"]').first().waitFor({ timeout: 30000 })
+    await page.evaluate(() => {
+      const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+      Object.assign(save.run, { morningDone: true, queue: [], phase: 'social', minutes: 13 * 60, lectureResolved: true })
+      localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+      localStorage.setItem('mzansiville.mapHint', '1')
+    })
+    // (a new query string, so the page really reloads with the saved day)
+    await page.goto(`/?${ROOM}&morning=0&at=13#/play`)
+    await page.locator('[data-act="gear"]').first().tap()
+    const option = page.locator('.g-menu .g-install')
+    await expect(option).toBeVisible()
+    await expect(option).toHaveText(/Install Soft Life/)
+    const box = await option.boundingBox()
+    expect(box.height).toBeGreaterThanOrEqual(40)
+    await page.screenshot({ path: `${OUT}/menu-${w}x${h}.png` })
+    await option.tap()
+    await page.waitForURL(/#\/install/)
+    const mode = await page.locator('main[data-screen="install"]').getAttribute('data-mode')
+    console.log(`${w}x${h}: install screen mode ${mode}`)
+    expect(['prompt', 'manual']).toContain(mode)
+    if (mode === 'prompt') await expect(page.locator('[data-act="install-go"]')).toBeVisible()
+    else await expect(page.locator('.in-steps li')).toHaveCount(3)
+    await page.screenshot({ path: `${OUT}/install-${mode}-${w}x${h}.png` })
+    // Installed: the option hides (appinstalled marks it; launched from the home screen
+    // counts the same way).
+    await page.evaluate(() => localStorage.setItem('mzansiville.installed', '1'))
+    await page.goto(`/?${ROOM}&morning=0&at=installed#/play`)
+    await page.locator('[data-act="gear"]').first().tap()
+    await expect(page.locator('.g-menu')).toBeVisible()
+    await expect(page.locator('.g-menu .g-install')).toHaveCount(0)
+    await context.close()
+  })
+}
+
+test('I4b iPhone: the Share > Add to Home Screen steps; #install opens the screen', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3,
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  })
+  const page = await context.newPage()
+  await page.goto(`/?${ROOM}#install`)
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'ios')
+  await expect(page.locator('.in-steps li')).toHaveCount(3)
+  await expect(page.locator('.in-steps')).toContainText('Share')
+  await expect(page.locator('.in-steps')).toContainText('Add to Home Screen')
+  await page.screenshot({ path: `${OUT}/install-ios-390x844.png` })
+  // Opened from the home screen (standalone): it says it's installed, no steps.
+  await page.addInitScript(() => {
+    const real = window.matchMedia.bind(window)
+    window.matchMedia = (q) => (q.includes('display-mode: standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : real(q))
+  })
+  await page.goto(`/?${ROOM}&home=1#/install`)
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'done')
+  await context.close()
+})
+
+test('I4c Android: Chrome offers to install, our button opens its prompt, then it hides', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
+  const page = await context.newPage()
+  await page.goto(`/?${ROOM}#/install`)
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'manual')
+  // What Chrome does when the game can be installed (headless never offers, so a stand-in).
+  await page.evaluate(() => {
+    const e = new Event('beforeinstallprompt', { cancelable: true })
+    e.prompt = () => { window.promptShown = true }
+    e.userChoice = Promise.resolve({ outcome: 'accepted' })
+    window.dispatchEvent(e)
+  })
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'prompt')
+  await expect(page.locator('[data-act="install-go"]')).toBeVisible()
+  await page.screenshot({ path: `${OUT}/install-prompt-412x915.png` })
+  await page.locator('[data-act="install-go"]').tap()
+  expect(await page.evaluate(() => window.promptShown)).toBe(true)
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'done')
+  await page.screenshot({ path: `${OUT}/install-done-412x915.png` })
+  await context.close()
+})
+
+test('I5 a deploy: the new build loads on reload, and an old page reloads into it', async ({ page, context }) => {
+  const scriptOf = (p) => p.evaluate(() => [...document.scripts].map((s) => s.src).find((s) => /\/assets\/index-/.test(s)) || '')
+  await page.goto(`/?${ROOM}#/`)
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await page.reload()
+  // A second tab left open on build A at the title screen (the creator not opened yet).
+  const old = await context.newPage()
+  await old.goto(`/?${ROOM}&tab=old#/`)
+  const a = await scriptOf(page)
+  expect(a).toContain(mainScript())
+  expect(await scriptOf(old)).toBe(a)
+  console.log('build A:', a.replace(/^.*\/assets\//, ''))
+  // Deploy B: built into its own folder, then the site switches to it in one step.
+  const next = build('B')
+  root = next
+  const bFile = mainScript()
+  expect(a).not.toContain(bFile)
+  // 1. Reopening the game (a reload) runs B: the page comes from the network, not a cache.
+  await page.reload()
+  const b = await scriptOf(page)
+  console.log('after the deploy, reload:', b.replace(/^.*\/assets\//, ''))
+  expect(b).toContain(bFile)
+  // 2. The old tab opens the creator: its lazy game file (build A's) is gone from the
+  //    server, so stale.js shows Updating... and reloads, and the tab runs B.
+  const gone = []
+  old.on('requestfailed', (r) => { if (/\/assets\//.test(r.url())) gone.push(r.url().replace(/^.*\/assets\//, '')) })
+  await old.evaluate(() => { location.hash = '#/new' })
+  await old.waitForTimeout(4000)
+  await expect.poll(async () => (await scriptOf(old).catch(() => '')).includes(bFile), { timeout: 15000 }).toBe(true)
+  console.log('old tab: build A files gone:', gone.join(', ') || 'none')
+  console.log('old tab after opening the creator:', (await scriptOf(old)).replace(/^.*\/assets\//, ''))
+  expect(gone.length, 'the old tab asked for build A files that are gone').toBeGreaterThan(0)
+})
