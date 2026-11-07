@@ -55,7 +55,7 @@
     "text": "Every outfit in Soft Life is a real Organt design. See it on campus, then wear it for real.",
     "lookbook": {
       "image": "img/organt-lookbook.webp",
-      "alt": "Organt's new limited collection: four students in Area Code and Matcha Girly tees.",
+      "alt": "Organt's new limited collection: five people in Area Code tees (021, 011, 031) and Matcha Girly baby tees.",
       "heading": "New",
       "sub": "Limited collection"
     },
@@ -64,14 +64,14 @@
         "name": "Area Code tee",
         "text": "Washed black, in 011, 012, 021 and 031. Rep where you're from.",
         "image": "img/organt-area-code.webp",
-        "alt": "The Area Code tee in washed black with 021 on the chest.",
+        "alt": "The Area Code tee in washed black with 021 across the chest.",
         "tee": { "colour": "#3a3836", "print": "021", "ink": "#e8e2d4" }
       },
       {
         "name": "Jozi Number 10",
         "text": "Forest green and mustard, with joggers to match.",
         "image": "img/organt-jozi-10.webp",
-        "alt": "The Jozi Number 10 tee in forest green with a mustard 10.",
+        "alt": "The Jozi Number 10 tee in forest green, with Jozi Number 10 across the chest in mustard.",
         "tee": { "colour": "#1f4a2c", "print": "10", "ink": "#d9a92e" }
       },
       {
