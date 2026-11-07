@@ -84,9 +84,11 @@ function picture(rel, alt, { lazy = true, sizes = '', priority = false } = {}) {
   if (!existsSync(file)) return ''
   const size = webpSize(file)
   if (!size) return ''
-  const small = rel.replace(/\.webp$/, '-600.webp')
-  const hasSmall = existsSync(join(SITE, 'public', small))
-  const srcset = hasSmall ? ` srcset="/${esc(small)} 600w, /${esc(rel)} ${size.w}w"${sizes ? ` sizes="${esc(sizes)}"` : ''}` : ''
+  // The smaller copies npm run images makes (name-240.webp, name-600.webp), when they're there.
+  const set = [240, 600].map((w) => ({ w, rel: rel.replace(/\.webp$/, `-${w}.webp`) }))
+    .filter((x) => existsSync(join(SITE, 'public', x.rel)))
+    .map((x) => `/${esc(x.rel)} ${x.w}w`)
+  const srcset = set.length ? ` srcset="${[...set, `/${esc(rel)} ${size.w}w`].join(', ')}"${sizes ? ` sizes="${esc(sizes)}"` : ''}` : ''
   return `<img src="/${esc(rel)}"${srcset} width="${size.w}" height="${size.h}" alt="${esc(alt)}" decoding="async"${lazy ? ' loading="lazy"' : ''}${priority ? ' fetchpriority="high"' : ''}>`
 }
 
@@ -232,9 +234,9 @@ function organt(d) {
   const o = d.site.organt || {}
   const lb = o.lookbook || {}
   const items = o.items || []
-  const look = picture(lb.image, lb.alt) || lookbookSvg(lb, items)
+  const look = picture(lb.image, lb.alt, { sizes: '(min-width: 900px) 460px, min(calc(100vw - 32px), 460px)' }) || lookbookSvg(lb, items)
   const list = items.map((it) => {
-    const pic = picture(it.image, it.alt) || teeSvg(it.tee, it.alt)
+    const pic = picture(it.image, it.alt, { sizes: '72px' }) || teeSvg(it.tee, it.alt)
     return `<li class="tee"><div class="tee-pic">${pic}</div><div><h3>${esc(it.name)}</h3><p>${esc(it.text)}</p></div></li>`
   }).join('')
   const shop = d.shopUrl ? `<p class="shop"><a class="btn" href="${esc(d.shopUrl)}" rel="noopener">${esc(o.shop)}</a></p>` : ''
