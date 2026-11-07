@@ -23,7 +23,7 @@ Two tools never edit the same files in the same piece. If a piece needs both cod
 
 1. Lloyd: the idea, in plain words.
 2. Claude (chat): a short spec and the prompts (one for `src/`, one for `data/` if needed).
-3. Claude Code builds and tests, then pushes. **Push, don't deploy until Lloyd says so.**
+3. Claude Code builds and tests, then pushes and deploys. **Until play-testing starts, every job ends with push and deploy to production (vercel --prod). Previews return for play-testing. If something breaks, Lloyd uses Instant Rollback.**
 4. Cursor fills the content, runs `npm run check`, then pushes.
 5. Claude (chat): the QA pass (below), with a bug list and fix prompts.
 6. Lloyd plays it on the phone. Done, or back to step 2 with the bugs.
@@ -75,7 +75,7 @@ Every time, in this order, nothing skipped:
 Claude Code and Claude (chat) may share one Claude plan, so plan for both going quiet at once.
 
 **Claude runs out (chat and Code):** Cursor takes over both jobs until Claude is back.
-- Building: read `CLAUDE.md` and `docs/now.md` first. Same rules: one piece, tests, push, don't deploy.
+- Building: read `CLAUDE.md` and `docs/now.md` first. Same rules: one piece, tests, push, deploy to production (see step 3 above).
 - QA: run the QA pass above after every push.
 - Log everything done this way in `docs/now.md` so Claude can pick it up.
 
