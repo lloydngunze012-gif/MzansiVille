@@ -376,5 +376,10 @@
       "text": "Reach day 30 with grades of 50 or more."
     }
   ],
-  "fullName": "University of Mzansi"
+  "fullName": "University of Mzansi",
+  "smoothness": {
+    "settingLabel": "",
+    "settingHelp": "",
+    "privacyLine": ""
+  }
 }
