@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { filterText, cleanBio, canSend } from '../src/engine/filter.js'
 import { rankRows, sampleBoard } from '../src/engine/social-data.js'
+import { canonicalHouse, registerHouses } from '../src/houses.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
@@ -741,6 +742,29 @@ check('boards rank by residence and overall', () => {
   assert.ok(rankRows(rows, 'money', 'res', 'Wave House').every((r) => r.residence === 'Wave House'))
   const houses = rankRows(rows, 'balanced', 'houses', 'Wave House')
   assert.ok(houses.length >= 4 && houses.some((h) => h.mine))
+})
+
+check('a house renamed: old names still land in the same house, on the boards and on cards', () => {
+  registerHouses(JSON.parse(readFileSync(new URL('../data/campusville/houses.json', import.meta.url), 'utf8')))
+  assert.equal(canonicalHouse('Thekwini House'), 'Wave House')
+  assert.equal(canonicalHouse('Braam House'), 'Goldrush House')
+  assert.equal(canonicalHouse('O Block'), 'Wave House')
+  assert.equal(canonicalHouse('thekwini'), 'Wave House')
+  assert.equal(canonicalHouse('Wave House'), 'Wave House')
+  assert.equal(canonicalHouse('Peak House'), 'Peak House')
+  assert.equal(canonicalHouse('Cane Crescent'), 'Cane Crescent') // (a name it does not know is left alone)
+  // rows written by a phone before the rename join the new name's group, and "mine" still finds it
+  const rows = [
+    { user_id: 'a', display_name: 'A', residence: 'Thekwini House', grades: 80, balanced_avg: 70 },
+    { user_id: 'b', display_name: 'B', residence: 'Wave House', grades: 60, balanced_avg: 50 },
+    { user_id: 'c', display_name: 'C', residence: 'Braam House', grades: 40, balanced_avg: 30 },
+    { user_id: 'd', display_name: 'D', residence: 'Goldrush House', grades: 20, balanced_avg: 10 },
+  ]
+  const houses = rankRows(rows, 'balanced', 'houses', 'Thekwini House')
+  assert.deepEqual(houses.map((h) => [h.residence, h.n]), [['Wave House', 2], ['Goldrush House', 2]])
+  assert.ok(houses.find((h) => h.residence === 'Wave House').mine)
+  assert.equal(rankRows(rows, 'grades', 'res', 'Wave House').length, 2)
+  assert.equal(rankRows(rows, 'grades', 'res', 'Braam House').length, 2)
 })
 
 check('day 1 morning lines exist for every key the morning uses', () => {

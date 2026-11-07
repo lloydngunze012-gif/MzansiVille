@@ -382,7 +382,7 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
     expect(order).toEqual(['cafeteria:red', 'greenway:red', 'library:amber', 'morning:ok', 'gate:ok', 'home:township:ok', 'common:thekwini:ok', 'room:ok', 'quad:ok', 'paths:ok', 'lecture:ok'])
     // Names, not ids: places.csv names, houses' common rooms, the scene buckets (ids stay in the tooltip).
     const labels = await places.evaluateAll((trs) => Object.fromEntries(trs.map((tr) => [tr.dataset.key, tr.querySelector('th').textContent])))
-    expect(labels).toMatchObject({ cafeteria: 'Cafeteria', greenway: 'Greenway Grocer', gate: 'Main Gate', quad: 'The Quad', paths: 'Paths between places', room: 'Activity rooms', 'common:thekwini': 'Thekwini House common room', 'home:township': 'Day 1 home (township)' })
+    expect(labels).toMatchObject({ cafeteria: 'Cafeteria', greenway: 'Greenway Grocer', gate: 'Main Gate', quad: 'The Quad', paths: 'Paths between places', room: 'Activity rooms', 'common:thekwini': 'Wave House common room', 'home:township': 'Day 1 home (township)' })
     const cafe = places.nth(0)
     await expect(cafe).toContainText('Cafeteria')
     await expect(cafe.locator('th')).toHaveAttribute('title', 'cafeteria')

@@ -16,10 +16,10 @@ insert into public.district_places (district_id, id, name, kind, x, y, blurb) va
 ('campusville', 'law', 'Law Lecture Venue', 'lecture', 680, 320, 'Law lectures'),
 ('campusville', 'engineering', 'Engineering Lecture Venue', 'lecture', 220, 420, 'Engineering lectures'),
 ('campusville', 'gate', 'Main Gate', 'transit', 500, 940, 'Entry; late-night security events'),
-('campusville', 'res_o', 'Thekwini House', 'residence', 150, 700, 'The loud house: a speaker on the balcony, two-minute noodles, and a party that starts in someone''s room'),
+('campusville', 'res_o', 'Wave House', 'residence', 150, 700, 'The loud house: a speaker on the balcony, two-minute noodles, and a party that starts in someone''s room'),
 ('campusville', 'res_r', 'Peak House', 'residence', 250, 780, 'The quiet house: the corridor goes still after ten, and the common room is for reading'),
 ('campusville', 'res_s', 'Oakwinds House', 'residence', 350, 820, 'The courtyard house: soccer until the floodlight clicks off, then someone shares the fridge'),
-('campusville', 'res_other', 'Braam House', 'residence', 200, 600, 'The busy house: the most floors, the most stairs, and whoever landed next door becomes your person'),
+('campusville', 'res_other', 'Goldrush House', 'residence', 200, 600, 'The busy house: the most floors, the most stairs, and whoever landed next door becomes your person'),
 ('campusville', 'res_j', 'Jakaranda House', 'residence', 90, 620, 'The creative house: purple blossoms on the path, paint on the stairs, and a playlist that never ends'),
 ('campusville', 'res_k', 'Kingsway House', 'residence', 430, 760, 'The sporty house: boots by the door, a match on the TV, and a rivalry with every other house'),
 ('campusville', 'off_campus', 'Mzansi House', 'residence', 580, 980, 'The international house by the gate: students from everywhere, and a kitchen that smells of five countries');
@@ -140,10 +140,10 @@ insert into public.district_activities
 ('campusville', 'house_late', 'night', 'house', 'Late chat on the common room couch', 0, -3, 0, 3, 0, 1, 'Lights low, phones out, the stories get bigger');
 
 insert into public.district_residences (district_id, name, type, distance_km, notes) values
-('campusville', 'Thekwini House', 'house', null, 'Loud and proud'),
+('campusville', 'Wave House', 'house', null, 'Loud and proud'),
 ('campusville', 'Peak House', 'house', null, 'Quiet and focused'),
 ('campusville', 'Oakwinds House', 'house', null, 'Courtyard family'),
-('campusville', 'Braam House', 'house', null, 'Big city energy'),
+('campusville', 'Goldrush House', 'house', null, 'Big city energy'),
 ('campusville', 'Jakaranda House', 'house', null, 'Leafy and creative'),
 ('campusville', 'Kingsway House', 'house', null, 'Sporty and loud'),
 ('campusville', 'Mzansi House', 'house', null, 'The world, one corridor');

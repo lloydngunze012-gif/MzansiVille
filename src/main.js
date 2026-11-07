@@ -1,4 +1,5 @@
 import { fromPlace } from './from.js'
+import { canonicalHouse } from './houses.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
 import { onInstallChange, promptInstall, registerWorker } from './install.js'
 import { smooth } from './smooth.js'
@@ -2109,7 +2110,7 @@ function closePlayerCard(keep = false) {
 function renderSheet(reporting = false) {
   const body = document.querySelector('.pc-sheet-body')
   if (!body || !sheetCard) return
-  const house = districtNow().houses?.find((h) => h.name === sheetCard.house) || null
+  const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
   const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
   const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
   const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']

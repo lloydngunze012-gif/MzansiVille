@@ -1,5 +1,6 @@
 import { avatarSvg } from '../avatar.js'
 import { fromPlace } from '../from.js'
+import { canonicalHouse } from '../houses.js'
 
 // The player card (build plan, Piece 1a): one phone screen, nothing scrolling. The same
 // card for your own (with Edit) and for anyone you tap on campus. Never an age.
@@ -19,7 +20,7 @@ export function playerCardHtml(card, house, opts = {}) {
   const badges = (card.badges || []).length ? card.badges.map((b) => `<span class="pc-badge">\u{1F3C5} ${esc(b)}</span>`).join('') : '<span class="pc-badge none">No badges yet</span>'
   const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 96)
   return `<article class="pcard" style="${vars}" data-house="${esc(house?.id || '')}">
-    <header class="pc-top"><span class="pc-house">${esc((house?.name || card.house || 'UMzansi').toUpperCase())}</span><span class="pc-class">Class of ${esc(card.classOf || 2026)}</span></header>
+    <header class="pc-top"><span class="pc-house">${esc((house?.name || canonicalHouse(card.house) || 'UMzansi').toUpperCase())}</span><span class="pc-class">Class of ${esc(card.classOf || 2026)}</span></header>
     <div class="pc-main">
       <div class="pc-photo">${photo}</div>
       <div class="pc-id">

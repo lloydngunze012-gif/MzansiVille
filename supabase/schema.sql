@@ -940,3 +940,32 @@ select cron.schedule(
   '17 3 * * *',
   $$delete from public.smooth_reports where created_at < now() - interval '30 days'$$
 );
+
+-- ---------------------------------------------------------------------------
+-- House rename (7 Nov): Thekwini House -> Wave House, Braam House -> Goldrush House (the ids
+-- thekwini and braam are unchanged). Run once, when the build with the new names goes live
+-- (re-running is harmless). The database matches a house by its NAME in two places only:
+--   profiles.residence  (the leaderboards group and filter by it)
+--   player_cards.house  (the card others see; only if the "Piece 1a" block has been run)
+-- Every player keeps their house: the same rows, the name swapped, nothing deleted. The game also
+-- reads old names as the new ones (src/houses.js), so a phone still on an older build, or a row
+-- written between this and the deploy, lands in the same house either way.
+-- As of 7 Nov the live project held no row with either old name (see docs/sprints/creator-studio/
+-- house-rename-db-check.md), so this is for the first players on the production build.
+-- ---------------------------------------------------------------------------
+update public.profiles set residence = 'Wave House' where residence = 'Thekwini House';
+update public.profiles set residence = 'Goldrush House' where residence = 'Braam House';
+
+do $$
+begin
+  if to_regclass('public.player_cards') is not null then
+    update public.player_cards set house = 'Wave House' where house = 'Thekwini House';
+    update public.player_cards set house = 'Goldrush House' where house = 'Braam House';
+  end if;
+end $$;
+
+-- (the lookup tables the seed fills: renamed in place if a seed that had the old names was run)
+update public.district_places set name = 'Wave House' where id = 'res_o' and name = 'Thekwini House';
+update public.district_places set name = 'Goldrush House' where id = 'res_other' and name = 'Braam House';
+update public.district_residences set name = 'Wave House' where name = 'Thekwini House' and not exists (select 1 from public.district_residences where name = 'Wave House');
+update public.district_residences set name = 'Goldrush House' where name = 'Braam House' and not exists (select 1 from public.district_residences where name = 'Goldrush House');

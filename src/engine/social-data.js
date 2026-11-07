@@ -1,3 +1,4 @@
+import { canonicalHouse } from '../houses.js'
 // Pure board ranking and the labelled sample rows used by mock mode.
 const SAMPLE_PEOPLE = [
   ['s1', 'Lerato M.', 'Peak House', 2860, 71, 82],
@@ -41,6 +42,9 @@ export const BOARD_TABS = [
 ]
 
 export function rankRows(rows, tab, scope, myRes) {
+  // (rows written before a house was renamed still carry its old name: same house, same group)
+  rows = rows.map((r) => (r.residence ? { ...r, residence: canonicalHouse(r.residence) } : r))
+  myRes = canonicalHouse(myRes)
   const key = (BOARD_TABS.find((t) => t[0] === tab) || BOARD_TABS[0])[2]
   const score = (r) => Number(r[key] ?? 0)
   if (scope === 'houses') {
