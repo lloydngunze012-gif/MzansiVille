@@ -1,15 +1,15 @@
 // Pure board ranking and the labelled sample rows used by mock mode.
 const SAMPLE_PEOPLE = [
   ['s1', 'Lerato M.', 'Peak House', 2860, 71, 82],
-  ['s2', 'Sipho K.', 'Thekwini House', 2410, 64, 77],
+  ['s2', 'Sipho K.', 'Wave House', 2410, 64, 77],
   ['s3', 'Ayesha P.', 'Oakwinds House', 1980, 88, 69],
   ['s4', 'Pieter v.d.M.', 'Jakaranda House', 3120, 52, 61],
-  ['s5', 'Nomsa D.', 'Thekwini House', 1640, 79, 86],
-  ['s6', 'Thabo N.', 'Braam House', 2210, 58, 73],
+  ['s5', 'Nomsa D.', 'Wave House', 1640, 79, 86],
+  ['s6', 'Thabo N.', 'Goldrush House', 2210, 58, 73],
   ['s7', 'Kayla R.', 'Peak House', 1310, 92, 66],
   ['s8', 'Zanele S.', 'Oakwinds House', 2750, 61, 80],
   ['s9', 'Mohammed A.', 'Mzansi House', 1890, 74, 71],
-  ['s10', 'Jabu T.', 'Thekwini House', 980, 67, 58],
+  ['s10', 'Jabu T.', 'Wave House', 980, 67, 58],
 ]
 
 export function sampleBoard() {
@@ -21,11 +21,11 @@ export function sampleBoard() {
 
 export function sampleLobby(now = Date.now()) {
   const lines = [
-    ['s2', 'Sipho K.', 'Thekwini House', 'Anyone at the Quad? Free time vibes', 42],
-    ['s5', 'Nomsa D.', 'Thekwini House', 'Library opens 15:00, saving us a table', 31],
+    ['s2', 'Sipho K.', 'Wave House', 'Anyone at the Quad? Free time vibes', 42],
+    ['s5', 'Nomsa D.', 'Wave House', 'Library opens 15:00, saving us a table', 31],
     ['s4', 'Pieter v.d.M.', 'Jakaranda House', 'That surprise test was kak hard, jissis', 22],
     ['s7', 'Kayla R.', 'Peak House', 'Derby Day on Sunday!! who is coming', 15],
-    ['s10', 'Jabu T.', 'Thekwini House', 'Cafeteria special is lekker today', 6],
+    ['s10', 'Jabu T.', 'Wave House', 'Cafeteria special is lekker today', 6],
     ['s8', 'Zanele S.', 'Oakwinds House', 'Sho, see you all at the bus station', 2],
   ]
   return lines.map(([user_id, name, residence, body, ago], i) => ({

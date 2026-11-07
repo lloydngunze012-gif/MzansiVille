@@ -97,24 +97,36 @@ function tick(now) {
 
 // Called after every paint of the creator: the stage element is new each time,
 // so the same canvas is moved into it.
+// The stage's height is fixed once (for this screen width): a phone's address bar sliding away
+// during a scroll changes the viewport height, and with it the stage, so the student used to move.
+let lockedWidth = 0
+function lockStageHeight() {
+  if (lockedWidth === window.innerWidth) return
+  lockedWidth = window.innerWidth
+  document.documentElement.style.setProperty('--cc-stage-h', `${Math.max(300, Math.round(window.innerHeight * 0.4))}px`)
+}
+
 export function showPreview(stage, look) {
   if (!stage) return
+  lockStageHeight()
   // (no 3D here: the flat drawing is the preview)
   if (!renderer) { try { setup(stage) } catch { stage.classList.add('cc-no3d'); return } }
   const next = JSON.stringify(lookOf({ ...look, studio: true }))
   if (next !== key) {
     // (a pick: show the front, so the chest print and the neckline read)
     if (key) turner.focusFront()
-    // The new look loads beside the old one, which stays until the new one is in
-    // (no empty stage, no flash of anything else between outfits).
-    const old = avatar
+    // The new look loads beside the old one, which stays until the new one is in (no empty
+    // stage). Once the newest is in, every other student goes (QA pass 1: two picks in quick
+    // succession left the first student standing next to the new one).
     avatar = createAvatar({ ...look, studio: true })
     const fresh = avatar
     fresh.addEventListener('rigged', () => {
-      if (old && old !== avatar) { old.userData.disposed = true; scene.remove(old) }
-      if (fresh === avatar) document.querySelectorAll('.cc-stage').forEach((s) => s.classList.add('cc-has3d'))
+      if (fresh !== avatar) return
+      for (const other of scene.children.filter((c) => c !== fresh && c.userData?.look)) { other.userData.disposed = true; scene.remove(other) }
+      document.querySelectorAll('.cc-stage').forEach((s) => s.classList.add('cc-has3d'))
     })
-    if (old && !old.userData.rigged) { old.userData.disposed = true; scene.remove(old) }
+    // (any student still loading will never be shown now)
+    for (const other of scene.children.filter((c) => c.userData?.look && !c.userData.rigged)) { other.userData.disposed = true; scene.remove(other) }
     scene.add(avatar)
     key = next
   }

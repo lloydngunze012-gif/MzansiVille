@@ -30,8 +30,8 @@ window.lineup = async ({ looks, angle = 0, w = 220, h = 420, pose = 'stand', t =
   }
   const cell = (i) => { renderer.setViewport(i * w, 0, w, h); renderer.setScissor(i * w, 0, w, h) }
   renderer.setScissorTest(true)
-  cam.position.set(0, zoom > 1 ? 1.35 : 1.0, 5.6 / zoom)
-  cam.lookAt(0, zoom > 1 ? 1.3 : 0.9, 0)
+  cam.position.set(0, zoom > 3 ? 1.6 : zoom > 1 ? 1.35 : 1.0, 5.6 / zoom)
+  cam.lookAt(0, zoom > 3 ? 1.58 : zoom > 1 ? 1.3 : 0.9, 0)
   avs.forEach((a, i) => { avs.forEach((b) => { b.visible = b === a }); cell(i); renderer.render(scene, cam) })
   return true
 }

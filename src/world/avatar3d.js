@@ -119,12 +119,21 @@ function recolour(model, look) {
       // Shoes for everyone: where an outfit shows bare feet (sandals, flip-flops,
       // pumps), that part becomes the shoe's upper, a shade darker than the shoe.
       if (part === 'feet' && /^skin/i.test(name)) return shared('upper', () => mat(new THREE.Color(look.shoes).multiplyScalar(0.72)))
-      if (/^skin/i.test(name)) return shared(`skin${name}`, () => { const m = mat(new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)); m.userData.skin = true; return m })
+      if (/^skin/i.test(name)) return shared(`skin${name}`, () => {
+        const c = new THREE.Color(look.skin).multiplyScalar(/dark/i.test(name) ? 0.85 : 1)
+        // Deep and Ebony skin (QA pass 1: faces read as a dark block): a little glow of its own and a
+        // soft sheen, so the planes of the face and the dark eyes and brows read against it.
+        const lum = c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722
+        const lift = lum < 0.06 ? Math.min(1.2, Math.max(0.3, 0.035 / lum - 0.3)) : 0
+        const m = mat(c, lift ? { emissive: c.clone().multiplyScalar(lift), roughness: 0.55 } : {})
+        m.userData.skin = true
+        return m
+      })
       if (part === 'head') {
         // Eyebrows follow a chosen hair colour (a darker shade of it): blond hair over black
         // brows is the first thing that looks wrong. (The women's brows are "Hair_Brown".)
         if (look.tone && /eyebrow|^hair_brown$/i.test(name)) return shared('brows', () => mat(new THREE.Color(look.hair).multiplyScalar(0.62)))
-        if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x1c120c))
+        if (/^eye|eyebrow|^brown$/i.test(name)) return shared('eyes', () => mat(0x0e0806, { roughness: 0.35 }))
         if (/earring|yellow|moustache/i.test(name)) return shared(`own${m.uuid}`, () => m.clone())
         return shared('hair', () => { const m = mat(look.hair); m.userData.hair = true; return m })
       }
@@ -181,11 +190,12 @@ function organtPrint(code = '031', hi = false) {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillStyle = '#1c1915'
-  ctx.font = '900 112px "Arial Black", Impact, sans-serif'
-  ctx.fillText(code, 128, 82, 240)
-  ctx.fillStyle = '#7b3fe4'
-  ctx.font = '900 40px "Arial Black", Impact, sans-serif'
-  ctx.fillText('ORGANT', 128, 160, 230)
+  ctx.font = '900 100px "Arial Black", Impact, sans-serif'
+  ctx.fillText(code, 128, 70, 236)
+  // ORGANT big enough to read on a phone (QA pass 1), in a darker purple for contrast on any tee
+  ctx.fillStyle = '#5b23c9'
+  ctx.font = '900 50px "Arial Black", Impact, sans-serif'
+  ctx.fillText('ORGANT', 128, 152, 244)
   const tex = new THREE.CanvasTexture(canvas)
   tex.colorSpace = THREE.SRGBColorSpace
   if (hi) tex.anisotropy = 8
@@ -204,11 +214,11 @@ function addOrgantMark(model, hi = false) {
   const top = worldOf(neck)
   const low = worldOf(torso)
   const shoulders = worldOf(model.getObjectByName('UpperArmL') || neck).distanceTo(worldOf(model.getObjectByName('UpperArmR') || neck)) || 0.3
-  const w = shoulders * 0.95
+  const w = shoulders * 0.88
   const mark = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.75), new THREE.MeshStandardMaterial({ map: organtPrint('031', hi), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -2 }))
   mark.name = 'organt-mark'
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(model.getWorldQuaternion(new THREE.Quaternion()))
-  const at = new THREE.Vector3().lerpVectors(low, top, 0.42).addScaledVector(forward, shoulders * 0.72)
+  const at = new THREE.Vector3().lerpVectors(low, top, 0.42).addScaledVector(forward, shoulders * 0.76)
   model.add(mark)
   mark.position.copy(model.worldToLocal(at))
   mark.updateMatrixWorld(true)
@@ -618,7 +628,7 @@ function calibrate(model, animations, bones, footInShin) {
 // each one follows the hips and thighs, so the skeleton is untouched (walking, sitting
 // and the seat fits are as before) and arms, shoes and the head are not moved.
 export const CURVY_SHAPE = { hips: 0.30, behind: 0.55, front: 0.16, waist: 0.07 }
-function shapeCurvy(model) {
+function shapeCurvy(model, look = {}) {
   model.updateMatrixWorld(true)
   const hips = model.getObjectByName('Hips')
   const box = new THREE.Box3().setFromObject(model)
@@ -630,6 +640,9 @@ function shapeCurvy(model) {
   const p = new THREE.Vector3()
   model.traverse((node) => {
     if (!node.isSkinnedMesh || (node.userData.part !== 'body' && node.userData.part !== 'legs')) return
+    // A skirt or a dress falls straight from the wider hips (an A-line) instead of following the
+    // thighs in and out, which made it balloon (QA pass 1).
+    const aLine = (look.dress || look.skirt) && node.userData.part === 'legs'
     const geo = node.geometry.clone() // (clones of one outfit share their geometry)
     node.geometry = geo
     const toModel = inv.clone().multiply(node.matrixWorld)
@@ -647,7 +660,7 @@ function shapeCurvy(model) {
       if (wh < 0.01 && ww < 0.01) continue
       p.fromBufferAttribute(pos, i).applyMatrix4(toModel)
       const u = (p.y - hipC) / H
-      const g = u >= 0 ? Math.exp(-((u / 0.075) ** 2)) : Math.exp(-((u / 0.105) ** 2))
+      const g = u >= 0 ? Math.exp(-((u / 0.075) ** 2)) : aLine ? 0.8 : Math.exp(-((u / 0.105) ** 2))
       const gw = Math.exp(-(((p.y - waistC) / H / 0.05) ** 2))
       const dz = p.z - at.z
       const f = wh * g
@@ -689,7 +702,7 @@ async function attachModel(group, look) {
     mesh.bind(skinned.skeleton, skinned.bindMatrix)
   }
   recolour(model, look)
-  if (look.curvy) shapeCurvy(model)
+  if (look.curvy) shapeCurvy(model, look)
   const box = new THREE.Box3().setFromObject(model)
   const s = HEIGHT / Math.max(0.1, box.max.y - box.min.y)
   model.scale.setScalar(s)

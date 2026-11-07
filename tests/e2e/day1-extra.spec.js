@@ -20,7 +20,7 @@ async function rafFps(page) {
   }))
 }
 
-async function student(page, from = 'Durban', query = '?talk=auto') {
+async function student(page, from = 'KwaZulu-Natal', query = '?talk=auto') {
   await page.goto(`/${query}#/new`)
   await page.evaluate(() => localStorage.clear())
   await page.goto(`/${query}#/new`)
@@ -33,7 +33,7 @@ test('bus stop by the gate: Bus to town, then Greenway Grocer', async ({ page })
   fs.mkdirSync(OUT, { recursive: true })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
-  await student(page, 'Durban', '?morning=0&fast=1')
+  await student(page, 'KwaZulu-Natal', '?morning=0&fast=1')
   await page.waitForURL(/#\/(play|morning)/)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
@@ -65,11 +65,11 @@ test('fps: the old opening (res morning) and campus, against the home scene', as
   test.setTimeout(300000)
   const fps = {}
   // after: the home scene, both styles, inside and on the street
-  for (const from of ['Durban', 'Soweto']) {
+  for (const from of ['KwaZulu-Natal', 'Limpopo']) {
     await student(page, from, '?talk=manual')
     await expect(page.locator('#home3d')).toHaveAttribute('data-ready', '1', { timeout: 60000 })
     await page.waitForTimeout(2500)
-    fps[`home ${from === 'Durban' ? 'suburban' : 'township'} (bedroom)`] = await rafFps(page)
+    fps[`home ${from === 'KwaZulu-Natal' ? 'suburban' : 'township'} (bedroom)`] = await rafFps(page)
   }
   // before: the res morning (it opened day 1 until today; day 2 now)
   await page.evaluate(() => {

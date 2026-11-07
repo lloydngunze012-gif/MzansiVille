@@ -4,6 +4,7 @@ import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
 import { tidyHandle } from '../handles.js'
+import { FROM, fromPlace } from '../from.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
 // a progress dot, back and skip; then the finished player card, "This is what other
@@ -16,7 +17,7 @@ import { tidyHandle } from '../handles.js'
 // main.js handles the taps (enrol-next, enrol-back, enrol-skip, enrol-pick, enrol-enter).
 
 export const ENROL_STEPS = ['look', 'who', 'vibe', 'card']
-export const FROM = ['Durban', 'Joburg', 'Soweto', 'Pretoria', 'Cape Town', 'Eastern Cape', 'Limpopo', 'Mpumalanga', 'Free State', 'North West', 'Elsewhere in Africa', 'Overseas']
+export { FROM } from '../from.js'
 export const LINES = [
   'New here, say howzit',
   'Find me at the Quad with a coffee',
@@ -42,7 +43,7 @@ export function draftCard(district, draft) {
     badges: [],
     look: draft.avatar,
     classOf: CLASS_OF,
-    from: draft.from || '',
+    from: fromPlace(draft.from),
   }
 }
 
@@ -64,7 +65,6 @@ function lookStep(state, still) {
   const genderRow = `<section class="en-row"><h3>You are</h3><div class="en-strip">${genders.map((item) =>
     `<button class="cc-chip en-card th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" data-gender="${item.id}" aria-pressed="${g === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '♀' : '♂'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></section>`
   return `<div class="en-look">
-      <h2 class="en-title">Who's arriving?</h2>
       <div class="cc-stage en-stage">
         <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
         ${still ? `<img class="cc-still" src="${still}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>
@@ -84,7 +84,7 @@ function lookStep(state, still) {
 function whoStep(state) {
   const { district, draft } = state
   const houses = (district.houses || []).map((h) => `<button class="en-house" type="button" data-act="enrol-pick" data-k="residence" data-v="${esc(h.name)}" data-house-pick="${esc(h.id)}" style="--h1:${h.main};--h2:${h.accent}" aria-pressed="${draft.residence === h.name}"><b>${esc(h.name.replace(/ House$/, ''))}</b><small>${esc(h.vibe || '')}</small></button>`).join('')
-  const from = FROM.map((f) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="from" data-v="${esc(f)}" aria-pressed="${draft.from === f}">${esc(f)}</button>`).join('')
+  const from = FROM.map((f) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="from" data-v="${esc(f)}" aria-pressed="${fromPlace(draft.from) === f}">${esc(f)}</button>`).join('')
   return `<div class="en-who">
       <h2 class="en-q">Who are you?</h2>
       <label class="en-field"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Thandi" enterkeyhint="next"></label>
@@ -134,9 +134,7 @@ export function enrolScreen(state, { still = '', photo = '' } = {}) {
   const last = step === 'card'
   const go = last ? `<button class="en-go" type="button" data-act="enrol-enter">${draft.edit ? 'Save changes' : 'Enter campus ›'}</button>`
     : `<button class="en-go" type="button" data-act="enrol-next">Next ›</button>`
-  // (design previews: ?cc=a|b|c picks a direction for the look)
-  const cc = new URLSearchParams(location.search).get('cc')
-  return `<main class="screen en" data-screen="create" data-step="${step}"${/^[abc]$/.test(cc || '') ? ` data-cc="${cc}"` : ''}>
+  return `<main class="screen en" data-screen="create" data-step="${step}">
     <header class="en-top">
       ${first ? '<a class="en-back" href="#/">‹ Back</a>' : '<button class="en-back" type="button" data-act="enrol-back">‹ Back</button>'}
       ${dots(step)}

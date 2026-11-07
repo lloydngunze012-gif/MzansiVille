@@ -1,3 +1,4 @@
+import { fromPlace } from './from.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
 import { onInstallChange, promptInstall, registerWorker } from './install.js'
 import { smooth } from './smooth.js'
@@ -1332,7 +1333,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
-    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: c.from || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
+    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return

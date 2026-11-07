@@ -117,7 +117,7 @@ test('S2c a ground tap at home records tap_ms in the home bucket', async ({ page
   await page.goto('/?talk=auto&smooth=test&home=1#/new')
   await page.locator('[data-part="gender"][data-id="female"]').tap()
   const { enrolUI } = await import('../enrol.js')
-  await enrolUI(page, { name: 'Thandi', house: 1, course: 1, from: 'Durban' })
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1, from: 'KwaZulu-Natal' })
   await expect(page).toHaveURL(/#\/morning/)
   const host = page.locator('#home3d')
   await expect(host).toHaveAttribute('data-ready', '1', { timeout: 60000 })

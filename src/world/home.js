@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import HOMES from '../../data/campusville/homes.json'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf } from '../avatar.js'
+import { fromKey } from '../from.js'
 import { createAvatar, layDown, measureBody, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createPlayer } from './player.js'
@@ -17,7 +18,7 @@ import { SPEED as FAST } from '../speed.js'
 import { smooth } from '../smooth.js'
 
 export function homeStyleId(character) {
-  const id = HOMES.from[character?.from] || HOMES.default
+  const id = HOMES.from[fromKey(character?.from, HOMES.from)] || HOMES.default
   const q = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('home')
   return HOMES.styles[q] ? q : id
 }

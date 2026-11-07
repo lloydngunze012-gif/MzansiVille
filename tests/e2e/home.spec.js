@@ -1,5 +1,5 @@
 // Day 1: leaving home (src/world/home.js), played by taps. Both home styles: a suburban
-// house (From: Durban) and a township street house (From: Soweto). Screenshots of each
+// house (From: KwaZulu-Natal) and a township street house (From: Limpopo). Screenshots of each
 // from Top, Sims and Eye, inside and out on the street.
 // Run: npx playwright test tests/e2e/home.spec.js --config playwright.gpu.config.js --workers=1
 import { test, expect } from '@playwright/test'
@@ -37,7 +37,7 @@ async function camsUnderCards(page, name) {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: 'sims' })))
 }
 
-for (const [style, from] of [['suburban', 'Durban'], ['township', 'Soweto']]) {
+for (const [style, from] of [['suburban', 'KwaZulu-Natal'], ['township', 'Limpopo']]) {
   test(`day 1 home: ${style} (${from})`, async ({ page }) => {
     test.setTimeout(300000)
     fs.mkdirSync(OUT, { recursive: true })
