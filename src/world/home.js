@@ -49,6 +49,7 @@ let last = 0
 let clock = 0
 let tasks = []
 let player, parent, sibling, neighbour, dog, car
+const parkedCars = [] // (the cars along the far kerb: x, z, length, width)
 const walkers = []
 let level = 1 // 1 upstairs, 0 downstairs, -1 outside
 let override = null // a fixed camera shot (the window, the drive)
@@ -457,11 +458,11 @@ async function buildStreet(homeParts, suburbParts) {
   // ground, road, verges, pavements: to the fog in every direction
   plane(400, 400, c.grass, 0, -0.02, 0)
   plane(400, ROAD_W, c.road, 0, 0, STREET_Z)
-  plane(ROAD_W, 400, c.road, S * 3.5, 0.001, STREET_Z)
-  for (let x = -120; x < 120; x += 4) plane(1.8, 0.14, '#f2efe6', x, 0.01, STREET_Z)
-  for (const z of [STREET_Z - ROAD_W / 2 - 0.9, STREET_Z + ROAD_W / 2 + 0.9]) plane(400, 1.8, c.verge, 0, 0.004, z)
-  plane(1.8, 400, c.verge, S * 3.5 - ROAD_W / 2 - 0.9, 0.005, 0)
-  plane(1.8, 400, c.verge, S * 3.5 + ROAD_W / 2 + 0.9, 0.005, 0)
+  plane(ROAD_W, 400, c.road, S * 3.5, 0.016, STREET_Z)
+  for (let x = -120; x < 120; x += 4) plane(1.8, 0.14, '#f2efe6', x, 0.032, STREET_Z)
+  for (const z of [STREET_Z - ROAD_W / 2 - 0.9, STREET_Z + ROAD_W / 2 + 0.9]) plane(400, 1.8, c.verge, 0, 0.008, z)
+  plane(1.8, 400, c.verge, S * 3.5 - ROAD_W / 2 - 0.9, 0.024, 0)
+  plane(1.8, 400, c.verge, S * 3.5 + ROAD_W / 2 + 0.9, 0.024, 0)
   // houses: your row, the row across the road, and the rows behind (rooftops over walls)
   let n = 1
   const rows = [
@@ -483,20 +484,32 @@ async function buildStreet(homeParts, suburbParts) {
   // boundary fences or palisades along the plot fronts, with a gap for each gate
   const fenceName = style.street.boundary === 'palisade' ? 'fence' : 'fence-1x3'
   const fenceMat = (m) => repaint(m, FENCE_SWATCHES.map((r) => [r, c.fence]))
-  for (const [z, rot] of [[STREET_Z - ROAD_W / 2 - 2.0, 0], [STREET_Z + ROAD_W / 2 + 2.0, Math.PI]]) {
-    for (let x = -60; x < 60; x += 3) {
-      const slot = ((x % S) + S) % S
-      if (z < STREET_Z && Math.abs(x - 0) < 0.1) continue
-      if (slot > S * 0.3 && slot < S * 0.3 + 3.1 && z < STREET_Z) continue // driveways
-      if (Math.abs(x - S * 3.5) < ROAD_W) continue
-      const f = piece(suburbParts, fenceName, { fit: [3, style.street.boundary === 'palisade' ? 1.8 : 1.2, 0.25], matFn: fenceMat })
-      place(f, x + 1.5, 0, z, rot)
+  // Each fence runs in pieces of about 3 m between its gaps: your own gate (the path and the drive,
+  // so the car and you pass), each neighbour's driveway, and the cross street. A piece next to a gap is
+  // sized to end at it, so no piece ever stands across a gate. The pieces in your yard are solid.
+  const crossGap = [S * 3.5 - ROAD_W - 1.5, S * 3.5 + ROAD_W + 1.5]
+  const gaps = (near) => [crossGap, ...(near ? [[2.0, 7.9], ...[-4, -3, -2, -1, 1, 2, 3, 4].map((k) => [4.8 + S * k, 7.9 + S * k])] : [])].sort((p, q) => p[0] - q[0])
+  for (const [z, rot, near] of [[STREET_Z - ROAD_W / 2 - 2.0, 0, true], [STREET_Z + ROAD_W / 2 + 2.0, Math.PI, false]]) {
+    let from = -60
+    for (const [g0, g1] of [...gaps(near), [60, 60]]) {
+      const len = g0 - from
+      if (len > 0.5) {
+        const n = Math.max(1, Math.round(len / 3))
+        const w = len / n
+        for (let i = 0; i < n; i++) {
+          const f = piece(suburbParts, fenceName, { fit: [w, style.street.boundary === 'palisade' ? 1.8 : 1.2, 0.25], matFn: fenceMat })
+          const cx = from + w * (i + 0.5)
+          place(f, cx, 0, z, rot)
+          if (near && cx > -9 && cx < 10) solid(-1, cx, z, w, 0.3)
+        }
+      }
+      from = Math.max(from, g1)
     }
   }
   // your yard: the driveway and the path to the door
   for (let z = 3.4; z < STREET_Z - ROAD_W / 2; z += 2.2) place(piece(suburbParts, 'driveway-long', { fit: [3, 0.02, 2.2] }), 5.5, 0.006, z + 1.1)
   for (let z = 3.6; z < 7.6; z += 1) place(piece(suburbParts, 'path-stones-short', { fit: [0.9, 0.02, 1] }), 3, 0.006, z)
-  for (const [x, z] of [[-5.5, 4.6], [-2.5, 4.4], [8.5, 4.4]]) place(piece(suburbParts, 'planter', { fit: [1.6, 0.7, 1.2] }), x, 0, z)
+  for (const [x, z] of [[-5.5, 4.6], [-2.5, 4.4], [8.5, 4.4]]) { place(piece(suburbParts, 'planter', { fit: [1.6, 0.7, 1.2] }), x, 0, z); solid(-1, x, z, 1.6, 1.2) }
   // trees and bushes (Kenney Nature Kit, already in the game)
   const treeFiles = ['/models/props/tree_oak.glb', '/models/props/tree_default.glb']
   const trees = await Promise.all(treeFiles.map((u) => loadModel(u).catch(() => null)))
@@ -516,6 +529,7 @@ async function buildStreet(homeParts, suburbParts) {
   // street lamps, and a township's high mast light
   const pole = mat(style.street.lamp, { roughness: 0.6, metalness: 0.4 })
   for (let x = -54; x < 60; x += 18) {
+    if (Math.abs(x - S * 3.5) < ROAD_W) continue // (the cross street and the way out stay clear)
     for (const z of [STREET_Z - ROAD_W / 2 - 1.2, STREET_Z + ROAD_W / 2 + 1.2]) {
       const p = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 6, 8), pole)
       p.position.set(x + (z > STREET_Z ? 9 : 0), 3, z)
@@ -543,11 +557,16 @@ async function buildStreet(homeParts, suburbParts) {
     mast.castShadow = true
     scene.add(mast)
   }
-  // parked cars (Kenney Car Kit, already in the game)
+  // parked cars (Kenney Car Kit, already in the game): all on the far kerb, nose to the traffic, well
+  // clear of the lane the family car drives (the near lane, STREET_Z - 1.75). Each is solid (solid -1
+  // boxes), so nothing walks or drives through one.
   const parked = style.street.parked
-  for (const [i, [x, z, rot]] of [[-S * 1.2, STREET_Z + 2.0, -Math.PI / 2], [S * 1.8, STREET_Z - 2.0, Math.PI / 2], [-S * 2.6, STREET_Z - 2.0, Math.PI / 2]].entries()) {
+  for (const [i, [x, z, rot]] of [[-S * 1.2, STREET_Z + 2.3, -Math.PI / 2], [S * 1.8, STREET_Z + 2.3, Math.PI / 2], [-S * 2.6, STREET_Z + 2.3, Math.PI / 2], [S * 2.4, STREET_Z + 2.3, -Math.PI / 2]].entries()) {
     const m = await loadModel(`/models/cars/${parked[i % parked.length]}.glb`).catch(() => null)
-    if (m) { const p = m.clone(); p.scale.setScalar(1.9); place(p, x, 0, z, rot) }
+    if (m) {
+      const p = m.clone(); p.scale.setScalar(1.9); place(p, x, 0, z, rot); p.name = 'parked-car'
+      parkedCars.push({ x, z, w: 4.6, d: 2.1 })
+    }
   }
   // the family car in the driveway, nose to the street
   const fam = await loadModel(`/models/cars/${style.street.familyCar}.glb`).catch(() => null)
@@ -560,6 +579,7 @@ async function buildStreet(homeParts, suburbParts) {
   }
   car.name = 'family-car'
   place(car, 5.5, 0, 4.8, 0)
+  solid(-1, 5.5, 4.8, 2.1, 4.6) // the family car in the drive is solid too (you get in from its left)
 }
 
 function signBoard(text, rot) {
@@ -807,6 +827,7 @@ function freshScene() {
   occluders.length = 0
   tasks = []
   for (const k of Object.keys(solids)) solids[k] = []
+  parkedCars.length = 0
 }
 
 function tick(now) {
@@ -1005,7 +1026,7 @@ async function play() {
   })
   setStep('yard')
   await talk(L('car'), parent)
-  await goTo('\u{1F697} Get in the car', 4.3, 5.4, 0.6, [car])
+  await goTo('\u{1F697} Get in the car', 3.7, 5.4, 0.6, [car])
   // 6. the drive: a fixed path, never yours to steer; a fade, then UMzansi's Main Gate
   setStep('drive')
   await drive()
@@ -1071,16 +1092,21 @@ async function standUp(who) {
   who.userData.seatFloor = undefined
 }
 
+// The way out: down the drive, onto the near lane, along to the cross street and away.
+function driveCurve() {
+  const S = style.spacing
+  const lane = STREET_Z - 1.75 // drive on the left
+  const pts = [[5.5, 4.8], [5.5, 8.2], [7.5, lane], [S * 3.5 - 4, lane], [S * 3.5 - 1.75, lane + 3], [S * 3.5 - 1.75, 60]]
+  return new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'catmullrom', 0.2)
+}
+
 async function drive() {
   player.visible = false
   parent.visible = false
   dog.position.set(4, 0, 4)
   car.userData.driving = true
   soundLoop('bus_engine', true)
-  const S = style.spacing
-  const lane = STREET_Z - 1.75 // drive on the left
-  const pts = [[5.5, 4.8], [5.5, 8.2], [7.5, lane], [S * 3.5 - 4, lane], [S * 3.5 - 1.75, lane + 3], [S * 3.5 - 1.75, 60]]
-  const curve = new THREE.CatmullRomCurve3(pts.map(([x, z]) => new THREE.Vector3(x, 0, z)), false, 'catmullrom', 0.2)
+  const curve = driveCurve()
   const len = curve.getLength()
   const chase = () => {
     const back = new THREE.Vector3(-Math.sin(car.rotation.y), 0, -Math.cos(car.rotation.y))
@@ -1162,6 +1188,35 @@ export function stopHome() {
 if (typeof window !== 'undefined') {
   // Breakfast: each of you on your chair? (seat height, off the chair's middle, facing,
   // trousers on the seat and soles on the floor from avatar3d's measure, tipped over)
+  // (tests, read only) what stands in the way of the family car's drive: every solid thing in the scene
+  // (houses, trees, lamps, parked cars) whose footprint meets the car's swept footprint.
+  window.mzansiHomeClear = () => {
+    if (!scene || !car) return null
+    const curve = driveCurve()
+    const len = curve.getLength()
+    const hits = new Map()
+    const rect = (p, yaw) => { const c = Math.cos(yaw); const sn = Math.sin(yaw); const out = []; for (const [a, b] of [[-1.05, -2.3], [1.05, -2.3], [1.05, 2.3], [-1.05, 2.3]]) out.push([p.x + a * c + b * sn, p.z - a * sn + b * c]); return out }
+    scene.updateMatrixWorld(true)
+    const things = []
+    for (const child of scene.children) {
+      if (child === car || child.isLight || child === marker) continue
+      const box = new THREE.Box3().setFromObject(child)
+      const size = box.getSize(new THREE.Vector3())
+      if (!isFinite(size.x) || size.y < 0.5 || size.x > 60 || size.z > 60) continue // (ground, road, verges)
+      const inner = []
+      child.traverse((o) => { if (o.name && inner.length < 4 && o !== child) inner.push(o.name) })
+      things.push({ name: child.name || `${child.type}(${inner.join(',')})`, box })
+    }
+    for (let d = 0; d <= len; d += 0.4) {
+      const p = curve.getPointAt(d / len)
+      const ahead = curve.getPointAt(Math.min(1, d / len + 0.01))
+      const corners = rect(p, Math.atan2(ahead.x - p.x, ahead.z - p.z))
+      const minX = Math.min(...corners.map((q) => q[0])); const maxX = Math.max(...corners.map((q) => q[0]))
+      const minZ = Math.min(...corners.map((q) => q[1])); const maxZ = Math.max(...corners.map((q) => q[1]))
+      for (const t of things) if (t.box.min.x < maxX && t.box.max.x > minX && t.box.min.z < maxZ && t.box.max.z > minZ && t.box.min.y < 2.2) hits.set(`${t.name}@${t.box.min.x.toFixed(1)},${t.box.min.z.toFixed(1)}`, { name: t.name, at: [+p.x.toFixed(1), +p.z.toFixed(1)], box: [t.box.min.x, t.box.min.z, t.box.max.x, t.box.max.z].map((n) => +n.toFixed(1)) })
+    }
+    return [...hits.values()]
+  }
   window.mzansiHomeSeats = () => {
     if (!player || !parent || !sibling) return null
     const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a))

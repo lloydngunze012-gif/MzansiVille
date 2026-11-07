@@ -74,7 +74,9 @@ export function addSurroundings(parent) {
   group.add(dashes)
   // Road from the main gate out to the ring road.
   const gateRoad = new THREE.Mesh(new THREE.BoxGeometry(8, 0.04, ROAD_IN - GATE.z), mat(0x3b3c40))
-  gateRoad.position.set(GATE.x, -0.02, (GATE.z + ROAD_IN) / 2 + 1)
+  gateRoad.position.set(GATE.x, 0, (GATE.z + ROAD_IN) / 2 + 1) // (top 0.02: 2 cm above the lawn, 2 below the paths)
+  gateRoad.material.polygonOffset = true
+  gateRoad.material.polygonOffsetFactor = gateRoad.material.polygonOffsetUnits = -2
   group.add(gateRoad)
 
   // Palisade fence: posts, two rails and bars, with a gap where the gate road passes.
@@ -149,12 +151,14 @@ export function addSurroundings(parent) {
   // Parking lot inside the fence, west of the gate.
   const lot = { x: -24, z: 93, w: 22, d: 8 }
   const tarmac = new THREE.Mesh(new THREE.BoxGeometry(lot.w, 0.04, lot.d), mat(0x45474c))
-  tarmac.position.set(lot.x, -0.01, lot.z)
+  tarmac.position.set(lot.x, 0, lot.z)
+  tarmac.material.polygonOffset = true
+  tarmac.material.polygonOffsetFactor = tarmac.material.polygonOffsetUnits = -2
   tarmac.receiveShadow = true
   group.add(tarmac)
   for (let i = 0; i <= 7; i++) {
     const line = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 3.6), mat(0xf4f1e6))
-    line.position.set(lot.x - lot.w / 2 + 1 + i * 2.85, 0.02, lot.z - 1.8)
+    line.position.set(lot.x - lot.w / 2 + 1 + i * 2.85, 0.04, lot.z - 1.8)
     group.add(line)
   }
   const parked = ['sedan', 'suv', 'hatchback-sports', 'sedan', 'truck']
@@ -173,7 +177,9 @@ export function addSurroundings(parent) {
   // Taxi rank outside the gate: a shelter, minibus taxis with slogan stickers, a sign.
   const rank = { x: 0, z: 121 }
   const pave = new THREE.Mesh(new THREE.BoxGeometry(26, 0.05, 10), mat(0x8c8a84))
-  pave.position.set(rank.x, -0.01, rank.z)
+  pave.position.set(rank.x, -0.005, rank.z)
+  pave.material.polygonOffset = true
+  pave.material.polygonOffsetFactor = pave.material.polygonOffsetUnits = -2
   group.add(pave)
   const roofMat = mat(0xc62828)
   const shelterRoof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.2, 2.6), roofMat)

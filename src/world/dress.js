@@ -208,12 +208,12 @@ export function dressPlaces(layout, floor) {
     const plaza = new THREE.Mesh(new THREE.CylinderGeometry(11, 11, 0.06, 40), mat(0xd9c49c))
     plaza.position.set(cx, 0.03, cz)
     floor?.disc(cx, cz, 11, 0.06)
-    floor?.disc(cx, cz, 6.3, 0.065, 5.6)
+    floor?.disc(cx, cz, 6.3, 0.085, 5.6)
     plaza.receiveShadow = true
     group.add(plaza)
     const ring = new THREE.Mesh(new THREE.RingGeometry(5.6, 6.3, 40), mat(0xb89c6e))
     ring.rotation.x = -Math.PI / 2
-    ring.position.set(cx, 0.065, cz)
+    ring.position.set(cx, 0.085, cz)
     group.add(ring)
 
     // Open-mic stage on the north side (its footprint is the place's "building").

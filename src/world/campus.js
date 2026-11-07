@@ -123,10 +123,10 @@ function ribbon(a, b, floor) {
   const len = Math.hypot(dx, dz)
   if (len < 0.2) return null
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, 0.06, 3.8), pathMaterial)
-  mesh.position.set((a.x + b.x) / 2, 0.04, (a.z + b.z) / 2)
+  mesh.position.set((a.x + b.x) / 2, 0.01, (a.z + b.z) / 2) // (top at 0.04: the ground layers keep 2 cm between them: lawn 0, gate road and tarmac .02, paths .04, plaza .06, its ring .085)
   mesh.rotation.y = Math.atan2(-dz, dx)
   mesh.receiveShadow = true
-  floor.box(mesh.position.x, mesh.position.z, len / 2, 1.9, mesh.rotation.y, 0.07)
+  floor.box(mesh.position.x, mesh.position.z, len / 2, 1.9, mesh.rotation.y, 0.04)
   return mesh
 }
 
