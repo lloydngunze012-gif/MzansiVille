@@ -1,7 +1,7 @@
 import { fromPlace } from './from.js'
 import { canonicalHouse } from './houses.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
-import { onInstallChange, promptInstall, registerWorker } from './install.js'
+import { barColour, onInstallChange, promptInstall, registerWorker } from './install.js'
 import { smooth } from './smooth.js'
 import { districtById, defaultDistrictId } from './districts/registry.js'
 import { filterText, cleanBio, canSend } from './engine/filter.js'
@@ -519,6 +519,7 @@ function paint() {
   if (newLog) newLog.scrollTop = chat.menuId && logTop != null ? logTop : newLog.scrollHeight
   const screen = app.querySelector('[data-screen]')
   app.dataset.screen = screen?.dataset.screen || 'title'
+  barColour(app.dataset.screen)
   syncPreview(viewState)
   cycleFlavour()
   if (focusId) {

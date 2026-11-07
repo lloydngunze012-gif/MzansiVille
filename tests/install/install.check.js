@@ -6,7 +6,12 @@
 // I4 the menu's "Install Soft Life" at phone sizes (screenshots), the install screen,
 //    the iPhone steps, #install, and hidden once installed.
 // I6 the start screen: Install Soft Life and Website beside Rules, Privacy, Terms (phone and
-//    computer), Install hidden once installed.
+//    computer), Install hidden once installed. On a phone (8 Nov) Install is a small pill with
+//    an icon on its own line, and Rules, Privacy, Terms, Website one row.
+// I7 the title on phones (8 Nov), in the browser and as the installed app: the poster from the
+//    top, fading into plum under the logo, the tagline and button over the fade and on screen;
+//    the bars plum on the title, cream on the game's cream screens; the top fade in the
+//    installed app; the slow zoom off under reduced motion.
 // I5 a deploy: build A open, build B deployed (switched in one step, A's files gone), reload,
 //    build B runs; and an old page that asks for a game file that's gone reloads into B.
 import { test, expect, chromium } from '@playwright/test'
@@ -66,8 +71,9 @@ test('I1 manifest, icons and theme colour', async ({ page, request }) => {
   expect(m.start_url).toBe('/')
   expect(m.scope).toBe('/')
   expect(m.display).toBe('standalone')
-  expect(m.background_color.toLowerCase()).toBe('#f4efe4')
-  expect(m.theme_color.toLowerCase()).toBe('#f4efe4')
+  // Night plum (8 Nov): the splash and the bars around the title, not cream.
+  expect(m.background_color.toLowerCase()).toBe('#1a0d33')
+  expect(m.theme_color.toLowerCase()).toBe('#1a0d33')
   const want = [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]
   for (const [sizes, purpose] of want) {
     const icon = m.icons.find((i) => i.sizes === sizes && i.purpose === purpose && i.type === 'image/png')
@@ -79,7 +85,7 @@ test('I1 manifest, icons and theme colour', async ({ page, request }) => {
   const apple = await sharp(Buffer.from(await (await request.get('/icons/apple-touch-icon.png')).body())).metadata()
   expect(apple.width).toBe(180)
   await page.goto(`/?${ROOM}#/`)
-  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#f4efe4')
+  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe('#1a0d33')
   expect(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href')).toBe('/icons/apple-touch-icon.png')
 })
 
@@ -224,10 +230,23 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
     const web = page.locator('.tc-links [data-link="website"]')
     await expect(web).toHaveAttribute('href', site)
     await expect(web).toHaveAttribute('target', '_blank')
-    // Same look as Rules: same font, colour and padding.
+    // Website: same look as Rules (font, colour, padding). Install: the same on the computer;
+    // on a phone a pill with an icon, on its own line above the other four (one row).
     const look = (sel) => page.locator(sel).evaluate((el) => { const c = getComputedStyle(el); return [c.font, c.color, c.padding, c.textDecorationLine].join('|') })
-    expect(await look('.tc-links [data-link="install"]')).toBe(await look('.tc-links a[href="#/rules"]'))
     expect(await look('.tc-links [data-link="website"]')).toBe(await look('.tc-links a[href="#/rules"]'))
+    const install = page.locator('.tc-links [data-link="install"]')
+    if (phone) {
+      const pill = await install.evaluate((el) => { const c = getComputedStyle(el); const b = el.getBoundingClientRect(); return { radius: parseFloat(c.borderTopLeftRadius), border: c.borderTopStyle, icon: getComputedStyle(el.querySelector('.tc-ico')).display, top: b.top, h: b.height } })
+      expect(pill.radius).toBeGreaterThanOrEqual(pill.h / 2 - 1)
+      expect(pill.border).toBe('solid')
+      expect(pill.icon).toBe('block')
+      const tops = await page.locator('.tc-links a:not([data-link="install"])').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
+      expect(new Set(tops).size, 'Rules, Privacy, Terms, Website in one row').toBe(1)
+      expect(pill.top).toBeLessThan(tops[0])
+    } else {
+      expect(await look('.tc-links [data-link="install"]')).toBe(await look('.tc-links a[href="#/rules"]'))
+      expect(await install.locator('.tc-ico').evaluate((el) => getComputedStyle(el).display)).toBe('none')
+    }
     // Every link on the screen and none wider than it.
     for (const box of await links.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()))) {
       expect(box.left).toBeGreaterThanOrEqual(0)
@@ -261,6 +280,94 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
     await context.close()
   })
 }
+
+// The installed app, as the page sees it: display-mode standalone answered by matchMedia (Edge's
+// DevTools protocol has no display-mode emulation), and a 32 px status bar the page may draw under.
+async function asInstalled(context, page) {
+  await page.addInitScript(() => {
+    const real = window.matchMedia.bind(window)
+    window.matchMedia = (q) => (q.includes('display-mode: standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : real(q))
+  })
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 32, bottom: 16 } }).catch(() => {})
+}
+for (const [w, h] of [[390, 844], [360, 740], [390, 664]]) {
+  for (const mode of ['browser', 'standalone']) {
+    test(`I7 the title at ${w}x${h} (${mode}): poster from the top, fade, button over it`, async ({ browser }) => {
+      const context = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 3 })
+      const page = await context.newPage()
+      if (mode === 'standalone') await asInstalled(context, page)
+      await page.goto(`/?${ROOM}#/`)
+      await page.waitForTimeout(1300) // the foot fades in
+      const g = await page.evaluate(() => {
+        const box = (s) => document.querySelector(s)?.getBoundingClientRect().toJSON() || null
+        const art = document.querySelector('.tc-art')
+        const cs = getComputedStyle(art)
+        return {
+          display: document.documentElement.dataset.display,
+          theme: document.querySelector('meta[name="theme-color"]').content,
+          art: box('.tc-art'), tag: box('.tc-tag'), start: box('.tc-start'), links: box('.tc-links'),
+          mask: cs.maskImage || cs.webkitMaskImage,
+          topFade: getComputedStyle(art, '::before').content,
+          bg: getComputedStyle(document.querySelector('.tc')).backgroundColor,
+        }
+      })
+      expect(g.display).toBe(mode)
+      expect(g.theme).toBe('#1a0d33')
+      expect(g.bg).toBe('rgb(26, 13, 51)')
+      // The poster starts at the very top (no strip above it), never narrower than the screen.
+      expect(g.art.top).toBe(0)
+      expect(g.art.width).toBeGreaterThanOrEqual(w)
+      expect(g.art.width).toBeLessThanOrEqual(w * 1.1 + 1)
+      // It fades out: the mask ends transparent; the tagline sits below the logo (62% down).
+      expect(g.mask).toMatch(/linear-gradient.*(transparent|rgba\(0, 0, 0, 0\))\)$/)
+      expect(g.tag.top, 'the tagline sits below the logo').toBeGreaterThan(g.art.top + g.art.height * 0.62)
+      // The tagline over the fade or just under it; the button and links on the first screen.
+      expect(g.tag.top).toBeLessThan(g.art.bottom + 100)
+      expect(g.start.bottom).toBeLessThanOrEqual(h)
+      expect(g.links.bottom).toBeLessThanOrEqual(h)
+      expect(g.start.height).toBeGreaterThanOrEqual(48)
+      expect(g.start.height).toBeLessThanOrEqual(56)
+      // Thumb reach: the button in the lower 40% of the screen.
+      expect(g.start.top).toBeGreaterThan(h * 0.6)
+      // The installed app: a dark fade at the very top for the clock; no Install pill.
+      if (mode === 'standalone') {
+        expect(g.topFade).not.toBe('none')
+        await expect(page.locator('[data-link="install"]')).toHaveCount(0)
+      } else {
+        expect(g.topFade).toBe('none')
+        await expect(page.locator('[data-link="install"]')).toHaveCount(1)
+      }
+      await page.screenshot({ path: `${OUT}/title-${mode}-${w}x${h}.png` })
+      await context.close()
+    })
+  }
+}
+
+test('I7b the bars follow the screen; the slow zoom stops under reduced motion', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  const bar = () => page.locator('meta[name="theme-color"]').getAttribute('content')
+  await page.goto(`/?${ROOM}#/`)
+  await page.locator('.tc-start').waitFor()
+  expect(await bar()).toBe('#1a0d33')
+  expect(await page.locator('.tc-art img').evaluate((el) => getComputedStyle(el).animationName)).toBe('none')
+  await page.goto(`/?${ROOM}#/rules`)
+  await page.locator('main[data-screen="rules"]').waitFor()
+  expect(await bar(), "cream on the game's cream screens").toBe('#f4efe4')
+  await page.goto(`/?${ROOM}#/`)
+  await page.locator('.tc-start').waitFor()
+  expect(await bar()).toBe('#1a0d33')
+  await context.close()
+  // Without reduced motion the poster zooms, slowly.
+  const moving = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+  const p2 = await moving.newPage()
+  await p2.goto(`/?${ROOM}#/`)
+  const anim = await p2.locator('.tc-art img').evaluate((el) => { const c = getComputedStyle(el); return [c.animationName, parseFloat(c.animationDuration)] })
+  expect(anim[0]).toBe('tc-zoom')
+  expect(anim[1]).toBeGreaterThanOrEqual(24)
+  await moving.close()
+})
 
 test('I5 a deploy: the new build loads on reload, and an old page reloads into it', async ({ page, context }) => {
   const scriptOf = (p) => p.evaluate(() => [...document.scripts].map((s) => s.src).find((s) => /\/assets\/index-/.test(s)) || '')

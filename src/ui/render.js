@@ -663,6 +663,9 @@ function admin(state) {
   </main>`
 }
 
+// A phone with an arrow into it: the Install pill's icon on phones (hidden on the computer layout).
+const INSTALL_ICON = '<svg class="tc-ico" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="4" y="1.5" width="8" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 4.6v5.2M5.9 7.9 8 10l2.1-2.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.8 12.6h2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>'
+
 function title(state) {
   const day = state.save.run?.day
   return `<main class="screen tc" data-screen="title">
@@ -677,7 +680,7 @@ function title(state) {
       ${day ? (ui.confirmRestart
         ? `<div class="tc-restart" role="alertdialog" aria-label="Start over"><p>Start over as a new student? <b>${esc(state.save.run.character?.name || 'This student')}</b> and day ${day} are deleted from this phone.</p><div><button type="button" class="tc-yes" data-act="restart-yes">Yes, start over</button><button type="button" class="tc-no" data-act="restart-no">Keep playing</button></div></div>`
         : '<button type="button" class="tc-over" data-act="restart-ask">Start over as a new student</button>') : ''}
-      <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a><span class="tc-break" aria-hidden="true"></span>${installMode() === 'done' ? '' : '<a href="#/install" data-link="install">Install Soft Life</a>'}<a href="${esc(siteUrl)}" target="_blank" rel="noopener" data-link="website">Website</a></nav>
+      <nav class="tc-links"><a href="#/rules">Rules</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a><span class="tc-break" aria-hidden="true"></span>${installMode() === 'done' ? '' : `<a href="#/install" data-link="install">${INSTALL_ICON}Install Soft Life</a>`}<a href="${esc(siteUrl)}" target="_blank" rel="noopener" data-link="website">Website</a></nav>
     </div>
   </main>`
 }

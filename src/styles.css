@@ -875,6 +875,45 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
   .tc .tc-links { gap: 0 28px; }
   .tc .tc-links a { font-size: 15px; }
 }
+/* Title on phones (owner, 8 Nov), in the browser and as the installed app. The poster starts at
+   the very top (behind the status bar when the phone draws the page there) and its lower part
+   fades into deep plum with no edge; the tagline and the button sit over the fade, in thumb
+   reach. On a tall screen the poster grows a little (up to 110%, the sides trimmed) so the fade
+   comes close to the tagline, and a soft violet glow lights the plum behind the button. Install is a small pill; Rules, Privacy, Terms and Website one dim row.
+   The computer layout (the block above) is untouched. */
+.tc-ico { display: none; }
+@media not all and (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  .screen.tc { --tc-plum: #1a0d33; background: var(--tc-plum); }
+  .tc::before { content: none; } /* no blurred copy of the poster: plain plum */
+  .tc .tc-art { top: 0; left: 50%; transform: translateX(-50%); width: clamp(100cqw, calc((100dvh - 150px) * .75), 110cqw);
+    /* opaque down to just under the logo (it ends at 62% of the poster), then an eased fade */
+    -webkit-mask-image: linear-gradient(to bottom, #000 63%, rgba(0,0,0,.86) 71%, rgba(0,0,0,.6) 79%, rgba(0,0,0,.32) 87%, rgba(0,0,0,.12) 94%, transparent);
+    mask-image: linear-gradient(to bottom, #000 63%, rgba(0,0,0,.86) 71%, rgba(0,0,0,.6) 79%, rgba(0,0,0,.32) 87%, rgba(0,0,0,.12) 94%, transparent); }
+  .tc .tc-art::after { content: none; }
+  @keyframes tc-zoom { from { transform: scale(1); } to { transform: scale(1.04); } }
+  .tc .tc-art img { animation-duration: 30s; }
+  /* The installed app: a soft dark fade at the very top keeps the clock and icons readable. */
+  :root[data-display="standalone"] .tc .tc-art::before { content: ''; position: absolute; z-index: 1; left: 0; right: 0; top: 0; height: calc(56px + env(safe-area-inset-top)); pointer-events: none;
+    background: linear-gradient(to bottom, rgba(26,13,51,.82), rgba(26,13,51,.5) 40%, rgba(26,13,51,.16) 75%, rgba(26,13,51,0)); }
+  /* On a very tall screen the group rises a little (up to 36px) towards the poster. */
+  .tc .tc-foot { gap: 10px; padding: 44px 18px calc(clamp(10px, (100dvh - 760px) * .5, 36px) + env(safe-area-inset-bottom));
+    background: radial-gradient(80% 50% at 50% 52%, rgba(123,63,228,.3), rgba(123,63,228,0) 72%),
+      linear-gradient(to bottom, rgba(26,13,51,0), rgba(26,13,51,.55) 44px, rgba(26,13,51,.82) 62%, var(--tc-plum)); }
+  .tc .tc-tag { font-size: 15px; text-shadow: 0 2px 10px rgba(10,4,24,.85), 0 1px 2px rgba(10,4,24,.6); }
+  .tc .tc-start { min-height: 52px; border: 0; border-radius: 16px; background: linear-gradient(180deg, #ffd84a, #f0b400); color: #1c0c33; font: 900 20px var(--display, system-ui);
+    box-shadow: 0 4px 0 #8a6300, 0 0 22px rgba(245,196,0,.42), 0 10px 32px rgba(245,196,0,.2); }
+  .tc .tc-start:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a6300, 0 0 16px rgba(245,196,0,.32); }
+  .tc .tc-over { min-height: 40px; font: 600 13px system-ui; color: rgba(247,242,255,.78); }
+  /* Install first, on a line of its own (the break follows it), then the four links in one row. */
+  .tc .tc-links { gap: 0 20px; }
+  .tc .tc-links a { font: 600 12px system-ui; color: rgba(247,242,255,.58); padding: 12px 2px; text-shadow: none; }
+  .tc .tc-links .tc-break { order: -1; }
+  .tc .tc-links [data-link="install"] { order: -2; position: relative; display: inline-flex; align-items: center; gap: 7px; min-height: 34px; margin: 0 0 2px; padding: 0 14px 0 11px;
+    border-radius: 999px; border: 1px solid rgba(245,196,0,.5); background: rgba(255,255,255,.07); color: #f7f2ff; font: 700 12.5px system-ui; }
+  .tc .tc-links [data-link="install"]::before { content: ''; position: absolute; inset: -5px -2px; } /* 44px to tap */
+  .tc .tc-links .tc-ico { display: block; flex: none; width: 15px; height: 15px; color: #f5c400; }
+}
+@media (max-width: 519px) { html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #1a0d33 !important; } }
 .set { background: #1c0e34; color: #fff; min-height: 100dvh; }
 .set-list .btn { text-align: center; }
 .set-warn { color: #ffd23f; font-weight: 700; }

@@ -27,6 +27,24 @@ export function isStandalone() {
   return Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)
 }
 
+// The title's installed-app look (styles.css, "Title on phones") reads <html data-display>:
+// 'standalone' when opened from the home screen (Android and iPhone), else 'browser'.
+// Set here, before the first screen is drawn, and kept in step with the display mode.
+function markDisplay() { document.documentElement.dataset.display = isStandalone() ? 'standalone' : 'browser' }
+markDisplay()
+try { window.matchMedia('(display-mode: standalone)').addEventListener('change', markDisplay) } catch { /* old browsers */ }
+
+// The phone's status and navigation bars (<meta name="theme-color">) follow the screen: night
+// plum on the title (the manifest's colour, so the splash and the first screen match) and on
+// enrolment, the dark Settings plum there, cream everywhere else in the game.
+const BARS = { boot: '#1a0d33', title: '#1a0d33', create: '#140a24', settings: '#1c0e34', errors: '#1c0e34' }
+export function barColour(screen) {
+  const colour = BARS[screen] || '#f4efe4'
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta && meta.content !== colour) meta.content = colour
+  return colour
+}
+
 export function isIos() {
   const ua = navigator.userAgent || ''
   return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
