@@ -1,9 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (characters spike 3b closed with the woman measured).
+Last updated: 7 Nov, Claude Code (creator studio spike).
 
 ## Waiting for Lloyd
+- **Creator studio spike** (7 Nov): report in docs/sprints/creator-studio/report.md. Part 1 (Curvy, on main 139a621, not deployed): the old bone scaling gave +13% at the hips and nothing on dresses, and the Next bar sat over the Body row; now the outfit mesh is reshaped (hips +19-20%, behind +38-42%, all seven women's outfits), Body row moved up beside Skin, Curvy hidden for men. Parts 2 and 3 on branch `spike/creator-studio` (pushed, not merged, not deployed): studio (10 s turn, drag, front hold, lights, plinth), fair skin, hair colours, crisp print, and Ara in the same studio. My call: stay with ours (Ara 6x the download, 136 MB of textures, every outfit twice). **Lloyd: the screenshots, the sheet (sheet-ours-vs-ara.png) and two webm videos are in docs/sprints/creator-studio/ on the PC (not committed); upload them to Claude in chat for the verdict.**
 - **Characters spike 3b (Ara 3D Gen)** (7 Nov): done, both Ara people measured, report in docs/sprints/characters-ara/report.md. Verdict: it fights our flat low-poly world, costs about 1.7x our current students on this GPU and about 5x on a weak one, 132 MB of texture a person; not adopted. The first spike's (3a) fps test wasn't in the repo, so I wrote one; tell me if 3a's differs.
 - **Delete the qa-live test row** (from S6): run `delete from public.smooth_reports where build = 'qa-live';` in the Supabase SQL editor (the anon key can't, and `.env` has no service-role key; add SUPABASE_SERVICE_ROLE_KEY there and S6 cleans up after itself).
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
