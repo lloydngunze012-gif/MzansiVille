@@ -1,5 +1,5 @@
 {
-  "note": "The Soft Life website's words (site/ builds the page from this file). Cursor owns the wording. Houses come from data/campusville/houses.json (name, vibe, blurb, colours), the day's times from data/campusville/meta.json phases, and the Organt shop link from data/campusville/shop.json url, so none of those are repeated here. {game} in any line becomes the game's address without https:// (gameUrl below). Images live in site/public/img/ as WebP (site/scripts/images.mjs makes them from site/img-src/); an image that isn't there yet shows the drawn tee instead. brands.email empty = the For brands section is hidden. next.show false = the Coming next section is hidden. Rules: no real university names or logos, no real brands except Organt, no invented numbers.",
+  "note": "The Soft Life website's words (site/ builds the page from this file). Cursor owns the wording. Houses come from data/campusville/houses.json (name, vibe, blurb, colours), the day's times from data/campusville/meta.json phases, and the Organt shop link from data/campusville/shop.json url, so none of those are repeated here. {game} in any line becomes the game's address without https:// (gameUrl below). Images live in site/public/img/ as WebP (site/scripts/images.mjs makes them from site/img-src/); an image that isn't there yet shows the drawn tee instead. brands.email empty = the For brands section is hidden. organt.showShop false = the Shop Organt button is hidden even with a link in shop.json (7 Nov: organt.shop says Store unavailable; set it to true when the store is open). next.show false = the Coming next section is hidden. Rules: no real university names or logos, no real brands except Organt, no invented numbers.",
   "siteUrl": "https://softlifeza-site.vercel.app",
   "gameUrl": "https://softlifeza.vercel.app",
   "meta": {
@@ -83,6 +83,7 @@
       }
     ],
     "shop": "Shop Organt",
+    "showShop": false,
     "note": "Coming to the game: your first tee is your hometown's area code. Durban gets 031."
   },
   "phone": {
