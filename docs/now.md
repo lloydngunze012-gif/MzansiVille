@@ -1,14 +1,13 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (start screen: Install and Website links, pushed, not deployed).
+Last updated: 7 Nov, Claude Code (deployed the game from ff06c10 on Lloyd's go).
 
 ## Waiting for Lloyd
-- **Start screen: Install Soft Life and Website** (7 Nov): pushed, not deployed. A second line under Rules, Privacy, Terms: Install Soft Life (opens #/install, hidden once installed or in the installed app) and Website (siteUrl from data/site/website.json, new tab). Needs a go to deploy the game.
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
 ## Waiting for Lloyd's phone verdict
-- **Live 7 Nov 12:35: the game** at https://softlifeza.vercel.app from 224d720 (the install fix d9d164a + the shop link). Check on the phone: Chrome offers Install (or menu > Install Soft Life), the home-screen name is Soft Life. On the live site Edge already offered to install, no installability errors.
+- **Live 7 Nov: the game** at https://softlifeza.vercel.app from ff06c10 (the install fix, the shop link, and the start screen's Install Soft Life + Website links). Check on the phone: Chrome offers Install (or menu > Install Soft Life), the home-screen name is Soft Life. On the live site Edge already offered to install, no installability errors.
 - **Live 7 Nov 12:45: the website** at https://softlifeza-site.vercel.app (Vercel project softlifeza-site) from 549ccd3. Lighthouse mobile live 100/100/100/100. Deploy: from site/ `npm run build`, `npm run prebuilt`, `npx vercel deploy --prebuilt --prod` (site/README.md). Reports: docs/sprints/website/report.md, docs/sprints/install/report.md.
 - **Day 1 home: the breakfast chairs** (6c3bd77). The kitchen chairs load in both home styles, and you, your sibling and your parent each sit on one, facing the table. Before it: queue NPCs stop vibrating (3594dd8).
 
