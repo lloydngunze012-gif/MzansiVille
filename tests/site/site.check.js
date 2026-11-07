@@ -129,7 +129,7 @@ test('W5 the page follows the data files, and the head is complete', async ({ pa
   await open(page)
   expect(await page.locator('.pennant h3').allTextContents()).toEqual(houses.map((x) => x.name))
   expect(await page.locator('.slot time').allTextContents()).toEqual(phases.map((p) => p.start))
-  expect(await page.locator('.shop a').count()).toBe(/^https:\/\//.test(shop.url || '') ? 1 : 0)
+  expect(await page.locator('.shop a').count()).toBe(/^https:\/\//.test(shop.url || '') && site.organt.showShop !== false ? 1 : 0)
   expect(await page.locator('#brands').count()).toBe(site.brands.email ? 1 : 0)
   expect(await page.locator('#next').count()).toBe(site.next.show ? 1 : 0)
   expect(await page.locator('.qr-code svg path').count()).toBeGreaterThan(0)

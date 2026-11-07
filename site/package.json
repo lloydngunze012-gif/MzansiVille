@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4180",
-    "images": "node scripts/images.mjs"
+    "images": "node scripts/images.mjs",
+    "prebuilt": "node scripts/prebuilt.mjs"
   },
   "devDependencies": {
     "qrcode": "^1.5.4",

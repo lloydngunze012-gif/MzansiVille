@@ -239,7 +239,8 @@ function organt(d) {
     const pic = picture(it.image, it.alt, { sizes: '72px' }) || teeSvg(it.tee, it.alt)
     return `<li class="tee"><div class="tee-pic">${pic}</div><div><h3>${esc(it.name)}</h3><p>${esc(it.text)}</p></div></li>`
   }).join('')
-  const shop = d.shopUrl ? `<p class="shop"><a class="btn" href="${esc(d.shopUrl)}" rel="noopener">${esc(o.shop)}</a></p>` : ''
+  // Hidden without a real link (shop.json) or while website.json organt.showShop is false.
+  const shop = d.shopUrl && o.showShop !== false ? `<p class="shop"><a class="btn" href="${esc(d.shopUrl)}" rel="noopener">${esc(o.shop)}</a></p>` : ''
   return `<section id="organt" class="band dark" aria-labelledby="organt-title"><div class="wrap organt-grid">
     <div class="lookbook">${look}</div>
     <div>

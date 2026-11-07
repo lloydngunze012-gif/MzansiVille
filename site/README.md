@@ -13,7 +13,7 @@ The public page for Soft Life: what it is in ten seconds, Play free, put it on y
 | The page itself, the styles | `site/build/page.mjs`, `site/src/site.css` | Claude Code |
 | Images (WebP, at most 1000 px) | `site/public/img/`, made by `npm run images` from `site/img-src/` | Claude Code |
 
-Switches in `website.json`: `brands.email` empty hides the For brands section; `next.show: false` hides Coming next. `{game}` in a line becomes the game's address.
+Switches in `website.json`: `brands.email` empty hides the For brands section; `next.show: false` hides Coming next; `organt.showShop: false` hides the Shop Organt button even when `shop.json` has a link. `{game}` in a line becomes the game's address.
 
 The build warns (`[site] ...`) if a house's pennant text would be under 4.5:1 contrast or a day slot has no words.
 
@@ -51,14 +51,14 @@ Commit the new files in `site/public/img/`. Until an Organt photo is there, the 
 
 The site is its own Vercel project, linked from this folder (`site/.vercel/`, not committed), separate from the game's project at the repo root. It's built on this machine and the finished files are uploaded, because the build reads `data/` and the game's `share.jpg` from outside `site/`. In the project's Vercel settings, leave **Root Directory empty**: the link from `site/` already makes `site/` the root, and setting it to `site` would make Vercel look for `site/site`.
 
-Deploy only on Lloyd's go. From `site/`:
+Deploy only on Lloyd's go. From `site/` (`vercel build` itself fails on Windows with EPERM on a symlink, so the site writes Vercel's prebuilt output itself):
 
 ```bash
-npx vercel pull --yes --environment=production
+npm run build
 ```
 
 ```bash
-npx vercel build --prod
+npm run prebuilt
 ```
 
 ```bash
