@@ -1,9 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (deployed the game from 1331c42, with the smoothness reports).
+Last updated: 7 Nov, Claude Code (characters spike 3b, Ara 3D Gen, report written).
 
 ## Waiting for Lloyd
+- **Characters spike 3b (Ara 3D Gen)** (7 Nov): report in docs/sprints/characters-ara/report.md. Verdict: it fights our flat low-poly world and costs about five times what our current students do on a weak GPU; not adopted. **Athletic_woman.glb in Downloads is a 4.8 KB web page, not a GLB**: re-export her (African, T-shirt and jeans, Low detail, game rig, A-pose, no face blend shapes) if you want her measured too. I also couldn't find the first spike's (3a) fps test, so I wrote one; tell me if 3a's differs.
 - **Delete the qa-live test row** (from S6): run `delete from public.smooth_reports where build = 'qa-live';` in the Supabase SQL editor (the anon key can't, and `.env` has no service-role key; add SUPABASE_SERVICE_ROLE_KEY there and S6 cleans up after itself).
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
