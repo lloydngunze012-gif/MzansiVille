@@ -78,7 +78,7 @@
     { "when": "good", "who": "zanele", "text": "You are a genius. I will say it exactly once." },
     { "when": "neutral", "who": "zanele", "text": "Fine. We live to fight another lecture." },
     { "when": "bad", "who": "zanele", "text": "Ooh. That was bold. Slightly stupid, but bold." },
-    { "when": "end", "who": "zanele", "text": "Tuck shop? I owe you noodles. And you owe me a story." },
+    { "when": "end", "who": "zanele", "text": "Tuck shop? My treat. And you owe me a story." },
     { "when": "end_alone", "who": "zanele", "text": "Text me from the back. I want a full report." }
   ],
   "moments": [
@@ -248,7 +248,7 @@
       "good": "Okay, genius. Don’t let it go to your head.",
       "neutral": "Fine. We survive. That’s the vibe.",
       "bad": "No, that was bold. Wrong, but bold.",
-      "end": "Kota at the tuck shop? I owe you noodles.",
+      "end": "Kota at the tuck shop? My treat.",
       "end_alone": "Send me a voice note from the back. Full report."
     }
   }

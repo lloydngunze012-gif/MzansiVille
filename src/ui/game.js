@@ -161,6 +161,16 @@ export function phaseStrip(district, run) {
   return `<div class="g-phases" aria-label="Phase of the day"><ol>${segs}</ol><div class="g-slots" title="Time slots left today"><span>${pipsHtml}</span><small>${run.slotsLeft} of ${total} slots</small></div></div>`
 }
 
+// Time-of-day icon and how far through the 06:00-22:00 day we are.
+function dayIcon(mins) {
+  const h = (((Math.round(mins) % 1440) + 1440) % 1440) / 60
+  return h >= 5 && h < 9 ? '\u{1F305}' : h >= 9 && h < 17 ? '☀️' : h >= 17 && h < 20 ? '\u{1F307}' : '\u{1F319}'
+}
+function dayFill(mins) {
+  const m = ((Math.round(mins) % 1440) + 1440) % 1440
+  return Math.round(Math.max(0, Math.min(1, (m - 360) / 960)) * 100)
+}
+
 export function hud(district, run, opts = {}) {
   if (!run) return ''
   const day = weekdayName(district.meta, run.day).slice(0, 3)
@@ -170,7 +180,7 @@ export function hud(district, run, opts = {}) {
     <div class="g-row">
       <button class="g-gear g-home" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>
       <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
-      <span class="g-clock">${formatClock(run.minutes)}</span>
+      <span class="g-clock" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i>${formatClock(run.minutes)}</span>
       <span class="g-online" data-online title="Students on campus right now">${countLabel()}</span>
       <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>
       <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
@@ -331,6 +341,7 @@ function ctaBar(district, run) {
   const next = nextPhase(district, run)
   const sleepPlace = homePlaceId(district, run.character.residence)
   let line
+  let openHtml = ''
   if (run.dropOff) {
     const house = district.places.find((p) => p.id === sleepPlace)
     return `<div class="g-cta g-route" role="status"><p>\u{1F9F3} Roll your suitcase to ${esc(house?.name || 'your house')}. Follow the gold dots.</p></div>`
@@ -341,7 +352,7 @@ function ctaBar(district, run) {
   const atHome = hereOf(district, run) === sleepPlace
   if (run.phase === 'night') line = atHome ? 'Night. You are home \u2014 tap Sleep to end the day.' : 'Night. Go home and sleep to end the day.'
   else if (run.slotsLeft === 1) line = `1 slot left \u2014 keep it for Sleep at 21:00.`
-  else if (glowing.length) line = `Golden glow = open now. Try ${glowing.slice(0, 2).map(placeName).join(' or ')}.`
+  else if (glowing.length) openHtml = `<span class="g-spark" aria-hidden="true">✨</span> Open now: ${glowing.slice(0, 2).map((p) => `<b>${esc(placeName(p))}</b>`).join(' · ')}`
   else line = 'Nothing open now.'
   // First-visit hint: stays until the player taps a place or dismisses it.
   let seen = true
@@ -355,7 +366,7 @@ function ctaBar(district, run) {
   }
   const skipLabel = next ? `Skip to ${PHASE_SHORT[next.id]} ${next.start}` : 'End day'
   const jump = run.slotsLeft === 1 ? '<button type="button" class="g-go" data-act="to-night">Skip to Night</button>' : ''
-  return `<div class="g-cta"><p>${esc(line)}</p>${jump || `<button type="button" class="g-go ghost" data-act="phase">${skipLabel}</button>`}</div>`
+  return `<div class="g-cta"><p${openHtml ? ' class="g-open"' : ''}>${openHtml || esc(line)}</p>${jump || `<button type="button" class="g-go ghost" data-act="phase">${skipLabel}</button>`}</div>`
 }
 
 function resultCard(state) {

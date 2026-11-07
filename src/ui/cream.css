@@ -420,3 +420,4 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .en[data-step="look"] .en-body { padding-bottom: 18px; }
 /* The still is a picture of the whole studio stage (public/creator-still.png), same framing as the live one. */
 .en-stage .cc-still, .cc-stage .cc-still { inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; transform: none; object-fit: contain; object-position: 50% 50%; }
+.g-clock{color:#ffe08a;background:#2f1a5c;border-color:#f5c400}
