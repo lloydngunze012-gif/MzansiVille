@@ -24,7 +24,7 @@ Pushed, nothing adopted, nothing in `public/`. The models stay where they are (A
 | Clothes | modelled, recolourable | none: bare, underwear-only base bodies | 12 outfits plus separate tops, bottoms and shoes |
 | Licence | CC0 | CC0 | Code MIT; MakeHuman data **CC0**; "exports may be used commercially without attribution" |
 
-**Ara woman** (measured on her file): 26,136 triangles, 17,007 vertices, 10 parts and 12 textures, 4,637 KB on disk (images 3.3 MB: skin 2048 px 227 KB, hair 2048 px **1,220 KB**, teeth 2048 px 681 KB, outfit 2048 px diffuse and normal), the same 69 Mixamo-named bones, 20 of 20 mapped bones present, the same rest-pose fix as the man, 1.69 m on screen. The retargeted idle plays on her as on him.
+**Ara woman** (measured on her file): 26,136 triangles, 17,007 vertices, 10 parts and 12 textures, 4,637 KB on disk (images 3.3 MB: skin 2048 px 227 KB, hair 2048 px **1,220 KB**, teeth 2048 px 681 KB, outfit 2048 px diffuse and normal), the same 69 Mixamo-named bones, 20 of 20 mapped bones present, the same rest-pose fix as the man, 1.70 m on screen, 132 MB of decoded texture on the GPU. The retargeted idle plays on her as on him.
 
 Where Ara's 27,032 triangles go (Low is "about 5k" for the **body**, not the dressed person): Outfit 7,168 · **Teeth 7,120** · Shoes 4,128 · Hair 3,344 · Skin 3,140 · Skin details 952 · Tongue 448 · Eyelashes 368 · Eyebrows 192 · Eyes 172. The teeth alone are more than a quarter of the model, and 16,637 vertices are shared by all ten parts. Textures in the GLB: skin 2048 (204 KB), hair 2048 (1,401 KB), teeth 2048 (681 KB), outfit 2048 diffuse and normal, eyes 1024 and others, 3.4 MB of images in all.
 
