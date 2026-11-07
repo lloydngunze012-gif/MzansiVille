@@ -225,8 +225,9 @@ export function dressPlaces(layout, floor) {
     box(group, 4.6, 2.3, 0.1, 0x5b23c9, cx, 1.85, sz - 1.4)
     sign(group, [story.stage_sign], { x: cx, y: 2.75, z: sz - 1.33, w: 4.2, h: 0.7, bg: '#22143b', fg: '#f0c400' })
     stringLights(new THREE.Vector3(cx - 2.4, 3.5, sz - 1.3), new THREE.Vector3(cx + 2.4, 3.5, sz - 1.3), 12, 0.15, false)
-    box(group, 0.05, 1.3, 0.05, 0x1c1915, cx, 1.25, sz + 0.9).userData.kind = 'mic stand'
-    box(group, 0.12, 0.14, 0.12, 0x444444, cx, 1.95, sz + 0.9)
+    // (the mic stands beside the poet, not in front of his body: from the front a pole through his chest looked like he was inside it)
+    box(group, 0.05, 1.3, 0.05, 0x1c1915, cx + 0.3, 1.25, sz + 0.7).userData.kind = 'mic stand'
+    box(group, 0.12, 0.14, 0.12, 0x444444, cx + 0.3, 1.95, sz + 0.7)
     prop('speaker', cx - 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
     prop('speaker', cx + 2.05, sz + 0.9, { y: 0.6, s: 2.4 })
     const spot = new THREE.PointLight(0xffe0b0, 0, 9, 1.5)
@@ -237,7 +238,7 @@ export function dressPlaces(layout, floor) {
     prop('tree_palmTall', cx + 3.8, sz - 2.4, { s: 6, rot: 1.3 })
     for (const x of [-2.7, 2.7]) prop('plant_bushLarge', cx + x, sz + 1.8, { s: 2.6 })
     // Someone is always on the mic.
-    performer = person('lethabo', cx + 0.5, sz + 0.5, 0, { y: 0.6, every: 5, move: 'emote-yes' })
+    performer = person('lethabo', cx + 0.9, sz + 0.3, -0.3, { y: 0.6, every: 5, move: 'emote-yes' })
 
     // Benches under the trees (north-west, between two paths) and south-west.
     for (const [angle, r] of [[208, 8.3], [222, 8.3], [146, 9.6]]) {
