@@ -3,6 +3,16 @@
 Short and always current. Whoever finishes a step updates this (docs/team.md).
 Last updated: 7 Nov, Cursor (map home: Quad clear, labels fit at 360px, plum badges, deploying).
 
+## Supabase: which schema.sql blocks are live (checked 7 Nov by reading the live API, nothing changed)
+- **Live:** the base block (profiles, chat_messages, blocks, reports, admin_reports, leaderboard, district_* tables, event_edits).
+- **Live:** chat_words (the word lists).
+- **Live:** client_errors (the error log).
+- **Live:** Flow 1, smooth_reports (and its 30-day job).
+- **NOT live:** Piece 1a (player_cards, player_card_keys, save_player_card, player_reports, report_player 4-arg). Cards still travel with presence.
+- **NOT live:** Piece 3 (player_reports.message, report_player with p_message). Player reports land in client_errors (kind player_report) and no admin page shows them; see the next line.
+- **NOT live:** Handles (player_handles, handles_taken, claim_handle, leaderboard with handle).
+- **Player reports today:** Report in chat -> both report_player calls fail -> a row in client_errors. Lloyd's #/admin only reads the old chat `reports` table (admin_reports), so these reports reach Supabase but not his page; he can read them in the Supabase table editor (client_errors, kind = player_report). Running the Piece 3 block (schema.sql, "Piece 3: talking", about lines 753-777) moves them to player_reports, which creates that table (admin-read only), adds its `message` column and the 5-argument report_player. It does not put them on #/admin: that needs a small admin page (not built).
+
 ## Waiting for Lloyd
 - **Cover** (7 Nov, later): public/cover.jpg, public/cover.webp, the three website poster sizes, and public/share.jpg are the poster with the 031 shirt number fixed. Covers stayed 1086x1448 (no crop). share.jpg is the same window as before: full width, from 381px down, 1200x630. cover-new.png deleted. Live: the game at https://softlifeza.vercel.app from e19a331, and the website at https://softlifeza-site.vercel.app.
 - **Map home** (7 Nov): the map Lloyd sees is src/ui/campus.js. The Quad sits in the middle with nothing on it. At 360px wide, on a short phone and a tall one, no name or "opens" line is off the screen or on another place. Name badges are plum with white writing. A closed place is faded, and its "opens" time is gold. House names on the map are the short ones. Deploying to production.

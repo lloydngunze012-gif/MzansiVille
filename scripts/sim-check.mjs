@@ -5,7 +5,7 @@ import { canonicalHouse, registerHouses } from '../src/houses.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
-import { buildDistrict, coursePlaceId, homePlaceId } from '../src/engine/model.js'
+import { buildDistrict, coursePlaceId, homePlaceId, houseOf } from '../src/engine/model.js'
 import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
 import { dreamProgress, rightNow, startGoals } from '../src/engine/goals.js'
@@ -752,7 +752,13 @@ check('a house renamed: old names still land in the same house, on the boards an
   assert.equal(canonicalHouse('thekwini'), 'Wave House')
   assert.equal(canonicalHouse('Wave House'), 'Wave House')
   assert.equal(canonicalHouse('Peak House'), 'Peak House')
-  assert.equal(canonicalHouse('Cane Crescent'), 'Cane Crescent') // (a name it does not know is left alone)
+  // an old pre-house name falls to the house houseOf gives it (same rule as main.js), always a real house
+  const houseRows = JSON.parse(readFileSync(new URL('../data/campusville/houses.json', import.meta.url), 'utf8')).houses.map((h) => ({ ...h, was: h.was || [] }))
+  const realHouses = houseRows.map((h) => h.name)
+  const cane = canonicalHouse('Cane Crescent')
+  assert.ok(realHouses.includes(cane), 'Cane Crescent lands in a real house: ' + cane)
+  assert.equal(canonicalHouse('Cane Crescent'), cane)
+  assert.equal(cane, houseOf({ houses: houseRows }, 'Cane Crescent').name)
   // rows written by a phone before the rename join the new name's group, and "mine" still finds it
   const rows = [
     { user_id: 'a', display_name: 'A', residence: 'Thekwini House', grades: 80, balanced_avg: 70 },
