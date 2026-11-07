@@ -47,6 +47,30 @@ function setup() {
 // (read only, for tests and the report: where the turn is)
 window.mzansiStudio = () => ({ angle: turner.angle, mode: turner.mode, spin: turner.spin, now: turner.now, pose: avatar?.userData.pose || '', rigged: Boolean(avatar?.userData.rigged) })
 
+// (read only, for the framing test: the screen box of the student, -1 to 1 each way, and where
+// the head top and the soles are, so a test can check she fills the stage and never leaves it)
+window.mzansiStudioFrame = () => {
+  if (!avatar?.userData.rigged) return null
+  avatar.updateMatrixWorld(true)
+  const v = new THREE.Vector3()
+  const box = { minX: 9, maxX: -9, minY: 9, maxY: -9 }
+  avatar.traverse((n) => {
+    if (!n.isMesh || !n.visible) return
+    const count = n.geometry.attributes.position.count
+    for (let i = 0; i < count; i += 2) {
+      if (n.isSkinnedMesh) n.getVertexPosition(i, v)
+      else v.fromBufferAttribute(n.geometry.attributes.position, i)
+      n.localToWorld(v).project(camera)
+      box.minX = Math.min(box.minX, v.x); box.maxX = Math.max(box.maxX, v.x)
+      box.minY = Math.min(box.minY, v.y); box.maxY = Math.max(box.maxY, v.y)
+    }
+  })
+  const head = avatar.getObjectByName('Head')
+  const top = head ? head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.14, 0)).project(camera).y : null
+  const sole = new THREE.Vector3(0, 0, 0).project(camera).y
+  return { ...box, headTop: top, soleLine: sole }
+}
+
 function tick(now) {
   frame = requestAnimationFrame(tick)
   const dt = Math.min(0.05, (now - (last || now)) / 1000)

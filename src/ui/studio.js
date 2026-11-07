@@ -76,9 +76,10 @@ export function fitStudio(camera, w, h) {
   const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
   const top = 2.12
   const bottom = -0.2
-  const dist = Math.max(((top - bottom) / 2 + 0.06) / half, 0.84 / (half * camera.aspect))
+  // (head to feet fills about 78% of the stage; the raised hand of the dance is still inside)
+  const dist = Math.max(((top - bottom) / 2 - 0.04) / half, 0.84 / (half * camera.aspect))
   camera.position.set(0, 1.25, dist)
-  camera.lookAt(0, (top + bottom) / 2 - 0.02, 0)
+  camera.lookAt(0, (top + bottom) / 2 - 0.065, 0)
   camera.updateProjectionMatrix()
 }
 

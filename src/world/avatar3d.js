@@ -325,7 +325,7 @@ function addHoodie(model, look) {
     const lower = model.getObjectByName(`LowerArm${side}`)
     const wrist = model.getObjectByName(`Wrist${side}`)
     if (!upper || !lower || !wrist) continue
-    for (const [bone, from, to, r] of [[upper, worldOf(upper), worldOf(lower), 0.05], [lower, worldOf(lower), worldOf(wrist), 0.043]]) {
+    for (const [bone, from, to, r] of [[upper, worldOf(upper), worldOf(lower), 0.058], [lower, worldOf(lower), worldOf(wrist), 0.046]]) {
       const len = from.distanceTo(to)
       const tube = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.92, len * 1.04, 7), cloth)
       tube.position.copy(from).lerp(to, 0.5)
@@ -333,6 +333,13 @@ function addHoodie(model, look) {
       tube.position.copy(model.worldToLocal(tube.position.clone()))
       tube.quaternion.premultiply(model.getWorldQuaternion(new THREE.Quaternion()).invert())
       put(tube, bone)
+    }
+    // Round the joints off (the tee's own sleeve ends in a ragged cap that shows skin at the
+    // shoulder and the elbow when the arm lifts): a ball of cloth at each.
+    for (const [bone, at, r] of [[upper, worldOf(upper), 0.066], [lower, worldOf(lower), 0.052]]) {
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 9, 7), cloth)
+      ball.position.copy(model.worldToLocal(at.clone()))
+      put(ball, bone)
     }
   }
   const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(model.getWorldQuaternion(new THREE.Quaternion()))
