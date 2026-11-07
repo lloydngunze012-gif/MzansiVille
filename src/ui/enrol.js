@@ -1,4 +1,4 @@
-import { avatarSvg, bodies, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
+import { avatarSvg, bodiesFor, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
 import { LOOKING, VIBES, CLASS_OF } from '../cards.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
@@ -72,9 +72,9 @@ function lookStep(state, still) {
       <div class="en-rows">
         ${genderRow}
         ${row('Skin', skins, 'skin')}
+        ${g === 'male' ? '' : row('Body', bodiesFor(g), 'body')}
         ${row('Hair', hairsFor(g), 'hair')}
         ${row('Outfit', outfitsFor(g), 'outfit')}
-        ${row('Body', bodies, 'body')}
       </div>
     </div>`
 }

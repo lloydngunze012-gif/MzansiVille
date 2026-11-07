@@ -27,6 +27,12 @@ export const bodies = [
   { id: 'curvy', label: 'Curvy' },
 ]
 
+// Curvy is a women's body on the 3D student (hips, thighs and behind); the men's creator
+// doesn't offer it, so a man's "curvy" would have shown nothing.
+export function bodiesFor(gender) {
+  return gender === 'male' ? [] : bodies
+}
+
 export const hairs = [
   { id: 'crop', label: 'Crop' },
   { id: 'curls', label: 'Curls' },

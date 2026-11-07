@@ -1,4 +1,4 @@
-import { avatarSvg, bodies, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
+import { avatarSvg, bodiesFor, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
 import { readErrors } from '../errors.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
@@ -429,7 +429,7 @@ function create(state) {
       <div class="cc-opts">
         ${storyStep ? `<p class="cc-lede">First year is a fresh start. Nobody here knows who you were.</p>${storyHtml}` : `${genderPick}
         ${picker('Skin', skins, 'skin')}
-        ${picker('Body', bodies, 'body')}
+        ${genderOf(draft.avatar) === 'male' ? '' : picker('Body', bodiesFor('female'), 'body')}
         ${picker('Hair', hairsFor(genderOf(draft.avatar)), 'hair')}
         ${picker('Outfit', outfitsFor(genderOf(draft.avatar)), 'outfit')}`}
       </div>

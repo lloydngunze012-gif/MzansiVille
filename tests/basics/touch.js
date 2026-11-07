@@ -12,7 +12,7 @@ export const OUT = 'docs/sprints/basics'
 // (on the real GPU: the software one draws about 5 fps, below the movement tests' 20)
 export const PHONE = { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, video: { mode: 'on', size: { width: 412, height: 915 } }, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } }
 
-export async function student(page, { spawn = 'quad', run = {}, gender, query = '' } = {}) {
+export async function student(page, { spawn = 'quad', run = {}, gender, query = '', avatar } = {}) {
   fs.mkdirSync(OUT, { recursive: true })
   const seen = new Set()
   page.on('pageerror', (e) => { if (!seen.has(e.message)) { seen.add(e.message); console.log('PAGE ERROR', e.message) } })
@@ -21,12 +21,14 @@ export async function student(page, { spawn = 'quad', run = {}, gender, query = 
   await page.goto('/?morning=0#/new')
   await enrolUI(page, { name: 'Thandeka', house: 1, course: 1, gender: gender })
   await page.waitForURL(/#\/play/)
-  await page.evaluate((r) => {
+  await page.evaluate(([r, look]) => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
     Object.assign(save.run, { morningDone: true, queue: [], phase: 'social', minutes: 13 * 60, lectureResolved: true }, r)
+    // (setup: a look the creator can make, e.g. { body: 'curvy' })
+    if (look) save.run.character.avatar = { ...save.run.character.avatar, ...look }
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
-  }, run)
+  }, [run, avatar])
   await page.goto(`/?morning=0&spawn=${spawn}${query}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   // Everyone's model loaded: the count of bodies holds for a moment (people walking in

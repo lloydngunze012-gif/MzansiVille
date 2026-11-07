@@ -49,7 +49,6 @@ const MODEL_LOOK = {
 }
 export const CROWD_MODELS = Object.keys(MODEL_LOOK)
 const HEIGHT = 1.74
-const CURVY = 1.3 // how much fuller a curvy student's thighs are
 
 // [top, trousers, shoes], the same palette as the 2D creator (src/avatar.js).
 const CLOTH = {
@@ -351,7 +350,8 @@ export function lookOf(avatar = {}) {
     organt: avatar.outfit === 'organt',
     hoodie: Boolean(outfit.hoodie),
     hairStyle: byModel ? '' : HAIR_STYLE[gender]?.[avatar.hair] || '',
-    curvy: avatar.body === 'curvy',
+    // (a curvy body is a women's option: the men's creator doesn't offer it)
+    curvy: gender === 'female' && avatar.body === 'curvy',
     build: avatar.build ?? 0,
   }
 }
@@ -546,6 +546,56 @@ function calibrate(model, animations, bones, footInShin) {
   return gait
 }
 
+// Curvy (women): the outfit's own shape is reshaped, so every outfit shows it, from the
+// front and the side: wider hips and fuller thighs, a rounder behind (more than the
+// front), a slightly slimmer waist. Done on the bind-pose vertices, weighted by how much
+// each one follows the hips and thighs, so the skeleton is untouched (walking, sitting
+// and the seat fits are as before) and arms, shoes and the head are not moved.
+export const CURVY_SHAPE = { hips: 0.30, behind: 0.55, front: 0.16, waist: 0.07 }
+function shapeCurvy(model) {
+  model.updateMatrixWorld(true)
+  const hips = model.getObjectByName('Hips')
+  const box = new THREE.Box3().setFromObject(model)
+  const H = Math.max(0.1, box.max.y - box.min.y)
+  const at = hips ? model.worldToLocal(worldOf(hips)) : new THREE.Vector3(0, box.min.y + H * 0.52, 0)
+  const hipC = at.y - 0.025 * H
+  const waistC = at.y + 0.11 * H
+  const inv = new THREE.Matrix4().copy(model.matrixWorld).invert()
+  const p = new THREE.Vector3()
+  model.traverse((node) => {
+    if (!node.isSkinnedMesh || (node.userData.part !== 'body' && node.userData.part !== 'legs')) return
+    const geo = node.geometry.clone() // (clones of one outfit share their geometry)
+    node.geometry = geo
+    const toModel = inv.clone().multiply(node.matrixWorld)
+    const toMesh = toModel.clone().invert()
+    const pos = geo.attributes.position
+    const ids = geo.attributes.skinIndex
+    const wts = geo.attributes.skinWeight
+    const names = node.skeleton.bones.map((b) => b.name)
+    const hipWeight = names.map((n) => (/^(Hips|UpperLeg)/.test(n) ? 1 : /^LowerLeg/.test(n) ? 0.35 : 0))
+    const waistWeight = names.map((n) => (/^(Abdomen|Hips)$/.test(n) ? 1 : n === 'Torso' ? 0.6 : 0))
+    for (let i = 0; i < pos.count; i++) {
+      let wh = 0
+      let ww = 0
+      for (let k = 0; k < 4; k++) { const w = wts.getComponent(i, k); const b = ids.getComponent(i, k); wh += w * hipWeight[b]; ww += w * waistWeight[b] }
+      if (wh < 0.01 && ww < 0.01) continue
+      p.fromBufferAttribute(pos, i).applyMatrix4(toModel)
+      const u = (p.y - hipC) / H
+      const g = u >= 0 ? Math.exp(-((u / 0.075) ** 2)) : Math.exp(-((u / 0.105) ** 2))
+      const gw = Math.exp(-(((p.y - waistC) / H / 0.05) ** 2))
+      const dz = p.z - at.z
+      const f = wh * g
+      p.x += p.x * (CURVY_SHAPE.hips * f - CURVY_SHAPE.waist * ww * gw)
+      p.z += dz * f * (dz < 0 ? CURVY_SHAPE.behind : CURVY_SHAPE.front)
+      p.applyMatrix4(toMesh)
+      pos.setXYZ(i, p.x, p.y, p.z)
+    }
+    pos.needsUpdate = true
+    geo.computeBoundingBox()
+    geo.computeBoundingSphere()
+  })
+}
+
 async function attachModel(group, look) {
   const g = look.gender
   const [animGltf, outfitGltf, headGltf] = await Promise.all([
@@ -573,6 +623,7 @@ async function attachModel(group, look) {
     mesh.bind(skinned.skeleton, skinned.bindMatrix)
   }
   recolour(model, look)
+  if (look.curvy) shapeCurvy(model)
   const box = new THREE.Box3().setFromObject(model)
   const s = HEIGHT / Math.max(0.1, box.max.y - box.min.y)
   model.scale.setScalar(s)
@@ -582,15 +633,6 @@ async function attachModel(group, look) {
   model.scale.z *= wide
   model.scale.y *= 1 + look.build * 0.03
   model.name = 'rig'
-  // Curvy: fuller hips and thighs (the thigh bones thicker, the shins as before).
-  if (look.curvy) {
-    for (const side of ['L', 'R']) {
-      model.getObjectByName(`UpperLeg${side}`)?.scale.set(CURVY, 1, CURVY)
-      model.getObjectByName(`LowerLeg${side}`)?.scale.set(1.05 / CURVY, 1, 1.05 / CURVY)
-    }
-    model.getObjectByName('Hips')?.scale.set(1.12, 1, 1.12)
-    model.getObjectByName('Abdomen')?.scale.set(0.9, 1, 0.92)
-  }
   const bones = {}
   // (three.js drops the dots from bone names: UpperLeg.L loads as UpperLegL.)
   for (const name of ['UpperLegL', 'UpperLegR', 'LowerLegL', 'LowerLegR', 'FootL', 'FootR', 'Hips', 'Abdomen']) {
