@@ -2,6 +2,10 @@
 
 Old instructions moved out of CLAUDE.md so they aren't lost. Done work, kept for the record.
 
+## Owner's decisions
+
+- **7 Nov: characters stay our Quaternius modular students.** Ara 3D Gen and Universal Base Characters were tested and declined: about 6x the download and 33x the texture memory on the creator, and every outfit would be made twice. Spikes: docs/sprints/characters-ara/, docs/sprints/creator-studio/. (The Ara test hook window.mzansiThree and the spike test were removed from the code; they are in git at 4e194fb.)
+
 ## The first plan's opening and STEP 0 (moved from CLAUDE.md, 6 Nov)
 
 This was the top of CLAUDE.md, from "You're the only developer" to the end of the STEP 0 merge list. The rest of that plan (items 1-9 and the owner's additions) follows below; it moved out of CLAUDE.md on 6 Nov too. Today: Claude Code is the engineer and Cursor is the content designer (docs/team.md).

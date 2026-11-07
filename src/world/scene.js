@@ -1332,12 +1332,6 @@ window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.at
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
 window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
-// Tests (spikes, read only: look-tests and fps tests of candidate characters): the scene's own three.js objects and loaders.
-window.mzansiThree = async () => {
-  const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
-  const SkeletonUtils = await import('three/addons/utils/SkeletonUtils.js')
-  return { THREE, GLTFLoader, SkeletonUtils, scene, camera, renderer, player, rig, createAvatar, poseAvatar, lookForPerson, measureBody }
-}
 window.mzansiSmoothPlace = () => smoothPlace() // (tests, read only) the place the smoothness reports file this frame under
 window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
