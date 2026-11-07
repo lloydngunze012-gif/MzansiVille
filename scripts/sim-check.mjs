@@ -736,10 +736,10 @@ check('chat rate limit', () => {
 
 check('boards rank by residence and overall', () => {
   const rows = sampleBoard()
-  const all = rankRows(rows, 'grades', 'all', 'Thekwini House')
+  const all = rankRows(rows, 'grades', 'all', 'Wave House')
   assert.equal(all[0].display_name, 'Kayla R.')
-  assert.ok(rankRows(rows, 'money', 'res', 'Thekwini House').every((r) => r.residence === 'Thekwini House'))
-  const houses = rankRows(rows, 'balanced', 'houses', 'Thekwini House')
+  assert.ok(rankRows(rows, 'money', 'res', 'Wave House').every((r) => r.residence === 'Wave House'))
+  const houses = rankRows(rows, 'balanced', 'houses', 'Wave House')
   assert.ok(houses.length >= 4 && houses.some((h) => h.mine))
 })
 

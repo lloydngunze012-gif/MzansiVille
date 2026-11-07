@@ -47,7 +47,7 @@ function setup(stage) {
 }
 
 // (read only, for tests and the report: where the turn is)
-window.mzansiStudio = () => ({ angle: turner.angle, mode: turner.mode, spin: turner.spin, now: turner.now, pose: avatar?.userData.pose || '', rigged: Boolean(avatar?.userData.rigged) })
+window.mzansiStudio = () => ({ angle: turner.angle, mode: turner.mode, spin: turner.spin, now: turner.now, pose: avatar?.userData.pose || '', rigged: Boolean(avatar?.userData.rigged), students: scene ? scene.children.filter((c) => c.userData?.look && !c.userData.disposed && c.visible).length : 0 })
 
 // (read only, for the framing test: the screen box of the student, -1 to 1 each way, and where
 // the head top and the soles are, so a test can check she fills the stage and never leaves it)

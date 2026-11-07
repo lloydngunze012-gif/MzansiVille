@@ -64,7 +64,7 @@ for (const [w, h] of [[390, 844], [360, 740], [390, 664]]) {
     await page.locator('.en[data-step="look"]').waitFor()
     const curvy = page.locator('[data-part="body"][data-id="curvy"]')
     // Reach it as a thumb would: scroll the page until it is above the Next bar.
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 40; i++) {
       const hit = await page.evaluate(() => {
         const b = document.querySelector('[data-part="body"][data-id="curvy"]').getBoundingClientRect()
         const foot = document.querySelector('.en-foot').getBoundingClientRect()
@@ -73,8 +73,8 @@ for (const [w, h] of [[390, 844], [360, 740], [390, 664]]) {
         return { ok: b.bottom <= foot.top && b.top >= stage.bottom && !!el?.closest('[data-part="body"][data-id="curvy"]') }
       })
       if (hit.ok) break
-      await page.mouse.wheel(0, 120)
-      await page.evaluate(() => { for (const el of document.querySelectorAll('.en-rows')) el.scrollBy(0, 120); window.scrollBy(0, 120) })
+      // (small steps: a thumb's scroll; the cards are smaller now, and 240 px steps jumped right over the band)
+      await page.evaluate(() => window.scrollBy(0, 40))
       await page.waitForTimeout(80)
     }
     const reach = await page.evaluate(() => {
