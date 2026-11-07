@@ -17,7 +17,7 @@ export const MENUS = {
   },
   mam_gugu: {
     place: 'quad',
-    hello: 'Yebo! Hot vetkoek, fresh from the pot. What will it be?',
+    hello: 'Yes! Hot vetkoek, fresh from the pot. What will it be?',
     items: [
       { id: 'vetkoek', name: 'Vetkoek and mince', icon: '\u{1F95F}', price: 15, fx: { hunger: 25 } },
       { id: 'kota', name: 'Kota', icon: '\u{1F96A}', ask: 'Small or full house?', sizes: [
