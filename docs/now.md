@@ -5,7 +5,6 @@ Last updated: 7 Nov, Claude Code (deployed the game from 1331c42, with the smoot
 
 ## Waiting for Lloyd
 - **Delete the qa-live test row** (from S6): run `delete from public.smooth_reports where build = 'qa-live';` in the Supabase SQL editor (the anon key can't, and `.env` has no service-role key; add SUPABASE_SERVICE_ROLE_KEY there and S6 cleans up after itself).
-- **Smoothness wording** (7 Nov): the three strings in `data/campusville/meta.json` under "smoothness" are written. The Privacy line now opens with "Smoothness reports" so it names itself. Pushed, not deployed.
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
 ## Waiting for Lloyd's phone verdict
