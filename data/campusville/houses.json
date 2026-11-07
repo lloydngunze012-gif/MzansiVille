@@ -3,8 +3,8 @@
   "houses": [
     {
       "id": "thekwini",
-      "name": "Thekwini House",
-      "short": "Thekwini",
+      "name": "Wave House",
+      "short": "Wave",
       "main": "#1e7a3c",
       "accent": "#f2c230",
       "place": "res_o",
@@ -13,8 +13,8 @@
       "model": "building-m",
       "height": 12,
       "vibe": "Loud and proud",
-      "blurb": "The loud house: a speaker on the balcony, two-minute noodles, and a party that starts in someone's room",
-      "was": ["O Block"]
+      "blurb": "The loud house: music down the passage, noodles on the boil, and a party that starts in someone's room",
+      "was": ["O Block", "Thekwini House"]
     },
     {
       "id": "peak",
@@ -48,8 +48,8 @@
     },
     {
       "id": "braam",
-      "name": "Braam House",
-      "short": "Braam",
+      "name": "Goldrush House",
+      "short": "Goldrush",
       "main": "#1b3a8a",
       "accent": "#f0c040",
       "place": "res_other",
@@ -58,8 +58,8 @@
       "model": "building-g",
       "height": 10,
       "vibe": "Big city energy",
-      "blurb": "The busy house: the most floors, the most stairs, and whoever landed next door becomes your person",
-      "was": ["Other on-campus blocks"]
+      "blurb": "The busy house: more floors than anyone asked for, stairs that never end, and the person next door becomes yours",
+      "was": ["Other on-campus blocks", "Braam House"]
     },
     {
       "id": "jakaranda",

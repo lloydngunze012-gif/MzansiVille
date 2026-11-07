@@ -864,7 +864,7 @@ check('smoothness page: groups by place, red and amber, worst first, load line, 
   const names = { places: district.places, houses: district.houses }
   assert.equal(placeName('quad', names), 'The Quad')
   assert.equal(placeName('gate', names), 'Main Gate')
-  assert.equal(placeName('common:thekwini', names), 'Thekwini House common room')
+  assert.equal(placeName('common:thekwini', names), 'Wave House common room')
   assert.equal(placeName('common:nobody', names), 'common:nobody')
   assert.equal(placeName('paths', names), 'Paths between places')
   assert.equal(placeName('room', names), 'Activity rooms')
