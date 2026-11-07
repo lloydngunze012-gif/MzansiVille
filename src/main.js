@@ -67,7 +67,7 @@ installErrorReporting()
 // Install Soft Life (src/install.js): the service worker in the built game, and the menu
 // and #/install screen redrawn when Chrome offers to install or it's been installed.
 registerWorker()
-onInstallChange(() => { if (route().name === 'install' || ui.gear) paint() })
+onInstallChange(() => { if (route().name === 'install' || route().name === 'title' || ui.gear) paint() })
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')

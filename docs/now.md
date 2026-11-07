@@ -1,9 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Claude Code (deployed the game and the website on Lloyd's go).
+Last updated: 7 Nov, Claude Code (start screen: Install and Website links, pushed, not deployed).
 
 ## Waiting for Lloyd
+- **Start screen: Install Soft Life and Website** (7 Nov): pushed, not deployed. A second line under Rules, Privacy, Terms: Install Soft Life (opens #/install, hidden once installed or in the installed app) and Website (siteUrl from data/site/website.json, new tab). Needs a go to deploy the game.
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 
 ## Waiting for Lloyd's phone verdict

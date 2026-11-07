@@ -5,6 +5,8 @@
 // I3 no signal: the offline page, not the browser's dinosaur.
 // I4 the menu's "Install Soft Life" at phone sizes (screenshots), the install screen,
 //    the iPhone steps, #install, and hidden once installed.
+// I6 the start screen: Install Soft Life and Website beside Rules, Privacy, Terms (phone and
+//    computer), Install hidden once installed.
 // I5 a deploy: build A open, build B deployed (switched in one step, A's files gone), reload,
 //    build B runs; and an old page that asks for a game file that's gone reloads into B.
 import { test, expect, chromium } from '@playwright/test'
@@ -208,6 +210,57 @@ test('I4c Android: Chrome offers to install, our button opens its prompt, then i
   await page.screenshot({ path: `${OUT}/install-done-412x915.png` })
   await context.close()
 })
+
+for (const [w, h] of [[390, 844], [1440, 900]]) {
+  test(`I6 the start screen at ${w}x${h}: Install and Website, Install hidden once installed`, async ({ browser }) => {
+    const site = JSON.parse(readFileSync('data/site/website.json', 'utf8')).siteUrl
+    const phone = w < 900
+    const context = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: phone, isMobile: phone, deviceScaleFactor: phone ? 3 : 1 })
+    const page = await context.newPage()
+    await page.goto(`/?${ROOM}#/`)
+    const links = page.locator('.tc-links a')
+    await expect(links).toHaveText(['Rules', 'Privacy', 'Terms', 'Install Soft Life', 'Website'])
+    await expect(page.locator('.tc-links [data-link="install"]')).toHaveAttribute('href', '#/install')
+    const web = page.locator('.tc-links [data-link="website"]')
+    await expect(web).toHaveAttribute('href', site)
+    await expect(web).toHaveAttribute('target', '_blank')
+    // Same look as Rules: same font, colour and padding.
+    const look = (sel) => page.locator(sel).evaluate((el) => { const c = getComputedStyle(el); return [c.font, c.color, c.padding, c.textDecorationLine].join('|') })
+    expect(await look('.tc-links [data-link="install"]')).toBe(await look('.tc-links a[href="#/rules"]'))
+    expect(await look('.tc-links [data-link="website"]')).toBe(await look('.tc-links a[href="#/rules"]'))
+    // Every link on the screen and none wider than it.
+    for (const box of await links.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON()))) {
+      expect(box.left).toBeGreaterThanOrEqual(0)
+      expect(box.right).toBeLessThanOrEqual(w)
+      expect(box.bottom).toBeLessThanOrEqual(h)
+    }
+    await page.waitForTimeout(1300) // the row fades in
+    await page.screenshot({ path: `${OUT}/start-${w}x${h}-before.png` })
+    // Install opens the install screen; Website opens the site in a new tab.
+    await page.locator('.tc-links [data-link="install"]').click()
+    await expect(page.locator('main[data-screen="install"]')).toBeVisible()
+    await page.goto(`/?${ROOM}#/`)
+    const [tab] = await Promise.all([context.waitForEvent('page'), page.locator('.tc-links [data-link="website"]').click()])
+    await tab.waitForLoadState('domcontentloaded').catch(() => {})
+    expect(tab.url()).toContain(new URL(site).host)
+    await tab.close()
+    // Installed (appinstalled marks it; launched from the home screen counts the same).
+    await page.evaluate(() => localStorage.setItem('mzansiville.installed', '1'))
+    await page.goto(`/?${ROOM}&installed=1#/`)
+    await expect(links).toHaveText(['Rules', 'Privacy', 'Terms', 'Website'])
+    await page.waitForTimeout(1300)
+    await page.screenshot({ path: `${OUT}/start-${w}x${h}-after.png` })
+    // Running as the installed app (display-mode standalone), with nothing stored.
+    await page.evaluate(() => localStorage.removeItem('mzansiville.installed'))
+    await page.addInitScript(() => {
+      const real = window.matchMedia.bind(window)
+      window.matchMedia = (q) => (q.includes('display-mode: standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : real(q))
+    })
+    await page.goto(`/?${ROOM}&standalone=1#/`)
+    await expect(page.locator('.tc-links [data-link="install"]')).toHaveCount(0)
+    await context.close()
+  })
+}
 
 test('I5 a deploy: the new build loads on reload, and an old page reloads into it', async ({ page, context }) => {
   const scriptOf = (p) => p.evaluate(() => [...document.scripts].map((s) => s.src).find((s) => /\/assets\/index-/.test(s)) || '')

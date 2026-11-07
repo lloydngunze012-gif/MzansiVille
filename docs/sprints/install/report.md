@@ -31,3 +31,8 @@ PWA 100: installable manifest pass, maskable icon pass, themed address bar pass,
 ## Not done / to know
 - Not deployed. The owner's step "deploy, then reload, and prove the new version loads" was played locally (I5) because this piece is push-don't-deploy; after the real deploy I'll repeat it on softlifeza.vercel.app (open, note the entry script, deploy again, reload).
 - Phones that already have the old page open get the new manifest on their next load; an icon already on a home screen keeps its old name until it's removed and added again (the browser decides).
+
+## Start screen links (owner, 7 Nov, follow-up; pushed, not deployed)
+- A second line under Rules · Privacy · Terms, same font and style: **Install Soft Life** (opens #/install; hidden when installMode() is done, i.e. installed here or running as the installed app) and **Website** (data/site/website.json siteUrl, new tab). Five links don't fit one line at 390 px or in the 420 px column on a computer, so the break is deliberate (`.tc-break`), not a wrap that strands one word.
+- I6 (390x844 and 1440x900): the five links, hrefs and new tab; same computed style as Rules; all on screen; Install opens the install screen; Website opens the site; installed -> four links; standalone -> no Install. Screenshots: `start-390x844-before.png`, `start-390x844-after.png`, `start-1440x900-before.png`, `start-1440x900-after.png`. Install suite 10/10.
+- Existing start-screen tests: tests/e2e/enrol.spec.js and morning.spec.js, 8 pass, 1 skipped (already `test.skip`: no bus on day 1).

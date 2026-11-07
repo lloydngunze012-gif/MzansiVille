@@ -790,8 +790,9 @@ body[data-world="1"] .nav button[aria-current="page"] { color: #fffaf2; }
 .tc-restart button { flex: 1; min-height: 44px; border-radius: 12px; font: 800 14px system-ui; }
 .tc-yes { border: 0; background: #c43b3b; color: #fff; }
 .tc-no { border: 1.5px solid #e3d8c4; background: #fff; color: #1c1915; }
-.tc-links { display: flex; justify-content: center; gap: 22px; opacity: 0; animation: tc-pop .4s .7s ease-out forwards; }
+.tc-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 22px; opacity: 0; animation: tc-pop .4s .7s ease-out forwards; }
 .tc-links a { color: #fff; font: 700 13px system-ui; text-decoration: none; padding: 8px 4px; text-shadow: 0 1px 4px #000; }
+.tc-links .tc-break { flex-basis: 100%; height: 0; } /* Install Soft Life and Website on a second line */
 @keyframes tc-pop { from { opacity: 0; transform: translateY(14px) scale(.94); } to { opacity: 1; transform: none; } }
 @media (min-width: 520px) { body:has(.tc) { background: #120d18; } .tc { box-shadow: 0 0 60px rgba(0,0,0,.6); } }
 @media (prefers-reduced-motion: reduce) { .tc-art img { animation: none; } .tc-tag, .tc-start, .tc-continue, .tc-links { animation: none; opacity: 1; } }
@@ -871,7 +872,7 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
   .tc .tc-start { min-height: 72px; border-radius: 20px; font-size: 26px; }
   .tc .tc-over { font-size: 16px; }
   .tc .tc-restart { font-size: 16px; }
-  .tc .tc-links { gap: 28px; }
+  .tc .tc-links { gap: 0 28px; }
   .tc .tc-links a { font-size: 15px; }
 }
 .set { background: #1c0e34; color: #fff; min-height: 100dvh; }
