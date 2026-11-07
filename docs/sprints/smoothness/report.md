@@ -75,3 +75,6 @@ Pushed, not deployed. The SQL block was rewritten (it hadn't been run) and is st
 Screenshots retaken after Cursor's words (a9f3a1b) were in, in `docs/sprints/smoothness/` (not committed): `settings-switch.png` (the help line shows), `privacy.png` (the real Privacy line), `smooth-390x844.png`, `smooth-stalls-390x844.png` (a row open with its numbers under it, then the stalls), plus the 1440 pair. None shows test text. The tables show the made-up rows the test injects (an illustration; no real reports exist yet).
 
 Tests now: `tests/smooth/smooth.spec.js` 15 of 15 (software GPU), `tests/smooth/smooth-move.spec.js` 3 of 3 plus S6 opt-in (GPU), `npm run check` **53 of 53** (Cursor's words are written, so the last check passes now).
+
+## S6 result (7 Nov, after Lloyd ran the SQL block)
+`SMOOTH_S6=1 npx playwright test tests/smooth/smooth-move.spec.js -g S6 --config playwright.gpu.config.js --workers=1`: **passed**. 15 s in the Quad with `?smooth=live` at 28 fps (page), the page hidden, one POST of 1 row, **status 201** from the real table. Nothing could read the row back or delete it: `.env` has no service-role key and the anon key can only insert (RLS), so the one `qa-live` row is still in the table until it is deleted in the SQL editor (`delete from public.smooth_reports where build = 'qa-live';`), or Lloyd sees it first on #/smooth.
