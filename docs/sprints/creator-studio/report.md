@@ -62,3 +62,6 @@ TAG=after npx playwright test tests/creator/shots.spec.js --config playwright.gp
 npx playwright test tests/creator/shots2.spec.js --config playwright.gpu.config.js --workers=1     # Ara, sheet, videos
 npm run build && npx playwright test tests/creator/measure.spec.js --config playwright.spike.config.js --workers=1
 ```
+
+## Merged to main (7 Nov)
+Owner's decision: our own students; Ara is closed and nothing from Ara is on main (the harness, Ara tests and the spike's `window.mzansiThree` hook are not merged; `tests/spike/` and `playwright.spike.config.js` were removed, see git at 4e194fb). On the way in: the hoodie's sleeve gaps closed (balls at the shoulder and elbow, wider sleeve tubes), the student fills about 78% of the stage (test F1), `creator-still.png` is the studio picture (and only the default look gets a still), the cast's hair colours checked (they still read yellow, purple and pink), `avatar.spec` checks the look in the home scene again, `cream.spec` steps into a house and checks Things to do and now fails on a dark panel.
