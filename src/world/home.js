@@ -14,6 +14,7 @@ import { createPlayer } from './player.js'
 import { bindInput } from './input.js'
 import { loadModel } from './models.js'
 import { SPEED as FAST } from '../speed.js'
+import { smooth } from '../smooth.js'
 
 export function homeStyleId(character) {
   const id = HOMES.from[character?.from] || HOMES.default
@@ -778,7 +779,7 @@ function build() {
     renderer.setSize(window.innerWidth, window.innerHeight)
   })
   rig = createCameraRig()
-  mover = createPlayer({ blocked: (x, z) => blockedAt(x, z) })
+  mover = createPlayer({ blocked: (x, z) => blockedAt(x, z), onWalk: (e) => (e.type === 'start' ? smooth.walkStart() : smooth.walkEnd(e.how, e.left, e.x, e.z)) })
   input = bindInput(renderer.domElement, { cameraRig: rig, onTap, live: () => running && !override })
   window.addEventListener('mzansi-cam', (e) => { if (running) rig.setMode(e.detail) })
 }
@@ -865,6 +866,7 @@ function tick(now) {
   host.dataset.cam = rig.mode
   host.dataset.clock = fmt(opts.run.minutes)
   renderer.render(scene, camera)
+  smooth.frame(now, 'home', `home:${styleId}`)
 }
 
 // Walls between the camera and you turn see-through (the Sims cutaway).

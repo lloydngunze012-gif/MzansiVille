@@ -1,5 +1,6 @@
 import { isStaleLoad, reloadForUpdate } from './stale.js'
 import { onInstallChange, promptInstall, registerWorker } from './install.js'
+import { smooth } from './smooth.js'
 import { districtById, defaultDistrictId } from './districts/registry.js'
 import { filterText, cleanBio, canSend } from './engine/filter.js'
 import { loadBoardRows, loadLobby } from './social.js'
@@ -19,6 +20,7 @@ import {
   closeReport,
   currentSession,
   fetchEventEdits,
+  fetchSmoothReports,
   getClient,
   fetchReports,
   fileReport,
@@ -105,6 +107,8 @@ let draft = emptyDraft()
 let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
 let board = { tab: 'money', scope: 'all', rows: [], source: 'loading', error: '' }
 let admin = { reports: [], eventId: 'nsfas_delayed', notice: '', allowed: false }
+// Lloyd's smoothness page (#/smooth): the range, the rows, the place whose stalls are open.
+let smoothPage = { range: '7d', rows: [], place: '', error: '', loading: false, injected: false }
 let timer = 0
 let merging = false
 let chatUnsub = null
@@ -148,6 +152,7 @@ function state() {
     board,
     shareMilestone,
     admin,
+    smooth: smoothPage,
     morning,
     cardMini,
     ui,
@@ -1162,6 +1167,33 @@ async function loadAdmin() {
   paint()
 }
 
+// #/smooth: the newest 5,000 smooth_reports rows in the range, aggregated in the browser.
+// (?smooth=test with window.__smoothRows set: those rows instead, for the tests.)
+async function loadSmooth() {
+  admin.allowed = save.role === 'admin'
+  const injected = new URLSearchParams(location.search).get('smooth') === 'test' && Array.isArray(window.__smoothRows)
+  smoothPage.injected = injected
+  if (injected) {
+    smoothPage.rows = window.__smoothRows
+    smoothPage.error = ''
+    smoothPage.loading = false
+    paint()
+    return
+  }
+  if (!authEnabled || !admin.allowed) {
+    paint()
+    return
+  }
+  smoothPage.loading = true
+  paint()
+  const since = new Date(Date.now() - (smoothPage.range === '24h' ? 24 : 24 * 7) * 3600 * 1000).toISOString()
+  const result = await fetchSmoothReports(since)
+  smoothPage.rows = result.rows
+  smoothPage.error = result.error
+  smoothPage.loading = false
+  paint()
+}
+
 async function merge(session) {
   if (!session || merging) return
   merging = true
@@ -1266,7 +1298,7 @@ app.addEventListener('click', async (event) => {
   // still answer the tap, so no tap ever does nothing.
   const link = event.target.closest('a[href^="#/"]')
   if (link && link.getAttribute('href') === location.hash) { pulse(link, 'You\u2019re already here'); return }
-  if (button && button.dataset.act !== 'sound' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
+  if (button && button.dataset.act !== 'sound' && button.dataset.act !== 'smooth-switch' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
     pulse(button, button.dataset.act === 'view' ? 'Already in this view' : button.hasAttribute('aria-current') ? 'You\u2019re already here' : 'Already selected \u2713')
     if (button.hasAttribute('aria-current')) window.scrollTo({ top: 0, behavior: 'smooth' })
     return
@@ -1339,6 +1371,22 @@ app.addEventListener('click', async (event) => {
   if (act === 'sound' && (route().name === 'settings' || route().name === 'new')) {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
     setMuted(!soundOn())
+    paint()
+    return
+  }
+  if (act === 'smooth-range') {
+    smoothPage.range = button.dataset.v === '24h' ? '24h' : '7d'
+    smoothPage.place = ''
+    loadSmooth()
+    return
+  }
+  if (act === 'smooth-place') {
+    smoothPage.place = smoothPage.place === button.dataset.id ? '' : button.dataset.id
+    paint()
+    return
+  }
+  if (act === 'smooth-switch') {
+    smooth.setSwitch(!smooth.switchOn())
     paint()
     return
   }
@@ -1947,9 +1995,11 @@ window.addEventListener('hashchange', () => {
   if (name === 'chat') loadChat()
   if (name === 'board') loadBoard()
   if (name === 'admin') loadAdmin()
+  if (name === 'smooth') loadSmooth()
 })
 
 paint()
+if (route().name === 'smooth') loadSmooth()
 // The students' models start loading in the background as the title shows, so the
 // creator's student is there the moment it opens.
 if (hasGL()) (window.requestIdleCallback || setTimeout)(() => { import('./world/avatar3d.js').then((m) => m.preloadPeople()).catch(() => {}) })

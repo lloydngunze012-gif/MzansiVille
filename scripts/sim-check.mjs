@@ -16,6 +16,7 @@ import { BEATS } from '../src/engine/arcs.js'
 import { fridayTest } from '../src/engine/friday.js'
 import { mealCost } from '../src/engine/grocer.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
+import { byDevice, byPlace, loadLine, median, p90, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
   actionState,
@@ -821,6 +822,47 @@ check('essentials and treats count at once: the energy drink, airtime for calls'
   poor.stats.money = 5
   assert.equal(buy(district, poor, 'chicken').ok, false)
   assert.equal(poor.fridge.chicken || 0, 0)
+})
+
+check('smoothness page: groups by place, red and amber, worst first, load line, stalls', () => {
+  const row = (place, session, typical, low, below20, seconds = 60, extra = {}) => ({ session, place, scene: 'campus', seconds, fps_typical: typical, fps_low: low, secs_below_20: below20, secs_below_30: below20, long_frames: 6, stalls: 1, tap_ms: 80, gpu: 'Adreno 610', device: 'SM-A135F', net: '4g', load_ms: 3000, created_at: '2026-11-07T10:00:00Z', stall_at: [], ...extra })
+  const rows = [
+    row('quad', 'a', 58, 40, 0), row('quad', 'b', 60, 44, 1),
+    row('cafeteria', 'a', 50, 18, 2),      // worst 10% under 20: red
+    row('library', 'a', 28, 24, 1),        // typical under 30: amber
+    row('greenway', 'c', 45, 30, 4, 60),   // 6.7% of the time under 20: red
+    row('gate', 'c', 40, 30, 3, 60),       // exactly 5%: not red
+  ]
+  const places = byPlace(rows)
+  assert.deepEqual(places.map((g) => `${g.key}:${g.status}`), ['cafeteria:red', 'greenway:red', 'library:amber', 'gate:ok', 'quad:ok'])
+  const quad = places.find((g) => g.key === 'quad')
+  assert.equal(quad.players, 2)
+  assert.equal(quad.minutes, 2)
+  assert.equal(quad.typical, 59)
+  assert.equal(quad.low, 42)
+  assert.equal(statusOf({ low: 20, below20: 5, typical: 30 }), 'ok')
+  assert.equal(statusOf({ low: 19, below20: 0, typical: 60 }), 'red')
+  assert.equal(statusOf({ low: 30, below20: 5.1, typical: 60 }), 'red')
+  assert.equal(statusOf({ low: 30, below20: 0, typical: 29 }), 'amber')
+  assert.equal(byDevice(rows).length, 1)
+  assert.equal(byDevice([{ ...rows[0], gpu: null }])[0].key, 'SM-A135F')
+  assert.equal(median([3, 1, 2]), 2)
+  assert.equal(p90([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), 9)
+  const load = loadLine([row('quad', 'a', 50, 40, 0, 60, { load_ms: 2000 }), row('quad', 'b', 50, 40, 0, 60, { load_ms: 6000, net: '3g' }), row('quad', 'c', 50, 40, 0, 60, { load_ms: null })])
+  assert.equal(load.all.n, 2)
+  assert.deepEqual(load.byNet.map((x) => x.net).sort(), ['3g', '4g'])
+  const stalled = [row('quad', 'a', 50, 40, 0, 60, { stall_at: [{ k: 'player', h: '2.0 m short', x: 1, z: 2 }], created_at: '2026-11-07T09:00:00Z' }), row('quad', 'b', 50, 40, 0, 60, { stall_at: [{ k: 'npc', h: 'walk 1.6 m short', x: 3, z: 4 }], created_at: '2026-11-07T11:00:00Z' })]
+  const list = stallsOf(byPlace(stalled)[0])
+  assert.deepEqual(list.map((x) => x.kind), ['npc', 'player'])
+  assert.equal(stallsOf({ rows: Array.from({ length: 30 }, (_, i) => row('quad', 'a', 50, 40, 0, 60, { stall_at: [{ k: 'npc', h: 'x', x: i, z: 0 }], created_at: `2026-11-07T10:${String(i).padStart(2, '0')}:00Z` })) }).length, 20)
+})
+
+// LAST, on purpose: the wording is Cursor's (data/campusville/meta.json "smoothness"). This stops the
+// run, and fails, until all three are written; every check above has already run.
+check('meta.json smoothness words are all written (Cursor): settingLabel, settingHelp, privacyLine', () => {
+  const words = district.meta.smoothness || {}
+  const missing = ['settingLabel', 'settingHelp', 'privacyLine'].filter((k) => typeof words[k] !== 'string' || !words[k].trim())
+  assert.deepEqual(missing, [], `meta.json smoothness is missing: ${missing.join(', ')} (Cursor fills these in)`)
 })
 
 console.log(`${passed} checks passed`)

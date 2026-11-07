@@ -336,3 +336,33 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .gw-go { margin-left: auto; }
 .gw-wrap { display: flex; flex-direction: column; gap: 6px; }
 .gw-take { width: 100%; }
+
+/* ---- Lloyd's smoothness page (#/smooth, src/ui/smooth.js) ---- */
+.sm { background: var(--cr-bg-2); color: var(--cr-ink); min-height: 100dvh; box-sizing: border-box; max-width: 1100px; margin: 0 auto; }
+.sm h1, .sm h2 { color: var(--cr-ink); }
+.sm h2 { font-size: 20px; margin: 22px 0 8px; }
+.sm .link { color: var(--cr-ink); }
+.sm .fine { color: var(--cr-muted); }
+.sm-ranges { display: flex; gap: 8px; margin: 8px 0; }
+.sm-range { min-height: 44px; padding: 0 16px; border-radius: 12px; border: 1.5px solid var(--cr-line); background: var(--cr-bg); color: var(--cr-ink); font: 700 14px system-ui; cursor: pointer; }
+.sm-range.on { background: var(--cr-gold); border-color: var(--cr-gold-dk); }
+.sm-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.sm-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #0003; }
+.sm-dot.red { background: #f4b9b2; }
+.sm-dot.amber { background: #fbe08c; }
+.sm-load { margin: 10px 0 4px; font-size: 15px; }
+.sm-net { margin: 0 0 4px; padding-left: 18px; font-size: 13px; color: var(--cr-muted); }
+.sm-wrap { overflow-x: auto; background: var(--cr-bg); border: 1.5px solid var(--cr-line); border-radius: 12px; -webkit-overflow-scrolling: touch; }
+.sm-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.sm-table th, .sm-table td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--cr-line); white-space: nowrap; }
+.sm-table thead th { font-size: 11px; color: var(--cr-muted); text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; background: var(--cr-bg); }
+.sm-table th:first-child, .sm-table td:first-child { text-align: left; position: sticky; left: 0; background: inherit; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.sm-table tbody th { font-weight: 700; background: var(--cr-bg); }
+.sm-row.red, .sm-row.red th { background: #fbdcd8; }
+.sm-row.amber, .sm-row.amber th { background: #fdf0c4; }
+.sm-row[data-act] { cursor: pointer; min-height: 44px; }
+.sm-row.open { outline: 2px solid var(--cr-ink); outline-offset: -2px; }
+.sm-none { text-align: center !important; color: var(--cr-muted); padding: 18px; }
+.sm-stalls { margin-top: 6px; }
+.sm-stalls .sm-table th, .sm-stalls .sm-table td { text-align: left; white-space: normal; }
+#app:has(> .sm) { width: 100%; max-width: none; } /* the smoothness page uses the whole window on a computer */

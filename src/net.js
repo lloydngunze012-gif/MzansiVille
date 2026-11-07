@@ -1,6 +1,8 @@
 import { balancedScore } from './engine/board.js'
 
 export const authEnabled = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY)
+// The project address and the public (anon) key, for plain REST calls that must survive a closing tab (smooth.js).
+export const supabaseConfig = { url: import.meta.env.VITE_SUPABASE_URL || '', key: import.meta.env.VITE_SUPABASE_ANON_KEY || '' }
 
 let clientPromise = null
 
@@ -156,6 +158,14 @@ export async function fetchReports() {
   const client = await getClient()
   if (!client) return { rows: [], error: 'Admins only' }
   const { data, error } = await client.rpc('admin_reports')
+  return { rows: data || [], error: error?.message || '' }
+}
+
+// Lloyd's smoothness page (#/smooth): the newest rows since a time, admins only (RLS).
+export async function fetchSmoothReports(sinceIso, limit = 5000) {
+  const client = await getClient()
+  if (!client) return { rows: [], error: 'Admins only' }
+  const { data, error } = await client.from('smooth_reports').select('*').gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(limit)
   return { rows: data || [], error: error?.message || '' }
 }
 

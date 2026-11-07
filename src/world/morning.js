@@ -11,6 +11,7 @@ import { houseOf } from '../engine/model.js'
 import { CRUSHES, newCrush } from '../crush.js'
 import { addIdentity } from '../engine/identity.js'
 import { SPEED as FAST, ms } from '../speed.js'
+import { smooth } from '../smooth.js'
 
 const WAKE = 7 * 60
 const BUS_FIRST = 8 * 60 + 20
@@ -669,6 +670,7 @@ function tick(now) {
   host.dataset.door = door.rotation.y.toFixed(2)
   host.dataset.clock = fmt(opts.run.minutes)
   renderer.render(scene, camera)
+  smooth.frame(now, 'morning', 'morning')
 }
 
 function follow(obj, offset) {

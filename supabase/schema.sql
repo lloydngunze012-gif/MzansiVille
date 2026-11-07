@@ -866,3 +866,58 @@ as $$
     and p.state is not null;
 $$;
 grant execute on function public.leaderboard() to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Flow 1: smoothness reports from real phones (docs/design/smoothness-reports.md).
+-- Run this block once in the Supabase SQL editor BEFORE deploying the game that sends them.
+-- src/smooth.js posts one row per place (bucket) every few minutes. Rows carry a random
+-- per-page-load session id, never the player's id. Anyone may insert (the game, signed in or
+-- not); only admins read (the #/smooth page). Until this runs, the game is unaffected: the
+-- first refused post switches reports off for that session, quietly.
+-- ---------------------------------------------------------------------------
+create table if not exists public.smooth_reports (
+  id bigint generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  session text not null check (char_length(session) <= 40),
+  build text check (char_length(build) <= 60),
+  scene text not null check (char_length(scene) <= 20),
+  place text not null check (char_length(place) <= 60),
+  seconds real not null check (seconds >= 0 and seconds <= 100000),
+  fps_typical int check (fps_typical between 0 and 1000),
+  fps_low int check (fps_low between 0 and 1000),
+  secs_below_30 real check (secs_below_30 >= 0 and secs_below_30 <= 100000),
+  secs_below_20 real check (secs_below_20 >= 0 and secs_below_20 <= 100000),
+  long_frames int check (long_frames >= 0),
+  worst_ms int check (worst_ms >= 0),
+  taps int check (taps >= 0),
+  tap_ms int check (tap_ms is null or tap_ms >= 0),
+  walks int check (walks >= 0),
+  stalls int check (stalls >= 0),
+  stall_at jsonb not null default '[]'::jsonb
+    check (jsonb_typeof(stall_at) = 'array' and jsonb_array_length(stall_at) <= 8 and pg_column_size(stall_at) <= 2000),
+  load_ms int check (load_ms is null or load_ms >= 0),
+  device text check (char_length(device) <= 60),
+  gpu text check (char_length(gpu) <= 100),
+  mem real,
+  cores int,
+  screen text check (char_length(screen) <= 30),
+  net text check (char_length(net) <= 20),
+  installed boolean
+);
+
+create index if not exists smooth_reports_created_idx on public.smooth_reports (created_at desc);
+
+alter table public.smooth_reports enable row level security;
+grant insert on public.smooth_reports to anon, authenticated;
+grant select on public.smooth_reports to authenticated;
+
+drop policy if exists "anyone can send a smoothness report" on public.smooth_reports;
+create policy "anyone can send a smoothness report" on public.smooth_reports
+  for insert to anon, authenticated with check (true);
+
+drop policy if exists "admins read smoothness reports" on public.smooth_reports;
+create policy "admins read smoothness reports" on public.smooth_reports
+  for select to authenticated using (public.is_admin());
+
+-- Keep 30 days. Not scheduled yet (docs/backlog.md): run by hand, or schedule with pg_cron.
+-- delete from public.smooth_reports where created_at < now() - interval '30 days';

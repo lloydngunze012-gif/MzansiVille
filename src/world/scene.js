@@ -33,6 +33,7 @@ import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBl
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
 import { createWalks } from './walks.js'
+import { smooth } from '../smooth.js'
 import { SPEED, ms } from '../speed.js'
 
 const host = document.getElementById('world')
@@ -498,7 +499,7 @@ function tapped(point, x, y) {
   else if (hit.kind === 'person') startTalk(hit.node)
   else if (hit.kind === 'vendor') { const a = everyone().find((p) => p.userData.personId === hit.id); if (a) startTalk(a) }
   else if (hit.kind === 'building') { interrupt(); approach(hit.id) }
-  else { interrupt(); walkTo(hit.x, hit.z) }
+  else { smooth.tap(); interrupt(); walkTo(hit.x, hit.z) }
 }
 
 // Walk to a spot: a route round the buildings on the grid, ending exactly where asked.
@@ -572,7 +573,8 @@ function blockedAt(x, z, solid = true) {
   const cell = cellOf(x, z)
   return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
 }
-const mover = createPlayer({ blocked: blockedAt })
+// (walks started and walks held up, for the smoothness reports: src/smooth.js)
+const mover = createPlayer({ blocked: blockedAt, onWalk: (e) => (e.type === 'start' ? smooth.walkStart() : smooth.walkEnd(e.how, e.left, e.x, e.z)) })
 
 // Go to a place (from either map): walk there and open its sheet on arrival.
 // While you walk, "Skip there" jumps you to the door; the clock moves on.
@@ -1330,6 +1332,7 @@ window.mzansiLookAt = (x, z) => { if (!player || !rig) return; const a = Math.at
 window.mzansiRefit = () => { if (player) player.userData.sitFit = null }
 window.mzansiPlayerData = () => player && { pose: player.userData.pose, prev: player.userData.prevPose, move: player.userData.sitMove && { ...player.userData.sitMove }, phase: player.userData.sitPhase, fit: Boolean(player.userData.sitFit), y: player.position.y, players: window.mzansiBodies('campus', 'player').length }
 window.mzansiPlayerPose = () => player?.userData.pose || 'stand'
+window.mzansiSmoothPlace = () => smoothPlace() // (tests, read only) the place the smoothness reports file this frame under
 window.mzansiPlayerPos = () => player && { x: +player.position.x.toFixed(2), z: +player.position.z.toFixed(2) }
 window.mzansiPeople = () => everyone().map((a) => ({ id: a.userData.personId, x: +a.position.x.toFixed(2), y: +a.position.y.toFixed(2), z: +a.position.z.toFixed(2), pose: a.userData.pose || 'stand' }))
 window.mzansiPlaceOf = (id) => { const b = campus?.layout.buildings.find((x) => x.id === id); return b ? { x: b.x, z: b.z, door: doorPoint(b) } : null }
@@ -2551,6 +2554,22 @@ function quadSound() {
   if (near) setGrooveLevel(Math.max(0.08, 1 - d / 24) * 0.7)
 }
 
+// Where the smoothness reports file this frame (src/smooth.js asks twice a second): a house's
+// common room, a room built off the map for an activity, the nearest place within 30 m, or 'paths'.
+function smoothPlace() {
+  if (inHouse) return `common:${inHouse.house.id}`
+  const p = player?.position
+  if (!p || !campus) return 'paths'
+  if (room && p.x > room.bounds.minX - 2 && p.x < room.bounds.maxX + 2 && p.z > room.bounds.minZ - 2 && p.z < room.bounds.maxZ + 2) return 'room'
+  let best = 'paths'
+  let nearest = 30
+  for (const b of campus.layout.buildings) {
+    const d = Math.hypot(p.x - b.cx, p.z - b.cz)
+    if (d < nearest) { nearest = d; best = b.id }
+  }
+  return best
+}
+
 let frameErrors = 0
 let lastFrame = 0
 function tick(now) {
@@ -2617,6 +2636,7 @@ function frameBody(now) {
       else walking = mover.update(dt)
     }
     // The player's state follows what they're doing when nothing else holds it.
+    if (walking) smooth.moved()
     if (walking) ps.busy(0.5)
     else if (player.userData.pose === 'run') player.userData.pose = 'stand'
     if (stopButton) stopButton.hidden = !walking
@@ -2678,7 +2698,7 @@ function frameBody(now) {
     against = pressed ? against + dt : 0
     againstFrames = pressed ? againstFrames + 1 : 0
     // (held up, not called off: a walk to someone or somewhere opens it where you stopped)
-    if (against > 0.5 || againstFrames >= 6) { mover.giveUp(); against = 0; againstFrames = 0 }
+    if (against > 0.5 || againstFrames >= 6) { smooth.against(against, againstFrames, player.position.x, player.position.z); mover.giveUp(); against = 0; againstFrames = 0 }
     frameFrom = null
     const say = host.querySelector('.act-say')
     if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
@@ -2722,6 +2742,7 @@ function frameBody(now) {
     host.dataset.view = (rig.mode === 'eye' ? rig.facing : rig.yaw).toFixed(3)
   }
   renderer.render(scene, camera)
+  smooth.frame(now, 'campus', smoothPlace)
   frames += 1
   if (now - fpsStamp > 500) {
     const fps = Math.round((frames * 1000) / (now - fpsStamp))

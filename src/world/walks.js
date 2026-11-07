@@ -12,6 +12,8 @@
 // Only 'arrived' and 'stalled' mean the walk is over (ended(how)): run the next step
 // (face the counter, the next leg of a route) only then, never after 'replaced'.
 
+import { smooth } from '../smooth.js'
+
 const STALL_TIME = 1.5 // seconds without getting...
 const STALL_GAIN = 0.1 // ...this much closer: held back for good
 const TURN_MIN = 0.01 // never turn to face a step shorter than 1 cm
@@ -27,13 +29,26 @@ export function createWalks() {
     const w = list[i]
     list.splice(i, 1)
     endings[how] += 1
+    if (how === 'stalled') noteStall(w)
     w.resolve(how)
+  }
+  // Smoothness reports (src/smooth.js): a walk held back for good is a stall, unless it's a
+  // queue hold, which is meant (someone stands on their place, so the line keeps them where
+  // they are). queue.js marks that on the person (userData.lineHeld) in a promise callback
+  // that runs after this walk resolves, so look one macrotask later, when it has run.
+  function noteStall(w) {
+    const a = w.avatar
+    const x = a.position.x
+    const z = a.position.z
+    const short = Math.hypot(w.x - x, w.z - z)
+    setTimeout(() => { if (!a.userData?.lineHeld) smooth.npcStall(`walk ${short.toFixed(1)} m short`, x, z) }, 0)
   }
   function stop(avatar, how = 'stopped') {
     for (let i = list.length - 1; i >= 0; i--) if (list[i].avatar === avatar) end(i, how)
   }
   function start(avatar, x, z, speed = 1.8) {
     stop(avatar, 'replaced')
+    smooth.npcWalk()
     const d = Math.hypot(x - avatar.position.x, z - avatar.position.z)
     // (a tiny correction never turns them: it would spin someone on the spot)
     return new Promise((resolve) => list.push({ avatar, x, z, speed, resolve, best: d, since: 0, turn: d >= TURN_MIN }))

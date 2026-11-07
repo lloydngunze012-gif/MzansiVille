@@ -12,11 +12,13 @@ import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
 import { enrolScreen } from './enrol.js'
 import { installScreen } from './install.js'
+import { smoothScreen } from './smooth.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { dreamOf, dreamProgress } from '../engine/goals.js'
 import { PATHS, identityPoints, identityProgress, identityTitle } from '../engine/identity.js'
 import { STORY_OPTS, storyWithDefaults } from '../story.js'
 import { installMode } from '../install.js'
+import { switchOn as smoothOn } from '../smooth.js'
 // The website's address lives in one place (data/site/website.json siteUrl).
 import { siteUrl } from '../../data/site/website.json'
 
@@ -632,6 +634,7 @@ function admin(state) {
   return `<main class="screen pad" data-screen="admin">
     <a class="link" href="#/profile">Back</a>
     <h1 style="margin-top:12px">Admin</h1>
+    <p><a class="link" href="#/smooth">Smoothness: how the game runs on players' phones</a></p>
     ${state.admin.allowed ? '' : '<p class="lede">Admins only. Set role to admin in Supabase, then sign in.</p>'}
     <h2>Open reports</h2>
     <div class="list">${reports.map((report) => `<article class="msg">
@@ -675,6 +678,15 @@ function title(state) {
   </main>`
 }
 
+// "Send smoothness reports" (src/smooth.js): on by default, kept on this phone. The words are
+// Cursor's (meta.json smoothness); the label falls back to the name the switch was specified with.
+function smoothSwitch(state) {
+  const words = state.district?.meta?.smoothness || {}
+  const on = smoothOn()
+  return `<button class="btn block" type="button" data-act="smooth-switch" aria-pressed="${on}">${esc(words.settingLabel || 'Send smoothness reports')}: <b>${on ? 'On' : 'Off'}</b></button>
+      ${words.settingHelp ? `<p class="set-fps" data-smooth-help>${esc(words.settingHelp)}</p>` : ''}`
+}
+
 function settings(state) {
   const run = state.run
   const del = state.ui?.confirmDelete
@@ -685,6 +697,7 @@ function settings(state) {
       ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
       <a class="btn ghost block" href="#/errors">Error log</a>
       <p class="set-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
+      ${smoothSwitch(state)}
       <a class="btn ghost block" href="#/rules">Community rules</a>
       <a class="btn ghost block" href="#/privacy">Privacy</a>
       <a class="btn ghost block" href="#/terms">Terms</a>
@@ -719,11 +732,13 @@ export function view(state) {
   if (screen === 'title') return title(state)
   if (screen === 'rules') return rules()
   if (screen === 'install') return installScreen(state)
+  if (screen === 'smooth') return smoothScreen(state)
   if (screen === 'privacy') {
     return legalText('privacy', 'Privacy', [
       'Guest progress stays in localStorage on this phone. Clearing the browser clears the guest.',
       'If you save, your name, house, course, avatar, handle, stats, and the game state are stored in Supabase. Lobby messages are public to the campus room.',
       'There are no photos. The avatar is drawn in the game.',
+      ...(state.district?.meta?.smoothness?.privacyLine ? [esc(state.district.meta.smoothness.privacyLine)] : []),
       'Full privacy text to follow.',
     ])
   }

@@ -10,6 +10,7 @@ import { venueFor } from '../venues.js'
 import { lookForPerson } from './cast.js'
 import { createFloor } from './floor.js'
 import { SPEED as FAST, ms } from '../speed.js'
+import { smooth } from '../smooth.js'
 
 const LECTURE = 9 * 60
 const SPEED = 1.8
@@ -622,6 +623,7 @@ function tick(now) {
     camera.lookAt(camLook)
   }
   renderer.render(scene, camera)
+  smooth.frame(now, 'lecture', 'lecture')
 }
 
 export function startLecture(options) {

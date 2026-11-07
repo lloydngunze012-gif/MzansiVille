@@ -33,7 +33,9 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 
 // blocked(x, z, solid): is a body standing here inside something? (solid false: only
 // the edges of the map and the buildings, for scripted walks onto seats and spots)
-export function createPlayer({ blocked }) {
+// onWalk({ type: 'start' }) / ({ type: 'end', how, left, x, z }): read-only hook for the
+// smoothness reports (src/smooth.js); left = metres still to go to the target when it ended.
+export function createPlayer({ blocked, onWalk }) {
   let body = null
   let stick = null // { x, z, run, mag } in world space, this frame
   let route = [] // points to walk through; the last is the target
@@ -57,6 +59,8 @@ export function createPlayer({ blocked }) {
 
   // The walk is over: arrived, dropped (blocked), or cancelled. Its callback runs once.
   function finish(how) {
+    const t = route[route.length - 1]
+    if (t && body && onWalk) onWalk({ type: 'end', how, left: Math.hypot(t.x - body.position.x, t.z - body.position.z), x: body.position.x, z: body.position.z })
     route = []
     stuck = 0
     const fn = done
@@ -92,6 +96,7 @@ export function createPlayer({ blocked }) {
     walkTo(points, opts = {}) {
       finish('cancelled')
       route = points.filter(Boolean).map((p) => ({ x: p.x, z: p.z }))
+      if (route.length) onWalk?.({ type: 'start' })
       near = opts.near ?? ARRIVE
       solid = opts.solid ?? true
       done = opts.done || null

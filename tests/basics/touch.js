@@ -12,7 +12,7 @@ export const OUT = 'docs/sprints/basics'
 // (on the real GPU: the software one draws about 5 fps, below the movement tests' 20)
 export const PHONE = { viewport: { width: 412, height: 915 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, video: { mode: 'on', size: { width: 412, height: 915 } }, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } }
 
-export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
+export async function student(page, { spawn = 'quad', run = {}, gender, query = '' } = {}) {
   fs.mkdirSync(OUT, { recursive: true })
   const seen = new Set()
   page.on('pageerror', (e) => { if (!seen.has(e.message)) { seen.add(e.message); console.log('PAGE ERROR', e.message) } })
@@ -27,7 +27,7 @@ export async function student(page, { spawn = 'quad', run = {}, gender } = {}) {
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
     localStorage.setItem('mzansiville.mapHint', '1')
   }, run)
-  await page.goto(`/?morning=0&spawn=${spawn}#/play`)
+  await page.goto(`/?morning=0&spawn=${spawn}${query}#/play`)
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   // Everyone's model loaded: the count of bodies holds for a moment (people walking in
   // and out of view change it, so after 20 s a steady crowd is enough).
