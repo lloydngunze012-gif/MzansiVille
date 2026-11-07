@@ -62,22 +62,43 @@ export function groupRows(rows, keyOf, labelOf = keyOf) {
     .sort((a, b) => RANK[a.status] - RANK[b.status] || (a.low ?? 999) - (b.low ?? 999) || b.below20 - a.below20 || b.minutes - a.minutes)
 }
 
-export const byPlace = (rows) => groupRows(rows, (r) => r.place)
+export const byPlace = (rows, nameOf = (r) => r.place) => groupRows(rows, (r) => r.place, nameOf)
 export const byDevice = (rows) => groupRows(rows, (r) => r.gpu || r.device || 'unknown', (r) => r.gpu || r.device || 'unknown')
 
-/** Load time (first rendered 3D frame), median and slowest 10%, split by connection. */
-export function loadLine(rows) {
-  const withLoad = rows.filter((r) => num(r.load_ms) !== null)
+/** One clock (a column), median and slowest 10%, overall and split by connection. */
+function clockLine(rows, column) {
+  const withIt = rows.filter((r) => num(r[column]) !== null)
   const split = new Map()
-  for (const r of withLoad) {
+  for (const r of withIt) {
     const k = r.net || 'unknown'
     if (!split.has(k)) split.set(k, [])
-    split.get(k).push(r.load_ms)
+    split.get(k).push(r[column])
   }
   return {
-    all: { n: withLoad.length, median: median(withLoad.map((r) => r.load_ms)), slow: p90(withLoad.map((r) => r.load_ms)) },
+    all: { n: withIt.length, median: median(withIt.map((r) => r[column])), slow: p90(withIt.map((r) => r[column])) },
     byNet: [...split.entries()].map(([net, list]) => ({ net, n: list.length, median: median(list), slow: p90(list) })).sort((a, b) => b.n - a.n),
   }
+}
+/** The two load clocks: boot_ms ("Open to title": page start to the first screen usable) and
+    load_ms ("Tap to playing": the tap that opens a 3D scene to its first frame). */
+export function loadLine(rows) {
+  return { boot: clockLine(rows, 'boot_ms'), load: clockLine(rows, 'load_ms') }
+}
+
+/** What a report's place id is called on the page: the place's name (places.csv), "<House> common
+    room", "Paths between places", "Activity rooms", "Day 1 home (<style>)". Anything else keeps its id. */
+export function placeName(id, { places = [], houses = [] } = {}) {
+  const key = String(id ?? '')
+  if (key.startsWith('common:')) {
+    const house = houses.find((h) => h.id === key.slice(7))
+    return house ? `${house.name} common room` : key
+  }
+  if (key.startsWith('home:')) return `Day 1 home (${key.slice(5)})`
+  if (key === 'paths') return 'Paths between places'
+  if (key === 'room') return 'Activity rooms'
+  if (key === 'morning') return 'Morning scene'
+  if (key === 'lecture') return 'Lecture scene'
+  return places.find((p) => p.id === key)?.name || key
 }
 
 /** A place's last 20 stalls, newest first: kind, how, x, z, when (the report's time) and the device. */

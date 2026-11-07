@@ -16,7 +16,7 @@ import { BEATS } from '../src/engine/arcs.js'
 import { fridayTest } from '../src/engine/friday.js'
 import { mealCost } from '../src/engine/grocer.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
-import { byDevice, byPlace, loadLine, median, p90, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
+import { byDevice, byPlace, loadLine, median, p90, placeName, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import {
   actionState,
@@ -848,9 +848,32 @@ check('smoothness page: groups by place, red and amber, worst first, load line, 
   assert.equal(byDevice([{ ...rows[0], gpu: null }])[0].key, 'SM-A135F')
   assert.equal(median([3, 1, 2]), 2)
   assert.equal(p90([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]), 9)
-  const load = loadLine([row('quad', 'a', 50, 40, 0, 60, { load_ms: 2000 }), row('quad', 'b', 50, 40, 0, 60, { load_ms: 6000, net: '3g' }), row('quad', 'c', 50, 40, 0, 60, { load_ms: null })])
-  assert.equal(load.all.n, 2)
-  assert.deepEqual(load.byNet.map((x) => x.net).sort(), ['3g', '4g'])
+  const clocks = loadLine([
+    row('quad', 'a', 50, 40, 0, 60, { boot_ms: 1500, load_ms: 2000 }),
+    row('quad', 'b', 50, 40, 0, 60, { boot_ms: 4500, load_ms: 6000, net: '3g' }),
+    row('quad', 'c', 50, 40, 0, 60, { boot_ms: null, load_ms: null }),
+    row('quad', 'd', 50, 40, 0, 60, { boot_ms: 1000, load_ms: null }),
+  ])
+  assert.equal(clocks.load.all.n, 2)
+  assert.equal(clocks.boot.all.n, 3, 'open to title and tap to playing are counted separately')
+  assert.equal(clocks.boot.all.median, 1500)
+  assert.equal(clocks.load.all.median, 4000)
+  assert.deepEqual(clocks.load.byNet.map((x) => x.net).sort(), ['3g', '4g'])
+  assert.deepEqual(clocks.boot.byNet.map((x) => x.net).sort(), ['3g', '4g'])
+  // Names on the page: places.csv names, houses' common rooms, the scene buckets.
+  const names = { places: district.places, houses: district.houses }
+  assert.equal(placeName('quad', names), 'The Quad')
+  assert.equal(placeName('gate', names), 'Main Gate')
+  assert.equal(placeName('common:thekwini', names), 'Thekwini House common room')
+  assert.equal(placeName('common:nobody', names), 'common:nobody')
+  assert.equal(placeName('paths', names), 'Paths between places')
+  assert.equal(placeName('room', names), 'Activity rooms')
+  assert.equal(placeName('home:township', names), 'Day 1 home (township)')
+  assert.equal(placeName('mystery_place', names), 'mystery_place')
+  for (const place of district.places) assert.notEqual(placeName(place.id, names), place.id, `${place.id} has a name`)
+  const named = byPlace([row('quad', 'a', 50, 40, 0)], (r) => placeName(r.place, names))[0]
+  assert.equal(named.label, 'The Quad')
+  assert.equal(named.key, 'quad')
   const stalled = [row('quad', 'a', 50, 40, 0, 60, { stall_at: [{ k: 'player', h: '2.0 m short', x: 1, z: 2 }], created_at: '2026-11-07T09:00:00Z' }), row('quad', 'b', 50, 40, 0, 60, { stall_at: [{ k: 'npc', h: 'walk 1.6 m short', x: 3, z: 4 }], created_at: '2026-11-07T11:00:00Z' })]
   const list = stallsOf(byPlace(stalled)[0])
   assert.deepEqual(list.map((x) => x.kind), ['npc', 'player'])

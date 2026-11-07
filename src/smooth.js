@@ -18,7 +18,7 @@ const LONG_MS = 50
 const WINDOW_MS = 500 // fps is judged in half-second windows, as scene.js's own counter does
 const PLACE_EVERY_MS = 500 // the place is worked out at most twice a second
 const MIN_SECONDS = 10 // a bucket needs this much play before it's sent
-const MIN_SECONDS_TEST = 2 // (?smooth=test only)
+const MIN_SECONDS_TEST = 2 // (?smooth=test; ?smoothmin=<seconds> sets it for ?smooth=test and ?smooth=live: QA)
 const FLUSH_EVERY_MS = 3 * 60 * 1000
 const MAX_ROWS_FLUSH = 6
 const MAX_ROWS_SESSION = 40
@@ -30,6 +30,9 @@ const SWITCH_KEY = 'mzansiville.smooth'
 const hasWindow = typeof window !== 'undefined' && typeof document !== 'undefined'
 const params = hasWindow ? new URLSearchParams(location.search) : new URLSearchParams()
 const TEST = params.get('smooth') === 'test'
+// ?smooth=live: sends for real even on localhost or under automation (QA of the real send),
+// with build 'qa-live' so those rows can be found and deleted.
+const LIVE = params.get('smooth') === 'live'
 
 const session = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10) // per page load, never the player id
 const buckets = new Map()
@@ -40,13 +43,24 @@ let lastScene = ''
 let shownAt = 0 // when this scene last showed
 let placeAt = -1e9
 let placeName = ''
-let loadMs = null // timeOrigin -> first rendered frame of the first 3D scene
+// Two clocks, both sent on the session's first row only:
+//  boot_ms: timeOrigin -> the first screen the URL opens is shown and usable (the title, with its
+//           cover image loaded; any other first screen after it has painted).
+//  load_ms: the last tap on a button or link -> the first frame of the first 3D scene (Continue,
+//           Enter campus, Start day...); a page that opens straight into a 3D scene has no tap, so
+//           from timeOrigin.
+let bootMs = null
+let loadMs = null
+let firstFrameAt = null
+let lastClickAt = null
 let loadSent = false
+let pending = [] // rows a network failure or a 5xx kept for the next flush
+let betterDevice = '' // from navigator.userAgentData, once it has answered
 let tapAt = 0
 let skipNextStall = false // an 'against' give-up is also a stalled walk: record it once
 let active = null // is anything collected? (re-checked twice a second)
 let sent = 0
-let broken = false // the table said no (or the network): stop for this session, quietly
+let broken = false // the table said no (a 4xx): stop for this session, quietly
 let warned = false
 let flushTimer = 0
 let gpuName = null
@@ -85,15 +99,31 @@ function isActive() {
   if (!hasWindow) return false
   if (!switchOn()) return false
   if (TEST) return true
+  if (LIVE) return authEnabled && !broken
   if (!authEnabled || localhost() || params.get('fast') === '1' || navigator.webdriver || broken) return false
   return true
+}
+
+/** The first screen is up: called once after the first paint (main.js). The title counts as usable once its cover image has loaded. */
+function boot() {
+  if (!hasWindow || bootMs !== null) return
+  let n = 0
+  const check = () => {
+    const img = document.querySelector('.tc-art img')
+    if (n >= 2 && (!img || img.complete)) { bootMs = Math.round(performance.now()); return }
+    if (++n < 1500) requestAnimationFrame(check) // (a cover that never loads: no boot time, nothing sent for it)
+  }
+  requestAnimationFrame(check)
 }
 
 /** Once per frame, after the frame is drawn. place: a string, or a function called at most twice a second. */
 function frame(now, scene, place) {
   try {
     if (!hasWindow) return
-    if (loadMs === null) loadMs = Math.round(performance.now()) // the first rendered frame
+    if (firstFrameAt === null) { // the first rendered frame of the first 3D scene
+      firstFrameAt = performance.now()
+      loadMs = Math.round(firstFrameAt - (lastClickAt ?? 0))
+    }
     const gap = now - lastNow
     const fresh = scene !== lastScene || gap > GAP_MS || lastNow === 0
     lastNow = now
@@ -180,6 +210,7 @@ function percentile(hist, total, p) {
 const fpsOf = (ms) => Math.max(1, Math.min(240, Math.round(1000 / Math.max(ms, 1))))
 
 function deviceName() {
+  if (betterDevice) return betterDevice
   const ua = navigator.userAgent || ''
   let m
   if ((m = ua.match(/Android[ ]([\d.]+);\s*([^;)]+)/))) return `${m[2].trim()} Android ${m[1]}`.slice(0, 40)
@@ -188,6 +219,20 @@ function deviceName() {
   const os = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'device'
   return `${os} ${browser[1] === 'Edg' ? 'Edge' : browser[1] || 'browser'} ${browser[2] || ''}`.trim().slice(0, 40)
 }
+// Chrome on Android keeps the model out of the user agent string now; userAgentData has it.
+// Asked once, in the background: reports never wait on it (until it answers they use the user agent).
+function refineDevice() {
+  try {
+    navigator.userAgentData?.getHighEntropyValues(['model', 'platformVersion']).then((v) => {
+      const model = String(v.model || '').trim()
+      if (!model) return
+      const os = navigator.userAgentData.platform || 'Android'
+      const version = String(v.platformVersion || '').split('.')[0]
+      betterDevice = `${model} ${os}${version ? ` ${version}` : ''}`.slice(0, 40)
+    }).catch(() => {})
+  } catch { /* the user agent will do */ }
+}
+
 function gpu() {
   if (gpuName !== null) return gpuName
   gpuName = ''
@@ -203,7 +248,7 @@ function gpu() {
 function context() {
   const standalone = Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)
   return {
-    build: typeof __BUILD__ !== 'undefined' ? String(__BUILD__).slice(0, 60) : 'dev',
+    build: LIVE ? 'qa-live' : typeof __BUILD__ !== 'undefined' ? String(__BUILD__).slice(0, 60) : 'dev',
     device: deviceName(),
     gpu: gpu() || null,
     mem: typeof navigator.deviceMemory === 'number' ? navigator.deviceMemory : null,
@@ -238,19 +283,21 @@ function rowOf(b, ctx, withLoad) {
     walks: b.walks,
     stalls: b.stalls,
     stall_at: b.stallAt,
+    boot_ms: withLoad ? bootMs : null,
     load_ms: withLoad ? loadMs : null,
   }
 }
 
 /** Build this report's rows (at most 6, the busiest first) and clear what they covered. */
 function takeRows() {
-  const min = TEST ? MIN_SECONDS_TEST : MIN_SECONDS
+  const min = Number(params.get('smoothmin')) > 0 && (TEST || LIVE) ? Number(params.get('smoothmin')) : TEST ? MIN_SECONDS_TEST : MIN_SECONDS
   const left = MAX_ROWS_SESSION - sent
   if (left <= 0) return []
   const ready = [...buckets.values()].filter((b) => b.seconds >= min).sort((a, b) => b.seconds - a.seconds).slice(0, Math.min(MAX_ROWS_FLUSH, left))
   if (!ready.length) return []
   const ctx = context()
-  const rows = ready.map((b, i) => rowOf(b, ctx, !loadSent && i === 0 && loadMs !== null))
+  // (the two clocks go on the session's first row, once both are known)
+  const rows = ready.map((b, i) => rowOf(b, ctx, !loadSent && i === 0 && loadMs !== null && bootMs !== null))
   if (rows[0].load_ms !== null) loadSent = true
   for (const b of ready) buckets.set(`${b.scene}|${b.place}`, newBucket(b.scene, b.place))
   cur = null // (the bucket frames count into was replaced: the next frame picks it up again)
@@ -259,20 +306,30 @@ function takeRows() {
   return rows
 }
 
+// One POST per flush. A 4xx (the table isn't there, or it refused the row) switches reports off for
+// the session; a network failure or a 5xx keeps the rows for the next flush (the session cap of 40
+// rows already counts them, so this can't grow, and there is no retry loop: one try per flush).
 function post(rows) {
   const cfg = supabaseConfig
   if (!cfg.url || !cfg.key) return
+  const keep = () => { pending = rows.concat(pending).slice(0, MAX_ROWS_SESSION) }
+  const note = (status) => { if (LIVE) (window.__smoothPosts ||= []).push({ rows: rows.length, status, at: Date.now() }) }
   try {
     fetch(`${cfg.url}/rest/v1/smooth_reports`, {
       method: 'POST',
       keepalive: true,
       headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify(rows),
-    }).then((res) => { if (!res.ok) fail(`status ${res.status}`) }).catch(() => fail('network'))
-  } catch { fail('fetch') }
+    }).then((res) => {
+      note(res.status)
+      if (res.status >= 400 && res.status < 500) fail(`status ${res.status}`)
+      else if (!res.ok) keep()
+    }).catch(() => { note(0); keep() })
+  } catch { note(0); keep() }
 }
 function fail(why) {
-  broken = true // no retries; the game is unaffected
+  broken = true // the game is unaffected
+  pending = []
   if (!warned) { warned = true; console.warn(`smoothness reports are off for this session (${why})`) }
 }
 
@@ -281,12 +338,13 @@ function flush() {
   try {
     if (!hasWindow || !isActive()) return []
     const rows = takeRows()
-    if (!rows.length) return rows
     if (TEST) {
-      ;(window.__smoothReports ||= []).push(...rows)
+      if (rows.length) (window.__smoothReports ||= []).push(...rows)
       return rows
     }
-    post(rows)
+    const batch = pending.concat(rows)
+    pending = []
+    if (batch.length) post(batch)
     return rows
   } catch { return [] }
 }
@@ -296,17 +354,23 @@ function start() {
   flushTimer = setInterval(() => { if (document.visibilityState === 'visible') flush() }, FLUSH_EVERY_MS)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush() })
   window.addEventListener('pagehide', () => flush())
-  if (TEST) {
+  // The last tap on a button or a link: the start of load_ms (the tap that opens a 3D scene).
+  document.addEventListener('click', (e) => { if (e.target?.closest?.('button, a, [data-act]')) lastClickAt = performance.now() }, true)
+  refineDevice()
+  if (TEST || LIVE) {
     window.mzansiSmoothFlush = flush
     window.mzansiSmooth = smooth
   }
 }
 
 export const smooth = {
-  frame, tap, moved, walkStart, walkEnd, against, npcStall, npcWalk, flush, setSwitch, switchOn,
+  frame, boot, tap, moved, walkStart, walkEnd, against, npcStall, npcWalk, flush, setSwitch, switchOn,
   // (tests) the buckets so far, and the settings that decide how they're sent
   get buckets() { return buckets },
   get session() { return session },
+  get timing() { return { boot: bootMs, click: lastClickAt, firstFrame: firstFrameAt, load: loadMs } },
+  get pending() { return pending },
+  get device() { return deviceName() },
   limits: { MIN_SECONDS, MAX_ROWS_FLUSH, MAX_ROWS_SESSION, MAX_STALLS, WARM_S, GAP_MS },
 }
 start()

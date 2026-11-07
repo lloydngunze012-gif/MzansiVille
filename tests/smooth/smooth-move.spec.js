@@ -108,3 +108,74 @@ test('S2b a tap behind something solid ends in at most one stall, recorded where
   expect(typeof place.p).toBe('string')
   expect(place.ms, 'finding the place (twice a second): well under a tenth of a millisecond').toBeLessThan(0.1)
 })
+
+// S2c: the day 1 home scene counts ground taps and tap-to-move too (home.js onTap and its frames).
+// A new student, the home opening; once it lets you walk, tap the floor until a tap is counted.
+test('S2c a ground tap at home records tap_ms in the home bucket', async ({ page }) => {
+  await page.goto('/?talk=auto&smooth=test#/new')
+  await page.evaluate(() => localStorage.clear())
+  await page.goto('/?talk=auto&smooth=test&home=1#/new')
+  await page.locator('[data-part="gender"][data-id="female"]').tap()
+  const { enrolUI } = await import('../enrol.js')
+  await enrolUI(page, { name: 'Thandi', house: 1, course: 1, from: 'Durban' })
+  await expect(page).toHaveURL(/#\/morning/)
+  const host = page.locator('#home3d')
+  await expect(host).toHaveAttribute('data-ready', '1', { timeout: 60000 })
+  const fps = await page.evaluate(() => new Promise((resolve) => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 < 1500) requestAnimationFrame(f); else resolve(Math.round(n / 1.5)) }; requestAnimationFrame(f) }))
+  console.log('S2c fps (page)', fps)
+  test.skip(fps < 20, `INCONCLUSIVE: ${fps} fps, below 20`)
+  const homeBucket = () => page.evaluate(() => { const b = [...window.mzansiSmooth.buckets.values()].filter((x) => x.scene === 'home'); return { taps: b.reduce((a, x) => a + x.taps, 0), tapMs: b.flatMap((x) => x.tapMs), places: b.map((x) => x.place), seconds: b.reduce((a, x) => a + x.seconds, 0) } })
+  // Wait out the loading hitch, then tap the floor in front of you now and then.
+  let got = null
+  for (let i = 0; i < 40 && !got; i++) {
+    await page.waitForTimeout(1500)
+    const b = await homeBucket()
+    if (b.seconds < 1) continue
+    await page.touchscreen.tap(206, 600)
+    await page.waitForTimeout(400)
+    const after = await homeBucket()
+    if (after.taps > 0 && after.tapMs.length > 0) got = after
+  }
+  console.log('S2c home:', JSON.stringify(got))
+  expect(got, 'a home ground tap was counted with its tap-to-move time').toBeTruthy()
+  expect(got.places.every((p) => /^home:(suburban|township)$/.test(p)), 'filed under home:<style>').toBe(true)
+  expect(got.tapMs[0]).toBeGreaterThanOrEqual(0)
+  expect(got.tapMs[0]).toBeLessThan(1000)
+})
+
+// S6 (opt-in: it writes to the real Supabase table, so it only runs with SMOOTH_S6=1, after Lloyd has
+// run the smooth_reports SQL block): play 15 s in the Quad with ?smooth=live, hide the page, and
+// confirm one row lands. With SUPABASE_SERVICE_ROLE_KEY in the local .env (never committed) the row
+// is read back and every qa-live row deleted; without it, check #/smooth (or run
+//   delete from public.smooth_reports where build = 'qa-live';
+// in the SQL editor afterwards).
+test('S6 a real send: 15 s in the Quad with ?smooth=live, hide the page, one row lands (opt-in)', async ({ page }) => {
+  test.skip(!process.env.SMOOTH_S6, 'opt-in: SMOOTH_S6=1 npx playwright test tests/smooth/smooth-move.spec.js -g S6 --config playwright.gpu.config.js --workers=1')
+  const env = Object.fromEntries(fs.readFileSync('.env', 'utf8').split(/\r?\n/).filter((l) => /^[A-Z_]+=/.test(l)).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]))
+  const url = env.VITE_SUPABASE_URL
+  const service = env.SUPABASE_SERVICE_ROLE_KEY
+  await student(page, { spawn: 'quad', query: '&smooth=live' })
+  const started = new Date().toISOString()
+  await page.waitForTimeout(15000)
+  // Hide the page: the report goes out on visibilitychange.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await expect.poll(() => page.evaluate(() => (window.__smoothPosts || []).map((p) => p.status)), { timeout: 15000 }).not.toEqual([])
+  const posts = await page.evaluate(() => window.__smoothPosts)
+  console.log('S6 posts:', JSON.stringify(posts))
+  expect(posts[0].status, 'the table answered 201 (run the smooth_reports SQL block first if this is 404)').toBe(201)
+  if (service) {
+    const headers = { apikey: service, Authorization: `Bearer ${service}` }
+    const rows = await (await fetch(`${url}/rest/v1/smooth_reports?build=eq.qa-live&created_at=gte.${encodeURIComponent(started)}&select=*`, { headers })).json()
+    console.log('S6 rows:', JSON.stringify(rows.map((r) => ({ place: r.place, seconds: r.seconds, fps_typical: r.fps_typical, boot_ms: r.boot_ms, load_ms: r.load_ms, device: r.device }))))
+    expect(rows.length, 'one row for the Quad').toBeGreaterThanOrEqual(1)
+    expect(rows.every((r) => r.build === 'qa-live' && r.seconds >= 10)).toBe(true)
+    await fetch(`${url}/rest/v1/smooth_reports?build=eq.qa-live`, { method: 'DELETE', headers })
+    const left = await (await fetch(`${url}/rest/v1/smooth_reports?build=eq.qa-live&select=id`, { headers })).json()
+    expect(left, 'the qa-live rows are deleted').toEqual([])
+  } else {
+    console.log('S6: no SUPABASE_SERVICE_ROLE_KEY in .env: check #/smooth for a qa-live row, then delete from public.smooth_reports where build = \'qa-live\'')
+  }
+})

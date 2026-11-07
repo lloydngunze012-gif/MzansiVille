@@ -1,10 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 7 Nov, Cursor (Flow 1 smoothness wording written, pushed, not deployed).
+Last updated: 7 Nov, Claude Code (Flow 1 QA fixes, pushed, not deployed).
 
 ## Waiting for Lloyd
-- **Flow 1, smoothness reports** (7 Nov): built and pushed, not deployed. **Before deploying, run the "Flow 1: smoothness reports" block at the end of supabase/schema.sql in the Supabase SQL editor.** Then deploy the game; Lloyd's page is #/smooth (sign in as admin, link on #/admin). Report: docs/sprints/smoothness/report.md.
+- **Flow 1, smoothness reports** (7 Nov, with the QA fixes: boot and load clocks, retry, names, phone layout): built and pushed, not deployed. **Before deploying, run the "Flow 1: smoothness reports" block at the end of supabase/schema.sql in the Supabase SQL editor** (re-runnable; it also schedules the 30-day cleanup with pg_cron: if the editor refuses `create extension pg_cron`, switch pg_cron on in the dashboard under Database > Extensions, then run the block again). Optional after it: `SMOOTH_S6=1 npx playwright test tests/smooth/smooth-move.spec.js -g S6 --config playwright.gpu.config.js --workers=1` proves a real send, then `delete from public.smooth_reports where build = 'qa-live';`. Then deploy the game; Lloyd's page is #/smooth (sign in as admin, link on #/admin). Report: docs/sprints/smoothness/report.md.
 - **Smoothness wording** (7 Nov): the three strings in `data/campusville/meta.json` under "smoothness" are written (Settings switch, the line under it, and the Privacy page). Pushed, not deployed.
 - **organt.shop says "Store unavailable"** (Shopify 402, checked 7 Nov 12:40 from a phone browser). The website's Shop Organt button is hidden by `organt.showShop: false` in data/site/website.json; set it to true and redeploy the website once the store is open. The game is live with the link, used only on the Organt rep job's referral card.
 

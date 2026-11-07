@@ -721,10 +721,11 @@ function onTap(ndc) {
     for (let r = 0.25; r < 1.5; r += 0.25) for (let a = 0; a < 8; a++) {
       const x = p.x + Math.cos(a * Math.PI / 4) * r
       const z = p.z + Math.sin(a * Math.PI / 4) * r
-      if (!blockedAt(x, z)) { walkTo(x, z); return }
+      if (!blockedAt(x, z)) { smooth.tap(); walkTo(x, z); return }
     }
     return
   }
+  smooth.tap()
   walkTo(p.x, p.z)
 }
 
@@ -821,6 +822,7 @@ function tick(now) {
     else mover.setStick(0, 0)
   }
   if (!player.userData.scripted) mover.update(dt)
+  if (mover.moving) smooth.moved() // (a ground tap's tap-to-move ends on the first frame you walk)
   if (!player.userData.scripted) player.position.y = levelY()
   const stepping = mover.moving || Boolean(player.userData.walkingScript)
   soundLoop('footsteps', stepping && player.visible)

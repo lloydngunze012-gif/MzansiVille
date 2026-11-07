@@ -870,10 +870,15 @@ grant execute on function public.leaderboard() to anon, authenticated;
 -- ---------------------------------------------------------------------------
 -- Flow 1: smoothness reports from real phones (docs/design/smoothness-reports.md).
 -- Run this block once in the Supabase SQL editor BEFORE deploying the game that sends them.
+-- It can be run again safely (create ... if not exists, add column if not exists, policies and
+-- the cleanup job are replaced).
 -- src/smooth.js posts one row per place (bucket) every few minutes. Rows carry a random
 -- per-page-load session id, never the player's id. Anyone may insert (the game, signed in or
 -- not); only admins read (the #/smooth page). Until this runs, the game is unaffected: the
--- first refused post switches reports off for that session, quietly.
+-- first refused post (a 4xx) switches reports off for that session, quietly.
+-- Needs the pg_cron extension for the 30-day cleanup (last statements). If "create extension
+-- pg_cron" is refused, switch it on in the dashboard (Database > Extensions > pg_cron), then
+-- run this block again.
 -- ---------------------------------------------------------------------------
 create table if not exists public.smooth_reports (
   id bigint generated always as identity primary key,
@@ -905,6 +910,10 @@ create table if not exists public.smooth_reports (
   installed boolean
 );
 
+-- boot_ms: page start -> the first screen is shown and usable (the title with its cover loaded).
+-- load_ms (above): the tap that opens a 3D scene -> that scene's first frame. Both on a session's first row only.
+alter table public.smooth_reports add column if not exists boot_ms int check (boot_ms is null or boot_ms >= 0);
+
 create index if not exists smooth_reports_created_idx on public.smooth_reports (created_at desc);
 
 alter table public.smooth_reports enable row level security;
@@ -919,5 +928,15 @@ drop policy if exists "admins read smoothness reports" on public.smooth_reports;
 create policy "admins read smoothness reports" on public.smooth_reports
   for select to authenticated using (public.is_admin());
 
--- Keep 30 days. Not scheduled yet (docs/backlog.md): run by hand, or schedule with pg_cron.
--- delete from public.smooth_reports where created_at < now() - interval '30 days';
+-- Keep 30 days (the Privacy screen says so): a daily job at 03:17 deletes older rows.
+-- Safe to run twice: the job is unscheduled by name first.
+create extension if not exists pg_cron;
+
+select cron.unschedule('smooth_reports_30_days')
+  where exists (select 1 from cron.job where jobname = 'smooth_reports_30_days');
+
+select cron.schedule(
+  'smooth_reports_30_days',
+  '17 3 * * *',
+  $$delete from public.smooth_reports where created_at < now() - interval '30 days'$$
+);

@@ -108,7 +108,7 @@ let chat = { messages: [], names: {}, offline: false, source: 'loading', error: 
 let board = { tab: 'money', scope: 'all', rows: [], source: 'loading', error: '' }
 let admin = { reports: [], eventId: 'nsfas_delayed', notice: '', allowed: false }
 // Lloyd's smoothness page (#/smooth): the range, the rows, the place whose stalls are open.
-let smoothPage = { range: '7d', rows: [], place: '', error: '', loading: false, injected: false }
+let smoothPage = { range: '7d', rows: [], place: '', device: '', error: '', loading: false, injected: false }
 let timer = 0
 let merging = false
 let chatUnsub = null
@@ -1380,6 +1380,11 @@ app.addEventListener('click', async (event) => {
     loadSmooth()
     return
   }
+  if (act === 'smooth-device') {
+    smoothPage.device = smoothPage.device === button.dataset.id ? '' : button.dataset.id
+    paint()
+    return
+  }
   if (act === 'smooth-place') {
     smoothPage.place = smoothPage.place === button.dataset.id ? '' : button.dataset.id
     paint()
@@ -1999,6 +2004,7 @@ window.addEventListener('hashchange', () => {
 })
 
 paint()
+smooth.boot() // (smoothness reports: the first screen is up; the title counts once its cover has loaded)
 if (route().name === 'smooth') loadSmooth()
 // The students' models start loading in the background as the title shows, so the
 // creator's student is there the moment it opens.

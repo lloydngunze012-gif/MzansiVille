@@ -104,6 +104,5 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 - Install: on Android, Chrome's offer (beforeinstallprompt) can only be checked on a real phone; headless Edge never fires it, so test I4c sends a stand-in.
 
 ## Smoothness reports (7 Nov)
-- Schedule the 30-day cleanup of public.smooth_reports (the commented `delete ... interval '30 days'` at the end of its block in supabase/schema.sql): pg_cron in Supabase, or by hand each month. Until then the table only grows.
 - Smoothness page: the 5,000-row cap means a busy week shows only the newest rows; if the game gets busy, aggregate in SQL (a view or an rpc) instead of in the browser.
-
+- #/smooth: show a place's stalls as dots on the campus map instead of x, z.

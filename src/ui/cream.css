@@ -361,8 +361,45 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 .sm-row.red, .sm-row.red th { background: #fbdcd8; }
 .sm-row.amber, .sm-row.amber th { background: #fdf0c4; }
 .sm-row[data-act] { cursor: pointer; min-height: 44px; }
-.sm-row.open { outline: 2px solid var(--cr-ink); outline-offset: -2px; }
 .sm-none { text-align: center !important; color: var(--cr-muted); padding: 18px; }
 .sm-stalls { margin-top: 6px; }
 .sm-stalls .sm-table th, .sm-stalls .sm-table td { text-align: left; white-space: normal; }
 #app:has(> .sm) { width: 100%; max-width: none; } /* the smoothness page uses the whole window on a computer */
+.sm h2 small { font: 600 12px system-ui; color: var(--cr-muted); }
+
+/* The selected row (and keyboard focus) is outlined all the way round, the name cell included:
+   drawn inside each cell, because the name cell is sticky and paints over an outline on the row. */
+.sm-row:focus { outline: none; }
+.sm-row.open > *, .sm-row:focus-visible > * { box-shadow: inset 0 2px 0 var(--cr-ink), inset 0 -2px 0 var(--cr-ink); }
+.sm-row.open > :first-child, .sm-row:focus-visible > :first-child { box-shadow: inset 0 2px 0 var(--cr-ink), inset 0 -2px 0 var(--cr-ink), inset 2px 0 0 var(--cr-ink); }
+.sm-row.open > :last-child, .sm-row:focus-visible > :last-child { box-shadow: inset 0 2px 0 var(--cr-ink), inset 0 -2px 0 var(--cr-ink), inset -2px 0 0 var(--cr-ink); }
+.sm-detail td { background: var(--cr-bg-2); text-align: left !important; white-space: normal !important; }
+.sm-detail dl { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0; }
+.sm-detail dl div { display: flex; gap: 6px; align-items: baseline; }
+.sm-detail dt { font-size: 11px; color: var(--cr-muted); text-transform: uppercase; letter-spacing: .04em; }
+.sm-detail dd { margin: 0; font-weight: 700; }
+.sm-stalls .when-short, .sm-stalls .sm-dev { display: none; }
+.sm-stalls .sm-xz { color: var(--cr-muted); font-size: 11px; }
+
+/* A computer: every column, and the extra detail row isn't needed (the columns are all there). */
+@media (min-width: 481px) { .sm-detail { display: none; } }
+
+/* A phone (up to 480 px): nothing scrolls sideways. */
+@media (max-width: 480px) {
+  .sm-table { min-width: 0; table-layout: auto; font-size: 13px; }
+  .sm-table th, .sm-table td { padding: 10px 6px; white-space: normal; }
+  .sm-table thead th { font-size: 10px; letter-spacing: 0; }
+  .c-more { display: none; }
+  .sm-table th:first-child, .sm-table td:first-child { position: static; max-width: none; overflow: visible; white-space: normal; text-align: left; }
+  .sm-wrap { overflow-x: visible; }
+  .sm-name { word-break: break-word; }
+  /* the stall list: Kind, How, x z (small), When with the device under it */
+  .sm-stall-table .c-id, .sm-stall-table .c-device { display: none; }
+  .sm-stall-table th, .sm-stall-table td { padding: 8px 5px; text-align: left; vertical-align: top; }
+  .sm-stall-table td:first-child { position: static; }
+  .sm-stalls .when-long { display: none; }
+  .sm-stalls .when-short { display: inline; font-weight: 700; }
+  .sm-stalls .sm-dev { display: block; font-size: 10px; color: var(--cr-muted); line-height: 1.3; }
+  .sm-stalls .sm-xz { font-size: 10px; }
+  .sm-stalls .sm-how { word-break: break-word; }
+}
