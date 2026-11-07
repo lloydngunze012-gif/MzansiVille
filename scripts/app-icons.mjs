@@ -1,29 +1,20 @@
-// The game's install icons (owner, 7 Nov): the Soft Life mark (ink tile, yellow disc, ink S),
-// the same one the website uses (site/public/apple-touch-icon.png). Makes public/icons/
-// icon-192.png, icon-512.png, maskable-512.png (the disc sits well inside the 80% safe
-// zone, so Android's round or squircle mask never cuts it) and apple-touch-icon.png (180).
-// Run once: node scripts/app-icons.mjs (the PNGs are committed).
+// The game's install icons (owner, 8 Nov): the Soft Life logo (SL monogram, gold ring and crown, on plum).
+// Source: scripts/logo-source.png. Makes public/icons/icon-192.png, icon-512.png, apple-touch-icon.png (180)
+// from the full image, and maskable-512.png: the logo at 60% on flat plum (the logo's corner colour), edge
+// feathered, so Android's round or squircle mask never cuts it. Run: node scripts/app-icons.mjs (PNGs committed).
 import sharp from 'sharp'
-import { mkdirSync } from 'node:fs'
 
-const mark = (size, disc = 0.29) => {
-  const c = size / 2
-  const r = size * disc
-  return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
-    <rect width="${size}" height="${size}" fill="#1c1915"/>
-    <circle cx="${c}" cy="${c}" r="${r}" fill="#f0c400"/>
-    <text x="${c}" y="${c + r * 0.46}" text-anchor="middle" font-size="${r * 1.31}" font-family="Georgia, serif" font-weight="700" fill="#1c1915">S</text>
-  </svg>`)
+const SRC = 'scripts/logo-source.png'
+const png = { compressionLevel: 9 }
+for (const [file, size] of [['icon-192', 192], ['icon-512', 512], ['apple-touch-icon', 180]]) {
+  const i = await sharp(SRC).resize(size, size).png(png).toFile(`public/icons/${file}.png`)
+  console.log(file, i.width + 'x' + i.height, (i.size / 1024).toFixed(1) + ' kB')
 }
-
-mkdirSync('public/icons', { recursive: true })
-const out = [
-  ['public/icons/icon-192.png', 192, 0.29],
-  ['public/icons/icon-512.png', 512, 0.29],
-  ['public/icons/maskable-512.png', 512, 0.26],
-  ['public/icons/apple-touch-icon.png', 180, 0.29],
-]
-for (const [file, size, disc] of out) {
-  const info = await sharp(mark(size, disc)).png({ compressionLevel: 9 }).toFile(file)
-  console.log(`${file}: ${info.width}x${info.height}, ${(info.size / 1024).toFixed(1)} kB`)
-}
+const S = 512, inner = Math.round(S * 0.6)
+const { data } = await sharp(SRC).extract({ left: 0, top: 0, width: 40, height: 40 }).resize(1, 1).raw().toBuffer({ resolveWithObject: true })
+const field = { r: data[0], g: data[1], b: data[2] }
+const fade = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${inner}" height="${inner}"><defs><radialGradient id="g"><stop offset="0.72" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`)
+const logo = await sharp(SRC).resize(inner, inner).composite([{ input: fade, blend: 'dest-in' }]).png().toBuffer()
+const m = await sharp({ create: { width: S, height: S, channels: 3, background: field } })
+  .composite([{ input: logo, left: Math.floor((S - inner) / 2), top: Math.floor((S - inner) / 2) }]).png(png).toFile('public/icons/maskable-512.png')
+console.log('maskable-512', m.width + 'x' + m.height, (m.size / 1024).toFixed(1) + ' kB', JSON.stringify(field))
