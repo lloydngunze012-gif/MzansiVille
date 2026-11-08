@@ -21,11 +21,23 @@ Source: https://polyfork.dev (catalogue API: https://polyfork.dev/api/assets). T
 
 Credit line per asset, exactly as the asset's `credit` field gives it, e.g. `Cafe Parasol by Polyfork (https://polyfork.dev/asset/cafe-parasol-61a313), CC BY 4.0`. Record changes (recolour, Draco, merged into a kit) beside it.
 
-| File | Asset | Credit line | Changes |
-| --- | --- | --- | --- |
-| (none yet: no Polyfork asset is in the game) | | | |
+Built by `scripts/caf-assets.mjs` (node scripts/caf-assets.mjs <dir of the seven .glb files>) into one file, `public/models/caf/caf-kit.glb` (52.6 KB). Not placed in any scene yet. Downloaded 8 Nov 2026 from `https://polyfork.dev/cdn/<id>.glb`, one at a time 1.5 s apart, with the User-Agent `MzansiVille-asset-check/1.0`.
 
-On the in-game Credits screen the general line is: "Some 3D models by Polyfork (https://polyfork.dev), CC BY 4.0, changed to fit the game." Replace it with the per-asset lines above as soon as the first asset ships.
+Changes to every asset below (CC BY 4.0 asks us to say so): the rig removed (skins, animation, joint weights, rig metadata; doors, trays, wheels and folds stay in their closed rest pose), every node transform baked, one mesh per prop, vertex colours re-mapped to the Soft Life palette (ink, paper, line, yellow, green, clay, blue, muted), then welded, quantised and Draco-compressed. Sizes and triangle counts are unchanged from the catalogue.
+
+| Kit node | Asset | Credit line | Size before to after |
+| --- | --- | --- | --- |
+| `cafe-counter` | Cafe Counter | Cafe Counter by Polyfork (https://polyfork.dev/asset/cafe-counter-d8b226), CC BY 4.0 | 61.5 KB to 5.0 KB |
+| `servery-counter` | Servery Counter | Servery Counter by Polyfork (https://polyfork.dev/asset/servery-counter-3afbb9), CC BY 4.0 | 124.2 KB to 5.2 KB |
+| `cafe-table-set` | Cafe Table Set | Cafe Table Set by Polyfork (https://polyfork.dev/asset/cafe-table-set-1868d1), CC BY 4.0 | 62.3 KB to 5.3 KB |
+| `folding-dining-table` | Folding Dining Table | Folding Dining Table by Polyfork (https://polyfork.dev/asset/folding-dining-table-7b68ce), CC BY 4.0 | 93.9 KB to 5.9 KB |
+| `bar-stool` | Bar Stool | Bar Stool by Polyfork (https://polyfork.dev/asset/bar-stool-878f03), CC BY 4.0 | 53.9 KB to 4.8 KB |
+| `campus-coffee-kiosk` | Campus Coffee Kiosk | Campus Coffee Kiosk by Polyfork (https://polyfork.dev/asset/campus-coffee-kiosk-ec2395), CC BY 4.0 | 77.9 KB to 6.2 KB |
+| `cafe-parasol` | Cafe Parasol | Cafe Parasol by Polyfork (https://polyfork.dev/asset/cafe-parasol-61a313), CC BY 4.0 | 103.2 KB to 23.7 KB |
+
+Sum of the seven: 576.9 KB to 56.1 KB alone, 52.6 KB as one kit file. With the shared Draco decoder (245 KB, already shipped for the day-1 home scene) the cafeteria kit is 297.6 KB of the 2 MB budget.
+
+The in-game Credits screen lists the same seven credit lines (`src/ui/render.js`, `credits()`). When a prop is added or removed, change this table and that list together.
 
 Survey of the catalogue for the campus (no downloads): `docs/polyfork-survey.md`.
 

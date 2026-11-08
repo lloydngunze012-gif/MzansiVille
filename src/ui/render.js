@@ -402,10 +402,16 @@ function legalText(screen, title, paragraphs) {
 // The Credits screen (#/credits). Everything is CC0 or CC BY 4.0 with credit: docs/credits.md.
 function credits() {
   const link = (url, text) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
+  // Polyfork props (CC BY 4.0): one credit line each, as the asset's own `credit` field gives it. Keep in step with docs/credits.md.
+  const poly = (title, id) => `${title} by ${link(`https://polyfork.dev/asset/${id}`, 'Polyfork')}, CC BY 4.0`
+  const polyfork = [
+    ['Cafe Counter', 'cafe-counter-d8b226'], ['Servery Counter', 'servery-counter-3afbb9'], ['Cafe Table Set', 'cafe-table-set-1868d1'],
+    ['Folding Dining Table', 'folding-dining-table-7b68ce'], ['Bar Stool', 'bar-stool-878f03'], ['Campus Coffee Kiosk', 'campus-coffee-kiosk-ec2395'], ['Cafe Parasol', 'cafe-parasol-61a313'],
+  ].map(([t, id]) => poly(t, id)).join('<br>')
   return legalShell('credits', 'University of Mzansi', 'Credits', legalList([
     `Buildings, furniture, trees and cars: ${link('https://kenney.nl', 'Kenney')} (City Kits, Furniture Kit, Nature Kit, Car Kit), CC0.`,
     `Students, the family dog, building pack and animation library: ${link('https://quaternius.com', 'Quaternius')} (Ultimate Modular Men and Women, Ultimate Animated Animals, Ultimate Textured Buildings, Universal Animation Library), CC0.`,
-    `Some 3D models by ${link('https://polyfork.dev', 'Polyfork')}, ${link('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}, changed to fit the game (recoloured and compressed).`,
+    `Cafeteria props from ${link('https://polyfork.dev', 'Polyfork')} (${link('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}), changed to fit the game: rig removed, recoloured to our palette, compressed.<br>${polyfork}`,
     `Sounds and music from ${link('https://opengameart.org', 'OpenGameArt')} by TinyWorlds, Oiboo, rubberduck, domasx2, StarNinjas and zesona (Chris Murphy), CC0.`,
     `Mesh compression: Draco by Google, Apache License 2.0. Fonts and the rest were made for the game.`,
   ]) + '<p class="lg-fine">Full list with sources and licences: docs/credits.md in the project.</p>')
