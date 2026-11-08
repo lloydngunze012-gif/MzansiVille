@@ -44,7 +44,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   const needName = await page.locator('.en-err').textContent()
   await page.locator('#name').fill('Thandeka')
   await tap(page.locator('[data-house-pick]').nth(4))
-  await tap(page.locator('[data-k="from"][data-v="KwaZulu-Natal"]'))
+  await page.locator('[data-from-group="za"] select').selectOption('KwaZulu-Natal')
   await page.screenshot({ path: `${OUT}/2-who.png` })
   // Back keeps what you chose.
   await tap(page.locator('[data-act="enrol-back"]'))

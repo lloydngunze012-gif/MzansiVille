@@ -1,5 +1,5 @@
 import { avatarSvg } from '../avatar.js'
-import { fromPlace } from '../from.js'
+import { flagOf, fromPlace } from '../from.js'
 import { canonicalHouse } from '../houses.js'
 
 // The player card (build plan, Piece 1a): one phone screen, nothing scrolling. The same
@@ -26,7 +26,7 @@ export function playerCardHtml(card, house, opts = {}) {
       <div class="pc-id">
         <h2 class="pc-name">${esc(card.name || 'Student')}</h2>
         <p class="pc-handle">${card.handle ? `@${esc(card.handle)}` : opts.own ? '<span class="empty">no @handle yet</span>' : ''}</p>
-        ${card.from ? `<p class="pc-from">\u{1F4CD} From ${esc(fromPlace(card.from))}</p>` : ''}
+        ${card.from ? `<p class="pc-from">${flagOf(card.from)} From ${esc(fromPlace(card.from))}</p>` : ''}
         <p class="pc-num"><small>Student no.</small> <b>${esc(num || '—')}</b>${opts.provisional ? ' <i title="Real numbers arrive with enrolment">provisional</i>' : ''}</p>
       </div>
     </div>

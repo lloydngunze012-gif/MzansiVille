@@ -159,8 +159,21 @@
   box-shadow: 0 22px 44px #000000a6, 0 2px 0 #ffffff inset, 0 0 30px #f5c40026; }
 .en-id.housed { box-shadow: 0 22px 44px #000000a6, 0 0 30px color-mix(in srgb, var(--h1) 40%, transparent); }
 .en-idfrom { display: flex; align-items: center; gap: 6px; margin-top: 3px; font: 700 12px system-ui; color: var(--ink-2); }
-.en-idfrom svg { flex: none; width: 21px; height: 14px; border-radius: 2px; box-shadow: 0 0 0 1px #1c153026, 0 1px 2px #1c153033; }
-.en-idfrom i { font-style: normal; font-size: 14px; line-height: 1; }
+/* Flags (from.js flagOf), wherever they show: the card, the country chips, the player card. */
+svg.flag { flex: none; width: 21px; height: 14px; border-radius: 2px; vertical-align: -2px; box-shadow: 0 0 0 1px #1c153026, 0 1px 2px #1c153033; }
+.flag-globe { font-style: normal; font-size: 14px; line-height: 1; }
+/* Where you're from: three pills; a native picker sits invisibly over each (the phone's own list). */
+.en-from { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.en-frompick { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; min-height: 50px; padding: 0 8px; border-radius: 16px;
+  background: linear-gradient(180deg, #2c1653, #22113f); border: 1.5px solid var(--sl-line); color: var(--sl-text); font: 700 13px/1.15 system-ui; text-align: center; }
+.en-frompick span { min-width: 0; }
+.en .en-sub .en-fromnow { color: var(--sl-text); font-weight: 800; }
+.en-frompick b { flex: none; color: var(--sl-lilac); font-size: 11px; }
+.en-frompick[aria-pressed="true"] { background: var(--sl-plum-3); border-color: var(--sl-gold); box-shadow: 0 0 0 3px #f5c40033; }
+.en-frompick svg.flag { box-shadow: 0 0 0 1px #ffffff30; }
+.en-frompick select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+.en-frompick:has(select:focus-visible) { outline: 2px solid var(--sl-gold); outline-offset: 2px; }
+
 .en-idbar, .en-id.housed .en-idbar { position: relative; background: none; color: var(--ink); border-bottom: 1px solid #1c153014; }
 .en-crest, .en-id.housed .en-crest { background: var(--foil); color: #3a2a06; box-shadow: 0 1px 2px #0003, inset 0 1px 0 #fff8; }
 .en-idkind, .en-id.housed .en-idkind { color: #a67c00; }

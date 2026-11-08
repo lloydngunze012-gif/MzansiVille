@@ -4,7 +4,7 @@ import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
 import { tidyHandle } from '../handles.js'
-import { FROM, fromPlace } from '../from.js'
+import { FROM_GROUPS, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
 // a progress dot, back and skip; then the finished player card, "This is what other
@@ -56,14 +56,10 @@ function dots(step) {
 // its photo is the live 3D student (.cc-stage); on who and vibe it's your portrait (.cc-photo, filled
 // by main.js) and the card fills in as you go: your name as you type, your house's colours, your tags.
 // The next empty slot glows.
-// Where you're from, on the card: a province flies South Africa's flag (drawn, since Windows shows
-// flag emoji as two letters); Elsewhere in Africa and Overseas show a globe until there's a country list.
-const ZA_FLAG = '<svg viewBox="0 0 6 4" aria-hidden="true"><rect width="6" height="2" fill="#e03c31"/><rect y="2" width="6" height="2" fill="#001489"/><path d="M0 0L3 2H6M0 4L3 2" stroke="#fff" stroke-width="1.33" fill="none"/><path d="M0 0L3 2H6M0 4L3 2" stroke="#007749" stroke-width=".8" fill="none"/><path d="M0 .6L2.1 2L0 3.4Z" fill="#ffb81c"/><path d="M0 .95L1.6 2L0 3.05Z" fill="#000"/></svg>'
+// Where you're from, on the card, with its flag (from.js flagOf).
 function fromBadge(from) {
   const place = fromPlace(from)
-  if (!place) return ''
-  const mark = place === 'Elsewhere in Africa' ? '<i aria-hidden="true">🌍</i>' : place === 'Overseas' ? '<i aria-hidden="true">🌐</i>' : ZA_FLAG
-  return `<span class="en-idfrom">${mark}${esc(place)}</span>`
+  return place ? `<span class="en-idfrom">${flagOf(place)}${esc(place)}</span>` : ''
 }
 const fmtNum = (n) => String(n || '').replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')
 function idCard(state, { live = '', step }) {
@@ -127,7 +123,14 @@ function lookStep(state, still) {
 function whoStep(state) {
   const { district, draft } = state
   const houses = (district.houses || []).map((h) => `<button class="en-house" type="button" data-act="enrol-pick" data-k="residence" data-v="${esc(h.name)}" data-house-pick="${esc(h.id)}" style="--h1:${h.main};--h2:${h.accent}" aria-pressed="${draft.residence === h.name}"><b>${esc(h.name.replace(/ House$/, ''))}</b><small>${esc(h.vibe || '')}</small></button>`).join('')
-  const from = FROM.map((f) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="from" data-v="${esc(f)}" aria-pressed="${fromPlace(draft.from) === f}">${esc(f)}</button>`).join('')
+  // Where you're from: three pills, each opening the phone's own picker; the one you used shows your answer and its flag.
+  const place = fromPlace(draft.from)
+  const mine = groupOf(place)
+  const from = FROM_GROUPS.map((g) => {
+    const on = mine === g.id
+    return `<label class="en-frompick" data-from-group="${g.id}" aria-pressed="${on}">${on ? flagOf(place) : ''}<span>${esc(g.label)}</span><b aria-hidden="true">▾</b>
+        <select data-from aria-label="${esc(g.label)}"><option value="">${esc(on ? `${g.label}: none` : g.label)}</option>${g.places.map((p) => `<option value="${esc(p)}"${on && p === place ? ' selected' : ''}>${esc(fromLabel(p))}</option>`).join('')}</select></label>`
+  }).join('')
   return `<div class="en-who">
       ${idCard(state, { step: 'who' })}
       <h2 class="en-q">Who are you?</h2>
@@ -138,8 +141,8 @@ function whoStep(state) {
       ${(draft.handleSuggest || []).length ? `<div class="en-chips en-suggest"><span>Free:</span>${draft.handleSuggest.map((h) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="handle" data-v="${esc(h)}">@${esc(h)}</button>`).join('')}</div>` : ''}
       <h3 class="en-sub">Your house</h3>
       <div class="en-houses">${houses}</div>
-      <h3 class="en-sub">Where you're from <span>optional</span></h3>
-      <div class="en-chips">${from}</div>
+      <h3 class="en-sub">Where you're from ${place ? `<span class="en-fromnow">${esc(fromLabel(place))}</span>` : '<span>optional</span>'}</h3>
+      <div class="en-from">${from}</div>
     </div>`
 }
 

@@ -1333,6 +1333,8 @@ function syncCard() {
 }
 
 app.addEventListener('change', (event) => {
+  // (enrolment: where you're from, from one of the three pickers)
+  if (event.target.matches?.('.en select[data-from]')) { captureForm(); draft.from = event.target.value; paint(); return }
   if (event.target.id === 'residence') { draft.residence = event.target.value; syncCard() }
   if (event.target.id === 'course') { draft.course = event.target.value; syncCard() }
   if (event.target.id === 'event-id') {
