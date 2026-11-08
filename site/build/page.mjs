@@ -161,7 +161,7 @@ function header(d) {
   const h = d.site.header || {}
   const links = (h.links || []).map((l) => `<li><a href="${esc(l.href)}">${esc(l.label)}</a></li>`).join('')
   return `<header class="top"><div class="wrap top-row">
-    <a class="wordmark" href="/">${esc(h.wordmark)}</a>
+    <a class="wordmark" href="/"><img src="/img/logo.webp" srcset="/img/logo.webp 1x, /img/logo@2x.webp 2x" width="150" height="50" alt="Soft Life: University of Mzansi" decoding="async"></a>
     <nav aria-label="Sections"><ul>${links}</ul></nav>
     <a class="btn small" href="${esc(d.gameUrl)}/">${esc(h.play)}</a>
   </div></header>`
