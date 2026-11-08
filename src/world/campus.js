@@ -133,6 +133,7 @@ function ribbon(a, b, floor) {
 function buildingMesh(building, home) {
   const group = new THREE.Group()
   group.position.set(building.x, 0, building.z)
+  group.rotation.y = building.facing || 0 // its front (door, sign, banners) faces into campus
   group.userData.placeId = building.id
   // An open place (the Quad) is dressed in dress.js; it has no walls, roof or door here.
   // The sports hall, bus station and gate are built by hand in buildings.js.

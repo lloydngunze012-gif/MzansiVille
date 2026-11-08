@@ -68,6 +68,43 @@ export function startDropOff(ctx) {
       return false
     })
   }
+  // Walking round the car: the car's box grown by 0.6 m is a no-go rectangle; between two
+  // spots outside it the shortest way is straight, or by its corners (a tiny visibility graph).
+  let carBox = null // the parked car's footprint (world, once it has stopped)
+  const CLEAR = 0.9 // (0.6 m clear on a straight; the body turns in an arc at a corner and cuts it by up to ~0.4)
+  const grown = () => ({ minX: carBox.minX - CLEAR, maxX: carBox.maxX + CLEAR, minZ: carBox.minZ - CLEAR, maxZ: carBox.maxZ + CLEAR })
+  const inRect = (r, x, z) => x > r.minX + 1e-6 && x < r.maxX - 1e-6 && z > r.minZ + 1e-6 && z < r.maxZ - 1e-6
+  function clearLine(r, a, b) {
+    const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / 0.05)
+    for (let i = 0; i <= n; i++) if (inRect(r, a.x + ((b.x - a.x) * i) / n, a.z + ((b.z - a.z) * i) / n)) return false
+    return true
+  }
+  function routeAround(a, b) {
+    const r = grown()
+    if (clearLine(r, a, b)) return [b]
+    const nodes = [a, { x: r.minX, z: r.minZ }, { x: r.maxX, z: r.minZ }, { x: r.maxX, z: r.maxZ }, { x: r.minX, z: r.maxZ }, b]
+    const dist = nodes.map(() => Infinity)
+    const prev = nodes.map(() => -1)
+    const done = nodes.map(() => false)
+    dist[0] = 0
+    for (let k = 0; k < nodes.length; k++) {
+      let u = -1
+      nodes.forEach((_, i) => { if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i })
+      if (u < 0 || dist[u] === Infinity) break
+      done[u] = true
+      nodes.forEach((v, i) => {
+        if (done[i] || !clearLine(r, nodes[u], v)) return
+        const d = dist[u] + Math.hypot(v.x - nodes[u].x, v.z - nodes[u].z)
+        if (d < dist[i]) { dist[i] = d; prev[i] = u }
+      })
+    }
+    const out = []
+    for (let i = nodes.length - 1; i > 0 && i >= 0; i = prev[i]) { out.unshift(nodes[i]); if (prev[i] < 0) break }
+    return out.length ? out : [b]
+  }
+  async function walkAround(a, x, z, speed) {
+    for (const p of routeAround({ x: a.position.x, z: a.position.z }, { x, z })) await walkPerson(a, p.x, p.z, speed)
+  }
   function drive(points, seconds) {
     const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(p.x, 0, p.z)), false, 'catmullrom', 0.3)
     let t = 0
@@ -98,6 +135,16 @@ export function startDropOff(ctx) {
     car.position.set(enter.x, 0, enter.z)
     car.rotation.y = Math.PI
     scene.add(car)
+    // how big the car is (its swept area during the arrival, stop and U-turn is kept free of walkers)
+    const local = new THREE.Box3().setFromObject(car)
+    const reach = Math.max(Math.hypot(local.min.x, local.min.z), Math.hypot(local.max.x, local.max.z), 1.5) + 1.2
+    const swept = [enter, { x: stop.x, z: stop.z + 7 }, stop, { x: stop.x + 3.6, z: stop.z - 2.4 }, { x: stop.x + 3.6, z: enter.z + 6 }]
+    ctx.keepOut?.({
+      minX: Math.min(...swept.map((p) => p.x)) - reach,
+      maxX: Math.max(...swept.map((p) => p.x)) + reach,
+      minZ: Math.min(...swept.map((p) => p.z)) - reach,
+      maxZ: Math.max(...swept.map((p) => p.z)) + reach,
+    })
     parent = createAvatar(home.parentLook || { gender: 'female', outfit: style.parent.outfit, topColor: style.parent.top })
     parent.name = 'parent'
     parent.visible = false
@@ -111,13 +158,17 @@ export function startDropOff(ctx) {
     caption.hidden = true
     // out of the car: you on the passenger side (left), your parent from the driver's side
     say('goodbye')
-    player.position.set(stop.x - 1.5, 0, stop.z + 0.3)
-    face(player, stop.x, stop.z - 3)
+    car.updateMatrixWorld(true)
+    const cb = new THREE.Box3().setFromObject(car)
+    carBox = { minX: cb.min.x, maxX: cb.max.x, minZ: cb.min.z, maxZ: cb.max.z }
+    // (the driver's door is on the right as you face the gate: a step clear of the car)
+    const driver = { x: carBox.maxX + CLEAR + 0.05, z: (carBox.minZ + carBox.maxZ) / 2 - 0.2 }
+    player.position.set(carBox.minX - CLEAR - 0.5, 0, (carBox.minZ + carBox.maxZ) / 2 + 0.3)
+    face(player, player.position.x, stop.z - 3)
     player.visible = true
-    parent.position.set(stop.x + 1.4, 0, stop.z - 0.4)
+    parent.position.set(driver.x, 0, driver.z)
     parent.visible = true
-    await walkPerson(parent, stop.x + 0.2, stop.z - 2.9)
-    await walkPerson(parent, player.position.x + 0.15, player.position.z - 0.95)
+    await walkAround(parent, player.position.x + 0.15, player.position.z - 0.95)
     face(parent, player.position.x, player.position.z)
     face(player, parent.position.x, parent.position.z)
     await line(call, style.lines.gate1)
@@ -132,7 +183,7 @@ export function startDropOff(ctx) {
     await sway
     parent.rotation.z = 0
     player.rotation.z = 0
-    await walkPerson(parent, player.position.x + 0.2, player.position.z - 0.95, 0.8)
+    await walkPerson(parent, player.position.x + 0.15, player.position.z - 0.95, 0.8)
     face(parent, player.position.x, player.position.z)
     // the money
     await line(call, style.lines.money.replace('{amount}', pocket), [`\u{1F4B5} Thanks, ${call}`])
@@ -144,8 +195,8 @@ export function startDropOff(ctx) {
     closeCard()
     // back in the car, round the drop-off circle and out of the gate
     say('leave')
-    await walkPerson(parent, stop.x + 0.2, stop.z - 2.9)
-    await walkPerson(parent, stop.x + 1.4, stop.z - 0.4)
+    await walkAround(parent, driver.x, driver.z)
+    await walkPerson(parent, carBox.maxX - 0.2, driver.z, 0.8) // (steps in at the driver's door)
     parent.visible = false
     soundLoop('bus_engine', true)
     // a U-turn in front of the gate and away down the road
@@ -153,6 +204,8 @@ export function startDropOff(ctx) {
     soundLoop('bus_engine', false)
     scene.remove(car)
     car = null
+    carBox = null
+    ctx.keepOut?.(null)
     ctx.rig?.turnBehind(Math.PI) // now campus is in front of you
     // your suitcase rolls along beside you
     suitcase = new THREE.Group()
@@ -207,10 +260,17 @@ export function startDropOff(ctx) {
       if (car && !player.visible) { player.position.x = car.position.x; player.position.z = car.position.z }
     },
     arrive() { if (phase === 'walk') atDoor() },
+    // (tests, read only) where the car and your parent are right now
+    report() {
+      let box = null
+      if (car) { car.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(car); box = { minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z } }
+      return { phase, car: box, parent: parent && { x: parent.position.x, z: parent.position.z, visible: parent.visible } }
+    },
     stop() {
       for (const t of tasks) t.resolve()
       tasks.length = 0
       soundLoop('bus_engine', false)
+      ctx.keepOut?.(null)
       if (car) scene.remove(car)
       for (const a of people) scene.remove(a)
       if (suitcase) player.remove(suitcase)

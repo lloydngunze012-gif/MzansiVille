@@ -157,6 +157,12 @@ export function createCrowd(scene, campus, opts = {}) {
     return ahead > 0 && ahead < 1.6 && side < 0.8
   }
 
+  // A zone nobody walks into while the Day 1 car comes, waits and leaves (dropoff.js):
+  // walkers inside are moved out, nobody steps in, a route that ends in it is dropped.
+  let keepOut = null
+  const inKeep = (x, z, pad = 0) => keepOut && x > keepOut.minX - pad && x < keepOut.maxX + pad && z > keepOut.minZ - pad && z < keepOut.maxZ + pad
+  function setKeepOut(rect) { keepOut = rect || null }
+
   let tick = 0
   function update(dt, playerPos) {
     tick += 1
@@ -169,6 +175,19 @@ export function createCrowd(scene, campus, opts = {}) {
       // Someone you are talking to stands still and faces you.
       if (avatar.userData.following) continue // walking with the player (scene.js)
       if (person.talking) { poseAvatar(avatar, false, person.clock); continue }
+      if (!person.sitting && inKeep(avatar.position.x, avatar.position.z)) {
+        // (in the car's way: step out the nearest side)
+        const p = avatar.position
+        const edges = [[p.x - keepOut.minX, -1, 0], [keepOut.maxX - p.x, 1, 0], [p.z - keepOut.minZ, 0, -1], [keepOut.maxZ - p.z, 0, 1]].sort((a, b) => a[0] - b[0])
+        const [, ex, ez] = edges[0]
+        p.x += ex * 2.5 * dt
+        p.z += ez * 2.5 * dt
+        avatar.rotation.y = Math.atan2(ex, ez)
+        person.route = []
+        person.wait = 1
+        poseAvatar(avatar, true, person.clock)
+        continue
+      }
       if (!person.sitting) {
         if (person.route.length && person.wait <= 0 && yields(person, playerPos)) {
           person.wait = 0.5
@@ -180,6 +199,7 @@ export function createCrowd(scene, campus, opts = {}) {
           else if (person.wait <= 0) nextTrip(person)
         } else if (person.route.length) {
           const step = followStep(campus.grid, { x: avatar.position.x, z: avatar.position.z }, person.route, person.speed * dt)
+          if (inKeep(step.position.x, step.position.z, 0.8)) { person.route = []; person.wait = 1 + Math.random(); poseAvatar(avatar, false, person.clock); continue }
           const dx = step.position.x - avatar.position.x
           const dz = step.position.z - avatar.position.z
           if (dx || dz) avatar.rotation.y = Math.atan2(dx, dz)
@@ -204,7 +224,11 @@ export function createCrowd(scene, campus, opts = {}) {
           person.wait = 1 + Math.random() * 3
         }
       }
-      if (!person.sitting) separate(person, playerPos, dt)
+      if (!person.sitting) {
+        const [bx, bz] = [avatar.position.x, avatar.position.z]
+        separate(person, playerPos, dt)
+        if (inKeep(avatar.position.x, avatar.position.z, 0.8)) { avatar.position.x = bx; avatar.position.z = bz }
+      }
       poseAvatar(avatar, walking, person.clock)
     }
     group.userData.walking = people.filter((person) => !person.sitting && person.route.length && person.wait <= 0).length
@@ -234,5 +258,5 @@ export function createCrowd(scene, campus, opts = {}) {
     }
   }
 
-  return { group, people, update, pushOut, dispose, setFill, fillers }
+  return { group, people, update, pushOut, dispose, setFill, fillers, setKeepOut }
 }

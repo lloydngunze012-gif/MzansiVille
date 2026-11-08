@@ -1,4 +1,5 @@
 import { actionsAt, actionState } from '../engine/sim.js'
+import { doorPoint } from './layout.js'
 const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
@@ -171,7 +172,7 @@ export function createCampusMap(host) {
     const act = event.target.closest('[data-map]')?.dataset.map
     if (act === 'close' || act === 'shut') close()
     if (act === 'walk' && selected) {
-      const door = { x: selected.x, z: selected.maxZ + 5 }
+      const door = doorPoint(selected)
       close()
       onWalk(door.x, door.z)
     }

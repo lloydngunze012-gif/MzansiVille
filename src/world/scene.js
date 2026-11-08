@@ -26,7 +26,7 @@ import { createPlayer, WALK } from './player.js'
 import { createPlayerState } from './player-state.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
-import { doorPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
+import { doorPoint, frontPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
 import { reportError } from '../errors.js'
 import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
@@ -1674,7 +1674,7 @@ function activityApi() {
       const b = campus.layout.buildings.find((item) => item.id === id)
       if (!b) return null
       const door = doorPoint(b)
-      return { id, b, x: b.x, z: b.z, door, front: { x: b.x, z: b.maxZ + 1.4 }, open: Boolean(b.open) }
+      return { id, b, x: b.x, z: b.z, door, front: frontPoint(b, 1.4), open: Boolean(b.open) }
     },
     frame: (target) => { activityFocus = target || null; focusTimer = 0 },
     // A fixed shot (from, at): for scenes that know exactly where to look from.
@@ -2339,6 +2339,7 @@ function respawn(district, run) {
       boom: campus.buildings.getObjectByName('boom'),
       walkTo: (x, z) => walkTo(x, z, null, { arrive: true }),
       rig,
+      keepOut: (rect) => crowd?.setKeepOut(rect),
       onUpdate: () => window.dispatchEvent(new CustomEvent('mzansi-dropoff-update')),
       onDone: () => { const d = dropOff; dropOff = null; d?.stop(); window.dispatchEvent(new CustomEvent('mzansi-dropoff-done')) },
     })
@@ -2403,7 +2404,7 @@ function promptDoor() {
   }
   node.hidden = false
   node.textContent = `Tap to enter ${near.building.name}`
-  pin(node, near.building.x, 2.6, near.building.maxZ + 0.4, 28)
+  { const f = frontPoint(near.building, 0.4); pin(node, f.x, 2.6, f.z, 28) }
 }
 
 // Walking with the stick: up to the real outline of buildings, tables and stalls
@@ -2437,6 +2438,19 @@ window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
 window.mzansiNear = () => { const p = player.position; return { at: [+p.x.toFixed(2), +p.z.toFixed(2)], nc: player.userData.noCollide || null, pose: player.userData.pose, boxes: (boxesNear(p.x, p.z) || []).map((b) => ({ kind: b.kind || 'aabb', depth: +depthIn(p.x, p.z, b, 0.25).toFixed(3), b: b.rot === undefined ? [b.minX, b.maxX, b.minZ, b.maxZ].map((v) => +v.toFixed(2)) : [b.cx, b.cz, b.hx, b.hz, b.rot].map((v) => +v.toFixed(2)) })).filter((b) => b.depth > 0 || /step|stage|tree/.test(b.kind)) } }
 // Tests: every collider (kind, middle, half-size, turn) and how many of each kind.
 window.mzansiColliders = () => (campus?.colliders || []).map((c) => ({ kind: c.kind, cx: +c.cx.toFixed(2), cz: +c.cz.toFixed(2), hx: +c.hx.toFixed(2), hz: +c.hz.toFixed(2), rot: +c.rot.toFixed(2) }))
+// Tests: every building's door spot: inside the fence, on open ground, and the route from the
+// arrival spot inside the gate to it (the walk graph the ring and dots use).
+window.mzansiDoorAudit = () => {
+  const gateB = campus.layout.buildings.find((b) => b.id === 'gate')
+  const from = nearestOpen(campus.grid, { x: gateB.x, z: gateB.minZ - 16 })
+  return campus.layout.buildings.map((b) => {
+    const d = doorPoint(b)
+    const cell = cellOf(d.x, d.z)
+    const route = findPath(campus.grid, from, cell)
+    return { id: b.id, facing: +(b.facing || 0).toFixed(2), x: +d.x.toFixed(2), z: +d.z.toFixed(2), radius: +Math.hypot(d.x, d.z).toFixed(1), solid: hitsSolid(d.x, d.z), blocked: pointBlocked(campus.grid, d.x, d.z), reach: route.length > 0, ends: route.length ? +Math.hypot(route[route.length - 1].x - d.x, route[route.length - 1].z - d.z).toFixed(2) : null }
+  })
+}
+window.mzansiDropoff = () => dropOff?.report() || null
 // Tests: stand the player somewhere, facing a point.
 window.mzansiPlace = (x, z, fx, fz) => { if (!player) return; mover.stop(); player.position.set(x, 0, z); player.rotation.y = Math.atan2(fx - x, fz - z); player.userData.lastPos?.set(x, 0, z) }
 const BODY = 0.3
@@ -2489,7 +2503,7 @@ function destination() {
   if (currentRun?.lectureRoute) return lectureVenue()
   const goal = mover.target
   if (!goal || !campus) return ''
-  const hit = campus.layout.buildings.find((b) => Math.hypot(goal.x - b.x, goal.z - (b.maxZ + 5)) < 4)
+  const hit = campus.layout.buildings.find((b) => Math.hypot(goal.x - doorPoint(b).x, goal.z - doorPoint(b).z) < 4)
   return hit?.id || ''
 }
 
@@ -2499,7 +2513,7 @@ function swingDoors(dt) {
     const hinge = group.getObjectByName('door-pivot')
     if (!hinge) continue
     const b = campus.layout.buildings.find((item) => item.id === group.userData.placeId)
-    const near = b && Math.hypot(player.position.x - b.x, player.position.z - (b.maxZ + 1.5)) < 3.6
+    const near = b && (() => { const f = frontPoint(b, 1.5); return Math.hypot(player.position.x - f.x, player.position.z - f.z) < 3.6 })()
     const want = near ? -1.75 : 0
     hinge.rotation.y += (want - hinge.rotation.y) * Math.min(1, dt * 5)
   }
