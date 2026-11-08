@@ -594,3 +594,7 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 .th-compact .th-sw i { width: 22px; height: 22px; }
 .th-compact .th-sw[aria-pressed="true"] b { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: #f0c400; }
 .th-compact .th-sw[aria-pressed="true"] i { border-width: 2px; box-shadow: 0 0 0 3px #f0c400; }
+
+/* The scene question ("Grace wants your room."): plum with light writing, so it reads as the heading
+   above the cream choices (owner, 8 Nov). */
+.mm-bar.mm-bar .mm-q { background: #2a1846; color: #fff6e6; border: 2px solid #f0c400; box-shadow: 0 4px 0 #0003, 0 12px 24px #0003; font-weight: 800; }
