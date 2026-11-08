@@ -4,7 +4,7 @@
   "gameUrl": "https://softlifeza.vercel.app",
   "meta": {
     "title": "Soft Life: first year at the University of Mzansi",
-    "description": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from around the world.",
+    "description": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from all around the world.",
     "shareAlt": "Soft Life: University of Mzansi. Students from the seven houses on the campus steps."
   },
   "header": {
@@ -19,7 +19,7 @@
   },
   "hero": {
     "title": "First year at the University of Mzansi",
-    "text": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from around the world.",
+    "text": "A free 3D campus life sim that plays in your phone's browser. Pick one of seven houses, get your student number, and live first year with real students from all around the world.",
     "play": "Play free",
     "phone": "Put it on your phone",
     "install": "Install",

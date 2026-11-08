@@ -53,7 +53,7 @@ export function contrast(a, b) {
   const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p)
   return (x + 0.05) / (y + 0.05)
 }
-const INK = '#1c1915'
+const INK = '#2f1a5c'
 const WHITE = '#ffffff'
 /** White or ink on a house colour, whichever reads better (always 4.5:1 or more for the seven houses). */
 export function textOn(bg) {
@@ -130,7 +130,7 @@ export function head(d) {
   return `<title>${esc(m.title)}</title>
     <meta name="description" content="${esc(m.description)}">
     <link rel="canonical" href="${esc(siteUrl)}/">
-    <meta name="theme-color" content="#ece4fa">
+    <meta name="theme-color" content="#f3ecff">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="/fonts/graduate-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -258,7 +258,7 @@ async function phone(d) {
   const p = d.site.phone || {}
   const steps = (list) => (list || []).map((s) => `<li>${esc(d.fill(s))}</li>`).join('')
   const card = (k) => `<div class="how"><h3>${esc(p[k]?.title)}</h3><ol>${steps(p[k]?.steps)}</ol></div>`
-  const qr = await QRCode.toString(`${d.gameUrl}/`, { type: 'svg', errorCorrectionLevel: 'M', margin: 0, color: { dark: '#1c1915', light: '#ffffff' } })
+  const qr = await QRCode.toString(`${d.gameUrl}/`, { type: 'svg', errorCorrectionLevel: 'M', margin: 0, color: { dark: '#2f1a5c', light: '#ffffff' } })
   const svg = qr.replace('<svg ', `<svg role="img" aria-label="${esc(d.fill(p.qrAlt))}" focusable="false" `)
   return `<section id="phone" class="band band-paper" aria-labelledby="phone-title"><div class="wrap">
     <h2 id="phone-title">${esc(p.title)}</h2>
