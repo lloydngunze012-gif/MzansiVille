@@ -57,15 +57,20 @@ function lookStep(state, still) {
   const code = district.meta.dialCode
   const g = genderOf(draft.avatar)
   const chosen = (key, id) => (draft.avatar[key] || (key === 'body' ? 'regular' : key === 'hairColor' ? HAIR_BLACK : '')) === id
-  const row = (label, items, key) => `<section class="en-row"><h3>${label}</h3><div class="en-strip">${items.map((item) =>
+  const pickedLabel = (items, key) => items.find((item) => chosen(key, item.id))?.label || ''
+  const row = (label, items, key) => `<section class="en-row"><h3>${label}<em>${esc(pickedLabel(items, key))}</em></h3><div class="en-strip">${items.map((item) =>
     `<button class="cc-chip en-card${item.fill ? ' sw' : ' th'}" type="button" data-act="avatar" data-part="${key}" data-id="${item.id}" aria-label="${esc(item.label)}" aria-pressed="${chosen(key, item.id)}">${
       item.fill ? `<i style="background:${item.fill}"></i><b>${esc(item.label)}</b>`
         : `<span class="cc-thumb ${key}">${avatarSvg({ ...draft.avatar, [key]: item.id }, code, 40)}</span><b>${esc(item.label)}</b>`
     }</button>`).join('')}</div></section>`
-  const genderRow = `<section class="en-row"><h3>You are</h3><div class="en-strip">${genders.map((item) =>
+  const genderRow = `<section class="en-row en-you"><h3>You are</h3><div class="en-strip">${genders.map((item) =>
     `<button class="cc-chip en-card th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" data-gender="${item.id}" aria-pressed="${g === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '♀' : '♂'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></section>`
   return `<div class="en-look">
+      <div class="en-head"><h2>Make your student</h2></div>
       <div class="cc-stage en-stage">
+        <i class="en-beams" aria-hidden="true"></i><i class="en-spark" aria-hidden="true"></i>
+        <span class="en-class" aria-hidden="true">Class of ${CLASS_OF}</span>
+        <span class="en-turn" aria-hidden="true">Drag to turn</span>
         <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
         ${still ? `<img class="cc-still" src="${still}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>
         <div class="cc-bob cc-dance">${avatarSvg(draft.avatar, code, 150)}</div>
@@ -99,19 +104,38 @@ function whoStep(state) {
     </div>`
 }
 
+// A small picture for every tag (looks only: a name that isn't here just shows without one).
+const ICON = {
+  Accounting: '🧮', 'Information Systems': '🗂️', Management: '📈', Marketing: '📣', 'Computer Science': '💻',
+  Engineering: '⚙️', Law: '⚖️', Medicine: '🩺', Nursing: '🏥', Science: '🔬',
+  Bookworm: '📚', 'Party starter': '🎉', 'Gym rat': '💪', Creative: '🎨', Gamer: '🎮', Foodie: '🍔',
+  Chilled: '😎', Hustler: '💸', Sporty: '⚽', 'Music head': '🎧',
+  'Study buddy': '📖', 'New friends': '🤝', 'Someone to eat with': '🍽️', 'Gym partner': '🏋️',
+  'Crew for the hunts': '🌙', 'Party people': '🪩', 'A society to join': '🏛️', 'Just vibing': '✌️',
+}
+const icon = (v) => (ICON[v] ? `<i aria-hidden="true">${ICON[v]}</i>` : '')
+
 function vibeStep(state) {
   const { district, draft } = state
-  const group = (label, key, items) => `<h3 class="en-sub">${label}</h3><div class="en-chips">${items.map((v) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="${key}" data-v="${esc(v)}" data-pick="${key}" aria-pressed="${draft[key] === v}">${esc(v)}</button>`).join('')}</div>`
+  const group = (n, label, key, items) => `<section class="en-group" data-g="${key}" data-done="${Boolean(draft[key])}">
+      <h3 class="en-gh"><span class="en-num" aria-hidden="true">${draft[key] ? '✓' : n}</span>${label}</h3>
+      <div class="en-chips">${items.map((v) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="${key}" data-v="${esc(v)}" data-pick="${key}" aria-pressed="${draft[key] === v}">${icon(v)}${esc(v)}</button>`).join('')}</div>
+    </section>`
+  const says = (key, empty) => `<li data-g="${key}" class="${draft[key] ? '' : 'empty'}">${draft[key] ? `${icon(draft[key])}${esc(draft[key])}` : empty}</li>`
   const lines = LINES.map((l) => `<button class="en-chip en-line" type="button" data-act="enrol-pick" data-k="bio" data-v="${esc(l)}" aria-pressed="${draft.bio === l}">${esc(l)}</button>`).join('')
   return `<div class="en-vibe">
-      <h2 class="en-q">Your vibe</h2>
-      ${group('\u{1F4DA} Studying', 'course', district.courses)}
-      ${group('✨ Your vibe', 'vibe', VIBES)}
-      ${group('\u{1F50E} Looking for', 'looking', LOOKING)}
-      <h3 class="en-sub">One line for strangers <span data-bio-count>${(draft.bio || '').length}/${BIO_MAX}</span></h3>
-      <input id="bio" class="en-input" maxlength="${BIO_MAX}" value="${esc(draft.bio || '')}" placeholder="Or tap one below" autocomplete="off" enterkeyhint="done">
-      ${draft.notice ? `<p class="en-note" role="status">${esc(draft.notice)}</p>` : ''}
-      <div class="en-chips">${lines}</div>
+      <h2 class="en-q">What's your vibe?</h2>
+      <p class="en-lede">Three taps. It's how people on campus find their crew.</p>
+      <div class="en-says" aria-live="polite"><small>On your card</small><ul>${says('course', 'Your course')}${says('vibe', 'Your vibe')}${says('looking', 'Looking for')}</ul></div>
+      ${group(1, 'Studying', 'course', district.courses)}
+      ${group(2, 'Your vibe', 'vibe', VIBES)}
+      ${group(3, 'Looking for', 'looking', LOOKING)}
+      <section class="en-group en-opener" data-g="bio" data-done="${Boolean(draft.bio)}">
+        <h3 class="en-gh"><span class="en-num" aria-hidden="true">${draft.bio ? '✓' : 4}</span>Your opener <span class="en-count" data-bio-count>${(draft.bio || '').length}/${BIO_MAX}</span></h3>
+        <div class="en-bubble"><input id="bio" class="en-input" maxlength="${BIO_MAX}" value="${esc(draft.bio || '')}" placeholder="Say something, or tap one below" autocomplete="off" enterkeyhint="done"></div>
+        ${draft.notice ? `<p class="en-note" role="status">${esc(draft.notice)}</p>` : ''}
+        <div class="en-chips">${lines}</div>
+      </section>
     </div>`
 }
 
