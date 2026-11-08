@@ -3,6 +3,7 @@ import { LOOKING, VIBES, CLASS_OF } from '../cards.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
+import { themePicker } from '../theme.js'
 import { tidyHandle } from '../handles.js'
 import { FROM_GROUPS, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
 
@@ -143,6 +144,7 @@ function whoStep(state) {
       <div class="en-houses">${houses}</div>
       <h3 class="en-sub">Where you're from ${place ? `<span class="en-fromnow">${esc(fromLabel(place))}</span>` : '<span>optional</span>'}</h3>
       <div class="en-from">${from}</div>
+      ${themePicker()}
     </div>`
 }
 
@@ -188,6 +190,7 @@ function cardStep(state, photo) {
   return `<div class="en-done">
       <h2 class="en-q">This is what other students see</h2>
       ${html}
+      ${themePicker()}
     </div>`
 }
 

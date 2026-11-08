@@ -485,3 +485,50 @@ html[data-theme="pink"] .lg { background: linear-gradient(180deg, #fff0f7, #ffd6
 .th-sw i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #1c19152e; }
 .th-sw b { font: 800 11px system-ui; color: #1c1915; }
 .th-sw[aria-pressed="true"] { border-color: var(--cr-gold-dk); box-shadow: 0 0 0 3px #f0c40066; }
+
+/* ---- Game themes on the sign-up screens (owner, 8 Nov: "the same colors on the game themes"):
+   the enrolment screens follow the chosen theme too. Light page, white cards, dark ink, a theme accent
+   for the small labels; every pair keeps its contrast. ---- */
+html[data-theme] { --en-accent: #6a3fc0; }
+html[data-theme="purple"] { --en-accent: #5b2dbf; }
+html[data-theme="pink"] { --en-accent: #b3236f; }
+html[data-theme] .en { --sl-night: var(--cr-bg-2); --sl-plum: #ffffff; --sl-plum-2: #ffffff; --sl-plum-3: var(--cr-tint); --sl-text: #1c1915; --sl-muted: var(--cr-muted); --sl-lilac: var(--en-accent); --sl-line: var(--cr-line); background: var(--cr-bg-2); color: #1c1915; }
+html[data-theme] .en .en-top, html[data-theme] .en[data-step="look"] .en-top { background: var(--cr-bg-2); }
+html[data-theme] .en .en-back { color: #1c1915; }
+html[data-theme] .en .en-skip { color: var(--cr-muted); }
+html[data-theme] .en .en-dots li { background: var(--cr-line); }
+html[data-theme] .en .en-dots li.done { background: var(--en-accent); }
+html[data-theme] .en .en-dots li.now { background: var(--cr-gold); }
+html[data-theme] .en .en-foot { background: linear-gradient(transparent, var(--cr-bg-2) 34%); }
+html[data-theme] .en .en-q { color: #1c1915; text-shadow: none; }
+html[data-theme] .en .en-vibe .en-q { text-shadow: none; }
+html[data-theme] .en .en-field input, html[data-theme] .en .en-input { background: #fff; border-color: var(--cr-line); color: #1c1915; }
+html[data-theme] .en .en-field input::placeholder, html[data-theme] .en .en-input::placeholder { color: #1c191566; }
+html[data-theme] .en .en-field input:focus, html[data-theme] .en .en-input:focus { border-color: var(--cr-gold-dk); box-shadow: 0 0 0 3px #f0c40055; }
+html[data-theme] .en .en-err { color: #b3261e; }
+html[data-theme] .en .en-note { color: #12693c; }
+html[data-theme] .en .en-chip, html[data-theme] .en .en-vibe .en-chip, html[data-theme] .en .en-frompick, html[data-theme] .en .en-card { background: #fff; border: 1.5px solid var(--cr-line); color: #1c1915; box-shadow: none; }
+html[data-theme] .en .en-chip[aria-pressed="true"], html[data-theme] .en .en-frompick[aria-pressed="true"], html[data-theme] .en .en-card[aria-pressed="true"] { background: var(--cr-tint); border: 2px solid var(--cr-gold-dk); box-shadow: 0 0 0 3px #f0c40044; }
+html[data-theme] .en .en-vibe .en-chip[aria-pressed="true"] { background: var(--g); border-color: var(--g); color: #1a0b2e; }
+html[data-theme] .en .en-card .cc-thumb { color: #1c1915; }
+html[data-theme] .en .en-card.sw i { border: 2px solid #1c19152e; box-shadow: inset -3px -4px 0 #0000001f, inset 3px 3px 0 #ffffff55; }
+html[data-theme] .en .en-card[aria-pressed="true"]::after { background: var(--cr-gold); color: #1c1915; }
+html[data-theme] .en [data-gender="female"] .cc-thumb { color: #d6338a; }
+html[data-theme] .en [data-gender="male"] .cc-thumb { color: #1d8fb0; }
+html[data-theme] .en .en-house { background: #fff; border-color: var(--cr-line); }
+html[data-theme] .en .en-house[aria-pressed="true"] { background: color-mix(in srgb, var(--h1) 10%, #fff); }
+html[data-theme] .en .en-frompick b { color: var(--en-accent); }
+html[data-theme] .en .en-frompick svg.flag { box-shadow: 0 0 0 1px #1c153026; }
+html[data-theme] .en .en-bubble .en-input { background: #fff; border: 2px solid var(--cr-line); }
+html[data-theme] .en .en-num { background: #fff; }
+html[data-theme] .en .en-group[data-done="true"] .en-num { background: var(--g); color: #1a0b2e; }
+html[data-theme] .en .en-gh { color: #1c1915; }
+html[data-theme] .en .en-lede, html[data-theme] .en .en-count, html[data-theme] .en .en-hint { color: var(--cr-muted); }
+html[data-theme] .en .en-sub, html[data-theme] .en .en-field { color: var(--en-accent); }
+html[data-theme] .en .en-row h3 { color: var(--en-accent); }
+html[data-theme] .en .en-row h3 em { color: #1c1915; }
+html[data-theme] .en .en-id { box-shadow: 0 10px 24px #1c19152e, 0 0 0 8px transparent; }
+html[data-theme] .en .en-stage.en-id { box-shadow: 0 12px 26px #1c19152e, 0 -8px 0 8px var(--cr-bg-2), 0 14px 0 8px var(--cr-bg-2); }
+html[data-theme] .en .en-id[data-id-step="who"], html[data-theme] .en .en-id[data-id-step="vibe"] { box-shadow: 0 10px 24px #1c19152e, 0 -8px 0 8px var(--cr-bg-2); }
+html[data-theme] .en .cc-mute { background: #fff; color: #1c1915; }
+html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
