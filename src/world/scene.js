@@ -2268,7 +2268,7 @@ function rebuild(district, homeId) {
   campus = createCampus(district, homeId)
   scene.add(campus.group)
   scene.userData.floorAt = campus.floor.at // soles rest on paths, plazas and decks (avatar3d)
-  crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase() })
+  crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase(), solid: (x, z) => blockedAt(x, z) })
   others = createOthers(scene)
   builtId = `${district.meta.id}|${homeId}|${genderOf(currentRun?.character?.avatar)}`
 }
@@ -2342,6 +2342,7 @@ function respawn(district, run) {
       walkTo: (x, z) => walkTo(x, z, null, { arrive: true }),
       rig,
       keepOut: (rect) => crowd?.setKeepOut(rect),
+      walkers: () => (crowd?.people || []).filter((p) => p.avatar.visible).map((p) => p.avatar.position),
       onUpdate: () => window.dispatchEvent(new CustomEvent('mzansi-dropoff-update')),
       onDone: () => { const d = dropOff; dropOff = null; d?.stop(); window.dispatchEvent(new CustomEvent('mzansi-dropoff-done')) },
     })
@@ -2453,6 +2454,23 @@ window.mzansiDoorAudit = () => {
   })
 }
 window.mzansiDropoff = () => dropOff?.report() || null
+// (tests) put n walkers inside the drop-off zone, next to solids (lodges, walls, fences), and set the zone again
+window.mzansiDropWalkers = (n = 6) => {
+  const keep = dropOff?.report().keep
+  if (!keep || !crowd) return []
+  const spots = []
+  for (let i = 0; i < 20000 && spots.length < n; i++) {
+    const x = keep.minX + Math.random() * (keep.maxX - keep.minX)
+    const z = keep.minZ + Math.random() * (keep.maxZ - keep.minZ)
+    if (blockedAt(x, z)) continue
+    if (!(boxesNear(x, z) || []).some((b) => x > b.minX - 1.1 && x < b.maxX + 1.1 && z > b.minZ - 1.1 && z < b.maxZ + 1.1)) continue
+    spots.push({ x, z })
+  }
+  const walkers = crowd.people.filter((p) => !p.sitting && !p.avatar.userData.following)
+  spots.forEach((s, i) => { const p = walkers[i]?.avatar.position; if (p) { p.x = s.x; p.z = s.z } })
+  crowd.setKeepOut(keep)
+  return spots
+}
 // Tests: stand the player somewhere, facing a point.
 window.mzansiPlace = (x, z, fx, fz) => { if (!player) return; mover.stop(); player.position.set(x, 0, z); player.rotation.y = Math.atan2(fx - x, fz - z); player.userData.lastPos?.set(x, 0, z) }
 const BODY = 0.3

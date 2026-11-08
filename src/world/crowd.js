@@ -161,7 +161,43 @@ export function createCrowd(scene, campus, opts = {}) {
   // walkers inside are moved out, nobody steps in, a route that ends in it is dropped.
   let keepOut = null
   const inKeep = (x, z, pad = 0) => keepOut && x > keepOut.minX - pad && x < keepOut.maxX + pad && z > keepOut.minZ - pad && z < keepOut.maxZ + pad
-  function setKeepOut(rect) { keepOut = rect || null }
+  // A spot outside the zone that is walkable, clear of every solid and of other people.
+  const spotFree = (x, z, except) => {
+    if (inKeep(x, z, 1)) return false
+    if (pointBlocked(campus.grid, x, z)) return false
+    if (opts.solid?.(x, z)) return false
+    return !people.some((o) => o !== except && !o.avatar.userData.following && Math.hypot(o.avatar.position.x - x, o.avatar.position.z - z) < 0.7)
+  }
+  // Move someone in the zone to the nearest free spot outside it, at once (no stepping
+  // out: the way out is often behind a lodge, wall or fence).
+  function evict(person) {
+    const p = person.avatar.position
+    for (let r = 0.5; r <= 60; r += 0.5) {
+      const n = Math.max(12, Math.round(r * 8))
+      const start = Math.random() * Math.PI * 2
+      for (let i = 0; i < n; i++) {
+        const a = start + (i / n) * Math.PI * 2
+        const x = p.x + Math.cos(a) * r
+        const z = p.z + Math.sin(a) * r
+        if (!spotFree(x, z, person)) continue
+        p.x = x
+        p.z = z
+        person.route = []
+        person.wait = 1 + Math.random()
+        person.walkT = 0
+        person.anchor = null
+        return true
+      }
+    }
+    return false
+  }
+  function evictAll() {
+    for (const person of people) {
+      if (person.sitting || person.avatar.userData.following) continue
+      if (inKeep(person.avatar.position.x, person.avatar.position.z)) evict(person)
+    }
+  }
+  function setKeepOut(rect) { keepOut = rect || null; if (keepOut) evictAll() }
 
   let tick = 0
   function update(dt, playerPos) {
@@ -176,16 +212,9 @@ export function createCrowd(scene, campus, opts = {}) {
       if (avatar.userData.following) continue // walking with the player (scene.js)
       if (person.talking) { poseAvatar(avatar, false, person.clock); continue }
       if (!person.sitting && inKeep(avatar.position.x, avatar.position.z)) {
-        // (in the car's way: step out the nearest side)
-        const p = avatar.position
-        const edges = [[p.x - keepOut.minX, -1, 0], [keepOut.maxX - p.x, 1, 0], [p.z - keepOut.minZ, 0, -1], [keepOut.maxZ - p.z, 0, 1]].sort((a, b) => a[0] - b[0])
-        const [, ex, ez] = edges[0]
-        p.x += ex * 2.5 * dt
-        p.z += ez * 2.5 * dt
-        avatar.rotation.y = Math.atan2(ex, ez)
-        person.route = []
-        person.wait = 1
-        poseAvatar(avatar, true, person.clock)
+        // (in the car's way, e.g. pushed in: out to the nearest free spot at once)
+        evict(person)
+        poseAvatar(avatar, false, person.clock)
         continue
       }
       if (!person.sitting) {

@@ -105,10 +105,36 @@ export function startDropOff(ctx) {
   async function walkAround(a, x, z, speed) {
     for (const p of routeAround({ x: a.position.x, z: a.position.z }, { x, z })) await walkPerson(a, p.x, p.z, speed)
   }
+  let keepRect = null
+  let blocker = null
+  let carHalf = { w: 1, l: 2.4 }
+  // Anyone inside the car's footprint, stretched 2.5 m ahead and 0.5 m to each side.
+  function pathBlocked() {
+    if (!car || !ctx.walkers) return false
+    const ry = car.rotation.y
+    const fx = Math.sin(ry)
+    const fz = Math.cos(ry)
+    for (const w of ctx.walkers()) {
+      const dx = w.x - car.position.x
+      const dz = w.z - car.position.z
+      const v = dx * fx + dz * fz
+      const u = dx * fz - dz * fx
+      if (Math.abs(u) < carHalf.w + 0.5 && v > -carHalf.l - 0.3 && v < carHalf.l + 2.5) { blocker = { x: w.x, z: w.z, u, v }; return true }
+    }
+    return false
+  }
   function drive(points, seconds) {
     const curve = new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(p.x, 0, p.z)), false, 'catmullrom', 0.3)
     let t = 0
+    let held = 0
     return task((dt) => {
+      // Safety net: anyone in the car's path ahead, and it waits (never overlaps a person).
+      if (pathBlocked()) {
+        held += dt
+        if (held > 2) { held = 0; ctx.keepOut?.(keepRect) } // (still there: move them out again)
+        return false
+      }
+      held = 0
       t = Math.min(seconds, t + dt)
       const k = t / seconds
       const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2
@@ -137,14 +163,18 @@ export function startDropOff(ctx) {
     scene.add(car)
     // how big the car is (its swept area during the arrival, stop and U-turn is kept free of walkers)
     const local = new THREE.Box3().setFromObject(car)
-    const reach = Math.max(Math.hypot(local.min.x, local.min.z), Math.hypot(local.max.x, local.max.z), 1.5) + 1.2
+    // (relative to the car: the box is in world coordinates, the car is at the gate road)
+    const rel = { minX: local.min.x - car.position.x, maxX: local.max.x - car.position.x, minZ: local.min.z - car.position.z, maxZ: local.max.z - car.position.z }
+    const reach = Math.max(Math.hypot(rel.minX, rel.minZ), Math.hypot(rel.maxX, rel.maxZ), 1.5) + 1.2
     const swept = [enter, { x: stop.x, z: stop.z + 7 }, stop, { x: stop.x + 3.6, z: stop.z - 2.4 }, { x: stop.x + 3.6, z: enter.z + 6 }]
-    ctx.keepOut?.({
+    carHalf = { w: Math.max(0.8, (local.max.x - local.min.x) / 2), l: Math.max(1.5, (local.max.z - local.min.z) / 2) }
+    keepRect = {
       minX: Math.min(...swept.map((p) => p.x)) - reach,
       maxX: Math.max(...swept.map((p) => p.x)) + reach,
       minZ: Math.min(...swept.map((p) => p.z)) - reach,
       maxZ: Math.max(...swept.map((p) => p.z)) + reach,
-    })
+    }
+    ctx.keepOut?.(keepRect)
     parent = createAvatar(home.parentLook || { gender: 'female', outfit: style.parent.outfit, topColor: style.parent.top })
     parent.name = 'parent'
     parent.visible = false
@@ -264,7 +294,7 @@ export function startDropOff(ctx) {
     report() {
       let box = null
       if (car) { car.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(car); box = { minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z } }
-      return { phase, car: box, parent: parent && { x: parent.position.x, z: parent.position.z, visible: parent.visible } }
+      return { phase, car: box, keep: keepRect, blocker, carHalf, parent: parent && { x: parent.position.x, z: parent.position.z, visible: parent.visible } }
     },
     stop() {
       for (const t of tasks) t.resolve()

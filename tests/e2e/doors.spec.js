@@ -107,10 +107,56 @@ test('D3 the car and mum keep clear of each other, and of campus walkers', async
   const world = page.locator('#world')
   await expect(world).toHaveAttribute('data-dropoff', 'walk', { timeout: 120000 })
   const s = await page.evaluate(() => window.__drop)
-  console.log('DROP', JSON.stringify(s))
+  console.log('DROP', JSON.stringify(s), JSON.stringify(await page.evaluate(() => window.mzansiDropoff?.())))
   expect(s.carFrames, 'the car was watched').toBeGreaterThan(30)
   expect(s.mumInside, 'mum inside the car').toBe(0)
   expect(s.walkerInside, 'a walker inside the car').toBe(0)
   expect(s.mumMinGap, 'mum keeps 0.45 m from the car (except at the driver door)').toBeGreaterThan(0.45)
+  expect(errors).toEqual([])
+})
+
+test('D4 walkers inside the drop-off zone by the gate lodges are moved out at once, and nobody touches the car', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await newGame(page, '?fast=1&morning=0&talk=auto')
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { morningDone: true, queue: [], at: 'gate', dropOff: { style: 'suburban', day: 1 } })
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
+  await page.goto('/?fast=1&morning=0&talk=auto&drop=1#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
+  await page.waitForFunction(() => window.mzansiDropoff?.()?.keep, null, { timeout: 30000 })
+  // every frame: anyone inside the car's box; and how many walkers sit in the zone
+  await page.evaluate(() => {
+    const s = { frames: 0, carFrames: 0, touching: 0, placed: 0, blocker: null }
+    window.__d4 = s
+    const inside = (a, r, pad) => a.x > r.minX - pad && a.x < r.maxX + pad && a.z > r.minZ - pad && a.z < r.maxZ + pad
+    window.__d4zone = () => {
+      const keep = window.mzansiDropoff?.()?.keep
+      return keep ? window.mzansiPeople().filter((a) => a.id !== 'player' && inside(a, keep, 0)).length : 0
+    }
+    const tick = () => {
+      const r = window.mzansiDropoff?.()
+      if (r?.car) {
+        s.carFrames++
+        s.blocker = r.blocker
+        for (const a of window.mzansiPeople()) if (a.id !== 'player' && inside(a, r.car, 0.1)) s.touching++
+      }
+      s.frames++
+      requestAnimationFrame(tick)
+    }
+    tick()
+    s.placed = window.mzansiDropWalkers(8).length
+  })
+  await page.waitForTimeout(1000)
+  const left = await page.evaluate(() => window.__d4zone())
+  await expect(page.locator('#world')).toHaveAttribute('data-dropoff', 'walk', { timeout: 120000 })
+  const s = await page.evaluate(() => window.__d4)
+  console.log('D4', JSON.stringify({ ...s, left }))
+  expect(s.placed, 'walkers were put in the zone').toBeGreaterThan(0)
+  expect(left, 'nobody left in the zone after a second').toBe(0)
+  expect(s.carFrames, 'the car was watched').toBeGreaterThan(30)
+  expect(s.touching, 'nobody touched the car').toBe(0)
   expect(errors).toEqual([])
 })
