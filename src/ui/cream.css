@@ -421,3 +421,51 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
 /* The still is a picture of the whole studio stage (public/creator-still.png), same framing as the live one. */
 .en-stage .cc-still, .cc-stage .cc-still { inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; transform: none; object-fit: contain; object-position: 50% 50%; }
 .g-clock{color:#ffe08a;background:#2f1a5c;border-color:#f5c400}
+
+/* ---- Native pick-lists (the From pills, any <select>): the popup is drawn on white by the phone, so
+   its words are always ink, never the white the select inherits on a dark screen. ---- */
+select option, select optgroup { color: #1c1915; background: #fff; }
+
+/* ---- Player card, premium (owner, 8 Nov): one soft panel, no heavy outline, house colour as a
+   ribbon, a ringed portrait, quiet chips. Four themes; each sets its own text colours so words
+   always read on their background (beige, purple, white, pink). ---- */
+.pcard { --c-bg: #fbf6ea; --c-bg2: #f1e7d0; --c-ink: #1c1915; --c-muted: #6b6256; --c-panel: #1c19150d; --c-line: #1c191522; --c-ring: #b88600;
+  background: linear-gradient(165deg, var(--c-bg), var(--c-bg2)); color: var(--c-ink); border: 1px solid var(--c-line); border-radius: 24px; box-shadow: 0 1px 0 #ffffff80 inset, 0 18px 40px -14px #0009, 0 4px 10px #0004; position: relative; overflow: hidden; }
+.pcard[data-theme="beige"] { }
+.pcard[data-theme="white"] { --c-bg: #ffffff; --c-bg2: #f3f2f8; --c-ink: #16131f; --c-muted: #666175; --c-panel: #16131f0a; --c-line: #16131f1f; --c-ring: #7b3fe4; }
+.pcard[data-theme="purple"] { --c-bg: #4a2790; --c-bg2: #26124d; --c-ink: #f7f2ff; --c-muted: #c9b9f0; --c-panel: #ffffff17; --c-line: #ffffff2a; --c-ring: #f5c400; box-shadow: 0 1px 0 #ffffff2a inset, 0 18px 40px -14px #000c, 0 4px 10px #0006; }
+.pcard[data-theme="pink"] { --c-bg: #ffe3f0; --c-bg2: #ffc8e1; --c-ink: #3a0f2a; --c-muted: #8a4a6c; --c-panel: #3a0f2a0f; --c-line: #3a0f2a24; --c-ring: #d6338a; }
+.pcard::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 60% at 100% 0%, #ffffff40, #ffffff00 60%); }
+.pcard[data-theme="purple"]::after { background: radial-gradient(120% 60% at 100% 0%, #ffffff22, #ffffff00 60%); }
+.pcard .pc-top { padding: 11px 16px; font-size: 12px; letter-spacing: .14em; }
+.pcard .pc-class { letter-spacing: .06em; font-size: 12px; }
+.pcard .pc-main { gap: 16px; padding: 18px 16px 6px; }
+.pcard .pc-photo.pc-photo { position: relative; width: 108px; height: 128px; border-radius: 18px; border: 0; background: var(--c-panel); box-shadow: 0 0 0 3px var(--c-ring), 0 8px 18px -6px #0006; }
+.pcard .pc-name { font-size: 26px; letter-spacing: -.01em; color: var(--c-ink); }
+.pcard .pc-handle { color: var(--c-muted); margin: 3px 0 8px; }
+.pcard .pc-from { color: var(--c-muted); }
+.pcard .pc-num { color: var(--c-muted); }
+.pcard .pc-num b { color: var(--c-ink); }
+.pcard .pc-num i { color: var(--c-muted); border-color: var(--c-line); }
+.pcard .pc-bio { margin: 10px 16px; padding: 10px 12px; border-radius: 14px; background: var(--c-panel); color: var(--c-ink); font-style: italic; min-height: 2.7em; }
+.pcard .pc-tags { margin: 0 16px 10px; }
+.pcard .pc-tags li { background: var(--c-panel); color: var(--c-ink); border: 1px solid var(--c-line); font-weight: 700; padding: 5px 11px; }
+.pcard .pc-tags li.empty, .pcard .empty { background: transparent; color: var(--c-muted); border: 1px dashed var(--c-line); }
+.pcard .pc-bio .empty, .pcard .pc-handle .empty { border: 0; }
+.pcard .pc-facts { margin: 0 16px 10px; }
+.pcard .pc-facts div { background: var(--c-panel); border-radius: 12px; padding: 7px 10px; }
+.pcard .pc-facts dt { color: var(--c-muted); }
+.pcard .pc-facts dd { color: var(--c-ink); }
+.pcard .pc-badges { padding: 0 16px 16px; }
+.pcard .pc-badge { background: var(--c-panel); color: var(--c-ink); border: 1px solid var(--c-line); }
+.pcard .pc-badge.none { background: transparent; color: var(--c-muted); border-style: dashed; }
+
+/* The "this is what others see" step: the card sits centred, the colour picker under it. */
+.en-done { gap: 12px; padding-top: 4px; }
+.en .en-done .en-q { font-size: 23px; text-align: center; margin-bottom: 4px; color: var(--sl-text); }
+.en .en-done .en-sub { justify-content: center; color: var(--sl-lilac); margin: 10px 0 0; }
+.en-themes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.en-theme { all: unset; cursor: pointer; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px 7px; border-radius: 16px; background: var(--sl-plum-2, #2b1650); border: 2px solid var(--sl-line, #ffffff17); min-height: 44px; }
+.en-theme i { font: 900 16px system-ui; font-style: normal; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 2px #ffffff40 inset; }
+.en-theme b { font: 800 12px system-ui; color: var(--sl-text, #f7f2ff); }
+.en-theme[aria-pressed="true"] { border-color: var(--sl-gold, #f5c400); background: var(--sl-plum-3, #3a1f6b); box-shadow: 0 0 0 3px #f5c40033; }

@@ -2,7 +2,7 @@ import { avatarSvg, bodiesFor, genderOf, genders, HAIR_BLACK, hairColors, hairsF
 import { LOOKING, VIBES, CLASS_OF } from '../cards.js'
 import { BIO_MAX } from '../engine/filter.js'
 import { myNumber } from '../presence.js'
-import { playerCardHtml } from './card.js'
+import { playerCardHtml, CARD_THEMES } from './card.js'
 import { tidyHandle } from '../handles.js'
 import { FROM_GROUPS, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
 
@@ -44,6 +44,7 @@ export function draftCard(district, draft) {
     look: draft.avatar,
     classOf: CLASS_OF,
     from: fromPlace(draft.from),
+    theme: draft.cardTheme || 'beige',
   }
 }
 
@@ -185,9 +186,12 @@ function cardStep(state, photo) {
   const card = draftCard(district, draft)
   const house = district.houses?.find((h) => h.name === draft.residence) || null
   const html = playerCardHtml(card, house, { provisional: true, photo }).replace('class="pc-photo"', 'class="pc-photo cc-photo"')
+  const picker = CARD_THEMES.map((t) => `<button class="en-theme" type="button" data-act="enrol-pick" data-k="cardTheme" data-v="${t.id}" aria-pressed="${(draft.cardTheme || 'beige') === t.id}" aria-label="${t.label} card"><i style="background:${t.bg};color:${t.ink}">Aa</i><b>${t.label}</b></button>`).join('')
   return `<div class="en-done">
       <h2 class="en-q">This is what other students see</h2>
       ${html}
+      <h3 class="en-sub">Card colour</h3>
+      <div class="en-themes">${picker}</div>
     </div>`
 }
 
