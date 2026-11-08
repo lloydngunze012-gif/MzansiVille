@@ -552,3 +552,26 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 .mm-bar.mm-bar .mm-q { padding: 8px 14px; font-size: 15px; }
 .mm-bar.mm-bar .mm-go { min-height: 48px; padding: 8px 18px; font-size: 16px; border-radius: 16px; }
 .mm-bar.mm-bar .mm-choice { box-shadow: 0 3px 0 #2a184655; border-width: 2px; }
+
+/* ---- Choices that almost hover (owner, 8 Nov): they drift gently, each on its own beat; the one under
+   the mouse (or the finger, or the keyboard focus) lifts, grows and lights up gold; pressing sinks it.
+   Sounds come from src/sfx.js. Still when the phone asks for reduced motion. ---- */
+@keyframes mm-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.mm-bar.mm-bar .mm-choice, .g-talk-reply { transition: transform .16s cubic-bezier(.2, 1.4, .4, 1), box-shadow .16s, background-color .16s, border-color .16s; will-change: transform; }
+.mm-bar.mm-bar .mm-choice { animation: mm-hover 2.8s ease-in-out infinite; }
+.mm-bar.mm-bar .mm-choice:nth-of-type(2) { animation-delay: -.5s; }
+.mm-bar.mm-bar .mm-choice:nth-of-type(3) { animation-delay: -1s; }
+.mm-bar.mm-bar .mm-choice:nth-of-type(4) { animation-delay: -1.5s; }
+.mm-bar.mm-bar .mm-choice:nth-of-type(5) { animation-delay: -2s; }
+.g-talk-reply { animation: mm-hover 3.2s ease-in-out infinite; }
+.g-talk-reply:nth-child(2) { animation-delay: -.7s; }
+.g-talk-reply:nth-child(3) { animation-delay: -1.4s; }
+.g-talk-reply:nth-child(4) { animation-delay: -2.1s; }
+@media (hover: hover) {
+  .mm-bar.mm-bar .mm-choice:hover, .g-talk-reply:hover { animation-play-state: paused; transform: translateY(-6px) scale(1.04); background: var(--cr-tint); border-color: var(--cr-gold-dk); box-shadow: 0 10px 0 #a8740033, 0 0 0 4px #f0c40066, 0 18px 30px #0004; }
+}
+.mm-bar.mm-bar .mm-choice:focus-visible, .g-talk-reply:focus-visible { outline: none; animation-play-state: paused; transform: translateY(-6px) scale(1.04); background: var(--cr-tint); border-color: var(--cr-gold-dk); box-shadow: 0 0 0 4px #f0c40099, 0 18px 30px #0004; }
+.mm-bar.mm-bar .mm-choice:active, .g-talk-reply:active { animation: none; transform: translateY(1px) scale(.98); box-shadow: 0 1px 0 #2a184655; }
+@media (prefers-reduced-motion: reduce) {
+  .mm-bar.mm-bar .mm-choice, .g-talk-reply { animation: none; }
+}

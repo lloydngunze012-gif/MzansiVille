@@ -67,6 +67,7 @@ import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
+import { watchStats, wireSfx } from './sfx.js'
 import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
 import { playerCardHtml } from './ui/card.js'
 
@@ -548,6 +549,7 @@ setInterval(() => {
 }, 500)
 
 function paint() {
+  watchStats(save.run?.stats)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
   if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run) }
   const shot = new URLSearchParams(location.search).get('shot')
@@ -2097,6 +2099,7 @@ window.addEventListener('hashchange', () => {
 const wantSounds = () => location.hash.startsWith('#/sounds')
 if (wantSounds()) import('./sounds.js').then((m) => m.mountSounds())
 window.addEventListener('hashchange', () => { if (wantSounds()) import('./sounds.js').then((m) => m.mountSounds()) })
+wireSfx()
 paint()
 smooth.boot() // (smoothness reports: the first screen is up; the title counts once its cover has loaded)
 if (route().name === 'smooth') loadSmooth()

@@ -154,3 +154,10 @@ function sleepWhenHidden() {
 document.addEventListener('visibilitychange', sleepWhenHidden)
 addEventListener('pagehide', () => { if (ctx && ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) } })
 addEventListener('pageshow', sleepWhenHidden)
+
+// Synthesised effects (src/sfx.js): run fn(ctx, out) on the shared master, so mute and the
+// screen-off pause cover them. Nothing plays before the first tap or while muted.
+export function synth(fn) {
+  if (!ctx || !master || ctx.state !== 'running' || !soundOn()) return
+  try { fn(ctx, master) } catch { /* a missing sound never breaks the game */ }
+}
