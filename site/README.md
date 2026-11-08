@@ -51,7 +51,7 @@ Commit the new files in `site/public/img/`. Until an Organt photo is there, the 
 
 The site is its own Vercel project, linked from this folder (`site/.vercel/`, not committed), separate from the game's project at the repo root. It's built on this machine and the finished files are uploaded, because the build reads `data/` and the game's `share.jpg` from outside `site/`. In the project's Vercel settings, leave **Root Directory empty**: the link from `site/` already makes `site/` the root, and setting it to `site` would make Vercel look for `site/site`.
 
-Deploy only on Lloyd's go. From `site/` (`vercel build` itself fails on Windows with EPERM on a symlink, so the site writes Vercel's prebuilt output itself):
+Deploy at the end of every site job, no asking (CLAUDE.md PUSH AND DEPLOY RULE). From `site/` (`vercel build` itself fails on Windows with EPERM on a symlink, so the site writes Vercel's prebuilt output itself):
 
 ```bash
 npm run build

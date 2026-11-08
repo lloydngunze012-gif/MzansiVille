@@ -15,7 +15,7 @@ Budget impact: see "Shortlist measured". Draco or meshopt, welding and merging i
 
 Dimensions (`size_m`) are real metres, origin on the ground, which matches the game's scale.
 
-## Shortlist measured (8 Nov, after the owner's go)
+## Shortlist measured (8 Nov)
 
 16 assets, one detail request and one header-only size request each (no GLB bodies downloaded), 1.5 s apart, with a named User-Agent. No 429 or 403. All 16: CC BY 4.0, free. "Parts" = draw calls (meshes), plus rigged and detachable parts from the API. Size = the raw `.glb` as served (uncompressed, before Draco or merging).
 
@@ -101,7 +101,7 @@ Search counts for generic words are fuzzy (e.g. "washing line" returned 404 matc
 - Possibly usable, from kit `salvage-commons`: Corrugated Awning 688 tris, 4 m (`corrugated-awning-e758eb`) and Washing Line 776 tris, 4 m (`washing-line-06b44e`). Also Clothes Line 616 (cozy-farm).
 - Verdict: keep the Quaternius township buildings; use Polyfork only for the awning and washing line, and look at the `salvage-commons` kit by hand for more.
 
-## Suggested next step (needs the owner's go)
+## Suggested next step
 1. Choose which of the 16 above we want, and where (cafeteria, pitch, LAN room, lab, taxi rank, Quad stalls, township).
 2. Download only those GLBs, one at a time, with the named User-Agent; run them through the Draco/merge pipeline (`scripts/home-assets.mjs` style); measure the result against the 2 MB budget.
 3. Each asset that ships gets its `credit` line in `docs/credits.md` and on the in-game Credits screen.

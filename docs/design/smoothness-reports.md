@@ -1,6 +1,6 @@
 # Smoothness reports from real phones (owner, 7 Nov)
 
-Piece: Flow 1 (docs/design/month1-focus.md, Flow > The work > 1). Push, don't deploy. The SPEC below is the owner's prompt, verbatim.
+Piece: Flow 1 (docs/design/month1-focus.md, Flow > The work > 1). Push and deploy. The SPEC below is the owner's prompt, verbatim.
 
 SPEC
 Goal: Lloyd sees, per place and per device, how smooth the game really is on players' phones.
