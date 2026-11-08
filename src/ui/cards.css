@@ -1,0 +1,49 @@
+/* ONE rule for every floating card, caption, bubble bar and docked sheet (owner, 8 Nov).
+   Centred, width min(100% - 24px, 420px): on a phone it is the card it always was, on a wide window it is a
+   centred card, never a full-width strip. Padding, font size and colours stay each card's own.
+   Loaded last (game.js), so it wins over game.css, cream.css and result-card.css at equal weight.
+   Add any new floating card to this list; tests/e2e/cards.spec.js fails if one is wider than 440 px.
+
+   Each box keeps left:0 / right:0 (or the inset it had) and gets auto side margins plus a width, so it centres
+   without a transform: the cards that animate with transform (.g-result, .mm-card) keep working. */
+:root { --card-w: min(calc(100% - 24px), 420px); }
+
+/* The scene layer (.mm-ui is fixed over the whole window): choice bar, the end-of-scene card, lecture lines,
+   the drop-off card, caption and walk button. */
+:root .mm-bar,
+:root .mm-card,
+:root .lc-caption,
+:root .lc-say,
+:root .dp-card,
+:root .dp-caption,
+:root .dp-walk,
+/* The game column: the activity/event result card, the card wrapper, today's goal line. */
+:root .g-result,
+:root .g-card-wrap,
+:root .g-goal,
+/* Docked sheets: the talk card, the place sheet, the bottom bar, and the two body-level panels. */
+:root .g-talk,
+:root .g-sheet,
+:root .g-cta,
+:root body > .chat-panel,
+:root .pc-stats,
+:root .pc-sheet {
+  left: 0; right: 0; margin-inline: auto; transform-origin: center;
+  width: var(--card-w); max-width: 420px; box-sizing: border-box;
+}
+/* (the choice bar used to be centred with a transform and fit its words) */
+:root .mm-bar { transform: none; min-width: 0; }
+/* a card that is positioned by its own left/right but animates sideways in game.css: keep it still */
+:root .g-notice, :root .g-toast { max-width: min(calc(100% - 24px), 420px); }
+/* the result card keeps its own, narrower cap (result-card.css) */
+:root .g-result.rc { max-width: 358px; }
+/* the drop-off card sat on 'bottom: 150px' with edges; the caption on top: 44% */
+:root .dp-card, :root .dp-walk { bottom: calc(150px + env(safe-area-inset-bottom)); }
+/* text on the route and hint pills: 14 px minimum */
+:root .g-cta.g-route p, :root .g-cta.g-hint p { font-size: 14px; }
+/* the "Open now" bar on the map: 14 px minimum (it ellipsises rather than shrinks) */
+:root .g-cta p.g-open { font-size: 14px; }
+/* the bar's buttons ("Skip to Social 13:00", "Got it", "Sleep"): 14 px minimum */
+:root .g-cta .g-go, :root .g-cta:has(.g-open) .g-go { font-size: 14px; }
+/* the goals sheet's week, dream and last-text lines: 14 px minimum */
+:root .g-week, :root .g-dream, :root .g-lasttext { font-size: 14px; }

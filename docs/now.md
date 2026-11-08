@@ -3,6 +3,9 @@
 Short and always current. Whoever finishes a step updates this (docs/team.md).
 Last updated: 8 Nov, Claude Code (asset rule: CC0 or CC BY 4.0 with credit; #/credits screen; Polyfork survey, no downloads).
 
+## Floating cards (owner, 8 Nov)
+- One centred-card rule for every card, caption, bubble bar and sheet: src/ui/cards.css (CLAUDE.md FLOATING CARDS RULE). Test: tests/e2e/cards.spec.js, 12 screens at 390 and 1280 px, all pass. Attend lecture now ends on the new result card (main.js endLecture sets ui.delta). Route pill: no white bar. Text under 14 px raised on the route/hint pills, Open-now bar, bar buttons, goals sheet.
+
 ## Asset licence rule and Polyfork (owner, 8 Nov)
 - Rule is now "CC0, or CC BY 4.0 with credit" (CLAUDE.md ASSET LICENCE RULE). Polyfork credit is in docs/credits.md and on the in-game Credits screen (#/credits, linked from Settings and the menu). The cafeteria props kit (7 Polyfork assets, public/models/caf/caf-kit.glb, 52.6 KB, scripts/caf-assets.mjs) is built, credited and NOT placed in any scene yet.
 - Catalogue survey (no GLB downloaded): docs/polyfork-survey.md. A 16-asset shortlist is measured (tris, draw calls, GLB size 13-251 KB each, 1.36 MB for one of each, all CC BY 4.0). Township props are still the gap. Next: Lloyd picks which assets go where; then download only those, one at a time, with the named User-Agent "MzansiVille-asset-check/1.0".

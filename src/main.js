@@ -486,12 +486,15 @@ function endLecture(result) {
   lecturePromise?.then((mod) => mod.stopLecture())
   if (!run) return
   const district = districtNow()
+  const before = { ...run.stats }
   const done = applyAction(district, run, 'lecture_attend')
   if (!done.ok) run.lectureResolved = true
   const caps = { energy: run.energyCap || 100, hunger: 100, grades: 100, social: 100, money: 1e9 }
   for (const [k, d] of Object.entries(result?.deltas || {})) {
     run.stats[k] = Math.max(0, Math.min(caps[k] ?? 100, (run.stats[k] || 0) + d))
   }
+  // The result card (icon tile, gold eyebrow, gain pills) reads ui.delta; without it the old plain "Done" card showed.
+  if (done.ok) ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(run.stats[k] - before[k])]))
   run.lastEventLine = `Lecture 1: ${result?.moment || 'done'}`
   run.at = venueFor(run).id
   run.lectureRoute = false

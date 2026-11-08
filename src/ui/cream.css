@@ -548,7 +548,7 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 
 /* The choice bar in the home, morning and drop-off scenes: a neat card that fits its words, centred,
    not a full-width strip (owner, 8 Nov: it covered half the screen on a wide window). */
-.mm-bar.mm-bar { left: 50%; right: auto; transform: translateX(-50%); width: max-content; min-width: min(300px, calc(100% - 24px)); max-width: min(420px, calc(100% - 24px)); gap: 8px; align-items: stretch; }
+.mm-bar.mm-bar { gap: 8px; align-items: stretch; } /* (its width and centring: src/ui/cards.css) */
 .mm-bar.mm-bar .mm-q { padding: 8px 14px; font-size: 15px; }
 .mm-bar.mm-bar .mm-go { min-height: 48px; padding: 8px 18px; font-size: 16px; border-radius: 16px; }
 .mm-bar.mm-bar .mm-choice { box-shadow: 0 3px 0 #2a184655; border-width: 2px; }
@@ -598,3 +598,9 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 /* The scene question ("Grace wants your room."): plum with light writing, so it reads as the heading
    above the cream choices (owner, 8 Nov). */
 .mm-bar.mm-bar .mm-q { background: #2a1846; color: #fff6e6; border: 2px solid #f0c400; box-shadow: 0 4px 0 #0003, 0 12px 24px #0003; font-weight: 800; }
+
+/* Owner, 8 Nov: no white block behind the route and hint pills ("Roll your suitcase to ..."): the pills carry
+   their own plum; the bar behind them is clear. (Card widths and centring: src/ui/cards.css.) */
+.g-cta.g-route, .g-cta.g-hint { background: transparent; border-top: 0; justify-content: center; pointer-events: none; }
+.g-cta.g-route p, .g-cta.g-hint p { flex: 0 1 auto; max-width: min(440px, calc(100% - 24px)); }
+.g-cta.g-hint button { pointer-events: auto; }

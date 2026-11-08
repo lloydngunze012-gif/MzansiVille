@@ -7,6 +7,11 @@ Every job ends with a push to main and a production deploy (`npx vercel deploy -
 
 ---
 
+# FLOATING CARDS RULE (owner, 8 Nov). The white/dark strip bug came back five times because each fix changed one card.
+Every floating card, caption, bubble bar and docked sheet is centred, width min(100% - 24px, 420px), never a full-width strip: ONE rule, src/ui/cards.css (loaded last in src/ui/game.js; padding, fonts and colours stay each card's own). A new floating card is added to that selector list and to the CARDS list in tests/e2e/cards.spec.js, which opens drop-off, res room, Day 1 lecture (caption, seat choice, moment, end card, result), activity result, a moment and the goals sheet at 390 and 1280 px and fails if a card is wider than 440 px, runs off screen, a wide painted layer is unlisted, or text is under 14 px (micro-labels such as eyebrows, names, pills: 11 px). Route and hint pills have a clear bar behind them (no white block). The Attend lecture result uses the new result card because endLecture (main.js) sets ui.delta: any code that calls applyAction must set ui.delta first, or the old plain "Done" card shows. Lecture choices bob forever (mm-hover), so tests tap them with force: true.
+
+---
+
 # ASSET LICENCE RULE (owner, 8 Nov). Replaces "CC0 only" everywhere in this file.
 Art, models and sound must be CC0, or CC BY 4.0 with credit. For every CC BY asset: take the credit line from the asset's own `credit` field, say we changed it if we did (recolour, Draco, merge), add it to docs/credits.md and to the in-game Credits screen (#/credits, linked from Settings and the menu; src/ui/render.js credits()). Anything else (no licence, NC, ND, Polyfork-licence-only .mjs or HD editions) is out. Polyfork (https://polyfork.dev): its free GLB meshes are CC BY 4.0 with the credit line "<Title> by Polyfork (<asset page>), CC BY 4.0"; the cafeteria props kit (7 assets, public/models/caf/caf-kit.glb, built by scripts/caf-assets.mjs, 52.6 KB) is built and credited but not placed in any scene yet. Catalogue survey (no downloads): docs/polyfork-survey.md. Polyfork fair use: fetch an asset only when needed, never in bulk, send a User-Agent that names us, back off on HTTP 429; don't spoof a client.
 
