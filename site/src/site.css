@@ -31,6 +31,7 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { overflow-x: clip; }
 body {
   margin: 0;
   background: var(--cream);
@@ -115,8 +116,8 @@ ol, ul { margin: 0; padding: 0; }
 .student-num .prefix { margin-right: 8px; }
 .student-num .blank { display: inline-block; width: .62em; height: 2px; background: var(--ink); margin-bottom: .14em; }
 .student-note { font-size: .88rem; color: var(--muted); margin: 0; }
-.poster { order: -1; justify-self: center; width: min(82vw, 340px); }
-.poster img { border-radius: 8px; box-shadow: 0 18px 40px rgba(28, 25, 21, .28); transform: rotate(2.5deg); }
+.poster { order: -1; justify-self: center; width: min(78vw, 340px); max-width: 100%; }
+.poster img { display: block; width: 100%; height: auto; border-radius: 8px; box-shadow: 0 12px 28px rgba(28, 25, 21, .26); }
 
 /* A day on campus */
 .band { padding: 56px 0; }
@@ -205,6 +206,7 @@ ol, ul { margin: 0; padding: 0; }
   .hero { padding: 44px 0 72px; }
   .hero-grid { grid-template-columns: 1.15fr .85fr; gap: 48px; }
   .poster { order: 0; width: 100%; max-width: 420px; }
+  .poster img { box-shadow: 0 18px 40px rgba(28, 25, 21, .28); transform: rotate(2.5deg); }
   .band { padding: 80px 0; }
   .slots { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .organt-grid { grid-template-columns: .9fr 1.1fr; gap: 56px; }
