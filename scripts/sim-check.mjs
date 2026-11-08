@@ -5,6 +5,7 @@ import { canonicalHouse, registerHouses } from '../src/houses.js'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import assert from 'node:assert/strict'
+import { HOME_CHATTERS, HOME_WALKERS, SKIN_MIX, skinFor } from '../src/world/skinmix.js'
 import { buildDistrict, coursePlaceId, homePlaceId, houseOf } from '../src/engine/model.js'
 import { parseCsvRows } from '../src/engine/csv.js'
 import { balancedScore } from '../src/engine/board.js'
@@ -908,6 +909,27 @@ check('smoothness page: groups by place, red and amber, worst first, load line, 
   const list = stallsOf(byPlace(stalled)[0])
   assert.deepEqual(list.map((x) => x.kind), ['npc', 'player'])
   assert.equal(stallsOf({ rows: Array.from({ length: 30 }, (_, i) => row('quad', 'a', 50, 40, 0, 60, { stall_at: [{ k: 'npc', h: 'x', x: i, z: 0 }], created_at: `2026-11-07T10:${String(i).padStart(2, '0')}:00Z` })) }).length, 20)
+})
+
+// CAST RULE (docs/cast.md): every NPC spawn list shows a visible mix of skin tones.
+check('every NPC spawn list has at least 3 different skin tones (docs/cast.md)', () => {
+  const tones = (list) => new Set(list).size
+  assert.ok(tones(SKIN_MIX) >= 4, 'SKIN_MIX')
+  assert.ok(tones(Array.from({ length: 20 }, (_, i) => skinFor(i))) >= 4, 'campus crowd x0..x19')
+  assert.ok(tones(Array.from({ length: 8 }, (_, i) => skinFor(i * 3))) >= 3, 'lecture hall first rows')
+  const homes = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'data/campusville/homes.json'), 'utf8'))
+  const styles = homes.styles || homes
+  assert.ok(Object.keys(styles).length >= 2, 'home styles')
+  for (const [id, style] of Object.entries(styles)) {
+    if (!style.neighbour) continue
+    const street = [...HOME_WALKERS, ...HOME_CHATTERS, style.neighbour.look.skin]
+    assert.ok(tones(street) >= 3, `home street "${id}" shows ${tones(street)} skin tones`)
+  }
+  const src = (f) => readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', f), 'utf8')
+  assert.ok(tones([...src('src/world/cast.js').matchAll(/skin: '(\w+)'/g)].map((m) => m[1])) >= 3, 'named cast (src/world/cast.js)')
+  for (const f of ['src/world/lecture.js', 'src/world/home.js', 'src/world/cast.js']) {
+    assert.ok(!/skin: \[|SKINS\s*=/.test(src(f)), `${f} has its own skin list: use skinmix.js`)
+  }
 })
 
 // LAST, on purpose: the wording is Cursor's (data/campusville/meta.json "smoothness"). This stops the

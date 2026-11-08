@@ -1,6 +1,7 @@
 // How each named person looks (extras get a random look of their gender).
 import { personInfo } from '../engine/people.js'
 import { CRUSHES } from '../crush.js'
+import { skinFor } from './skinmix.js'
 
 const LOOKS = {
   zanele: { model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55', gender: 'female' },
@@ -30,7 +31,6 @@ const LOOKS = {
 }
 
 const TOPS = ['#2e8b57', '#ff8a3d', '#1d7fb8', '#e8497a', '#7b3fe4', '#f7f4ee', '#d9534f', '#2456a6', '#1c1915']
-const SKINS = ['sand', 'amber', 'brown', 'deep', 'ebony']
 
 export function lookForPerson(id, seed = 0) {
   if (LOOKS[id]) return LOOKS[id]
@@ -41,7 +41,7 @@ export function lookForPerson(id, seed = 0) {
   return {
     model: models[seed % models.length],
     gender: female ? 'female' : 'male',
-    skin: SKINS[(seed * 3) % SKINS.length],
+    skin: skinFor(seed),
     outfit: outfits[(seed * 5) % outfits.length],
     topColor: TOPS[(seed * 7) % TOPS.length],
   }

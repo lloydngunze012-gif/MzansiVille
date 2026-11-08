@@ -9,6 +9,7 @@ import HOMES from '../../data/campusville/homes.json'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf } from '../avatar.js'
 import { fromKey } from '../from.js'
+import { HOME_CHATTERS, HOME_WALKERS } from './skinmix.js'
 import { appearNow, createAvatar, layDown, warmLook, measureBody, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createPlayer } from './player.js'
@@ -645,7 +646,7 @@ async function buildPeople() {
   const rand = mulberry(11)
   const looks = ['male-a', 'female-d', 'male-d', 'female-f', 'male-f']
   for (let i = 0; i < 4; i++) {
-    const a = person({ model: looks[i % looks.length], skin: ['brown', 'deep', 'amber', 'ebony'][i % 4], outfit: ['hoodie', 'shirt', 'jacket', 'dress'][i % 4] })
+    const a = person({ model: looks[i % looks.length], skin: HOME_WALKERS[i % HOME_WALKERS.length], outfit: ['hoodie', 'shirt', 'jacket', 'dress'][i % 4] })
     const z = i % 2 ? STREET_Z + ROAD_W / 2 + 0.9 : STREET_Z - ROAD_W / 2 - 0.9
     const x0 = -40 + rand() * 80
     a.position.set(x0, 0, z)
@@ -653,7 +654,7 @@ async function buildPeople() {
   }
   // two neighbours chatting at a gate across the road
   for (const [i, x] of [[0, -style.spacing * 0.5 - 0.5], [1, -style.spacing * 0.5 + 0.5]]) {
-    const a = person({ model: i ? 'male-d' : 'female-b', skin: i ? 'ebony' : 'brown', outfit: i ? 'jacket' : 'skirt' })
+    const a = person({ model: i ? 'male-d' : 'female-b', skin: HOME_CHATTERS[i], outfit: i ? 'jacket' : 'skirt' })
     a.position.set(x, 0, STREET_Z + ROAD_W / 2 + 1.0)
     a.rotation.y = i ? -Math.PI / 2 : Math.PI / 2
   }

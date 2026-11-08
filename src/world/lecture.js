@@ -8,6 +8,7 @@ import { sfx, loop as soundLoop } from '../audio.js'
 import { createAvatar, CROWD_MODELS, gesture, poseAvatar } from './avatar3d.js'
 import { venueFor } from '../venues.js'
 import { lookForPerson } from './cast.js'
+import { skinFor } from './skinmix.js'
 import { createFloor } from './floor.js'
 import { SPEED as FAST, ms } from '../speed.js'
 import { smooth } from '../smooth.js'
@@ -401,7 +402,7 @@ function populate(late) {
       if (free.has(key) || key === roomieSeat) continue
       if ((r * 7 + s * 3) % 5 === 0) continue // a few empty seats
       const model = CROWD_MODELS[n % CROWD_MODELS.length]
-      const avatar = createAvatar({ model, gender: model.startsWith('female') ? 'female' : 'male', skin: ['sand', 'amber', 'brown', 'deep', 'ebony'][(n * 3) % 5], outfit: 'hoodie', topColor: TOPS[n % TOPS.length] })
+      const avatar = createAvatar({ model, gender: model.startsWith('female') ? 'female' : 'male', skin: skinFor(n), outfit: 'hoodie', topColor: TOPS[n % TOPS.length] })
       place(avatar, r, s)
       avatar.userData.seat = key
       scene.add(avatar)

@@ -3,6 +3,9 @@
 Short and always current. Whoever finishes a step updates this (docs/team.md).
 Last updated: 8 Nov, Claude Code (asset rule: CC0 or CC BY 4.0 with credit; #/credits screen; Polyfork survey, no downloads).
 
+## Cast and diversity pass (owner, 8 Nov)
+- docs/cast.md lists every named character with a "keep or rename?" column (nothing renamed; Pinky, Gugu, Zanele, Sipho etc. are the owner's call). CLAUDE.md has a CAST RULE. Skins for extras now come from src/world/skinmix.js (even Black/white/Indian/coloured mix); home street fixed (walkers deep/fair/amber/brown, gate pair fair/ebony, Mrs Pillay amber, Mrs Bennett brown); lecture hall and campus crowd use the same mix. npm run check 55/55 incl. "every NPC spawn list has at least 3 skin tones". No Mam' Thandi or Uncle Bra Joe existed; caf staff (Mama Liz, Aunty Premi, Uncle Jaco, Kyle) are in cast.md for when the caf is staffed (note: extra student Kyle already exists). Named cast still leans dark (5 deep); the owner decides renames. Pre-existing: home.spec township fails at the money card (fails without this change too). Screenshots on the PC: docs/sprints/cast/.
+
 ## Floating cards (owner, 8 Nov)
 - One centred-card rule for every card, caption, bubble bar and sheet: src/ui/cards.css (CLAUDE.md FLOATING CARDS RULE). Test: tests/e2e/cards.spec.js, 12 screens at 390 and 1280 px, all pass. Attend lecture now ends on the new result card (main.js endLecture sets ui.delta). Route pill: no white bar. Text under 14 px raised on the route/hint pills, Open-now bar, bar buttons, goals sheet.
 
