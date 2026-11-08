@@ -144,16 +144,21 @@ let pausedByHide = false
 function sleepWhenHidden() {
   if (!ctx) return
   if (document.visibilityState === 'hidden') {
+    // silent at once (gain 0), then the clock stops; both undone on return
+    master.gain.cancelScheduledValues(0); master.gain.value = 0
     if (ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) }
-  } else if (pausedByHide) {
-    pausedByHide = false
+  } else {
     master.gain.value = soundOn() ? 1 : 0 // a muted player stays muted on return
+    if (!pausedByHide) return
+    pausedByHide = false
     ctx.resume().catch(() => {}) // if iOS refuses, the next tap (unlock) does it
   }
 }
 document.addEventListener('visibilitychange', sleepWhenHidden)
 addEventListener('pagehide', () => { if (ctx && ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) } })
 addEventListener('pageshow', sleepWhenHidden)
+// (the browser freezing a background page, e.g. Chrome on Android, also silences it)
+document.addEventListener('freeze', () => { if (ctx && master) { master.gain.value = 0; if (ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) } } })
 
 // Synthesised effects (src/sfx.js): run fn(ctx, out) on the shared master, so mute and the
 // screen-off pause cover them. Nothing plays before the first tap or while muted.
