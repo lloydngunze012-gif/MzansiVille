@@ -21,7 +21,7 @@ Source: https://polyfork.dev (catalogue API: https://polyfork.dev/api/assets). T
 
 Credit line per asset, exactly as the asset's `credit` field gives it, e.g. `Cafe Parasol by Polyfork (https://polyfork.dev/asset/cafe-parasol-61a313), CC BY 4.0`. Record changes (recolour, Draco, merged into a kit) beside it.
 
-Built by `scripts/caf-assets.mjs` (node scripts/caf-assets.mjs <dir of the seven .glb files>) into one file, `public/models/caf/caf-kit.glb` (52.6 KB). Not placed in any scene yet. Downloaded 8 Nov 2026 from `https://polyfork.dev/cdn/<id>.glb`, one at a time 1.5 s apart, with the User-Agent `MzansiVille-asset-check/1.0`.
+Built by `scripts/caf-assets.mjs` (node scripts/caf-assets.mjs <dir of the seven .glb files>) into one file, `public/models/caf/caf-kit.glb` (52.8 KB, recoloured to the Caf palette on 8 Nov: honey wood, walnut, cream, plum, gold, warm steel, teal; the parasol canopy is plum with a gold edge by vertex position). Placed in the Caf scene (`src/world/caf.js`). Downloaded 8 Nov 2026 from `https://polyfork.dev/cdn/<id>.glb`, one at a time 1.5 s apart, with the User-Agent `MzansiVille-asset-check/1.0`.
 
 Changes to every asset below (CC BY 4.0 asks us to say so): the rig removed (skins, animation, joint weights, rig metadata; doors, trays, wheels and folds stay in their closed rest pose), every node transform baked, one mesh per prop, vertex colours re-mapped to the Soft Life palette (ink, paper, line, yellow, green, clay, blue, muted), then welded, quantised and Draco-compressed. Sizes and triangle counts are unchanged from the catalogue.
 

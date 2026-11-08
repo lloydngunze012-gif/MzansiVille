@@ -644,10 +644,12 @@ function approach(id, onArrive) {
   const door = doorPoint(building)
   const dist = Math.hypot(door.x - player.position.x, door.z - player.position.z)
   // (a house: through its door into the common room, its sheet over it)
+  const viaMap = Boolean(going) // (the map's "go there" still opens the place sheet)
   const there = () => {
     onArrive?.()
     if (building.house) { enterHouse(building, { sheet: true }); return }
     faceTo = { x: building.x, z: building.z }
+    if (id === 'cafeteria' && !viaMap && cafScene()) { enterCaf(); return }
     openPlace(id)
   }
   if (dist < 2.2) there()
@@ -674,10 +676,17 @@ function nearestDoor() {
   return best
 }
 
+// The Caf door opens the Caf as its own scene (world/caf.js); ?caf=sheet keeps the old place sheet.
+const cafScene = () => new URLSearchParams(location.search).get('caf') !== 'sheet'
+function enterCaf() {
+  mover.stop()
+  window.dispatchEvent(new CustomEvent('mzansi-enter-caf'))
+}
 function enterNearest() {
   const near = nearestDoor()
   if (!near || near.dist >= 2.2) return
   if (near.building.house) { enterHouse(near.building, { sheet: true }); return }
+  if (near.building.id === 'cafeteria' && cafScene()) { enterCaf(); return }
   openPlace(near.building.id)
 }
 

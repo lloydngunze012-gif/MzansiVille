@@ -574,6 +574,7 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 .mm-bar.mm-bar .mm-choice:active, .g-talk-reply:active { animation: none; transform: translateY(1px) scale(.98); box-shadow: 0 1px 0 #2a184655; }
 @media (prefers-reduced-motion: reduce) {
   .mm-bar.mm-bar .mm-choice, .g-talk-reply { animation: none; }
+  .mm-go { animation: none; } /* the pulsing yellow buttons too */
 }
 
 /* Game colour on the first screen (owner, 8 Nov): just the four colours, no boxes or names, in a row

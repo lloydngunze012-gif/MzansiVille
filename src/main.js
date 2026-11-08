@@ -514,7 +514,37 @@ function syncLecture(viewState) {
   return true
 }
 
+// The Caf is its own scene (world/caf.js): the campus is hidden behind the curtain while you are
+// in it, and the exit door brings you back to the campus Caf door.
+let cafLive = false
+let cafPromise = null
+window.addEventListener('mzansi-enter-caf', async () => {
+  if (cafLive || !save.run || !hasGL()) return
+  cafLive = true
+  document.body.dataset.caf = '1'
+  soundLoop('crowd', false)
+  try {
+    await curtain.cover('Into the Caf…')
+    worldPromise?.then((mod) => mod.setVisible(false))
+    cafPromise ||= import('./world/caf.js')
+    const mod = await cafPromise
+    mod.startCaf({ run: save.run, onExit: exitCaf })
+  } catch (error) {
+    console.error(error)
+    exitCaf()
+  }
+})
+function exitCaf() {
+  if (!cafLive) return
+  cafLive = false
+  cafPromise?.then((mod) => mod.stopCaf())
+  curtain.cover('Back to campus…', { instant: true }) // (the campus lifts it)
+  delete document.body.dataset.caf
+  paint()
+}
+
 function syncWorld(viewState) {
+  if (cafLive) return
   const morningOn = syncMorning(viewState) || syncLecture(viewState)
   const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket

@@ -6,7 +6,7 @@
 // note of what we changed. Credit lines: docs/credits.md and the #/credits screen. We changed:
 // the rig is stripped (skins, animation, joint weights, rig metadata; the doors, trays, wheels
 // and folds stay in their closed, rest pose), every node transform is baked, each prop is one
-// mesh, the vertex colours are re-mapped to the game's palette, and the kit is welded,
+// mesh, the vertex colours are re-mapped to the Caf palette (caf-world.md), and the kit is welded,
 // quantised and Draco-compressed like the home scene's kits (scripts/home-assets.mjs).
 // The Polyfork files are untrusted input: they are only parsed, never run.
 import fs from 'node:fs'
@@ -32,44 +32,52 @@ const ASSETS = [
   ['cafe-parasol', 'cafe-parasol-61a313', [2.72, 2.69, 2.72]],
 ]
 
-// The game's palette (src/styles.css :root). Each source colour is sorted into a family by hue;
-// the family's palette colour gives hue and saturation, the source keeps its own lightness so
-// the shading of the model survives.
-const PAL = { ink: '#1c1915', paper: '#f4efe4', line: '#e4dac8', yellow: '#f0c400', green: '#1f6b45', clay: '#c4512a', blue: '#244e78', muted: '#6f675c' }
+// The Caf palette (docs/world-designer/caf-world.md, "Palette table"): honey wood, walnut,
+// cream counter tops, plum accents, gold trim, warm steel, teal cushions. Each prop lists its
+// own source vertex colours (read from the Polyfork files) and the palette colour each becomes;
+// a colour not listed takes the nearest listed one. Shades of one role keep the model's
+// light/dark structure (honey / honey dark / honey light, and so on).
+const ROLE = {
+  honey: '#b9824f', honeyDark: '#9a6a3c', honeyLight: '#d6a96e',
+  walnut: '#6b4428', walnutDark: '#4f3320',
+  cream: '#f3e9d2', creamLight: '#fbf4e2',
+  plum: '#2f1a5c', gold: '#d9a632',
+  steel: '#a7a19a', steelDark: '#6d6862', steelLight: '#c9c4bc',
+  teal: '#2a8c8c',
+}
+const MAP = {
+  'cafe-counter': { '#c59a73': 'honey', '#936e4b': 'walnut', '#5b4f45': 'walnutDark', '#404349': 'steelDark', '#eae2dc': 'cream', '#b4a9a3': 'steel', '#efeae3': 'creamLight' },
+  'servery-counter': { '#e7eaec': 'cream', '#f1ede4': 'creamLight', '#dadee0': 'steelLight', '#f3f4f5': 'creamLight', '#8a9299': 'steel', '#f0b429': 'gold', '#2e4636': 'plum', '#3c4348': 'walnut', '#5f686e': 'steelDark', '#6e8c5a': 'teal', '#22262a': 'walnutDark', '#f7f4ee': 'creamLight' },
+  'cafe-table-set': { '#523f34': 'walnut', '#c59a73': 'honey', '#5b4f45': 'walnutDark', '#efeae3': 'teal', '#936e4b': 'honeyDark' },
+  'folding-dining-table': { '#2f6f9e': 'honey', '#22262a': 'walnutDark', '#c9b48c': 'honeyLight', '#3c4348': 'walnut', '#d4483b': 'teal', '#f1ede4': 'cream', '#8a9299': 'steel' },
+  'bar-stool': { '#e3cba5': 'teal', '#c9a24b': 'walnut', '#e0c078': 'gold' },
+  'campus-coffee-kiosk': { '#c59a73': 'honey', '#936e4b': 'walnut', '#70757e': 'steel', '#5b4f45': 'walnutDark', '#a37d5b': 'gold', '#523f34': 'walnut', '#8a8278': 'steelDark', '#404349': 'steelDark', '#9d9287': 'steel', '#efeae3': 'cream' },
+  'cafe-parasol': { '#c97b4a': 'plum', '#e0a96d': 'gold', '#dadedf': 'steel' },
+}
 const srgb = (l) => (l <= 0.0031308 ? l * 12.92 : 1.055 * l ** (1 / 2.4) - 0.055)
 const linear = (s) => (s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4)
-function toHsl([r, g, b]) {
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn
-  if (!d) return [0, 0, l]
-  const s = d / (1 - Math.abs(2 * l - 1))
-  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4
-  return [h * 60, s, l]
-}
-function fromHsl([h, s, l]) {
-  const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2
-  const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]
-  return [r + m, g + m, b + m]
-}
 const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
-const HSL = Object.fromEntries(Object.entries(PAL).map(([k, v]) => [k, toHsl(hex(v))]))
-function recolour(rgbLinear) {
-  const [h, s, l] = toHsl(rgbLinear.map(srgb))
-  const fam = (name, lo = 0, hi = 1) => { const [fh, fs] = HSL[name]; return fromHsl([fh, fs, Math.min(hi, Math.max(lo, l))]) }
-  let out
-  if (s < 0.16) { // neutrals: ink -> muted -> line -> paper by lightness
-    const stops = [[0.1, 'ink'], [0.42, 'muted'], [0.84, 'line'], [0.95, 'paper']]
-    let a = stops[0], b = stops[stops.length - 1]
-    for (let i = 0; i < stops.length - 1; i++) if (l >= stops[i][0] && l <= stops[i + 1][0]) { a = stops[i]; b = stops[i + 1] }
-    const t = Math.min(1, Math.max(0, (l - a[0]) / (b[0] - a[0] || 1)))
-    const ca = hex(PAL[a[1]]), cb = hex(PAL[b[1]])
-    out = ca.map((v, i) => v + (cb[i] - v) * t)
-  } else if (h >= 190 && h <= 270) out = fam('blue', 0.14, 0.7)
-  else if (h >= 90 && h < 190) out = fam('green', 0.14, 0.7)
-  else if ((h < 14 || h > 330) && s > 0.3) out = fam('clay', 0.25, 0.7)
-  else if (h >= 14 && h < 38 && s >= 0.45) out = fam('clay', 0.3, 0.75) // orange
-  else if (h >= 38 && h < 56 && s >= 0.45) out = fam('yellow', 0.3, 0.8) // gold
-  else { const [fh] = HSL.line; out = fromHsl([fh, 0.3, Math.min(0.82, Math.max(0.2, l))]) } // wood: the line colour's hue, muted
-  return out.map((v) => linear(Math.min(1, Math.max(0, v))))
+// (position rules, in the prop's baked space, metres): the parasol's canopy is plum with a gold
+// edge; its pole stays gold.
+const BY_POSITION = {
+  'cafe-parasol': (role, [x, y, z]) => {
+    if (y < 1.7) return role === 'gold' ? 'gold' : role
+    return Math.hypot(x, z) > 1.22 && y < 1.98 ? 'gold' : 'plum'
+  },
+}
+function recolourFor(name) {
+  const byPos = BY_POSITION[name]
+  const table = Object.entries(MAP[name]).map(([src, role]) => [hex(src), hex(ROLE[role]).map(linear)])
+  return (rgbLinear, pos) => {
+    const s = rgbLinear.map(srgb)
+    let best = table[0], bd = Infinity
+    for (const t of table) { const d = (t[0][0] - s[0]) ** 2 + (t[0][1] - s[1]) ** 2 + (t[0][2] - s[2]) ** 2; if (d < bd) { bd = d; best = t } }
+    if (byPos) {
+      const role = Object.entries(Object.fromEntries(Object.entries(ROLE).map(([k, h]) => [k, hex(h).map(linear)]))).find(([, c]) => c.every((v, i) => Math.abs(v - best[1][i]) < 1e-6))?.[0]
+      return hex(ROLE[byPos(role, pos)]).map(linear)
+    }
+    return best[1]
+  }
 }
 
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
@@ -78,7 +86,8 @@ const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies(
 })
 
 // One Polyfork file -> a static, one-mesh, recoloured document (not yet compressed).
-async function prepare(file) {
+async function prepare(file, name) {
+  const recolour = recolourFor(name)
   const doc = await io.read(file)
   const root = doc.getRoot()
   // strip the rig: animation, skins, joint weights, rig metadata
@@ -96,7 +105,9 @@ async function prepare(file) {
     const acc = p.getAttribute('COLOR_0')
     if (!acc) continue
     const v = [0, 0, 0, 1]
-    for (let i = 0; i < acc.getCount(); i++) { acc.getElement(i, v); const c = recolour(v.slice(0, 3)); acc.setElement(i, [c[0], c[1], c[2], v[3] ?? 1]) }
+    const pos = p.getAttribute('POSITION')
+    const at = [0, 0, 0]
+    for (let i = 0; i < acc.getCount(); i++) { acc.getElement(i, v); pos.getElement(i, at); const c = recolour(v.slice(0, 3), at); acc.setElement(i, [c[0], c[1], c[2], v[3] ?? 1]) }
   }
   return doc
 }
@@ -116,13 +127,13 @@ const credits = []
 for (const [name, id, want] of ASSETS) {
   const file = path.join(SRC, `${id}.glb`)
   const before = fs.statSync(file).size
-  const doc = await prepare(file)
+  const doc = await prepare(file, name)
   const b = getBounds(doc.getRoot().listScenes()[0])
   const got = [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.min[2]]
   const tris = doc.getRoot().listMeshes().reduce((n, m) => n + m.listPrimitives().reduce((k, p) => k + (p.getIndices() ? p.getIndices().getCount() : p.getAttribute('POSITION').getCount()) / 3, 0), 0)
   const meshes = doc.getRoot().listMeshes().length
   // after (alone): a copy, compressed on its own
-  const alone = await prepare(file)
+  const alone = await prepare(file, name)
   const aloneSize = await compress(alone, path.join(tmp, `${name}.glb`))
   // into the kit
   const map = mergeDocuments(kitDoc, doc)

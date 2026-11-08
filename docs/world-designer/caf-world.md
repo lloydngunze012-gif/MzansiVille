@@ -14,7 +14,7 @@ It has the four things every place needs:
 - **Its own sounds:** trays, the coffee machine, a radio playing amapiano, chatter that grows at lunch.
 - **Its own progress:** your regular level and your shift rank, which only grow here.
 
-It builds on the counters Lloyd asked for on 8 November: Mama Liz's hot meals, Aunty Premi's Indian kitchen and Uncle Jaco's grill, plus a coffee kiosk. The props are already built: seven Polyfork models in one 52.6 KB kit (`public/models/caf/caf-kit.glb`).
+It builds on the counters Lloyd asked for on 8 November: Mama Liz's hot meals, Aunty Premi's Indian kitchen and Uncle Jaco's grill, plus a coffee kiosk. The props are already built: seven Polyfork models in one 52.8 KB kit (`public/models/caf/caf-kit.glb`).
 
 ## Layout
 
@@ -181,7 +181,7 @@ All sounds follow the existing audio rules: they stop at once when the game is h
 The Caf must run at 30 fps or better on a cheap Android, and load in under 1 second after the first visit.
 
 - **Its own scene:** the Caf loads only when you walk through its door, with the curtain transition. The campus map unloads behind it and comes back on exit.
-- **One kit file:** all seven props come from the 52.6 KB kit. Tables, stools and chairs repeat as instances, so 20 tables cost about the same as one.
+- **One kit file:** all seven props come from the 52.8 KB kit. Tables, stools and chairs repeat as instances, so 20 tables cost about the same as one.
 - **Draw calls:** under 60 for the whole room.
 - **People:** at most 20 on screen: the 6 regulars plus up to 14 background students. Background students use the cheapest character setup and simple loops (eat, chat, leave).
 - **Light:** one directional light plus ambient. No real-time shadows; soft blob shadows under people and furniture.
@@ -213,3 +213,7 @@ Five Claude Code jobs, one per fresh context, each ending with a push and a prod
 
 - Should one of your brands (Woza, Lifecup, Greenway) appear in the Caf, for example Woza card payments at the till?
 - Does Mama Gugu at the Quad stall keep her name? (Decided in the docs/cast.md review.)
+
+## Build log
+
+**Job 1, the scene shell (8 Nov, done).** `src/world/caf.js` is the Caf as its own scene: the campus Caf door (a tap on the building, the door prompt, E; the map's "go there" still opens the place sheet until job 2) plays the plum curtain, hides the campus and builds the room; the exit door or the Leave button brings you back to the campus Caf door. The kit is recoloured with the palette above (scripts/caf-assets.mjs, per-prop colour map). Layout as specified: four counters on the back wall (Servery x2 = Hot meals and Indian kitchen, Cafe Counter = Grill, Coffee Kiosk), a plum queue lane, window bar with 5 stools on the left, two long tables in the middle, small tables on the right, open seating at the front, main door front centre with an empty Regulars board beside it, side door right to the patio (two parasols, string lights). Plum menu boards with gold lettering. Lighting: day, evening (string lights on), load-shedding (emergency strip, "COLD FOOD ONLY"): `?caflight=day|evening|load`, `?cafdebug=1` shows a light switch and draw-call count, `run.loadShedding` will drive it in job 5. Instanced props (tables, stools, parasols), architecture merged per material. No people, menus or ordering yet. Numbers: 50 draw calls at 390 px (53 at 1280 px) including the player, ~22k triangles, no real-time shadows; the Caf adds 52.8 KB of kit plus caf.js (the Draco decoder is already shipped); about 30 fps (27-42, median 33) at 4x CPU throttle on a desktop GPU, 390 px. Test: tests/e2e/caf.spec.js.

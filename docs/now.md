@@ -1,7 +1,10 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 8 Nov, Claude Code (asset rule: CC0 or CC BY 4.0 with credit; #/credits screen; Polyfork survey, no downloads).
+Last updated: 8 Nov, Claude Code (Caf job 1: the scene shell).
+
+## Caf job 1: scene shell (owner, 8 Nov)
+- The Caf is its own scene (src/world/caf.js): campus Caf door -> curtain -> the Caf; exit door or Leave button -> back at the campus Caf door. Kit recoloured to the spec palette (52.8 KB), full layout, plum menu boards, three light states (?caflight=, ?cafdebug=1 switch). 50 draw calls at 390 px, ~30 fps at 4x CPU throttle. No people, menus or ordering yet (jobs 2-3). The map's "go there" still opens the old place sheet (so ordering still works until job 2); ?caf=sheet keeps the sheet for door taps too. Test: tests/e2e/caf.spec.js (390 + 1280 px, fps). Screenshots on the PC: docs/sprints/caf-shell/. map-go "2D map: cafeteria" and doors D2 fail with and without this change.
 
 ## Cast and diversity pass (owner, 8 Nov)
 - docs/cast.md lists every named character with a "keep or rename?" column (nothing renamed; Pinky, Gugu, Zanele, Sipho etc. are the owner's call). CLAUDE.md has a CAST RULE. Skins for extras now come from src/world/skinmix.js (even Black/white/Indian/coloured mix); home street fixed (walkers deep/fair/amber/brown, gate pair fair/ebony, Mrs Pillay amber, Mrs Bennett brown); lecture hall and campus crowd use the same mix. npm run check 55/55 incl. "every NPC spawn list has at least 3 skin tones". No Mam' Thandi or Uncle Bra Joe existed; caf staff (Mama Liz, Aunty Premi, Uncle Jaco, Kyle) are in cast.md for when the caf is staffed (note: extra student Kyle already exists). Named cast still leans dark (5 deep); the owner decides renames. Pre-existing: home.spec township fails at the money card (fails without this change too). Screenshots on the PC: docs/sprints/cast/.
