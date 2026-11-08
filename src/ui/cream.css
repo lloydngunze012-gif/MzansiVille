@@ -532,3 +532,8 @@ html[data-theme] .en .en-stage.en-id { box-shadow: 0 12px 26px #1c19152e, 0 -8px
 html[data-theme] .en .en-id[data-id-step="who"], html[data-theme] .en .en-id[data-id-step="vibe"] { box-shadow: 0 10px 24px #1c19152e, 0 -8px 0 8px var(--cr-bg-2); }
 html[data-theme] .en .cc-mute { background: #fff; color: #1c1915; }
 html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
+
+/* Who and vibe: the top bar (Back, dots, Skip) is pinned with the card, like the look step, so
+   neither scrolls away (owner, 8 Nov). */
+.en[data-step="who"], .en[data-step="vibe"] { padding-top: 0; }
+.en[data-step="who"] .en-top, .en[data-step="vibe"] .en-top { position: sticky; top: 0; z-index: 8; margin: 0 -14px; padding: calc(6px + var(--safe-t, 0px)) 14px 0; background: var(--cr-bg-2); }
