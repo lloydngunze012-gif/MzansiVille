@@ -16,6 +16,8 @@ import { beatById } from '../engine/arcs.js'
 import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
 import './cream.css'
+import './result-card.css'
+import { resultBody } from './result-card.js'
 import { themePicker } from '../theme.js'
 import './creator.css'
 import { venueFor } from '../venues.js'
@@ -457,6 +459,15 @@ function resultCard(state) {
   const twist = card.kind === 'result' && q[1]?.kind === 'twist' ? q[1] : null
   const label = { identity: '\u2728 Who you\u2019re becoming', goal: '\u{1F3AF} Goal done', result: 'Done', twist: 'Meanwhile', spot: 'Spot test', bestie: 'Your bestie', milestone: 'Milestone', event: 'Event' }[card.kind] || 'Note'
   const fx = card.kind === 'result' && ui.delta && card.id.startsWith('result-') ? effectChips(ui.delta, 'big') : ''
+  const rich = activityCard(state, card, q)
+  if (rich) {
+    return `<div class="g-scrim soft" data-act="dismiss"></div>
+  <aside class="g-result rc${rich.big ? ' big' : ''}" role="dialog" aria-label="${esc(card.title)}"${!twist && q.length === 1 ? ` data-auto="${rich.big ? 8000 : 6000}"` : ''}>
+    ${rich.html}
+    ${twist ? `<p class="g-twistline">\u{1F3B2} ${esc(twist.text)}</p>` : ''}
+    <button type="button" class="g-go block" data-act="dismiss"${twist ? ' data-pair="1"' : ''}>${q.length > (twist ? 2 : 1) ? 'Next' : 'Continue'}</button>
+  </aside>`
+  }
   const body = fx ? '' : `<p>${esc(String(card.text || '').replaceAll('Hunger', 'Fullness'))}</p>`
   return `<div class="g-scrim soft" data-act="dismiss"></div>
   <aside class="g-result" role="dialog"${!twist && card.kind === 'result' && q.length === 1 ? ' data-auto="1"' : ''}>
@@ -466,6 +477,22 @@ function resultCard(state) {
     ${twist ? `<p class="g-twistline">\u{1F3B2} ${esc(twist.text)}</p>` : ''}
     <button type="button" class="g-go block" data-act="dismiss"${twist ? ' data-pair="1"' : ''}>${q.length > (twist ? 2 : 1) ? 'Next' : 'Continue'}</button>
   </aside>`
+}
+
+// The activity "DONE" card (icon tile, fun line, gain pills, cost chips); null for other result cards.
+function activityCard(state, card, q) {
+  if (card.kind !== 'result' || !ui.delta || !String(card.id).startsWith('result-')) return null
+  if (!Object.values(ui.delta).some((v) => v)) return null
+  const { district, run } = state
+  const actionId = String(card.id).slice(7).replace(/-\d+$/, '')
+  const action = district.activities.find((a) => a.id === actionId)
+  const place = district.places.find((p) => p.id === action?.placeId)
+  const venue = venueFor(run)
+  return resultBody({
+    cardId: card.id, title: card.title, delta: ui.delta, action, esc,
+    fill: { lecturer: venue?.lecturerName, subject: venue?.subject, place: place ? placeName(place) : '' },
+    goalTicked: q.some((c) => c.kind === 'goal'),
+  })
 }
 
 // Friday's test: the mark, and which choices this week paid off.

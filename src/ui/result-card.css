@@ -1,0 +1,55 @@
+/* Activity result card (loaded after cream.css, so it wins on every game colour theme). */
+.g-result.rc {
+  max-width: 358px; margin-inline: auto;
+  background: #fff8ea; color: #2f1a5c;
+  border: 2px solid #f0c400; border-radius: 20px;
+  box-shadow: 0 6px 0 #d9ac00, 0 24px 60px #0005;
+  padding: 16px 16px 18px;
+}
+.g-result.rc.big { animation: rcbounce .6s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes rcbounce {
+  0% { transform: translateY(-46%) scale(.7); opacity: 0; }
+  60% { transform: translateY(-50%) scale(1.05); opacity: 1; }
+  100% { transform: translateY(-50%) scale(1); }
+}
+.rc-head { display: flex; align-items: center; gap: 12px; }
+.rc-tile {
+  flex: none; width: 46px; height: 46px; border-radius: 14px; background: #2f1a5c; color: #f0c400;
+  display: grid; place-items: center; font-size: 24px;
+}
+.rc .g-kind.rc-eyebrow { color: #9a6a00 !important; font-size: 11px !important; letter-spacing: 1.2px; }
+.rc.big .g-kind.rc-eyebrow { color: #b45f00 !important; }
+.g-result.rc h2 { color: #2f1a5c; font-size: 21px; margin: 1px 0 0; line-height: 1.15; }
+.rc-line { margin: 12px 0 12px !important; font-style: italic; font-size: 14.5px; line-height: 1.4; color: #4a3475; }
+.rc-gains, .rc-costs { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc-costs { margin-top: 10px; gap: 6px; }
+.rc-gain {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 99px;
+  font-size: 16px; border: 2px solid; animation: rcpop .28s cubic-bezier(.2, 1.7, .4, 1) var(--d, 0ms) backwards;
+}
+.rc-gain b { font-weight: 800; font-size: 16px; }
+.rc-grades { background: #def5e6; border-color: #34b36a; color: #0f6a38; }
+.rc-social { background: #ffe0ee; border-color: #e8559f; color: #a1135e; }
+.rc-energy { background: #fff1b8; border-color: #e0b400; color: #7a5600; }
+.rc-hunger { background: #ffe6d1; border-color: #f08a3c; color: #9a4208; }
+.rc-money { background: #d9f4f2; border-color: #26b5b0; color: #0b6b68; }
+@keyframes rcpop { from { transform: scale(.6); opacity: 0; } }
+.rc-cost {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 99px;
+  background: #efe6d3; color: #6b6359; font-size: 12px; font-weight: 600;
+}
+.rc .g-go.block { margin-top: 14px; }
+.rc-confetti { position: absolute; left: 50%; top: 40px; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.rc-confetti i {
+  position: absolute; width: 8px; height: 12px; border-radius: 2px; background: var(--c);
+  animation: rcburst .9s cubic-bezier(.1, .8, .3, 1) .15s both;
+}
+@keyframes rcburst {
+  from { transform: translate(0, 0) rotate(0) scale(.4); opacity: 1; }
+  70% { opacity: 1; }
+  to { transform: translate(var(--x), calc(var(--y) + 60px)) rotate(var(--r)) scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .g-result.rc.big, .rc-gain, .rc-confetti i { animation: none; }
+  .rc-confetti { display: none; }
+}

@@ -931,7 +931,8 @@ function armAuto() {
   clearTimeout(autoTimer)
   const card = app.querySelector('.g-result[data-auto]')
   if (!card) return
-  card.insertAdjacentHTML('beforeend', '<i class="g-timer"></i>')
+  const ms = Number(card.dataset.auto) > 1 ? Number(card.dataset.auto) : 1800
+  card.insertAdjacentHTML('beforeend', `<i class="g-timer" style="animation-duration:${ms}ms"></i>`)
   autoTimer = setTimeout(() => {
     const q = save.run?.queue?.[0]
     if (!q || q.choices || !app.contains(card)) return
@@ -939,7 +940,7 @@ function armAuto() {
     autoAdvance()
     persist()
     paint()
-  }, 1800)
+  }, ms)
 }
 
 // A small bounce on the tapped thing and a short note: the tap was heard.
