@@ -2771,8 +2771,7 @@ function frameBody(now) {
     // (held up, not called off: a walk to someone or somewhere opens it where you stopped)
     if (against > 0.5 || againstFrames >= 6) { smooth.against(against, againstFrames, player.position.x, player.position.z); mover.giveUp(); against = 0; againstFrames = 0 }
     frameFrom = null
-    const say = host.querySelector('.act-say')
-    if (say && !say.hidden) pinAbove(say, player.position.x, 2.2, player.position.z)
+    // (the activity line is a docked card under the Leave button now: ui/cards.css, never pinned over a head)
     // (the Talk button on campus while nothing else is open)
     chatUi?.available(!hold && here && !acting && !inHouse && !talk)
     if (crowd) host.dataset.nearest = Math.min(99, ...crowd.people.map((p) => Math.hypot(p.avatar.position.x - player.position.x, p.avatar.position.z - player.position.z))).toFixed(2)

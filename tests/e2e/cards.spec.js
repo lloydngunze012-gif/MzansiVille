@@ -18,7 +18,7 @@ test.describe.configure({ timeout: 240000 })
 // Runs in the page: every visible card, and what is wrong with it.
 const AUDIT = ({ maxW, minText, micro }) => {
   const CARDS = ['.mm-bar', '.mm-card', '.lc-caption', '.lc-say', '.dp-card', '.dp-caption', '.dp-walk', '.g-result', '.g-card-wrap', '.g-goal',
-    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu']
+    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu', '.act-say', '.ps-leave']
   const MICRO_SEL = '.g-kind, .mm-kind, .mm-name, .rc-eyebrow, small, .g-fx, .rc-cost, .rc-gain, .g-act-fx, .g-why, .g-left, .g-gk, .lc-name, .mm-tag, .dp-name'
   const shown = (el) => {
     const r = el.getBoundingClientRect(), s = getComputedStyle(el)
@@ -128,14 +128,14 @@ for (const [w, h] of WIDTHS) {
       await expect(host).toHaveAttribute('data-step', 'seat', { timeout: 60000 })
       await expect(page.locator('[data-lc="choice"]').first()).toBeVisible()
       await audit(page, 'lecture-seat-choice', w)
-      await page.locator('[data-lc="choice"]').nth(2).tap({ force: true }) // (the choices bob forever, so never "stable")
+      await page.locator('[data-lc="choice"]').nth(2).tap()
       await expect(host).toHaveAttribute('data-step', 'choice', { timeout: 60000 })
       await expect(page.locator('[data-lc="choice"]').first()).toBeVisible()
       await audit(page, 'lecture-moment-choice', w)
-      await page.locator('[data-lc="choice"]').first().tap({ force: true })
+      await page.locator('[data-lc="choice"]').first().tap()
       await expect(page.locator('.mm-card:not([hidden])')).toBeVisible({ timeout: 90000 })
       await audit(page, 'lecture-end-card', w)
-      await page.locator('[data-lc="done"]').tap({ force: true })
+      await page.locator('[data-lc="done"]').tap()
       // item 4: Attend lecture ends on the new result card, never the old plain DONE card
       const card = page.locator('.g-result').first()
       await expect(card).toBeVisible({ timeout: 30000 })
@@ -170,11 +170,37 @@ for (const [w, h] of WIDTHS) {
       for (let i = 0; i < 5 && !(await page.locator('.g-moment').isVisible().catch(() => false)); i++) {
         await page.locator('.g-result [data-act="dismiss"], .g-card-wrap [data-act="dismiss"]').first().waitFor({ timeout: 15000 }).catch(() => {})
         if (await page.locator('.g-result').first().isVisible().catch(() => false)) await audit(page, `queued-card-${i}`, w)
-        await page.locator('.g-result [data-act="dismiss"]').first().tap({ force: true }).catch(() => {})
+        await page.locator('.g-result [data-act="dismiss"]').first().tap().catch(() => {})
         await page.waitForTimeout(500)
       }
       await expect(page.locator('.g-moment')).toBeVisible({ timeout: 30000 })
       await audit(page, 'moment', w)
+    })
+
+    test(`C7 queue: Leave queue and the line being said stack @${w}`, async ({ page }) => {
+      await student(page, { patch: { phase: 'social', minutes: 13 * 60, morningDone: true, lectureResolved: true, queue: [], bestieSeen: { 1: true, 2: true, 3: true } } })
+      await page.goto('/?fast=1&morning=0&spawn=quad#/play')
+      await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 60000 })
+      await page.waitForTimeout(1200)
+      // the real queue shows both within a second of each other and the line changes fast, so hold the pair on screen
+      await page.evaluate(() => {
+        const say = document.querySelector('#world .act-say')
+        say.innerHTML = 'Bunny chow. Sharp, thank you!'
+        say.hidden = false
+        const leave = document.querySelector('.ps-leave')
+        leave.textContent = 'Leave queue'
+        leave.hidden = false
+      })
+      await expect(page.locator('.act-say')).toBeVisible()
+      await expect(page.locator('.ps-leave')).toBeVisible()
+      await page.screenshot({ path: `${OUT}/queue-leave-and-line-${w}.png` })
+      const a = await page.locator('.ps-leave').boundingBox()
+      const b = await page.locator('.act-say').boundingBox()
+      expect(b.y, 'the line sits below the Leave queue button').toBeGreaterThanOrEqual(a.y + a.height - 0.5)
+      expect(Math.abs((b.x + b.width / 2) - w / 2), 'the line is centred').toBeLessThan(2)
+      // (a stranger's talk card can be open beside the queue: its own small text is an older finding, not this test's)
+      const res = await page.evaluate(AUDIT, { maxW: MAX_W, minText: MIN_TEXT, micro: MICRO })
+      expect(res.problems.filter((x) => !x.startsWith('.g-talk')), `queue @${w}`).toEqual([])
     })
 
     test(`C6 today's goals @${w}`, async ({ page }) => {

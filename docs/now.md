@@ -1,7 +1,15 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 8 Nov, Claude Code (Caf job 1: the scene shell).
+Last updated: 8 Nov, Claude Code (Caf job 1 fixes).
+
+## Caf job 1 fixes (owner's 390 px phone check, 8 Nov)
+- Camera (src/world/caf.js frameCamera/fitCamera): the Caf host (#caf3d) was never fixed to the window (a block above the game, which also pushed the top bar 844 px down); now position:fixed. Sims follows you but never looks past the walls (clamped, then a third of the way once you are at the front), distance 13, the picture pushed down by the height of the bars so no sign sits under them; coverage of the screen below the bars 85-99% in the room. Top fits the whole hall (16 m) squared to the screen (yaw 0, distance from the aspect), the room centred under the bars; on a portrait phone it is width-limited, so empty plum above and below is unavoidable.
+- HUD: the game's top bar (day, time, stats, slots) stays visible in the Caf (body[data-caf] #app .g-hud, non-interactive); Leave the Caf and Top/Sims/Eye sit under it (--caf-top measured from the bar); in the default view no sign is under the bars or those buttons.
+- Counters: Hot meals, Indian kitchen, Grill and Coffee each photographed with its sign (docs/sprints/caf-fixes/, on the PC, not committed).
+- Queue lane: a lighter cream strip with gold edge lines and gold rope posts on both sides (a plum rope on the front side; the counter side stays open). Draw calls still under 60.
+- Outside queue: the line being said (.act-say, "Bunny chow. Sharp, thank you!") is a docked centred card under the red Leave queue button (cards.css; no longer pinned over a head, scene.js pinAbove call removed); .act-say and .ps-leave are in cards.spec.js CARDS, and C7 checks they stack at 390 and 1280 px. The outdoor queue stays until job 2.
+- Tests: caf.spec.js "Caf fixes" at 390 and 360 px, caf shell 390/1280, 4x throttle fps (60); cards C1-C7; npm run check 55/55. actions A2 and A4 fail with and without this change (A3 is flaky under 2 workers, passes alone).
 
 ## Caf job 1: scene shell (owner, 8 Nov)
 - The Caf is its own scene (src/world/caf.js): campus Caf door -> curtain -> the Caf; exit door or Leave button -> back at the campus Caf door. Kit recoloured to the spec palette (52.8 KB), full layout, plum menu boards, three light states (?caflight=, ?cafdebug=1 switch). 50 draw calls at 390 px, ~30 fps at 4x CPU throttle. No people, menus or ordering yet (jobs 2-3). The map's "go there" still opens the old place sheet (so ordering still works until job 2); ?caf=sheet keeps the sheet for door taps too. Test: tests/e2e/caf.spec.js (390 + 1280 px, fps). Screenshots on the PC: docs/sprints/caf-shell/. map-go "2D map: cafeteria" and doors D2 fail with and without this change.

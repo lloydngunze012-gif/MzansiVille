@@ -27,7 +27,7 @@ const DEBUG = Q.get('cafdebug') === '1'
 // ---------- the palette (caf-world.md) ----------
 const C = {
   honey: '#b9824f', honeyDark: '#9a6a3c', honeyLight: '#d6a96e', walnut: '#6b4428', cream: '#f3e9d2', wall: '#f0e4cb',
-  plum: '#2f1a5c', gold: '#d9a632', steel: '#a7a19a', teal: '#2a8c8c', floorA: '#ecdcb8', floorB: '#e0cba0',
+  plum: '#2f1a5c', gold: '#d9a632', steel: '#a7a19a', teal: '#2a8c8c', floorA: '#ecdcb8', floorB: '#e0cba0', lane: '#fbf5e4',
 }
 
 // ---------- the room (metres; x right, z toward the camera/front, the back wall at -Z) ----------
@@ -75,6 +75,9 @@ let enteredAt = 0
 let frameCount = 0
 let lightName = 'day'
 let shot = null // (tests) a fixed camera: { pos, look }
+let barsBottom = 0 // px: bottom of the game's top bar plus the Leave / camera row
+let shiftY = 0
+let lastMode = null
 let rig3 = null // lights and things that change with the light state
 const ray = new THREE.Raycaster()
 const v3 = new THREE.Vector3()
@@ -237,10 +240,20 @@ async function buildRoom() {
   B.box('walnut', 0.12, 1.0, 6.4, X0 + 0.28, 0.5, 1.0)
   sol(X0 + 0.5, 1.0, 0.6, 6.6)
 
-  // the queue lane: a plum strip in front of the counters with gold dashes
-  B.box('plum', 10.6, 0.02, 0.9, -2.2, 0.01, -2.3)
+  // the queue lane: a lighter cream strip with gold edge lines and gold rope posts on both sides
+  // (the front side is roped between the posts; the counter side stays open to step up to a counter)
+  B.box('lane', 10.6, 0.02, 0.9, -2.2, 0.01, -2.3)
   B.box('gold', 10.6, 0.022, 0.05, -2.2, 0.011, -2.3 - 0.475)
   B.box('gold', 10.6, 0.022, 0.05, -2.2, 0.011, -2.3 + 0.475)
+  for (let i = 0; i < 8; i++) {
+    const px = -7.1 + i * 1.4
+    for (const pz of [-2.3 - 0.55, -2.3 + 0.55]) {
+      B.box('gold', 0.09, 0.92, 0.09, px, 0.46, pz) // post
+      B.box('gold', 0.2, 0.05, 0.2, px, 0.025, pz) // foot
+      B.box('gold', 0.14, 0.1, 0.14, px, 0.97, pz) // cap
+    }
+    if (i < 7) B.box('plum', 1.4 - 0.12, 0.05, 0.05, px + 0.7, 0.8, -2.3 + 0.55) // rope on the front side
+  }
   // the ordering spot in front of each counter: a gold mat
   for (const c of COUNTERS) B.box('gold', 1.6, 0.02, 0.5, c.x, 0.012, c.prop === 'campus-coffee-kiosk' ? -2.55 : -3.75)
 
@@ -395,6 +408,51 @@ export function setLight(name) {
   return true
 }
 
+// ---------- the camera: frame the room, not just the player ----------
+// Top fits the whole hall, squared to the screen (yaw 0). Sims follows you but never looks past
+// the walls (the floor fills the screen, no empty plum under the front wall), and the picture is
+// pushed down so nothing important sits under the top bar and the Leave / camera row.
+const TAN_V = Math.tan((52 / 2) * Math.PI / 180)
+const SOFT_Z = Z1 - 6.3 // past this the camera follows you at a third of the way (the front stays in frame, the signs stay clear of the bars)
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
+function measureBars() {
+  const hud = document.querySelector('.g-hud')
+  const hb = hud && hud.getClientRects().length ? hud.getBoundingClientRect().bottom : 0
+  if (uiRoot) uiRoot.style.setProperty('--caf-top', `${Math.round(hb || 56)}px`)
+  barsBottom = (hb || 56) + 8 + 44
+}
+function fitCamera() {
+  if (!rig) return
+  measureBars()
+  const w = window.innerWidth
+  const h = window.innerHeight
+  const free = Math.max(0.5, (h - barsBottom) / h)
+  const distW = ((X1 - X0) / 2 + 0.4) / (TAN_V * (w / h))
+  const distH = ((Z1 - Z0) / 2 + 1.0) / (TAN_V * free)
+  rig.setDistance('top', Math.max(distW, distH))
+  rig.setDistance('sims', 13)
+}
+function frameCamera(dt) {
+  const mode = rig.mode
+  if (mode !== lastMode) {
+    if (mode === 'top') rig.yaw = 0
+    else if (mode === 'sims' && (lastMode === 'top' || lastMode === null)) rig.yaw = 0.6
+    lastMode = mode
+  }
+  const p = player.position
+  let target = p
+  if (mode === 'top') target = { x: (X0 + X1) / 2, y: 0, z: (Z0 + Z1) / 2 }
+  else if (mode === 'sims') target = { x: Math.max(p.x, X0 + 2.8), y: 0, z: Math.max(Z0 + 2.2, p.z <= SOFT_Z ? p.z : SOFT_Z + (p.z - SOFT_Z) * 0.4) }
+  rig.apply(camera, target, dt, null)
+  const want = mode === 'eye' ? 0 : Math.round(barsBottom * (mode === 'top' ? 0.5 : 1.1))
+  if (want !== shiftY) {
+    shiftY = want
+    const W = window.innerWidth, H = window.innerHeight
+    if (want) camera.setViewOffset(W, H, 0, -want, W, H)
+    else camera.clearViewOffset()
+  }
+}
+
 // ---------- walking ----------
 const BODY = 0.28
 const inHall = (x, z) => x > X0 + 0.3 && x < X1 - 0.3 && z > Z0 + 0.3 && z < Z1 + 0.35
@@ -459,13 +517,17 @@ function ui() {
   if (uiRoot) return
   const style = document.createElement('style')
   style.textContent = `
+#caf3d{position:fixed;inset:0;z-index:0;touch-action:none;background:#2a1750}
+#caf3d[hidden]{display:none}
+#caf3d canvas{display:block;width:100%;height:100%}
 body[data-caf="1"] #app{visibility:hidden;pointer-events:none}
+body[data-caf="1"] #app .g-hud{visibility:visible;pointer-events:none}
 .caf-ui{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:Figtree,system-ui,sans-serif}
 .caf-ui[hidden]{display:none}
 .caf-ui button{pointer-events:auto;font:800 14px Figtree,system-ui,sans-serif;border:0;cursor:pointer;min-height:44px}
-.caf-out{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 12px);padding:0 16px;border-radius:22px;background:#2f1a5c;color:#f0c400;box-shadow:0 4px 14px #0006}
+.caf-out{position:absolute;left:12px;top:calc(var(--caf-top,64px) + 8px);padding:0 16px;border-radius:22px;background:#2f1a5c;color:#f0c400;box-shadow:0 4px 14px #0006}
 .caf-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 18px);max-width:calc(100% - 200px);margin:0;color:#fff;font:800 15px Graduate,Figtree,system-ui,sans-serif;text-shadow:0 1px 6px #000a;text-align:center;pointer-events:none}
-.caf-cams{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;gap:4px}
+.caf-cams{position:absolute;right:12px;top:calc(var(--caf-top,64px) + 8px);display:flex;gap:4px}
 .caf-cams button{padding:0 11px;border-radius:22px;background:#0009;color:#fff}
 .caf-cams button[aria-pressed="true"]{background:#f0c400;color:#1c1915}
 .caf-debug{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:6px;align-items:center;background:#0009;border-radius:24px;padding:4px}
@@ -483,7 +545,7 @@ body[data-caf="1"] #app{visibility:hidden;pointer-events:none}
     const b = e.target.closest('button')
     if (!b) return
     if (b.dataset.cafOut !== undefined) leave()
-    else if (b.dataset.cam) { rig.setMode(b.dataset.cam); window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: b.dataset.cam })) }
+    else if (b.dataset.cam) { rig.setMode(b.dataset.cam); uiRoot.querySelectorAll('[data-cam]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cam === b.dataset.cam))); window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: b.dataset.cam })) }
     else if (b.dataset.light) setLight(b.dataset.light)
   })
 }
@@ -502,12 +564,13 @@ function build() {
   window.addEventListener('resize', () => {
     if (!renderer) return
     camera.aspect = window.innerWidth / window.innerHeight
+    shiftY = -1 // (re-apply the view offset)
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
+    fitCamera()
   })
   rig = createCameraRig()
-  rig.setDistance('sims', 13)
-  rig.setDistance('top', 24)
+  fitCamera()
   mover = createPlayer({ blocked: (x, z) => blockedAt(x, z), onWalk: (e) => (e.type === 'start' ? smooth.walkStart() : smooth.walkEnd(e.how, e.left, e.x, e.z)) })
   input = bindInput(renderer.domElement, { cameraRig: rig, onTap, live: () => running && ready })
   window.addEventListener('mzansi-cam', (e) => { if (running && e.detail !== rig.mode) rig.setMode(e.detail) })
@@ -538,7 +601,8 @@ function tick(now) {
   const stepping = mover.moving
   soundLoop('footsteps', stepping && player.visible)
   poseAvatar(player, stepping, clock)
-  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, player.position, dt, null)
+  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else frameCamera(dt)
+  if (frameCount % 30 === 0) { const b = barsBottom; measureBars(); if (b !== barsBottom) fitCamera() }
   for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye'
   // out of the main door: back to campus
   if (ready && performance.now() - enteredAt > 900 && player.position.z > Z1 - 0.1 && Math.abs(player.position.x - DOOR.x) < DOOR.w / 2) leave()
@@ -581,6 +645,9 @@ export async function startCaf(options) {
   ready = false
   host.dataset.ready = '0'
   freshScene()
+  lastMode = null
+  shiftY = -1
+  fitCamera()
   uiRoot.querySelectorAll('[data-cam]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cam === rig.mode)))
   try {
     await buildRoom()
@@ -595,7 +662,7 @@ export async function startCaf(options) {
     setLight(lightFromGame())
     host.dataset.look = JSON.stringify(player.userData.look)
     if (!frame) frame = requestAnimationFrame(tick)
-    rig.apply(camera, player.position, 1, null)
+    frameCamera(1)
     await curtain.awaitPeople(scene, appearNow, 8000)
     await curtain.settle(renderer, scene, camera)
     ready = true
@@ -635,7 +702,7 @@ if (typeof window !== 'undefined') {
     ZONES,
     LIGHT_NAMES,
     light: (name) => setLight(name),
-    teleport: (x, z) => { if (!player) return false; mover.stop(); player.position.set(x, 0, z); rig.apply(camera, player.position, 1, null); return true },
+    teleport: (x, z) => { if (!player) return false; mover.stop(); player.position.set(x, 0, z); frameCamera(1); return true },
     info() {
       if (!scene || !player) return null
       renderer.info.reset()
@@ -656,6 +723,28 @@ if (typeof window !== 'undefined') {
       ray.far = Infinity
       return { x: q.x, y: q.y, behind: q.z > 1, onScreen: q.x > -1 && q.x < 1 && q.y > -1 && q.y < 1 && q.z < 1, blockers: [...new Set(hits.map((h) => h.object.name || h.object.type))] }
     },
+    // (tests) how much of the picture below the bars is room (floor, walls, props) and not bare background
+    coverage() {
+      if (!scene || !camera) return null
+      const W = window.innerWidth, H = window.innerHeight
+      let hit = 0, n = 0
+      for (let gy = 0; gy < 24; gy++) for (let gx = 0; gx < 12; gx++) {
+        const px = ((gx + 0.5) / 12) * W
+        const py = barsBottom + ((gy + 0.5) / 24) * (H - barsBottom)
+        ray.setFromCamera(new THREE.Vector2((px / W) * 2 - 1, -(py / H) * 2 + 1), camera)
+        n++
+        if (ray.intersectObjects(scene.children, true).some((h) => h.object !== player && !player.getObjectById?.(h.object.id))) hit++
+      }
+      return { covered: hit / n, barsBottom }
+    },
+    // (tests) a world point on the screen, in CSS px
+    px(x, y, z) {
+      const q = new THREE.Vector3(x, y, z).project(camera)
+      return { x: (q.x * 0.5 + 0.5) * window.innerWidth, y: (-q.y * 0.5 + 0.5) * window.innerHeight, behind: q.z > 1 }
+    },
+    hall: { X0, X1, Z0, Z1 },
+    counterX: (id) => COUNTERS.find((c) => c.id === id)?.x,
+    bars: () => ({ barsBottom, W: window.innerWidth, H: window.innerHeight }),
     shot: (pos, look) => { shot = pos ? { pos, look } : null },
     leave: () => leave(),
   }

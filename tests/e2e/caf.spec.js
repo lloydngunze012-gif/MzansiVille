@@ -98,6 +98,98 @@ for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) 
   })
 }
 
+
+// Caf job 1 fixes (owner's phone check, 390 px): the camera fills the screen, the top view fits the whole
+// hall squared to the screen, every counter and its sign is seen, the queue lane is a lit lane with gold rope
+// posts, the game's top bar stays with Leave / Top / Sims / Eye below it. Shots: docs/sprints/caf-fixes/.
+for (const size of [{ width: 390, height: 844 }, { width: 360, height: 740 }]) {
+  test(`Caf fixes at ${size.width}px`, async ({ page }) => {
+    const dir = 'docs/sprints/caf-fixes'
+    fs.mkdirSync(dir, { recursive: true })
+    await page.setViewportSize(size)
+    const errors = await toCampus(page)
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-walk-to', { detail: 'cafeteria' })))
+    await expect(page.locator('#caf3d')).toHaveAttribute('data-ready', '1', { timeout: 90000 })
+    await page.waitForTimeout(1500)
+    const px = size.width
+    // 5. the top bar stays, and Leave / the camera buttons sit below it
+    const hud = await page.locator('.g-hud').boundingBox()
+    expect(hud && hud.height > 20, 'the top bar has a size').toBeTruthy()
+    expect(await page.locator('.g-hud').evaluate((e) => getComputedStyle(e).visibility), 'the top bar is visible').toBe('visible')
+    const out = await page.locator('.caf-out').boundingBox()
+    const cams = await page.locator('.caf-cams').boundingBox()
+    expect(out.y, 'Leave is under the top bar').toBeGreaterThanOrEqual(hud.y + hud.height - 1)
+    expect(cams.y, 'the camera buttons are under the top bar').toBeGreaterThanOrEqual(hud.y + hud.height - 1)
+    expect(out.x + out.width, 'Leave and the camera buttons do not touch').toBeLessThan(cams.x)
+    await page.screenshot({ path: `${dir}/${px}-1-default.png` })
+    // 1. default view: the floor fills the screen under the bars (no empty plum)
+    for (const [x, z] of [[0, 4.4], [-2.2, -1.4], [4.3, 1.6]]) {
+      await page.evaluate(([a, b]) => window.mzansiCaf.teleport(a, b), [x, z])
+      await page.waitForTimeout(1200)
+      const c = await page.evaluate(() => window.mzansiCaf.coverage())
+      console.log(`COVERAGE ${px}px at ${x},${z}: ${Math.round(c.covered * 100)}%`)
+      expect(c.covered, `room fills the screen with the player at ${x},${z}`).toBeGreaterThan(0.85)
+    }
+    await page.evaluate(() => window.mzansiCaf.teleport(0, 4.4))
+    await page.waitForTimeout(1200)
+    await page.screenshot({ path: `${dir}/${px}-1-default-door.png` })
+    // in the default view the signs in sight are never under the top bar, Leave or the camera buttons
+    {
+      const bars = await page.evaluate(() => window.mzansiCaf.bars())
+      for (const id of ['hot', 'indian', 'grill', 'coffee']) {
+        const cx = await page.evaluate((i) => window.mzansiCaf.counterX(i), id)
+        const top = await page.evaluate(([a]) => window.mzansiCaf.px(a, 3.4, -5.48), [cx])
+        const onScreen = top.x > 0 && top.x < size.width
+        if (onScreen) expect(top.y, `${id} sign top clear of the bars (default view)`).toBeGreaterThan(bars.barsBottom)
+      }
+    }
+    // 3. each counter and its sign, from the player's camera, standing at its order spot
+    for (const id of ['hot', 'indian', 'grill', 'coffee']) {
+      const cx = await page.evaluate((i) => window.mzansiCaf.counterX(i), id)
+      await page.evaluate(([a, b]) => window.mzansiCaf.teleport(a, b), [cx, id === 'coffee' ? -1.9 : -2.9])
+      await page.waitForTimeout(1500)
+      const sign = await page.evaluate(([a]) => window.mzansiCaf.px(a, 3.05, -5.48), [cx])
+      const bars = await page.evaluate(() => window.mzansiCaf.bars())
+      expect(sign.behind, `${id} sign in front of the camera`).toBe(false)
+      expect(sign.x, `${id} sign on screen (x)`).toBeGreaterThan(40)
+      expect(sign.x, `${id} sign on screen (x)`).toBeLessThan(size.width - 40)
+      expect(sign.y, `${id} sign is under the bars`).toBeGreaterThan(bars.barsBottom + 10)
+      expect(sign.y, `${id} sign on screen (y)`).toBeLessThan(size.height - 40)
+      await page.screenshot({ path: `${dir}/${px}-3-counter-${id}.png` })
+    }
+    // 4. the queue lane, close, and from the default view
+    await page.evaluate(() => window.mzansiCaf.teleport(-2.2, -0.6))
+    await page.waitForTimeout(1500)
+    await page.screenshot({ path: `${dir}/${px}-4-lane.png` })
+    // 2. top view: the whole hall, four counters included, squared to the screen
+    await page.locator('.caf-cams [data-cam="top"]').tap()
+    await page.waitForTimeout(2500)
+    const h = await page.evaluate(() => window.mzansiCaf.hall)
+    const bars = await page.evaluate(() => window.mzansiCaf.bars())
+    const pts = {}
+    for (const [k, x, z] of [['bl', h.X0, h.Z0], ['br', h.X1, h.Z0], ['fl', h.X0, h.Z1], ['fr', h.X1, h.Z1]]) pts[k] = await page.evaluate(([a, b]) => window.mzansiCaf.px(a, 0, b), [x, z])
+    for (const [k, p] of Object.entries(pts)) {
+      expect(p.x, `hall corner ${k} inside the screen (x)`).toBeGreaterThan(0)
+      expect(p.x, `hall corner ${k} inside the screen (x)`).toBeLessThan(size.width)
+      expect(p.y, `hall corner ${k} under the bars`).toBeGreaterThan(bars.barsBottom - 4)
+      expect(p.y, `hall corner ${k} inside the screen (y)`).toBeLessThan(size.height)
+    }
+    expect(Math.abs(pts.bl.y - pts.br.y), 'the back wall is level (the room is squared)').toBeLessThan(4)
+    expect(Math.abs(pts.bl.x - pts.fl.x), 'the left wall is upright (the room is squared)').toBeLessThan(10)
+    for (const id of ['hot', 'indian', 'grill', 'coffee']) {
+      const cx = await page.evaluate((i) => window.mzansiCaf.counterX(i), id)
+      const s = await page.evaluate(([a]) => window.mzansiCaf.px(a, 3.05, -5.48), [cx])
+      expect(s.x, `${id} in the top view`).toBeGreaterThan(10)
+      expect(s.x, `${id} in the top view`).toBeLessThan(size.width - 10)
+    }
+    await page.screenshot({ path: `${dir}/${px}-2-top.png` })
+    await page.locator('.caf-cams [data-cam="sims"]').tap()
+    await page.waitForTimeout(1500)
+    await page.screenshot({ path: `${dir}/${px}-1-back-to-sims.png` })
+    expect(errors).toEqual([])
+  })
+}
+
 // Frame rate in the Caf on a throttled mid-range phone profile: real GPU, 4x slower CPU, 390 px.
 test('Caf holds 30 fps at 4x CPU throttle', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })

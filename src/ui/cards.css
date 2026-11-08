@@ -47,3 +47,13 @@
 :root .g-cta .g-go, :root .g-cta:has(.g-open) .g-go { font-size: 14px; }
 /* the goals sheet's week, dream and last-text lines: 14 px minimum */
 :root .g-week, :root .g-dream, :root .g-lasttext { font-size: 14px; }
+
+/* Queue and activity lines (owner, 8 Nov): the red Leave / Goodbye / Stop button (.ps-leave, styles.css, top 198 px)
+   and the line being said ("Bunny chow. Sharp, thank you!", .act-say) used to land on each other. The line is a
+   docked card centred under the button, never pinned over a head: they stack, they never overlap. */
+:root #world .act-say {
+  left: 0; right: 0; margin-inline: auto; width: max-content; max-width: var(--card-w); box-sizing: border-box;
+  top: calc(198px + 44px + 10px + env(safe-area-inset-top)); transform: none; text-align: center; font-size: 15px;
+}
+:root #world .act-say b { font-size: 11px; }
+:root .ps-leave { max-width: var(--card-w); }
