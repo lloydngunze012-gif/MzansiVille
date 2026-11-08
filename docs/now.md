@@ -5,7 +5,7 @@ Last updated: 8 Nov, Claude Code (asset rule: CC0 or CC BY 4.0 with credit; #/cr
 
 ## Asset licence rule and Polyfork (owner, 8 Nov)
 - Rule is now "CC0, or CC BY 4.0 with credit" (CLAUDE.md ASSET LICENCE RULE). Polyfork credit is in docs/credits.md and on the in-game Credits screen (#/credits, linked from Settings and the menu). No Polyfork asset is in the game yet.
-- Catalogue survey (nothing downloaded): docs/polyfork-survey.md. Gaps: file size and part count are known for only 3 assets; township props are the weak spot. Next: Lloyd looks at the kits by hand, then fetch a short list one at a time with a named User-Agent.
+- Catalogue survey (no GLB downloaded): docs/polyfork-survey.md. A 16-asset shortlist is measured (tris, draw calls, GLB size 13-251 KB each, 1.36 MB for one of each, all CC BY 4.0). Township props are still the gap. Next: Lloyd picks which assets go where; then download only those, one at a time, with the named User-Agent "MzansiVille-asset-check/1.0".
 - Polyfork fair use: fetch only what is needed, name the client in User-Agent, back off on 429.
 
 ## Supabase: which schema.sql blocks are live (checked 7 Nov by reading the live API, nothing changed)

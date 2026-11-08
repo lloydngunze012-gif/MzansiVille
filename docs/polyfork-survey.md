@@ -9,11 +9,43 @@ Nothing was downloaded. Source: Polyfork's documented catalogue API (`GET /api/a
 | Licence | `license` and `credit` on each asset's detail | Free meshes: CC BY 4.0 (credit line in `credit`) or the Polyfork licence (no credit, no redistribution). Checked on 2 assets; Polyfork's licensing page states it for all free meshes. |
 | Poly count | `triangles` on every search row | Done for every asset below. |
 | Part count | Detail: `draw_calls`, `materials`, `rigged_parts`, `detachable_parts` | Only 2 assets fetched: Cafe Parasol = 2 draw calls, 1 material, no rig; Yellow Cab = 5 draw calls, 1 material, 6 rigged parts (4 wheels, 2 steering). Not known for the rest. |
-| File size | `Content-Length` of `/cdn/{id}.glb` | Only 2 assets: Cafe Parasol 105,704 bytes (660 tris), Abandoned Shopping Trolley 109,656 bytes (889 tris). Both about 105-110 KB despite different poly counts, so likely a fixed overhead (this is a guess from two points). Not known for the rest. |
+| File size | `Content-Length` of `/cdn/{id}.glb` | Measured for the 16-asset shortlist below (13-251 KB each). Not measured for the rest. |
 
-Budget impact (guess): at about 100 KB a file, uncompressed, 2 MB is roughly 18 assets. Draco or meshopt, welding and merging into kit files (as `scripts/home-assets.mjs` does) should cut that a lot, but that is untested on Polyfork files.
+Budget impact: see "Shortlist measured". Draco or meshopt, welding and merging into kit files (as `scripts/home-assets.mjs` does) should cut sizes further, but that is untested on Polyfork files.
 
 Dimensions (`size_m`) are real metres, origin on the ground, which matches the game's scale.
+
+## Shortlist measured (8 Nov, after the owner's go)
+
+16 assets, one detail request and one header-only size request each (no GLB bodies downloaded), 1.5 s apart, with a named User-Agent. No 429 or 403. All 16: CC BY 4.0, free. "Parts" = draw calls (meshes), plus rigged and detachable parts from the API. Size = the raw `.glb` as served (uncompressed, before Draco or merging).
+
+| Asset | Tris | Draw calls | Materials | Rigged / detachable | GLB size |
+| --- | --- | --- | --- | --- | --- |
+| Cafe Counter | 534 | 2 | 1 | 0 / 1 | 61.5 KB |
+| Cafe Table Set | 540 | 2 | 1 | 0 / 1 | 62.3 KB |
+| Servery Counter | 528 | 6 | 1 | 2 / 3 | 124.2 KB |
+| Coffee Kiosk | 886 | 3 | 1 | 2 / 0 | 101.8 KB |
+| Turf Pitch Tile | 100 | 1 | 1 | 0 / 0 | 12.7 KB |
+| Bleacher Stand Run | 341 | 1 | 1 | 0 / 0 | 39.5 KB |
+| Match Goal | 662 | 2 | 1 | 0 / 0 | 105.9 KB |
+| Computer Bench Run (Lit Monitors) | 502 | 3 | 2 | 0 / 1 | 59.2 KB |
+| Office Desk | 280 | 2 | 1 | 3 / 0 | 33.5 KB |
+| Lab Bench | 594 | 4 | 1 | 3 / 0 | 101.8 KB |
+| Research Microscope | 650 | 4 | 1 | 2 / 1 | 75.3 KB |
+| Welcome Week Tent Stall | 774 | 7 | 1 | 0 / 3 | 114.3 KB |
+| Taxi Rank Sign | 418 | 1 | 1 | 0 / 0 | 48.3 KB |
+| Team Minibus | 2,404 | 6 | 2 | 6 / 0 | 251.1 KB |
+| Corrugated awning | 688 | 2 | 1 | 0 / 1 | 78.2 KB |
+| Washing line | 776 | 9 | 1 | 6 / 2 | 125.3 KB |
+| **All 16, one of each** | | | | | **1,395 KB (1.36 MB)** |
+
+Findings:
+- The earlier guess of a fixed 105-110 KB overhead was wrong: sizes run from 13 KB to 251 KB and follow poly count and part count (more rigged and detachable parts, more bytes). A flat tile is 13 KB; a 6-mesh rigged minibus is 251 KB.
+- One of each of the 16 is 1.36 MB raw, under the 2 MB budget before Draco, welding or merging into kit files. Only one of each, though: a LAN room needs one bench model reused many times (instancing costs nothing), so reuse, not copies, keeps it small.
+- Cheapest per use: Turf Pitch Tile, Office Desk, Bleacher Stand Run, Computer Bench Run, Cafe Counter and Table Set (all under 65 KB).
+- Heaviest, worth stripping rig data or skipping: Team Minibus (251 KB, 6 rigged parts), Washing line (125 KB, 9 meshes), Servery Counter (124 KB). The rigged parts (wheels, doors, hinges) are of no use to us; check that the `.glb` can be re-exported with the rig removed, or Draco and merge will mostly remove the cost anyway.
+- Every shortlisted asset is single-material or two-material: fits our palette recolouring (as the Quaternius township buildings are recoloured).
+- Credit lines are in each asset's `credit` field; none is in the game yet, so `docs/credits.md` is unchanged.
 
 ## Where the catalogue fits the campus
 
@@ -70,6 +102,7 @@ Search counts for generic words are fuzzy (e.g. "washing line" returned 404 matc
 - Verdict: keep the Quaternius township buildings; use Polyfork only for the awning and washing line, and look at the `salvage-commons` kit by hand for more.
 
 ## Suggested next step (needs the owner's go)
-1. Look at kits `university`, `school`, `research-lab`, `stadium`, `office` and `salvage-commons` by hand on polyfork.dev (`/api/kits` lists them).
-2. Pick a short list, then fetch only those GLBs one at a time, with a named User-Agent, to get real file sizes and part counts; then run them through the Draco/merge pipeline.
+1. Choose which of the 16 above we want, and where (cafeteria, pitch, LAN room, lab, taxi rank, Quad stalls, township).
+2. Download only those GLBs, one at a time, with the named User-Agent; run them through the Draco/merge pipeline (`scripts/home-assets.mjs` style); measure the result against the 2 MB budget.
 3. Each asset that ships gets its `credit` line in `docs/credits.md` and on the in-game Credits screen.
+4. Township props stay the gap: look at the `salvage-commons` kit by hand on polyfork.dev.
