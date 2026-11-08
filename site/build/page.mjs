@@ -132,6 +132,7 @@ export function head(d) {
     <link rel="canonical" href="${esc(siteUrl)}/">
     <meta name="theme-color" content="#f3ecff">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="48x48">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="/fonts/graduate-latin.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/figtree-latin.woff2" as="font" type="font/woff2" crossorigin>
