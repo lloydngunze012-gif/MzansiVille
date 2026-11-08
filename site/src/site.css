@@ -93,7 +93,7 @@ ol, ul { margin: 0; padding: 0; }
   grid-area: mark; font: 400 1.3rem/1 var(--head); letter-spacing: .05em; text-decoration: none;
   display: inline-flex; align-items: center; min-height: 44px; justify-self: start;
 }
-.wordmark img { display: block; width: auto; height: 64px; max-width: 100%; }
+.wordmark img { display: block; width: auto; height: 44px; max-width: 100%; }
 @media (min-width: 900px) { .wordmark img { height: 80px; } }
 .top .btn { grid-area: play; }
 .top nav { grid-area: nav; border-top: 1px solid var(--line); }
