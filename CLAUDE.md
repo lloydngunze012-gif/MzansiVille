@@ -7,6 +7,10 @@ docs/cast.md is the single source of truth for every named character (name, role
 
 ---
 
+# CAF WORLD SPEC (owner, 8 Nov). docs/world-designer/caf-world.md is the spec for all Caf work (cafeteria layout, counters, staff, menu, props kit). Read it before touching the cafeteria; any change to the Caf updates it in the same commit. Staff names follow the CAST RULE (docs/cast.md).
+
+---
+
 # PUSH AND DEPLOY RULE (owner, 8 Nov). Replaces every "push, don't deploy" and "owner's go" below.
 Every job ends with a push to main and a production deploy (`npx vercel deploy --prod --yes`; the website: `npm run build`, `npm run prebuilt`, `npx vercel deploy --prebuilt --prod` from site/), with no asking. Still ask first, always: anything that moves real money (purchases, the Organt shop, payments, trades), deleting data (Supabase rows or tables, saves, files outside the repo, force-push, rewriting history), and anything with secrets (keys, tokens, .env: never commit, print or paste them). Running SQL in the Supabase editor stays the owner's job. If something breaks, the owner uses Instant Rollback in Vercel.
 
