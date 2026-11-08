@@ -1,6 +1,6 @@
 # Credits: art packs
 
-Every model and sound in the game is CC0 (public domain dedication): free for any use, no attribution required. We credit the makers anyway. Older packs are listed in `public/models/CREDITS.md` and `public/audio/CREDITS.md`; this file adds the day-1 home scene (leaving home) and is the place to record any new pack.
+Rule (owner, 8 Nov): everything in the game is CC0, or CC BY 4.0 with credit. Everything shipped today is CC0 (public domain dedication): free for any use, no attribution required. We credit the makers anyway. A CC BY 4.0 asset needs its credit line here and on the in-game Credits screen (`#/credits`, `src/ui/render.js`), and a note when we changed it. Older packs are listed in `public/models/CREDITS.md` and `public/audio/CREDITS.md`; this file adds the day-1 home scene (leaving home) and is the place to record any new pack.
 
 ## Day 1: leaving home (`public/models/home/`)
 
@@ -14,6 +14,20 @@ Built by `scripts/home-assets.mjs` from the original downloads: each pack become
 | `dog.glb` (381 KB) | Ultimate Animated Animal Pack, Shiba Inu | Quaternius | https://quaternius.com/packs/ultimateanimatedanimals.html | CC0 1.0 (stated on the pack page) | The family dog. FBX to glTF; only the Idle, Walk and Gallop clips are kept. |
 
 Also used in the home scene, already in the game (no new size): Kenney Nature Kit trees (`public/models/props/tree_*.glb`), Kenney Car Kit cars (`public/models/cars/`), Quaternius Ultimate Modular Men and Women (the family and neighbours, `public/models/people2/`). See `public/models/CREDITS.md`.
+
+## Polyfork (CC BY 4.0, credit required)
+
+Source: https://polyfork.dev (catalogue API: https://polyfork.dev/api/assets). The free low-poly meshes (GLB, FBX, USD, OBJ) are offered under CC BY 4.0 (credit and say what we changed) or the Polyfork licence (no credit, no redistribution of the files). We use CC BY 4.0, because the game ships the files. Licence page: https://polyfork.dev/licensing. Not covered by CC BY, so never used: the `.mjs` programs, HD editions, renders, thumbnails, private kits. The Polyfork name and logo are not licensed.
+
+Credit line per asset, exactly as the asset's `credit` field gives it, e.g. `Cafe Parasol by Polyfork (https://polyfork.dev/asset/cafe-parasol-61a313), CC BY 4.0`. Record changes (recolour, Draco, merged into a kit) beside it.
+
+| File | Asset | Credit line | Changes |
+| --- | --- | --- | --- |
+| (none yet: no Polyfork asset is in the game) | | | |
+
+On the in-game Credits screen the general line is: "Some 3D models by Polyfork (https://polyfork.dev), CC BY 4.0, changed to fit the game." Replace it with the per-asset lines above as soon as the first asset ships.
+
+Survey of the catalogue for the campus (no downloads): `docs/polyfork-survey.md`.
 
 ## Library (not art)
 

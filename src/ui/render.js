@@ -399,6 +399,17 @@ function legalList(items) {
 function legalText(screen, title, paragraphs) {
   return legalShell(screen, 'University of Mzansi', title, legalList(paragraphs))
 }
+// The Credits screen (#/credits). Everything is CC0 or CC BY 4.0 with credit: docs/credits.md.
+function credits() {
+  const link = (url, text) => `<a href="${url}" target="_blank" rel="noopener">${text}</a>`
+  return legalShell('credits', 'University of Mzansi', 'Credits', legalList([
+    `Buildings, furniture, trees and cars: ${link('https://kenney.nl', 'Kenney')} (City Kits, Furniture Kit, Nature Kit, Car Kit), CC0.`,
+    `Students, the family dog, building pack and animation library: ${link('https://quaternius.com', 'Quaternius')} (Ultimate Modular Men and Women, Ultimate Animated Animals, Ultimate Textured Buildings, Universal Animation Library), CC0.`,
+    `Some 3D models by ${link('https://polyfork.dev', 'Polyfork')}, ${link('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}, changed to fit the game (recoloured and compressed).`,
+    `Sounds and music from ${link('https://opengameart.org', 'OpenGameArt')} by TinyWorlds, Oiboo, rubberduck, domasx2, StarNinjas and zesona (Chris Murphy), CC0.`,
+    `Mesh compression: Draco by Google, Apache License 2.0. Fonts and the rest were made for the game.`,
+  ]) + '<p class="lg-fine">Full list with sources and licences: docs/credits.md in the project.</p>')
+}
 function rules() {
   return legalShell('rules', 'Before you move in', 'Community rules', legalList([
     'The lobby is one public room. Talk like a person other people have to sit next to.',
@@ -710,6 +721,7 @@ function settings(state) {
       <a class="btn ghost block" href="#/rules">Community rules</a>
       <a class="btn ghost block" href="#/privacy">Privacy</a>
       <a class="btn ghost block" href="#/terms">Terms</a>
+      <a class="btn ghost block" href="#/credits">Credits</a>
       ${run ? (del
         ? `<p class="set-warn">Delete ${esc(run.character.name)} and all of day ${run.day}? This cannot be undone.</p>
            <button class="btn block set-danger" type="button" data-act="delete-yes">Yes, delete for good</button>
@@ -740,6 +752,7 @@ export function view(state) {
   if (screen === 'errors') return errorLog()
   if (screen === 'title') return title(state)
   if (screen === 'rules') return rules()
+  if (screen === 'credits') return credits()
   if (screen === 'install') return installScreen(state)
   if (screen === 'smooth') return smoothScreen(state)
   if (screen === 'privacy') {

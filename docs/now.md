@@ -1,7 +1,12 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 8 Nov, Claude Code (job 5: the #/sounds listening page, deployed on Lloyd's go).
+Last updated: 8 Nov, Claude Code (asset rule: CC0 or CC BY 4.0 with credit; #/credits screen; Polyfork survey, no downloads).
+
+## Asset licence rule and Polyfork (owner, 8 Nov)
+- Rule is now "CC0, or CC BY 4.0 with credit" (CLAUDE.md ASSET LICENCE RULE). Polyfork credit is in docs/credits.md and on the in-game Credits screen (#/credits, linked from Settings and the menu). No Polyfork asset is in the game yet.
+- Catalogue survey (nothing downloaded): docs/polyfork-survey.md. Gaps: file size and part count are known for only 3 assets; township props are the weak spot. Next: Lloyd looks at the kits by hand, then fetch a short list one at a time with a named User-Agent.
+- Polyfork fair use: fetch only what is needed, name the client in User-Agent, back off on 429.
 
 ## Supabase: which schema.sql blocks are live (checked 7 Nov by reading the live API, nothing changed)
 - **Live:** the base block (profiles, chat_messages, blocks, reports, admin_reports, leaderboard, district_* tables, event_edits).

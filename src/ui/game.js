@@ -294,6 +294,7 @@ function gearMenu(run) {
     <button type="button" data-act="nav" data-go="chat">Campus chat</button>
     <button type="button" data-act="nav" data-go="rules">Community rules</button>
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
+    <button type="button" data-act="nav" data-go="credits">Credits</button>
     ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
     <button type="button" data-act="edit-char">Edit character</button>
     <button type="button" data-act="nav" data-go="notices">📢 Notices</button>
