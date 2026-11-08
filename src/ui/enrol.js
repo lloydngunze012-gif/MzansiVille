@@ -56,6 +56,15 @@ function dots(step) {
 // its photo is the live 3D student (.cc-stage); on who and vibe it's your portrait (.cc-photo, filled
 // by main.js) and the card fills in as you go: your name as you type, your house's colours, your tags.
 // The next empty slot glows.
+// Where you're from, on the card: a province flies South Africa's flag (drawn, since Windows shows
+// flag emoji as two letters); Elsewhere in Africa and Overseas show a globe until there's a country list.
+const ZA_FLAG = '<svg viewBox="0 0 6 4" aria-hidden="true"><rect width="6" height="2" fill="#e03c31"/><rect y="2" width="6" height="2" fill="#001489"/><path d="M0 0L3 2H6M0 4L3 2" stroke="#fff" stroke-width="1.33" fill="none"/><path d="M0 0L3 2H6M0 4L3 2" stroke="#007749" stroke-width=".8" fill="none"/><path d="M0 .6L2.1 2L0 3.4Z" fill="#ffb81c"/><path d="M0 .95L1.6 2L0 3.05Z" fill="#000"/></svg>'
+function fromBadge(from) {
+  const place = fromPlace(from)
+  if (!place) return ''
+  const mark = place === 'Elsewhere in Africa' ? '<i aria-hidden="true">🌍</i>' : place === 'Overseas' ? '<i aria-hidden="true">🌐</i>' : ZA_FLAG
+  return `<span class="en-idfrom">${mark}${esc(place)}</span>`
+}
 const fmtNum = (n) => String(n || '').replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')
 function idCard(state, { live = '', step }) {
   const { district, draft } = state
@@ -73,7 +82,7 @@ function idCard(state, { live = '', step }) {
       <div class="en-idbar"><span class="en-crest" aria-hidden="true">U</span><span>${esc(house ? house.name : 'University of Mzansi')}</span><span class="en-idkind">${house ? `Class of ${CLASS_OF}` : 'Student'}</span></div>
       <div class="en-idphoto-box">${photo}</div>
       <div class="en-idinfo">
-        ${live ? '<small>Name</small>' : ''}<b class="en-idname${name ? '' : ' ph'}" data-card-name>${esc(name || 'Your name')}</b>
+        ${live ? '<small>Name</small>' : ''}<b class="en-idname${name ? '' : ' ph'}" data-card-name>${esc(name || 'Your name')}</b>${fromBadge(draft.from)}
         ${live ? '<small>Student no.</small>' : ''}<span class="en-idnum"><span data-card-handle>${live || !handle ? '' : `@${esc(handle)} · `}</span>${fmtNum(myNumber())}</span>
         ${live ? `<small>Class of</small><b class="en-idyear">${CLASS_OF}</b>` : ''}
         <ul class="en-idtags">${house ? '' : '<li class="empty">House</li>'}${tags}</ul>

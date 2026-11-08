@@ -143,6 +143,53 @@
 .en-idphoto img.whole { position: absolute; left: 50%; top: 6%; width: auto; height: 175%; max-width: none; transform: translateX(-50%); object-fit: contain; }
 .en-idphoto svg { width: 90%; height: auto; }
 
+/* ===== The white card (owner, 8 Nov: "I prefer a white card, but it needs to look premium"). Pearl
+   white with a faint security pattern, a gold-foil hairline edge, a gold-foil crest, ink text, the house
+   as a ribbon in its colours under the header, a holographic seal, and a light studio in the photo.
+   (Overrides the colours of the card above; the layout is unchanged.) ===== */
+.en-id { --ink: #1c1530; --ink-2: #6f6589; --foil: linear-gradient(135deg, #fbe79a 0%, #c9971c 28%, #fff4c4 50%, #b8860b 72%, #f3d777 100%);
+  --edge: var(--foil); color: var(--ink); border: 1.5px solid transparent; }
+/* (a house picked: the edge is the house's colours, its main colour with its accent running through) */
+.en-id.housed { --edge: linear-gradient(135deg, var(--h1) 0%, var(--h2) 30%, var(--h1) 55%, var(--h2) 80%, var(--h1) 100%); border-width: 3.5px; }
+.en-id, .en .en-stage.en-id { background:
+    radial-gradient(circle at 100% 0%, #fff0 0 38%, #d9c9a314 38.5% 39%, #fff0 39.5% 44%, #d9c9a314 44.5% 45%, #fff0 45.5%) padding-box,
+    repeating-linear-gradient(135deg, #0000 0 7px, #8a6d3b0a 7px 8px) padding-box,
+    linear-gradient(150deg, #ffffff 0%, #fbf8f2 45%, #f1ebe0 100%) padding-box,
+    var(--edge) border-box;
+  box-shadow: 0 22px 44px #000000a6, 0 2px 0 #ffffff inset, 0 0 30px #f5c40026; }
+.en-id.housed { box-shadow: 0 22px 44px #000000a6, 0 0 30px color-mix(in srgb, var(--h1) 40%, transparent); }
+.en-idfrom { display: flex; align-items: center; gap: 6px; margin-top: 3px; font: 700 12px system-ui; color: var(--ink-2); }
+.en-idfrom svg { flex: none; width: 21px; height: 14px; border-radius: 2px; box-shadow: 0 0 0 1px #1c153026, 0 1px 2px #1c153033; }
+.en-idfrom i { font-style: normal; font-size: 14px; line-height: 1; }
+.en-idbar, .en-id.housed .en-idbar { position: relative; background: none; color: var(--ink); border-bottom: 1px solid #1c153014; }
+.en-crest, .en-id.housed .en-crest { background: var(--foil); color: #3a2a06; box-shadow: 0 1px 2px #0003, inset 0 1px 0 #fff8; }
+.en-idkind, .en-id.housed .en-idkind { color: #a67c00; }
+.en-id.housed .en-idbar > span:nth-child(2) { color: color-mix(in srgb, var(--h1) 85%, #000); }
+/* (the house ribbon: its main colour with a line of its accent, along the header) */
+.en-id.housed .en-idbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 5px; background: linear-gradient(var(--h1) 0 60%, var(--h2) 60%); }
+.en-idphoto-box { border: 1px solid #1c15301f; box-shadow: inset 0 2px 8px #1c153018;
+  background: radial-gradient(ellipse 85% 70% at 50% 35%, #ffffff 0%, #ede7f6 55%, #d9d0ea 100%); }
+.en-id.housed .en-idphoto-box { background: radial-gradient(ellipse 85% 70% at 50% 35%, #ffffff 0%, color-mix(in srgb, var(--h1) 14%, #f3eff8) 60%, color-mix(in srgb, var(--h1) 28%, #e2dbee) 100%); }
+.en-id .en-spark { display: none; }
+.en-idinfo small { color: var(--ink-2); }
+.en-idname.ph { color: #1c153040; }
+.en-idnum { color: #3b3252; }
+.en-idtags li { box-shadow: 0 1px 2px #1c153026; }
+.en-idtags li.empty { color: var(--ink-2); border-color: #1c153038; box-shadow: none; }
+.en-idtags li.next { color: #8a6400; border-color: #d4a40a; background: #fff8dc; }
+.en-idq { color: #3b3252; }
+.en-holo { background: linear-gradient(115deg, #fff0 30%, #ffffff99 42%, #c9f3ff40 48%, #ffd1f040 54%, #fff0 66%); background-size: 260% 100%; mix-blend-mode: soft-light; }
+/* (a holographic seal, bottom right, like a bank card's) */
+.en-id::after { content: 'UMZ'; position: absolute; left: 82px; bottom: 18px; z-index: 4; width: 36px; height: 26px; transform: rotate(-8deg); border-radius: 7px; display: grid; place-items: center;
+  font: 900 9px var(--display, system-ui); letter-spacing: .08em; color: #5a4a80; text-shadow: 0 1px 0 #fff8;
+  background: conic-gradient(from 30deg, #ffd1f0, #c9f3ff, #d9ffd1, #fff3b0, #e3c9ff, #ffd1f0); box-shadow: inset 0 0 0 1px #ffffff90, 0 1px 3px #0003; }
+.en .en-stage.en-id.housed { border-width: 3.5px; }
+.en-id[data-id-step="look"]::after { display: none; } /* (the music button sits there on the look step) */
+.en .en-stage.en-id { border: 1.5px solid transparent; box-shadow: 0 22px 44px #000000a6, 0 0 30px #f5c40026, 0 -8px 0 8px var(--sl-night), 0 14px 0 8px var(--sl-night);
+  --cc-plinth: #ece6f4; --cc-plinth-foot: #c9bedc; --cc-ring: #d4a40a; }
+.en-id[data-id-step="vibe"] { box-shadow: 0 22px 44px #000000a6, 0 0 30px color-mix(in srgb, var(--h1) 40%, transparent), 0 -8px 0 8px var(--sl-night); }
+.en .en-id .cc-mute { background: #ffffff; color: var(--ink); border: 1.5px solid #d4a40a; box-shadow: 0 2px 6px #1c153033; }
+
 /* The rows: the chosen name beside each label, bigger cards, a gold check on the chosen one. */
 .en .en-rows { gap: 14px; padding-top: 22px; }
 .en .en-row h3 { display: flex; align-items: baseline; gap: 8px; font-size: 11px; }
