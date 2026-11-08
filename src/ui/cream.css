@@ -575,3 +575,22 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 @media (prefers-reduced-motion: reduce) {
   .mm-bar.mm-bar .mm-choice, .g-talk-reply { animation: none; }
 }
+
+/* Game colour on the first screen (owner, 8 Nov): just the four colours, no boxes or names, in a row
+   pinned with the card so it never scrolls away. */
+.th-compact { position: sticky; top: calc(54px + var(--safe-t, 0px)); z-index: 8; margin: 0 -14px; padding: 4px 14px 6px; height: 36px; box-sizing: content-box; background: var(--cr-bg-2); align-items: center; }
+.th-compact .th-swatches { display: flex; justify-content: flex-start; gap: 16px; flex: 1; }
+.th-compact .th-sw { background: none; border: 0; box-shadow: none; min-height: 36px; min-width: 36px; padding: 0; flex-direction: row; justify-content: center; }
+.th-compact .th-sw b { display: none; }
+.th-compact .th-sw i { width: 28px; height: 28px; border: 2px solid #1c19152e; transition: transform .15s; }
+.th-compact .th-sw:hover i { transform: scale(1.12); }
+.th-compact .th-sw[aria-pressed="true"] { box-shadow: none; border: 0; }
+.th-compact .th-sw[aria-pressed="true"] i { border: 3px solid #1c1915; box-shadow: 0 0 0 3px #f0c400; }
+.en[data-step="look"] .en-stage.en-id { top: calc(100px + var(--safe-t, 0px)); }
+/* (owner, 8 Nov: "just the color and the word": each choice is its colour and its name, no box) */
+.th-compact .th-swatches { gap: 6px; justify-content: space-between; }
+.th-compact .th-sw { min-width: 0; gap: 5px; padding: 0 4px; }
+.th-compact .th-sw b { display: inline; font: 800 12px system-ui; color: #1c1915; }
+.th-compact .th-sw i { width: 22px; height: 22px; }
+.th-compact .th-sw[aria-pressed="true"] b { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: #f0c400; }
+.th-compact .th-sw[aria-pressed="true"] i { border-width: 2px; box-shadow: 0 0 0 3px #f0c400; }
