@@ -21,3 +21,16 @@ Notes for wiring:
 - `footsteps.ogg` is four wood steps with short gaps (about 1.7 seconds). Loop it for a walk.
 - `music_campus.ogg` is a chill loop of about 35 seconds, not a song recorded for this game.
 - `door.ogg` is a one-shot. Do not loop it.
+
+## Listening page tracks (#/sounds, 8 Nov): candidates, not in the game yet
+
+These four were written for Soft Life by Claude Code. They are synthesised offline from scratch (sine, FM and noise voices in a Python script, no samples and no outside recordings), so they are original work released as CC0 1.0. Each is a gapless loop under 1 MB, as `.ogg` (Opus, 88 kbps) and `.m4a` (AAC 96 kbps).
+
+| File | Name | Feel | Licence |
+| --- | --- | --- | --- |
+| `alt_slow_tar` | Slow Tar | slow amapiano, 108 BPM, log drum, Rhodes, 44 s | CC0 (original) |
+| `alt_sunday_braai` | Sunday Braai | warm afro-house, 120 BPM, congas, pluck arpeggio, 48 s | CC0 (original) |
+| `alt_kasi_morning` | Kasi Morning | gentle, 98 BPM, keys and a marimba tune, 39 s | CC0 (original) |
+| `alt_golden_hour` | Golden Hour | deep house with amapiano log drum, 112 BPM, 43 s | CC0 (original) |
+
+The creator groove variations ("mellow" and "bright") are the same live Web Audio synth as `src/groove.js`, with a different tempo and chords. Nothing recorded.

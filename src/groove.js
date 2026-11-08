@@ -5,18 +5,35 @@
 import { bus } from './audio.js'
 
 export const BPM = 112
-const STEP = 60 / BPM / 4 // one 16th note
+let STEP = 60 / BPM / 4 // one 16th note (the listening page #/sounds changes it with a variant)
 const LOOKAHEAD = 0.12
 
 // A minor: Am7, Fmaj7, Dm7, Em7, one bar each (as frequencies).
-const CHORDS = [
+let CHORDS = [
   [220, 261.6, 329.6, 392],
   [174.6, 220, 261.6, 329.6],
   [146.8, 174.6, 220, 261.6],
   [164.8, 196, 246.9, 293.7],
 ]
 // Log drum: 16th-step -> bass note (Hz). The syncopation is the amapiano bounce.
-const LOG = { 0: 55, 3: 55, 6: 65.4, 10: 82.4, 11: 73.4, 14: 98 }
+let LOG = { 0: 55, 3: 55, 6: 65.4, 10: 82.4, 11: 73.4, 14: 98 }
+
+// Two other grooves for the listening page (#/sounds). The creator always plays 'classic'.
+export const VARIANTS = {
+  classic: { bpm: BPM, chords: CHORDS, log: LOG },
+  // Slower and deeper: Cmaj7, Am7, Fmaj7, G7 at 104 BPM, a lazier log drum.
+  mellow: {
+    bpm: 104,
+    chords: [[261.6, 329.6, 392, 493.9], [220, 261.6, 329.6, 392], [174.6, 220, 261.6, 329.6], [196, 246.9, 293.7, 349.2]],
+    log: { 0: 49, 3: 49, 7: 55, 10: 65.4, 13: 73.4, 14: 82.4 },
+  },
+  // Faster and brighter: Dm7, Bbmaj7, Gm7, A7 at 120 BPM, a busier bass.
+  bright: {
+    bpm: 120,
+    chords: [[146.8, 174.6, 220, 261.6], [233.1, 293.7, 349.2, 440], [196, 233.1, 293.7, 349.2], [220, 277.2, 329.6, 392]],
+    log: { 0: 73.4, 2: 73.4, 5: 87.3, 8: 110, 10: 98, 12: 87.3, 15: 98 },
+  },
+}
 
 let timer = 0
 let step = 0
@@ -115,9 +132,13 @@ function schedule() {
 // Several places can want the groove (the creator, the Quad stage); it plays while any does.
 const owners = new Set()
 
-export function startGroove(owner = 'creator') {
+export function startGroove(owner = 'creator', variant = 'classic') {
   owners.add(owner)
   if (timer) return
+  const v = VARIANTS[variant] || VARIANTS.classic
+  STEP = 60 / v.bpm / 4
+  CHORDS = v.chords
+  LOG = v.log
   step = 0
   nextTime = 0
   timer = setInterval(schedule, 25)

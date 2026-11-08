@@ -2092,6 +2092,10 @@ window.addEventListener('hashchange', () => {
   if (name === 'smooth') loadSmooth()
 })
 
+// #/sounds: a private listening page for picking music (src/sounds.js), not linked from the game.
+const wantSounds = () => location.hash.startsWith('#/sounds')
+if (wantSounds()) import('./sounds.js').then((m) => m.mountSounds())
+window.addEventListener('hashchange', () => { if (wantSounds()) import('./sounds.js').then((m) => m.mountSounds()) })
 paint()
 smooth.boot() // (smoothness reports: the first screen is up; the title counts once its cover has loaded)
 if (route().name === 'smooth') loadSmooth()
