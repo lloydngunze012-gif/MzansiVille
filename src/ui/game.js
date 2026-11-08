@@ -16,6 +16,7 @@ import { beatById } from '../engine/arcs.js'
 import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
 import './cream.css'
+import { themePicker } from '../theme.js'
 import './creator.css'
 import { venueFor } from '../venues.js'
 import { MENUS } from '../menus.js'
@@ -284,6 +285,7 @@ function gearMenu(run) {
     <h3>Menu</h3>
     ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
+    ${themePicker()}
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>
     <button type="button" data-act="nav" data-go="board">Leaderboard</button>

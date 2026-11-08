@@ -10,6 +10,7 @@ import { boardScreen, lobbyScreen } from './social.js'
 import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, ui, withHud } from './game.js'
 import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
+import { themePicker } from '../theme.js'
 import { enrolScreen } from './enrol.js'
 import { installScreen } from './install.js'
 import { smoothScreen } from './smooth.js'
@@ -701,6 +702,7 @@ function settings(state) {
     <h1 style="margin-top:44px">Settings</h1>
     <div class="stack set-list">
       <button class="btn block" type="button" data-act="sound">Sound: <b>${state.sound ? 'On' : 'Off'}</b></button>
+      ${themePicker()}
       ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
       <a class="btn ghost block" href="#/errors">Error log</a>
       <p class="set-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>

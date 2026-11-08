@@ -469,3 +469,19 @@ select option, select optgroup { color: #1c1915; background: #fff; }
 .en-theme i { font: 900 16px system-ui; font-style: normal; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 0 0 2px #ffffff40 inset; }
 .en-theme b { font: 800 12px system-ui; color: var(--sl-text, #f7f2ff); }
 .en-theme[aria-pressed="true"] { border-color: var(--sl-gold, #f5c400); background: var(--sl-plum-3, #3a1f6b); box-shadow: 0 0 0 3px #f5c40033; }
+
+/* ---- Game themes (src/theme.js): the cream variables, swapped. Every theme is light with dark ink,
+   so text always has contrast. Beige is the default (:root above). ---- */
+html[data-theme="purple"] { --cr-bg: #f6f0ff; --cr-bg-2: #e6dafc; --cr-line: #cbb8f0; --cr-muted: #5d527f; --cr-tint: #eadcff; }
+html[data-theme="white"]  { --cr-bg: #ffffff; --cr-bg-2: #f1f1f6; --cr-line: #dcdce6; --cr-muted: #605e6c; --cr-tint: #fff3c4; }
+html[data-theme="pink"]   { --cr-bg: #fff4f9; --cr-bg-2: #ffdcec; --cr-line: #f2b8d3; --cr-muted: #774a62; --cr-tint: #ffe0ee; }
+html[data-theme="purple"] .lg { background: linear-gradient(180deg, #f1e9ff, #e3d6fa); }
+html[data-theme="white"] .lg { background: linear-gradient(180deg, #ffffff, #f1f1f6); }
+html[data-theme="pink"] .lg { background: linear-gradient(180deg, #fff0f7, #ffd6e8); }
+.th-row { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.th-lbl { font: 800 12px system-ui; letter-spacing: .06em; text-transform: uppercase; color: var(--cr-muted); }
+.th-swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.th-sw { all: unset; cursor: pointer; box-sizing: border-box; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 14px; background: #fff; border: 2px solid var(--cr-line); color: #1c1915; }
+.th-sw i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #1c19152e; }
+.th-sw b { font: 800 11px system-ui; color: #1c1915; }
+.th-sw[aria-pressed="true"] { border-color: var(--cr-gold-dk); box-shadow: 0 0 0 3px #f0c40066; }

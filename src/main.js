@@ -66,6 +66,7 @@ import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
+import './theme.js'
 import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
 import { playerCardHtml } from './ui/card.js'
 
@@ -1419,7 +1420,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
-    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), cardTheme: c.cardTheme || 'beige', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
+    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return
@@ -1636,7 +1637,6 @@ app.addEventListener('click', async (event) => {
       vibe: draft.vibe,
       looking: draft.looking,
       from: draft.from,
-      cardTheme: draft.cardTheme || 'beige',
       handleChangedAt: tidyHandle(draft.handle) !== (save.run?.character?.handle || '') ? new Date().toISOString() : save.run?.character?.handleChangedAt,
     }
     if (draft.edit && save.run) {

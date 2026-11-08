@@ -28,7 +28,6 @@ export function cardOf(run, num = myIdentity().num) {
     tags: { course: c.course || '', vibe: VIBES.includes(c.vibe) ? c.vibe : '', looking: LOOKING.includes(c.looking) ? c.looking : '' },
     // (where you're from: optional, on the card under your name and handle)
     from: cleanBio(c.from || '').text.slice(0, 30),
-    theme: c.cardTheme || 'beige',
     year: run?.year || 1,
     days: run?.day || 1,
     badges,

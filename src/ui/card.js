@@ -6,14 +6,6 @@ import { canonicalHouse } from '../houses.js'
 // card for your own (with Edit) and for anyone you tap on campus. Never an age.
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
-// Card themes (owner, 8 Nov): the player picks how their card looks. Colours live in cream.css
-// under .pcard[data-theme], each with its own text colours so words always read on their background.
-export const CARD_THEMES = [
-  { id: 'beige', label: 'Beige', bg: '#f7efdc', ink: '#1c1915' },
-  { id: 'purple', label: 'Purple', bg: '#3a1f6b', ink: '#f7f2ff' },
-  { id: 'white', label: 'White', bg: '#ffffff', ink: '#16131f' },
-  { id: 'pink', label: 'Pink', bg: '#ffd6e8', ink: '#3a0f2a' },
-]
 const ORD =['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th']
 
 // card: cards.js cardOf / loadCard. house: houses.json entry (colours), or null.
@@ -27,7 +19,7 @@ export function playerCardHtml(card, house, opts = {}) {
   const bio = card.bio ? `“${esc(card.bio)}”` : opts.own ? '<span class="empty">Add one line about you</span>' : '<span class="empty">No bio yet</span>'
   const badges = (card.badges || []).length ? card.badges.map((b) => `<span class="pc-badge">\u{1F3C5} ${esc(b)}</span>`).join('') : '<span class="pc-badge none">No badges yet</span>'
   const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 96)
-  const theme = CARD_THEMES.some((t) => t.id === card.theme) ? card.theme : 'beige'
+  const theme = 'white' // the student card is always white (owner, 8 Nov)
   return `<article class="pcard" style="${vars}" data-theme="${theme}" data-house="${esc(house?.id || '')}">
     <header class="pc-top"><span class="pc-house">${esc((house?.name || canonicalHouse(card.house) || 'UMzansi').toUpperCase())}</span><span class="pc-class">Class of ${esc(card.classOf || 2026)}</span></header>
     <div class="pc-main">
