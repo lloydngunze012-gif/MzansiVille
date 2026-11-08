@@ -4,7 +4,7 @@ const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
   'Engineering Lecture Venue': 'Eng', 'Science Lecture Venue': 'Science', 'Law Lecture Venue': 'Law',
-  'Health Sciences Lecture Venue': 'Health', 'Greenway Grocer': 'Grocer', 'Sports Centre': 'Sports',
+  'Health Sciences Lecture Venue': 'Health', 'Greenway Grocer': 'Greenway', 'Sports Centre': 'Sports',
   'Cafeteria': 'Caf', 'Main Gate': 'Gate', 'Bus Stop': 'Bus',
 }
 

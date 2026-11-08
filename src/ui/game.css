@@ -716,3 +716,6 @@ a.in-go{display:block;text-align:center;text-decoration:none}
 .in-steps li{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.45}
 .in-steps b{flex:none;width:26px;height:26px;border-radius:50%;background:#6b2fb0;color:#fff;display:grid;place-items:center;font-size:14px}
 a.in-go{display:flex;align-items:center;justify-content:center;line-height:1.2;padding:0 12px;box-sizing:border-box}
+/* Sound button in the HUD row: phones keep the row on one line (weekday dropped, buttons 30 px). */
+@media (max-width:420px){.g-row{gap:4px}.g-row .g-day{font-size:0}.g-row .g-day b{font-size:14px;margin:0}.g-row .g-gear,.g-row .g-soc{width:30px;height:30px;font-size:16px}.g-row .g-soc+.g-soc,.g-row .g-soc+.g-gear,.g-row .g-gear+.g-gear{margin-left:0}}
+@media (max-width:380px){.g-row{gap:3px}.g-row .g-clock i{display:none}.g-row .g-online{font-size:9.5px;padding:3px 3px}.g-row .g-gear,.g-row .g-soc{width:28px;height:28px}}

@@ -32,7 +32,7 @@ const ICON = {
 const SHORT = {
   'SMIG': 'SMIG', 'Health Sciences Lecture Venue': 'Health Sci', 'Science Lecture Venue': 'Science',
   'Law Lecture Venue': 'Law', 'Engineering Lecture Venue': 'Engineering', 'Main Bus Station': 'Bus station',
-  'Greenway Grocer': 'Grocer', 'Sports Centre': 'Sports', 'Main Gate': 'Gate', 'Cafeteria': 'Caf',
+  'Greenway Grocer': 'Greenway', 'Sports Centre': 'Sports', 'Main Gate': 'Gate', 'Cafeteria': 'Caf',
 }
 const CHIP_TIPS = [
   ['exam', '', '', 'Exam week: study counts double and the exam is at the Sports Centre on the last day.'],
@@ -254,6 +254,7 @@ export function hud(district, run, opts = {}) {
       <span class="g-online" data-online title="Students on campus right now">${countLabel()}</span>
       <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>
       <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
+      <button class="g-gear g-mute" type="button" data-act="sound" aria-label="${soundOn() ? 'Mute sound' : 'Turn sound on'}" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '🔊' : '🔇'}</button>
       <button class="g-gear" type="button" data-act="gear" aria-label="Menu">\u2699\uFE0F</button>
     </div>
     <div class="g-stats">${STATS.map(([k, w]) => bar(k, w, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100), k === pulsingStat(run.stats))).join('')}</div>

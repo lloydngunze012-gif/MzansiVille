@@ -1780,7 +1780,7 @@ function activityApi() {
       return c
     },
     box: (w, h, d, color, x, y, z, extra = {}) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...extra }))
+      const mesh = new THREE.Mesh(extra.ball ? new THREE.SphereGeometry(w / 2, 20, 14) : new THREE.BoxGeometry(w, h, d), new THREE.MeshStandardMaterial({ color, roughness: 0.8, ...(({ ball, ...rest }) => rest)(extra) }))
       mesh.position.set(x, y, z)
       mesh.castShadow = true
       mesh.receiveShadow = true

@@ -72,12 +72,16 @@ function labelSprite(text, home) {
   canvas.width = 320
   canvas.height = 72
   const ctx = canvas.getContext('2d')
-  ctx.fillStyle = home ? 'rgba(240,196,0,0.94)' : 'rgba(28,25,21,0.82)'
+  // The map's plum pill (gold for your own house).
+  ctx.fillStyle = home ? 'rgba(240,196,0,0.95)' : 'rgba(47,26,92,0.92)'
   ctx.beginPath()
-  ctx.roundRect(4, 6, 312, 60, 18)
+  ctx.roundRect(4, 6, 312, 60, 30)
   ctx.fill()
-  ctx.fillStyle = home ? '#1c1915' : '#fffaf2'
-  ctx.font = '600 30px sans-serif'
+  ctx.strokeStyle = home ? 'rgba(28,25,21,0.35)' : 'rgba(240,196,0,0.6)'
+  ctx.lineWidth = 3
+  ctx.stroke()
+  ctx.fillStyle = home ? '#1c1915' : '#ffffff'
+  ctx.font = '700 30px sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, 160, 38)
@@ -85,7 +89,7 @@ function labelSprite(text, home) {
   texture.colorSpace = THREE.SRGBColorSpace
   // Depth-tested: a building in front hides the name (it never shows through walls).
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
-  sprite.scale.set(7.2, 1.62, 1)
+  sprite.scale.set(4.6, 1.04, 1)
   sprite.raycast = () => {}
   sprite.name = 'label'
   return sprite
@@ -94,12 +98,14 @@ function labelSprite(text, home) {
 const labelAt = new THREE.Vector3()
 const labelEdge = new THREE.Vector3()
 const camRight = new THREE.Vector3()
+const playerAt = new THREE.Vector3()
 
 // Name tags: only for buildings near the player or the destination, and never one
 // that would run off the screen edge (a close tag gets wide). Fade the rest out.
 const LABEL_NEAR = 26
 export function fitLabels(buildings, camera, dt, focus = null) {
   camRight.setFromMatrixColumn(camera.matrixWorld, 0)
+  if (focus) playerAt.set(focus.x, 1.2, focus.z).project(camera)
   for (const group of buildings.children) {
     const near = !focus || group.userData.placeId === focus.dest || Math.hypot(group.position.x - focus.x, group.position.z - focus.z) < LABEL_NEAR
     for (const label of group.children) {
@@ -109,7 +115,11 @@ export function fitLabels(buildings, camera, dt, focus = null) {
       labelAt.project(camera)
       labelEdge.project(camera)
       const half = Math.abs(labelEdge.x - labelAt.x)
-      const fits = near && labelAt.z < 1 && labelAt.x - half > -0.98 && labelAt.x + half < 0.98 && half < 0.6
+      // Close to the player (on screen, over or beside them, or within 6 m): the name fades out.
+      const aspect = camera.aspect || 0.5
+      const onPlayer = focus && playerAt.z < 1 && Math.abs(playerAt.x - labelAt.x) < half + 0.12 && Math.abs(playerAt.y - labelAt.y) < 0.3 + (half * 0.23) / aspect
+      const closeBy = focus && Math.hypot(label.getWorldPosition(labelEdge).x - focus.x, labelEdge.z - focus.z) < 6
+      const fits = near && !onPlayer && !closeBy && labelAt.z < 1 && labelAt.x - half > -0.98 && labelAt.x + half < 0.98 && half < 0.6
       const material = label.material
       material.opacity += ((fits ? 1 : 0) - material.opacity) * Math.min(1, dt * 10)
       label.visible = material.opacity > 0.02

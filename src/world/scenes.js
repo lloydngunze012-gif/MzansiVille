@@ -692,7 +692,7 @@ export function createScenes(api) {
         const mate = api.npc('luke', c.x + 3, c.z, -Math.PI / 2)
         await api.walkTo(c.x - 1, c.z)
         api.face(mate.position.x, mate.position.z)
-        const ball = api.box(0.32, 0.32, 0.32, 0xf4f1e6, c.x - 0.6, 0.9, c.z)
+        const ball = api.box(0.32, 0.32, 0.32, 0xf4f1e6, c.x - 0.6, 0.9, c.z, { ball: true })
         for (let i = 0; i < 4; i++) {
           api.progress((i + 1) / 5)
           const from = i % 2 ? mate.position.x - 0.4 : c.x - 0.6

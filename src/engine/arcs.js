@@ -11,7 +11,7 @@ const roomieId = (run) => String(roomie(run)).toLowerCase()
 export const BEATS = [
   // Day 1
   {
-    id: 'arc_roommate_1', arc: 'roommate', day: 1, phases: ['leisure', 'night'], icon: '\u{1F6CF}️', title: 'First night in res',
+    id: 'arc_roommate_1', arc: 'roommate', day: 1, phases: ['night'], icon: '\u{1F6CF}️', title: 'First night in res',
     text: (run) => `${roomie(run)} sits cross-legged on the bed. "So. Why this varsity? Real answer."`,
     choices: [
       C('\u{1F49B} The real answer', { social: 1 }, 'You talk until the corridor light clicks off. Something clicked on instead.', { people: { roommate: 8 }, set: { roommate: 'open' } }),

@@ -1,7 +1,7 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 8 Nov, Claude Code (smooth start: the plum curtain, deployed on Lloyd's go).
+Last updated: 8 Nov, Claude Code (job 3: quick fixes from Lloyd's play-through, deployed on his go).
 
 ## Supabase: which schema.sql blocks are live (checked 7 Nov by reading the live API, nothing changed)
 - **Live:** the base block (profiles, chat_messages, blocks, reports, admin_reports, leaderboard, district_* tables, event_edits).
