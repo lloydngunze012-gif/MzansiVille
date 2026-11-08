@@ -545,3 +545,10 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 .th-compact .th-sw { min-height: 44px; flex-direction: row; gap: 6px; justify-content: center; }
 .th-compact .th-sw i { width: 20px; height: 20px; flex: none; }
 .th-compact .th-sw b { font-size: 11px; }
+
+/* The choice bar in the home, morning and drop-off scenes: a neat card that fits its words, centred,
+   not a full-width strip (owner, 8 Nov: it covered half the screen on a wide window). */
+.mm-bar.mm-bar { left: 50%; right: auto; transform: translateX(-50%); width: max-content; min-width: min(300px, calc(100% - 24px)); max-width: min(420px, calc(100% - 24px)); gap: 8px; align-items: stretch; }
+.mm-bar.mm-bar .mm-q { padding: 8px 14px; font-size: 15px; }
+.mm-bar.mm-bar .mm-go { min-height: 48px; padding: 8px 18px; font-size: 16px; border-radius: 16px; }
+.mm-bar.mm-bar .mm-choice { box-shadow: 0 3px 0 #2a184655; border-width: 2px; }
