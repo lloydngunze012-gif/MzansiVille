@@ -15,15 +15,15 @@
 }
 
 :root {
-  --cream: #f4efe4;
-  --paper: #fcf9f2;
-  --card: #fffdf8;
-  --ink: #1c1915;
-  --muted: #5b5348;
-  --line: #ddd4c3;
+  --cream: #ece4fa;
+  --paper: #f6f1fd;
+  --card: #fdfbff;
+  --ink: #1f1633;
+  --muted: #4f4560;
+  --line: #cfc2e8;
   --yellow: #f0c400;
-  --on-ink: #f4efe4;
-  --on-ink-muted: #c9c0ae;
+  --on-ink: #f1eafc;
+  --on-ink-muted: #cfc4e4;
   --gutter: 16px;
   --head: 'Graduate', Georgia, serif;
   --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -115,7 +115,7 @@ ol, ul { margin: 0; padding: 0; }
 .student-num .prefix { margin-right: 8px; }
 .student-num .blank { display: inline-block; width: .62em; height: 2px; background: var(--ink); margin-bottom: .14em; }
 .student-note { font-size: .88rem; color: var(--muted); margin: 0; }
-.poster { justify-self: center; width: min(82vw, 340px); }
+.poster { order: -1; justify-self: center; width: min(82vw, 340px); }
 .poster img { border-radius: 8px; box-shadow: 0 18px 40px rgba(28, 25, 21, .28); transform: rotate(2.5deg); }
 
 /* A day on campus */
@@ -204,7 +204,7 @@ ol, ul { margin: 0; padding: 0; }
   .top nav a { font-size: .92rem; font-weight: 500; }
   .hero { padding: 44px 0 72px; }
   .hero-grid { grid-template-columns: 1.15fr .85fr; gap: 48px; }
-  .poster { width: 100%; max-width: 420px; }
+  .poster { order: 0; width: 100%; max-width: 420px; }
   .band { padding: 80px 0; }
   .slots { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .organt-grid { grid-template-columns: .9fr 1.1fr; gap: 56px; }

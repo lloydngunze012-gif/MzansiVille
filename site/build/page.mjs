@@ -130,7 +130,7 @@ export function head(d) {
   return `<title>${esc(m.title)}</title>
     <meta name="description" content="${esc(m.description)}">
     <link rel="canonical" href="${esc(siteUrl)}/">
-    <meta name="theme-color" content="#f4efe4">
+    <meta name="theme-color" content="#ece4fa">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="preload" href="/fonts/graduate-latin.woff2" as="font" type="font/woff2" crossorigin>
