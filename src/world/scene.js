@@ -23,6 +23,7 @@ import { createOthers } from './others.js'
 import { onlineCount, reportLocal } from '../presence.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
+import { createDust } from './dust.js'
 import { createPlayerState } from './player-state.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
@@ -521,7 +522,7 @@ function tapped(point, x, y) {
   else if (hit.kind === 'person') startTalk(hit.node)
   else if (hit.kind === 'vendor') { const a = everyone().find((p) => p.userData.personId === hit.id); if (a) startTalk(a) }
   else if (hit.kind === 'building') { interrupt(); approach(hit.id) }
-  else { smooth.tap(); interrupt(); walkTo(hit.x, hit.z) }
+  else { smooth.tap(); mover.noteTap(); interrupt(); walkTo(hit.x, hit.z) }
 }
 
 // Walk to a spot: a route round the buildings on the grid, ending exactly where asked.
@@ -596,7 +597,8 @@ function blockedAt(x, z, solid = true) {
   return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
 }
 // (walks started and walks held up, for the smoothness reports: src/smooth.js)
-const mover = createPlayer({ blocked: blockedAt, onWalk: (e) => (e.type === 'start' ? smooth.walkStart() : smooth.walkEnd(e.how, e.left, e.x, e.z)) })
+let dust = null
+const mover = createPlayer({ blocked: blockedAt, onGear: () => { if (scene && player) (dust ||= createDust(scene)).burst(player.position.x, player.position.z) }, onWalk: (e) => (e.type === 'start' ? smooth.walkStart() : smooth.walkEnd(e.how, e.left, e.x, e.z)) })
 
 // Go to a place (from either map): walk there and open its sheet on arrival.
 // While you walk, "Skip there" jumps you to the door; the clock moves on.
@@ -2675,6 +2677,7 @@ function frameBody(now) {
       frameFrom = { x: player.position.x, z: player.position.z }
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
+      dust?.update(dt)
     }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) smooth.moved()

@@ -7,14 +7,22 @@
 //      costs speed, so the body can never circle a target it is trying to reach.
 //   4. stop() always works, from anywhere, in one frame of braking.
 //
+// Gears (walk, jog, run): quick taps while moving move up one gear each (noteTap), a
+// direction held for a second goes from walk to jog, Shift runs. They only change the
+// speed asked for; the four rules above still shape every frame. Stopping drops to walk.
+//
 // A tap target (a route of points, the last one the place you tapped) is the main
 // input. setStick() is still here for WASD on desktop; it wins and clears the target.
 // Collisions slide per axis (try X, then Z) against plain axis-aligned boxes.
 
 export const WALK = 2.3 // brisk walk (m/s)
-export const JOG = 4.0 // a jog, for long trips and Shift
+export const JOG = 4.0 // a jog, for long trips, a second quick tap, or a direction held for a second
+export const RUN = 6.0 // a run: a third quick tap, or Shift
 const JOG_FROM = 14 // trips longer than this jog
 const JOG_MAX = 5.2
+const GEAR_TAP_MS = 1500 // a tap this soon after the last one, while moving, moves up a gear
+const GEAR_HOLD_S = 1 // a direction held this long goes from walk to jog
+const GEARS = [WALK, JOG, RUN] // walk, jog, run: three gears, no more
 
 const ARRIVE = 0.18 // close enough to the tapped spot
 const CORNER = 0.5 // close enough to a corner of the route: on to the next
@@ -35,7 +43,7 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
 // the edges of the map and the buildings, for scripted walks onto seats and spots)
 // onWalk({ type: 'start' }) / ({ type: 'end', how, left, x, z }): read-only hook for the
 // smoothness reports (src/smooth.js); left = metres still to go to the target when it ended.
-export function createPlayer({ blocked, onWalk }) {
+export function createPlayer({ blocked, onWalk, onGear }) {
   let body = null
   let stick = null // { x, z, run, mag } in world space, this frame
   let route = [] // points to walk through; the last is the target
@@ -46,6 +54,10 @@ export function createPlayer({ blocked, onWalk }) {
   let moving = false
   let speed = 0 // the speed we are actually travelling at, carried between frames
   let stuck = 0
+  let gear = 0 // from quick taps (0 walk, 1 jog, 2 run)
+  let shown = 0 // the gear last shown (a puff of dust on each step up)
+  let lastTap = -1e9
+  let held = 0 // seconds a direction has been held
 
   function remaining() {
     let len = 0
@@ -89,7 +101,17 @@ export function createPlayer({ blocked, onWalk }) {
   }
 
   return {
-    attach(group) { body = group; group.userData.leads = true; finish('cancelled'); stick = null; speed = 0 },
+    attach(group) { body = group; group.userData.leads = true; finish('cancelled'); stick = null; speed = 0; gear = 0; shown = 0; held = 0 },
+    // A ground tap (call before walkTo). While moving, a tap within 1.5 s of the last
+    // one moves up a gear for the walk that follows; returns the gear.
+    noteTap(now = performance.now()) {
+      const going = route.length > 0 || speed > 0.5
+      if (going && now - lastTap < GEAR_TAP_MS) gear = Math.min(2, gear + 1)
+      else if (!going) gear = 0
+      lastTap = now
+      return gear
+    },
+    get gear() { return Math.max(gear, shown) },
     // A walk through points (a route from the grid, ending where you tapped).
     // opts: pace (m/s, default by trip length), near (arrival distance), solid (collide
     // with props; scripted walks onto seats pass false), done(how).
@@ -100,15 +122,15 @@ export function createPlayer({ blocked, onWalk }) {
       near = opts.near ?? ARRIVE
       solid = opts.solid ?? true
       done = opts.done || null
-      pace = opts.pace ?? paceFor(remaining())
+      pace = opts.pace ?? Math.max(paceFor(remaining()), GEARS[gear])
       if (!route.length) finish('arrived')
       return pace
     },
     // Stop now. Braking takes one or two frames; nothing can refuse this.
-    stop() { finish('cancelled'); stick = null },
+    stop() { finish('cancelled'); stick = null; gear = 0; shown = 0 },
     // Held up for good (pressed against something): stop, ending the walk as 'stalled',
     // so a walk that opens something where it ends (a chat, a place) still does.
-    giveUp() { finish('stalled'); stick = null },
+    giveUp() { finish('stalled'); stick = null; gear = 0 },
     // The stick or WASD this frame (null: let go). It wins and clears the target.
     // mag (0-1) scales the speed, so a small push is a slow walk.
     setStick(x, z, run, mag = 1) {
@@ -131,13 +153,17 @@ export function createPlayer({ blocked, onWalk }) {
       let dz = 0
       let want = 0 // the speed this frame is asking for
       let braking = false
+      if (!stick) held = 0
 
       if (stick) {
         const m = Math.hypot(stick.x, stick.z)
         if (m > 0.001) {
           dx = stick.x / m
           dz = stick.z / m
-          want = (stick.run ? JOG : WALK) * stick.mag
+          held += dt
+          const g = stick.run ? 2 : held >= GEAR_HOLD_S ? 1 : 0
+          want = GEARS[g] * stick.mag
+          if (g > shown && stick.mag > 0.9) { shown = g; onGear?.(g) } else if (g < shown) shown = g
         }
       } else if (route.length) {
         let next = route[0]
@@ -150,6 +176,7 @@ export function createPlayer({ blocked, onWalk }) {
         dx = (next.x - body.position.x) / (d || 1)
         dz = (next.z - body.position.z) / (d || 1)
         want = pace
+        if (gear > shown) { shown = gear; if (speed > 0.3) onGear?.(gear) }
         if (route.length === 1) {
           // Arrived: close enough, or close enough and barely moving.
           if (d < near) { speed = 0; finish('arrived'); return false }
@@ -164,7 +191,7 @@ export function createPlayer({ blocked, onWalk }) {
       speed += clamp(want - speed, -rate * dt, rate * dt)
       if (speed < 0.02) speed = 0
 
-      if (!dx && !dz) { if (speed === 0) return false }
+      if (!dx && !dz) { if (speed === 0) { gear = 0; shown = 0; return false } }
       else {
         // Turning costs speed, so the body never arcs around its own target.
         const allow = face(dx, dz, dt, braking)
@@ -175,7 +202,7 @@ export function createPlayer({ blocked, onWalk }) {
         }
       }
 
-      if (speed <= 0.01) { speed = 0; return false }
+      if (speed <= 0.01) { speed = 0; if (!route.length) { gear = 0; shown = 0 } return false }
 
       // Never step past the target in one frame.
       let move = speed * dt
@@ -201,7 +228,7 @@ export function createPlayer({ blocked, onWalk }) {
 
       const pose = body.userData.pose
       if (pose === 'stand' || pose === 'run' || pose === undefined) {
-        body.userData.pose = speed > WALK * 1.25 ? 'run' : 'stand'
+        body.userData.pose = speed > WALK * 1.25 ? 'run' : 'stand' // (jog and run share the run pose)
       }
       moving = speed > 0.05
       return moving
