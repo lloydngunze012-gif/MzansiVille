@@ -177,6 +177,7 @@ function hero(d) {
       <p class="lede">${esc(h.text)}</p>
       <div class="btns">
         <a class="btn" href="${esc(d.gameUrl)}/">${esc(h.play)}</a>
+        <a class="btn ghost" href="${esc(d.gameUrl)}/?install=1" data-install>${esc(h.install || 'Install')}</a>
         <a class="btn ghost" href="#phone">${esc(h.phone)}</a>
       </div>
       <div class="student">
@@ -262,6 +263,7 @@ async function phone(d) {
   return `<section id="phone" class="band band-paper" aria-labelledby="phone-title"><div class="wrap">
     <h2 id="phone-title">${esc(p.title)}</h2>
     <p class="lede">${esc(p.text)}</p>
+    <p class="phone-install"><a class="btn" href="${esc(d.gameUrl)}/?install=1" data-install>${esc(d.site.hero?.install || 'Install')} Soft Life</a></p>
     <div class="phone-grid">
       ${card('android')}
       ${card('iphone')}

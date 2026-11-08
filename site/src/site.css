@@ -219,3 +219,4 @@ ol, ul { margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   .btn, .top nav a { transition: background-color .15s ease, border-color .15s ease; }
 }
+.phone-install { margin: 18px 0 0; }

@@ -1,7 +1,8 @@
 import { fromPlace } from './from.js'
 import { canonicalHouse } from './houses.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
-import { barColour, onInstallChange, promptInstall, registerWorker } from './install.js'
+import { barColour, installMode, onInstallChange, promptInstall, registerWorker } from './install.js'
+import { iosSheet } from './ui/install.js'
 import { smooth } from './smooth.js'
 import { districtById, defaultDistrictId } from './districts/registry.js'
 import { filterText, cleanBio, canSend } from './engine/filter.js'
@@ -72,6 +73,37 @@ installErrorReporting()
 // and #/install screen redrawn when Chrome offers to install or it's been installed.
 registerWorker()
 onInstallChange(() => { if (route().name === 'install' || route().name === 'title' || ui.gear) paint() })
+
+// One tap to install (9 Nov). Android Chrome with the browser's offer in hand: its install box, no
+// screen in between. iPhone Safari: a bottom sheet pointing at Share. Anything else (Chrome before it
+// has offered, other browsers, in-app browsers): the #/install screen, which switches to the one-tap
+// button if the offer arrives while it is open.
+function closeIosSheet() { document.querySelector('.in-sheet')?.remove() }
+function openIosSheet() {
+  closeIosSheet()
+  document.body.insertAdjacentHTML('beforeend', iosSheet())
+  const sheet = document.querySelector('.in-sheet')
+  sheet.addEventListener('click', (e) => { if (e.target.closest('[data-act="install-close"]')) closeIosSheet() })
+  sheet.querySelector('.in-go')?.focus()
+}
+function installTap() {
+  ui.gear = false
+  const mode = installMode()
+  if (mode === 'prompt') { promptInstall(); paint(); return }
+  if (mode === 'ios') { paint(); openIosSheet(); return }
+  go('install')
+}
+// The website's Install button opens the game with ?install=1: land with the install box ready (Chrome
+// needs a tap, so no auto-prompt), and take the parameter off the address.
+{
+  const q = new URLSearchParams(location.search)
+  if (q.get('install') === '1') {
+    q.delete('install')
+    const rest = q.toString()
+    history.replaceState(null, '', `${location.pathname}${rest ? `?${rest}` : ''}${location.hash}`)
+    window.__installArrival = true
+  }
+}
 
 const KEY = 'mzansiville.v1'
 const app = document.getElementById('app')
@@ -1309,6 +1341,13 @@ app.addEventListener('click', async (event) => {
   if (!button && !place) return
   captureForm()
   const act = button?.dataset.act
+  if (act === 'install-tap') { event.preventDefault(); installTap(); return }
+  if (act === 'copy-link') {
+    const note = app.querySelector('.in-copied')
+    const url = location.href
+    try { await navigator.clipboard.writeText(url); if (note) note.textContent = 'Link copied. Open Safari and paste it.' } catch { if (note) note.textContent = `Copy this link: ${url}` }
+    return
+  }
   const district = districtNow()
   if (act === 'pc-edit') { ui.cardEdit = true; ui.cardNotice = null; paint(); return }
   if (act === 'pc-cancel') { ui.cardEdit = false; ui.cardNotice = null; paint(); return }
@@ -2050,6 +2089,12 @@ window.addEventListener('keydown', (event) => {
   persist()
   paint()
 })
+// Arriving from the website's Install button (?install=1, taken off the address above).
+if (window.__installArrival && installMode() !== 'done') {
+  if (installMode() === 'ios') setTimeout(openIosSheet, 300)
+  else if (route().name === 'title') location.hash = '#/install'
+}
+
 bootAuth().catch(() => {})
 
 // ---------- Player cards (build plan, Piece 1a) ----------

@@ -162,13 +162,11 @@ for (const [w, h] of [[360, 800], [412, 915]]) {
     if (mode === 'prompt') await expect(page.locator('[data-act="install-go"]')).toBeVisible()
     else await expect(page.locator('.in-steps li')).toHaveCount(3)
     await page.screenshot({ path: `${OUT}/install-${mode}-${w}x${h}.png` })
-    // Installed: the option hides (appinstalled marks it; launched from the home screen
-    // counts the same way).
+    // A stale 'installed' flag no longer hides it (9 Nov): only the home-screen app does.
     await page.evaluate(() => localStorage.setItem('mzansiville.installed', '1'))
     await page.goto(`/?${ROOM}&morning=0&at=installed#/play`)
     await page.locator('[data-act="gear"]').first().tap()
-    await expect(page.locator('.g-menu')).toBeVisible()
-    await expect(page.locator('.g-menu .g-install')).toHaveCount(0)
+    await expect(page.locator('.g-menu .g-install')).toBeVisible()
     await context.close()
   })
 }
@@ -212,8 +210,25 @@ test('I4c Android: Chrome offers to install, our button opens its prompt, then i
   await page.screenshot({ path: `${OUT}/install-prompt-412x915.png` })
   await page.locator('[data-act="install-go"]').tap()
   expect(await page.evaluate(() => window.promptShown)).toBe(true)
-  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'done')
-  await page.screenshot({ path: `${OUT}/install-done-412x915.png` })
+  // From the title: one tap opens the browser's box, no #/install page in between.
+  await page.goto(`/?${ROOM}#/`)
+  await page.locator('.tc-start').waitFor()
+  await page.evaluate(() => {
+    window.promptShown = false
+    const e = new Event('beforeinstallprompt', { cancelable: true })
+    e.prompt = () => { window.promptShown = true }
+    e.userChoice = Promise.resolve({ outcome: 'dismissed' })
+    window.dispatchEvent(e)
+  })
+  await page.locator('.tc-links [data-link="install"]').tap()
+  expect(await page.evaluate(() => window.promptShown)).toBe(true)
+  expect(new URL(page.url()).hash).not.toContain('install')
+  // Without the offer yet: the steps page, which switches to the one-tap button when it arrives.
+  await page.goto(`/?${ROOM}&again=1#/`)
+  await page.locator('.tc-links [data-link="install"]').tap()
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'manual')
+  await page.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => {}; e.userChoice = Promise.resolve({ outcome: 'dismissed' }); window.dispatchEvent(e) })
+  await expect(page.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'prompt')
   await context.close()
 })
 
@@ -262,20 +277,21 @@ for (const [w, h] of [[390, 844], [1440, 900]]) {
     await tab.waitForLoadState('domcontentloaded').catch(() => {})
     expect(tab.url()).toContain(new URL(site).host)
     await tab.close()
-    // Installed (appinstalled marks it; launched from the home screen counts the same).
+    // Installed but in the browser (a stored flag): Install still shows (9 Nov).
     await page.evaluate(() => localStorage.setItem('mzansiville.installed', '1'))
     await page.goto(`/?${ROOM}&installed=1#/`)
-    await expect(links).toHaveText(['Rules', 'Privacy', 'Terms', 'Website'])
-    await page.waitForTimeout(1300)
-    await page.screenshot({ path: `${OUT}/start-${w}x${h}-after.png` })
-    // Running as the installed app (display-mode standalone), with nothing stored.
+    await expect(links).toHaveText(['Install', 'Rules', 'Privacy', 'Terms', 'Website'])
     await page.evaluate(() => localStorage.removeItem('mzansiville.installed'))
+    // Running as the installed app (display-mode standalone): Install hides.
     await page.addInitScript(() => {
       const real = window.matchMedia.bind(window)
       window.matchMedia = (q) => (q.includes('display-mode: standalone') ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : real(q))
     })
     await page.goto(`/?${ROOM}&standalone=1#/`)
     await expect(page.locator('.tc-links [data-link="install"]')).toHaveCount(0)
+    await expect(links).toHaveText(['Rules', 'Privacy', 'Terms', 'Website'])
+    await page.waitForTimeout(1300)
+    await page.screenshot({ path: `${OUT}/start-${w}x${h}-after.png` })
     await context.close()
   })
 }
@@ -366,6 +382,71 @@ test('I7b the bars follow the screen; the slow zoom stops under reduced motion',
   expect(anim[0]).toBe('tc-zoom')
   expect(anim[1]).toBeGreaterThanOrEqual(24)
   await moving.close()
+})
+
+// 9 Nov: one tap to install, by browser (390x844, a screenshot each in docs/sprints/install/).
+const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }
+const UA = {
+  safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  instaAndroid: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 Instagram 330.0.0.0 Android',
+  fbIos: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0]',
+}
+test('I8a iPhone Safari: Install on the title opens the Share sheet', async ({ browser }) => {
+  const context = await browser.newContext({ ...PHONE, userAgent: UA.safari })
+  const page = await context.newPage()
+  await page.goto(`/?${ROOM}#/`)
+  await page.locator('.tc-start').waitFor()
+  await page.waitForTimeout(1300)
+  await page.locator('.tc-links [data-link="install"]').tap()
+  const sheet = page.locator('.in-sheet')
+  await expect(sheet).toBeVisible()
+  await expect(sheet.locator('.in-steps li')).toHaveCount(3)
+  await expect(sheet).toContainText('Apple')
+  await expect(sheet).toContainText('Add to Home Screen')
+  expect(new URL(page.url()).hash).not.toContain('install')
+  await page.screenshot({ path: `${OUT}/ios-sheet-390x844.png` })
+  await sheet.locator('.in-go').tap()
+  await expect(sheet).toHaveCount(0)
+  await context.close()
+})
+test('I8b in-app browsers: Open in Chrome (Android), Copy link (iPhone), no steps', async ({ browser }) => {
+  const a = await browser.newContext({ ...PHONE, userAgent: UA.instaAndroid })
+  const pa = await a.newPage()
+  await pa.goto(`/?${ROOM}#/`)
+  await pa.locator('.tc-links [data-link="install"]').tap()
+  await expect(pa.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'inapp')
+  await expect(pa.locator('.in-steps')).toHaveCount(0)
+  const href = await pa.locator('[data-act="open-chrome"]').getAttribute('href')
+  expect(href).toMatch(/^intent:\/\/.+#Intent;scheme=https;package=com\.android\.chrome;/)
+  await pa.screenshot({ path: `${OUT}/inapp-android-390x844.png` })
+  await a.close()
+  const i = await browser.newContext({ ...PHONE, userAgent: UA.fbIos })
+  const pi = await i.newPage()
+  await pi.goto(`/?${ROOM}#/`)
+  await pi.locator('.tc-links [data-link="install"]').tap()
+  await expect(pi.locator('main[data-screen="install"]')).toHaveAttribute('data-mode', 'inapp-ios')
+  await expect(pi.locator('.in-sheet')).toHaveCount(0)
+  await expect(pi.locator('[data-act="copy-link"]')).toHaveText('Copy link, then open Safari')
+  await pi.locator('[data-act="copy-link"]').tap()
+  await expect(pi.locator('.in-copied')).not.toBeEmpty()
+  await pi.screenshot({ path: `${OUT}/inapp-ios-390x844.png` })
+  await i.close()
+})
+test("I8c the website's ?install=1: the install box ready, the parameter gone", async ({ browser }) => {
+  const context = await browser.newContext(PHONE)
+  const page = await context.newPage()
+  await page.goto(`/?${ROOM}&install=1`)
+  await expect(page.locator('main[data-screen="install"]')).toBeVisible()
+  expect(page.url()).not.toContain('install=1')
+  expect(page.url()).toContain(ROOM)
+  await page.screenshot({ path: `${OUT}/arrival-android-390x844.png` })
+  await context.close()
+  const ios = await browser.newContext({ ...PHONE, userAgent: UA.safari })
+  const pi = await ios.newPage()
+  await pi.goto(`/?${ROOM}&install=1`)
+  await expect(pi.locator('.in-sheet')).toBeVisible()
+  expect(pi.url()).not.toContain('install=1')
+  await ios.close()
 })
 
 test('I5 a deploy: the new build loads on reload, and an old page reloads into it', async ({ page, context }) => {

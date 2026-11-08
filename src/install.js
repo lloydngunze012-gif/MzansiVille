@@ -7,23 +7,16 @@
 // The service worker (public/sw.js) is registered in the built game only, so dev and the
 // tests that run on the dev server are unchanged.
 
-const KEY = 'mzansiville.installed'
 let deferred = null
 const listeners = new Set()
 const changed = () => { for (const fn of listeners) { try { fn() } catch { /* a listener's problem */ } } }
 
 window.addEventListener('beforeinstallprompt', (event) => {
-  event.preventDefault() // keep Chrome's own mini-bar away; the menu offers it instead
+  event.preventDefault() // keep Chrome's own mini-bar away; our Install button opens it instead
   deferred = event
-  // Chrome only offers the install when the app is NOT installed, so a stuck 'installed' flag (the app was uninstalled) is wrong: clear it.
-  try { localStorage.removeItem(KEY) } catch { /* private mode */ }
   changed()
 })
-window.addEventListener('appinstalled', () => {
-  deferred = null
-  try { localStorage.setItem(KEY, '1') } catch { /* private mode */ }
-  changed()
-})
+window.addEventListener('appinstalled', () => { deferred = null; changed() })
 
 export function isStandalone() {
   return Boolean(window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone)
@@ -52,10 +45,21 @@ export function isIos() {
   return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 }
 
+// Facebook, Instagram, TikTok, Snapchat and Line open links in their own window, which can't install.
+export function isInApp() { return /Instagram|FBAN|FBAV|TikTok|musical_ly|Snapchat|Line\//i.test(navigator.userAgent || '') }
+export const isAndroid = () => /Android/i.test(navigator.userAgent || '')
+
+/** Chrome on Android: this page, opened in Chrome itself (the in-app browser's way out). */
+export function chromeIntent() {
+  const { host, pathname, search } = location
+  const q = search.replace(/([?&])install=1&?/, '$1').replace(/[?&]$/, '')
+  return `intent://${host}${pathname}${q}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(location.href)};end`
+}
+
+// Hidden only when opened from the home screen. Installed but in the browser still shows Install.
 export function installMode() {
-  let marked = false
-  try { marked = localStorage.getItem(KEY) === '1' } catch { /* private mode */ }
-  if (isStandalone() || marked) return 'done'
+  if (isStandalone()) return 'done'
+  if (isInApp()) return isIos() ? 'inapp-ios' : 'inapp'
   if (isIos()) return 'ios'
   return deferred ? 'prompt' : 'manual'
 }
@@ -67,7 +71,6 @@ export async function promptInstall() {
   deferred = null
   event.prompt()
   const { outcome } = await event.userChoice.catch(() => ({ outcome: 'dismissed' }))
-  if (outcome === 'accepted') { try { localStorage.setItem(KEY, '1') } catch { /* private mode */ } }
   changed()
   return outcome
 }
