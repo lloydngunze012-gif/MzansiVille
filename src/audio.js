@@ -43,7 +43,7 @@ export function unlock() {
       const ext = extension()
       for (const name of NAMES) load(name, ext)
     }
-    if (ctx.state === 'suspended') ctx.resume()
+    if (ctx.state !== 'running') ctx.resume().catch(() => {}) // iOS also says 'interrupted' after a lock
   } catch { /* no audio */ }
 }
 
@@ -136,3 +136,21 @@ export function setMuted(muted) {
   if (!ctx) return
   master.gain.setTargetAtTime(muted ? 0 : 1, ctx.currentTime, 0.05)
 }
+
+// Screen off, tab switched or app in the background: silence (owner, 8 Nov: "why am I hearing the
+// game sound when I've switched the screen off"). The audio clock is suspended while the page is
+// hidden, so loops and the groove stop and pick up again on return; only what we paused is resumed.
+let pausedByHide = false
+function sleepWhenHidden() {
+  if (!ctx) return
+  if (document.visibilityState === 'hidden') {
+    if (ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) }
+  } else if (pausedByHide) {
+    pausedByHide = false
+    master.gain.value = soundOn() ? 1 : 0 // a muted player stays muted on return
+    ctx.resume().catch(() => {}) // if iOS refuses, the next tap (unlock) does it
+  }
+}
+document.addEventListener('visibilitychange', sleepWhenHidden)
+addEventListener('pagehide', () => { if (ctx && ctx.state === 'running') { pausedByHide = true; ctx.suspend().catch(() => {}) } })
+addEventListener('pageshow', sleepWhenHidden)

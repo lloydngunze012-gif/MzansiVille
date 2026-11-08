@@ -168,3 +168,10 @@ export function mountSounds() {
   }
   if (location.hash.startsWith('#/sounds')) open()
 }
+
+// The listening page also goes quiet when the screen is off or the tab is hidden.
+document.addEventListener("visibilitychange", () => {
+  if (!ctx) return
+  if (document.visibilityState === "hidden") ctx.suspend().catch(() => {})
+  else if (current) ctx.resume().catch(() => {})
+})
