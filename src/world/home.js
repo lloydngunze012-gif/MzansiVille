@@ -9,13 +9,14 @@ import HOMES from '../../data/campusville/homes.json'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf } from '../avatar.js'
 import { fromKey } from '../from.js'
-import { createAvatar, layDown, measureBody, poseAvatar } from './avatar3d.js'
+import { appearNow, createAvatar, layDown, warmLook, measureBody, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { createPlayer } from './player.js'
 import { bindInput } from './input.js'
 import { loadModel } from './models.js'
 import { SPEED as FAST } from '../speed.js'
 import { smooth } from '../smooth.js'
+import * as curtain from '../curtain.js'
 
 export function homeStyleId(character) {
   const id = HOMES.from[fromKey(character?.from, HOMES.from)] || HOMES.default
@@ -608,8 +609,7 @@ function mulberry(seed) {
 }
 
 // ---------- people and the dog ----------
-function familyLook(who) {
-  const me = opts.run.character?.avatar || {}
+function familyLook(who, me = opts.run.character?.avatar || {}) {
   const gender = who.role === 'mom' || who.role === 'sister' ? 'female' : 'male'
   return { gender, skin: me.skin, skinColor: me.skinColor, hairColor: me.hairColor, hair: gender === 'female' ? (who.role === 'mom' ? 'curls' : 'crop') : 'crop', outfit: gender === 'male' && !['hoodie', 'shirt', 'jacket', 'organt'].includes(who.outfit) ? 'shirt' : who.outfit, topColor: who.top, bottomColor: who.bottom, body: me.body }
 }
@@ -893,6 +893,26 @@ function tick(now) {
   smooth.frame(now, 'home', `home:${styleId}`)
 }
 
+// (for the curtain) the see-through walls' transparent shaders, compiled before the first frame
+// the player sees rather than the first time a wall fades.
+function warmSeeThrough() {
+  const swapped = []
+  for (const group of [downstairs, upstairs, shell, ...occluders]) {
+    group?.traverse((m) => {
+      if (!m.isMesh) return
+      const see = (x) => { const c = x.clone(); c.transparent = true; c.opacity = 0.18; c.depthWrite = false; return c }
+      swapped.push([m, m.material])
+      m.material = Array.isArray(m.material) ? m.material.map(see) : see(m.material)
+    })
+  }
+  return () => {
+    for (const [m, was] of swapped) {
+      for (const x of Array.isArray(m.material) ? m.material : [m.material]) x.dispose?.()
+      m.material = was
+    }
+  }
+}
+
 // Walls between the camera and you turn see-through (the Sims cutaway).
 const seeRay = new THREE.Raycaster()
 const faded = new Map()
@@ -1136,8 +1156,32 @@ async function drive() {
 }
 
 // ---------- start / stop ----------
+// While you are still in the creator: fetch the three kits (the style from your answer so far)
+// so the home scene has them by the time it starts.
+export function preloadHome(character) {
+  try {
+    const st = HOMES.styles[homeStyleId(character)]
+    for (const name of ['furniture', st.kit, 'suburb']) kit(name).catch(() => { delete kits[name] })
+    // the cast's model files too (family, neighbours, the people on the pavements)
+    const me = character?.avatar || {}
+    for (const who of [st.parent, st.sibling]) warmLook(familyLook(who, me))
+    warmLook(st.neighbour.look)
+    for (const [m, o] of [['male-a', 'hoodie'], ['female-d', 'shirt'], ['male-d', 'jacket'], ['female-f', 'dress'], ['female-b', 'skirt']]) warmLook({ model: m, outfit: o })
+  } catch { /* (it loads at the start instead) */ }
+}
+
+let starting = false
+let stopMark = 0
 export async function startHome(options) {
   opts = options
+  if (starting) return
+  if (!running) {
+    // (the curtain is fully up before the scene appears behind it)
+    const mark = stopMark
+    starting = true
+    try { await curtain.cover('Waking up at home…') } finally { starting = false }
+    if (mark !== stopMark) return
+  }
   styleId = homeStyleId(opts.run.character)
   style = HOMES.styles[styleId]
   if (!renderer) build()
@@ -1164,15 +1208,21 @@ export async function startHome(options) {
     await buildPeople()
     if (!running) return
     host.dataset.ready = '1'
+    // Everyone's model is in and fully there (no fade-in, no late transparent shader) before the lift.
+    await curtain.awaitPeople(scene, appearNow, 8000)
+    await curtain.settle(renderer, scene, camera, warmSeeThrough)
+    curtain.lift()
     await play()
   } catch (e) {
     console.error(e)
+    curtain.lift()
   } finally {
     running = false
   }
 }
 
 export function stopHome() {
+  stopMark++
   running = false
   for (const name of ['footsteps', 'bus_engine']) soundLoop(name, false)
   tasks.forEach((t) => t.resolve())

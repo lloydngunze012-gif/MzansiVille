@@ -3,7 +3,7 @@ import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId, houseOf } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
-import { createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
+import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf, roommateOf } from '../avatar.js'
 import { lookForPerson, nameOf } from './cast.js'
@@ -32,6 +32,7 @@ import { createCampusMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
+import * as curtain from '../curtain.js'
 import { createWalks } from './walks.js'
 import { smooth } from '../smooth.js'
 import { SPEED, ms } from '../speed.js'
@@ -2812,6 +2813,7 @@ export function setVisible(on) {
   else stop()
 }
 
+let arriving = null
 export function showCampus(district, run) {
   if (!run) return
   ensureRenderer()
@@ -2819,12 +2821,33 @@ export function showCampus(district, run) {
   currentRun = run
   const homeId = homePlaceId(district, run.character?.residence)
   const key = spawnKey(district, run)
-  if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))) respawn(district, run)
-  refreshMarkers()
-  const shot = new URLSearchParams(location.search).get('shot') || ''
-  if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
-  if (shot === 'map') mapUi.open()
-  setVisible(true)
+  const needs = builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))
+  const enter = () => {
+    refreshMarkers()
+    const shot = new URLSearchParams(location.search).get('shot') || ''
+    if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
+    if (shot === 'map') mapUi.open()
+    setVisible(true)
+  }
+  if (arriving) return arriving
+  if (!needs && (visible || !curtain.isUp())) { enter(); curtain.lift(); return }
+  // A new campus (first visit, day 1's gate, a new student): built behind the plum curtain, its
+  // shaders compiled and two frames drawn before the curtain lifts.
+  arriving = (async () => {
+    try {
+      if (!curtain.isUp()) await curtain.cover('Arriving at UMzansi…')
+      if (needs) respawn(district, run)
+      enter()
+      await curtain.awaitPeople(scene, appearNow, 4000)
+      await curtain.settle(renderer, scene, camera)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      arriving = null
+      curtain.lift()
+    }
+  })()
+  return arriving
   // The first-load hint now lives in the shared UI (game.js ctaBar), so the old tour only opens from Help.
 }
 

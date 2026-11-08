@@ -812,6 +812,15 @@ function fadeIn(group, dt) {
   }
 }
 
+// Fetch a person's model files now (the cache keeps them) without building anyone: the home scene
+// and the campus load their cast while the player is still in the creator.
+export function warmLook(avatar) {
+  try {
+    const look = lookOf(avatar)
+    for (const name of [`${look.gender}_anim`, `${look.gender}_outfit_${look.outfitFile}`, `${look.gender}_head_${look.headFile}`]) load(name).catch(() => {})
+  } catch { /* (they load when the scene starts instead) */ }
+}
+
 // Start loading the most likely students early (the title screen), so the creator's
 // student is there the moment it opens.
 export function preloadPeople() {

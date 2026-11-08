@@ -1,5 +1,6 @@
 import { fromPlace } from './from.js'
 import { canonicalHouse } from './houses.js'
+import * as curtain from './curtain.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
 import { barColour, installMode, onInstallChange, promptInstall, registerWorker } from './install.js'
 import { iosSheet } from './ui/install.js'
@@ -248,10 +249,29 @@ function hasGL() {
 }
 
 function worldWanted(viewState) {
-  return Boolean(viewState?.run) && WORLD_SCREENS.has(viewState.screen) && viewPref() === '3d' && hasGL()
+  return Boolean(viewState?.run) && WORLD_SCREENS.has(viewState.screen) && (viewPref() === '3d' || storyIn3d(viewState.run)) && hasGL()
+}
+// Story moments are always 3D: the drop-off, the walk to your house door, day 1's route to the
+// first lecture. The saved Map choice (mzansiville.view) applies only after them.
+function storyIn3d(run) {
+  return Boolean(run && (run.dropOff || (run.day === 1 && run.lectureRoute)))
 }
 let worldPromise = null
 let worldTicket = 0
+let worldShown = false
+// While you are in the creator, the game files for the next two scenes load in the background
+// (the home kits for your answer so far, and the campus code), so the curtain is short.
+let warmKey = ''
+function warmScenes(run) {
+  if (!hasGL() || new URLSearchParams(location.search).get('shot')) return
+  const key = JSON.stringify(run?.character?.from || '')
+  if (key === warmKey) return
+  warmKey = key
+  setTimeout(() => {
+    import('./world/home.js').then((mod) => mod.preloadHome(run?.character)).catch(() => {})
+    import('./world/scene.js').catch(() => {})
+  }, 600)
+}
 
 let morningPromise = null
 
@@ -267,6 +287,7 @@ function morningWanted(run) {
   return false
 }
 let homePromise = null
+let homeLive = false
 function stopIntro() {
   morningPromise?.then((mod) => mod.stopMorning())
   homePromise?.then((mod) => mod.stopHome())
@@ -285,6 +306,7 @@ function endMorning(skip, result) {
   if (homeDay) run.morningDone = true
   else run.resMorningDone = true
   delete run.morningStart
+  curtain.cover('Arriving at UMzansi…', { instant: true }) // (home -> campus through the curtain; campus lifts it)
   // Your roommate (Zanele, or Sipho for a male student) meets you at your house door on day 1,
   // so they are the bestie and the day 1 "New bestie" card would only repeat it.
   run.bestieName = roommateOf(run.character?.avatar)
@@ -329,9 +351,10 @@ function endMorning(skip, result) {
 
 function syncMorning(viewState) {
   const on = viewState?.screen === 'morning' && Boolean(viewState.run)
-  if (!on) { stopIntro(); return false }
+  if (!on) { homeLive = false; stopIntro(); return false }
   if (viewState.run.day === 1) {
     morningPromise?.then((mod) => mod.stopMorning())
+    if (!homeLive) { homeLive = true; curtain.cover('Waking up at home…') } // (creator -> home through the curtain)
     if (!homePromise) homePromise = import('./world/home.js')
     homePromise.then((mod) => {
       if (route().name !== 'morning') return
@@ -495,18 +518,22 @@ function syncWorld(viewState) {
   soundLoop('music_campus', on || morningOn)
   soundLoop('crowd', on)
   // The character creator dances to its own house groove.
-  if (viewState?.screen === 'create') { setGrooveLevel(1); startGroove('creator') } else stopGroove('creator')
+  if (viewState?.screen === 'create') { setGrooveLevel(1); startGroove('creator'); warmScenes(viewState.run) } else stopGroove('creator')
   if (!on) {
     worldPromise?.then((mod) => {
       if (ticket === worldTicket) mod.setVisible(false)
     })
     return
   }
+  // The very first campus of the session is built behind the curtain (scene.js lifts it).
+  if (!worldShown) curtain.cover('Arriving at UMzansi…')
   if (!worldPromise) worldPromise = import('./world/scene.js')
   worldPromise.then((mod) => {
     if (ticket !== worldTicket) return
-    mod.showCampus(viewState.district, viewState.run)
+    worldShown = true
+    return mod.showCampus(viewState.district, viewState.run)
   }).catch((error) => {
+    curtain.lift()
     // (a game file gone after a redeploy: "Updating..." and a reload, never a green screen)
     if (isStaleLoad(error) && reloadForUpdate(error?.message)) return
     console.error(error)
