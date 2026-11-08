@@ -52,6 +52,37 @@ function dots(step) {
   return `<ol class="en-dots" aria-label="Step ${i + 1} of ${ENROL_STEPS.length}">${ENROL_STEPS.map((s, k) => `<li class="${k < i ? 'done' : k === i ? 'now' : ''}" aria-current="${k === i ? 'step' : 'false'}"></li>`).join('')}</ol>`
 }
 
+// The student card you fill in (owner's pick, 8 Nov, direction C "Student card"): on the look step
+// its photo is the live 3D student (.cc-stage); on who and vibe it's your portrait (.cc-photo, filled
+// by main.js) and the card fills in as you go: your name as you type, your house's colours, your tags.
+// The next empty slot glows.
+const fmtNum = (n) => String(n || '').replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')
+function idCard(state, { live = '', step }) {
+  const { district, draft } = state
+  const house = district.houses?.find((h) => h.name === draft.residence) || null
+  const vars = house ? ` style="--h1:${house.main};--h2:${house.accent}"` : ''
+  const name = draft.name.trim().replace(/^@/, '')
+  const handle = tidyHandle(draft.handle)
+  const slots = [['course', 'Course'], ['vibe', 'Vibe'], ['looking', 'Looking for']]
+  const next = step === 'vibe' ? slots.find(([k]) => !draft[k])?.[0] : ''
+  const tags = slots.map(([k, label]) => draft[k]
+    ? `<li data-g="${k}">${icon(draft[k])}${esc(draft[k])}</li>`
+    : `<li data-g="${k}" class="empty${next === k ? ' next' : ''}">${label}</li>`).join('')
+  const photo = live || `<div class="en-idphoto">${avatarSvg(draft.avatar, district.meta.dialCode, 90)}</div>`
+  return `<div class="en-id${live ? ' en-stage' : ''}${house ? ' housed' : ''}" data-id-step="${step}"${vars}>
+      <div class="en-idbar"><span class="en-crest" aria-hidden="true">U</span><span>${esc(house ? house.name : 'University of Mzansi')}</span><span class="en-idkind">${house ? `Class of ${CLASS_OF}` : 'Student'}</span></div>
+      <div class="en-idphoto-box">${photo}</div>
+      <div class="en-idinfo">
+        ${live ? '<small>Name</small>' : ''}<b class="en-idname${name ? '' : ' ph'}" data-card-name>${esc(name || 'Your name')}</b>
+        ${live ? '<small>Student no.</small>' : ''}<span class="en-idnum"><span data-card-handle>${live || !handle ? '' : `@${esc(handle)} · `}</span>${fmtNum(myNumber())}</span>
+        ${live ? `<small>Class of</small><b class="en-idyear">${CLASS_OF}</b>` : ''}
+        <ul class="en-idtags">${house ? '' : '<li class="empty">House</li>'}${tags}</ul>
+        ${draft.bio && step !== 'look' ? `<q class="en-idq">${esc(draft.bio)}</q>` : ''}
+      </div>
+      <i class="en-holo" aria-hidden="true"></i>
+    </div>`
+}
+
 function lookStep(state, still) {
   const { district, draft } = state
   const code = district.meta.dialCode
@@ -65,16 +96,14 @@ function lookStep(state, still) {
     }</button>`).join('')}</div></section>`
   const genderRow = `<section class="en-row en-you"><h3>You are</h3><div class="en-strip">${genders.map((item) =>
     `<button class="cc-chip en-card th" type="button" data-act="avatar" data-part="gender" data-id="${item.id}" data-gender="${item.id}" aria-pressed="${g === item.id}"><span class="cc-thumb gender">${item.id === 'female' ? '♀' : '♂'}</span><b>${esc(item.label)}</b></button>`).join('')}</div></section>`
-  return `<div class="en-look">
-      <div class="en-head"><h2>Make your student</h2></div>
-      <div class="cc-stage en-stage">
-        <i class="en-beams" aria-hidden="true"></i><i class="en-spark" aria-hidden="true"></i>
-        <span class="en-class" aria-hidden="true">Class of ${CLASS_OF}</span>
+  const stage = `<div class="cc-stage en-idstage">
+        <i class="en-spark" aria-hidden="true"></i>
         <span class="en-turn" aria-hidden="true">Drag to turn</span>
-        <button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button>
         ${still ? `<img class="cc-still" src="${still}" alt="">` : ''}<i class="cc-loading" aria-hidden="true"></i>
         <div class="cc-bob cc-dance">${avatarSvg(draft.avatar, code, 150)}</div>
-      </div>
+      </div>`
+  return `<div class="en-look">
+      ${idCard(state, { live: stage, step: 'look' }).replace('<i class="en-holo"', `<button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button><i class="en-holo"`)}
       <div class="en-rows">
         ${genderRow}
         ${row('Skin', skins, 'skin')}
@@ -91,6 +120,7 @@ function whoStep(state) {
   const houses = (district.houses || []).map((h) => `<button class="en-house" type="button" data-act="enrol-pick" data-k="residence" data-v="${esc(h.name)}" data-house-pick="${esc(h.id)}" style="--h1:${h.main};--h2:${h.accent}" aria-pressed="${draft.residence === h.name}"><b>${esc(h.name.replace(/ House$/, ''))}</b><small>${esc(h.vibe || '')}</small></button>`).join('')
   const from = FROM.map((f) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="from" data-v="${esc(f)}" aria-pressed="${fromPlace(draft.from) === f}">${esc(f)}</button>`).join('')
   return `<div class="en-who">
+      ${idCard(state, { step: 'who' })}
       <h2 class="en-q">Who are you?</h2>
       <label class="en-field"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Thandi" enterkeyhint="next"></label>
       <label class="en-field en-handle"><span>Your @handle</span><span class="en-at"><b aria-hidden="true">@</b><input id="handle" maxlength="20" value="${esc(tidyHandle(draft.handle))}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="thandi_m" enterkeyhint="done"${draft.handleLocked ? ' disabled' : ''}></span></label>
@@ -121,12 +151,11 @@ function vibeStep(state) {
       <h3 class="en-gh"><span class="en-num" aria-hidden="true">${draft[key] ? '✓' : n}</span>${label}</h3>
       <div class="en-chips">${items.map((v) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="${key}" data-v="${esc(v)}" data-pick="${key}" aria-pressed="${draft[key] === v}">${icon(v)}${esc(v)}</button>`).join('')}</div>
     </section>`
-  const says = (key, empty) => `<li data-g="${key}" class="${draft[key] ? '' : 'empty'}">${draft[key] ? `${icon(draft[key])}${esc(draft[key])}` : empty}</li>`
   const lines = LINES.map((l) => `<button class="en-chip en-line" type="button" data-act="enrol-pick" data-k="bio" data-v="${esc(l)}" aria-pressed="${draft.bio === l}">${esc(l)}</button>`).join('')
   return `<div class="en-vibe">
+      ${idCard(state, { step: 'vibe' })}
       <h2 class="en-q">What's your vibe?</h2>
-      <p class="en-lede">Three taps. It's how people on campus find their crew.</p>
-      <div class="en-says" aria-live="polite"><small>On your card</small><ul>${says('course', 'Your course')}${says('vibe', 'Your vibe')}${says('looking', 'Looking for')}</ul></div>
+      <p class="en-lede">Every tap lands on your card. It's how people on campus find their crew.</p>
       ${group(1, 'Studying', 'course', district.courses)}
       ${group(2, 'Your vibe', 'vibe', VIBES)}
       ${group(3, 'Looking for', 'looking', LOOKING)}

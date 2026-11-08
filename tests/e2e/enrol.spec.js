@@ -194,18 +194,18 @@ test('the creator preview stays put: pinned top ~40%, options scroll beneath, ch
   await page.waitForTimeout(800)
   const scrolled = await page.evaluate(() => window.scrollY)
   const during = await box()
-  // Nothing covers the student: what's at the stage's middle is the stage.
+  // Nothing covers the student card (direction C: the card is the pinned stage, the 3D student in its photo).
   const onTop = await page.evaluate(() => { const r = document.querySelector('.en-stage').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return Boolean(el?.closest('.en-stage')) })
   await page.screenshot({ path: `${OUT}/8-creator-mid-scroll.png` })
   // An outfit further down: the student changes now; the page stays where it was.
-  const look0 = await page.locator('.en-stage').getAttribute('data-look')
+  const look0 = await page.locator('.cc-stage').getAttribute('data-look')
   const outfit = page.locator('[data-part="outfit"]').nth(2)
   await outfit.scrollIntoViewIfNeeded()
   const y0 = await page.evaluate(() => window.scrollY)
   await outfit.tap()
   await page.waitForTimeout(400)
   const y1 = await page.evaluate(() => window.scrollY)
-  await expect.poll(() => page.locator('.en-stage').getAttribute('data-look'), { timeout: 8000 }).not.toBe(look0)
+  await expect.poll(() => page.locator('.cc-stage').getAttribute('data-look'), { timeout: 8000 }).not.toBe(look0)
   const after = await box()
   console.log('PIN', JSON.stringify({ before, during, after, scrolled, onTop, y0, y1 }))
   expect(before.height, 'at least 300 px').toBeGreaterThanOrEqual(300)

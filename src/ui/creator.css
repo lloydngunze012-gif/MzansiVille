@@ -80,37 +80,68 @@
 /* The still gives way to the live student at once (a slow fade showed two students for a moment). */
 .en .cc-stage.cc-has3d .cc-still { opacity: 0; transition: opacity .15s linear; }
 
-/* ===== "Main character" pass (owner, 8 Nov: "the first pages a person sees need to draw them in").
-   Look: a headline, a full-width spotlight stage (beams, sparkles, a gold floor glow), bigger picks
-   with a gold check, the chosen name beside each row. Vibe: a live "on your card" strip, one colour
+/* ===== Enrolment, direction C "Student card" (owner's pick, 8 Nov; replaces the full-width spotlight
+   stage of the "main character" pass the same day). Your student card is the hero on look, who and
+   vibe: the live 3D student in its photo on the look step (pinned, ~40% of the screen, it never moves
+   when the options scroll), your portrait after; it fills in as you go (name as you type, your house's
+   colours, your tags; the next empty slot glows). Rows: bigger picks with a gold check. Vibe: one colour
    per group (course cyan, vibe pink, looking gold), an emoji on every tag, the opener as a bubble. ===== */
-/* The headline is pinned with the top bar, so the stage under it never moves when you scroll. */
-.en-head { position: sticky; top: calc(54px + var(--safe-t, 0px)); z-index: 8; height: 38px; margin: 0 -14px; padding: 0 16px; background: var(--sl-night); box-shadow: 0 6px 0 var(--sl-night); }
-.en-head h2 { margin: 0; font: 900 25px/34px var(--display, system-ui); color: var(--sl-text); text-shadow: 0 2px 18px #8b4dff88; white-space: nowrap; }
-.en .en-stage { top: calc(96px + var(--safe-t, 0px)); }
-.en-class { position: absolute; top: 14px; left: 14px; z-index: 4; padding: 5px 10px; border-radius: 999px; border: 1.5px solid #f5c40099; background: #140a24a6; color: var(--sl-gold); font: 800 10.5px system-ui; letter-spacing: .14em; text-transform: uppercase; pointer-events: none; }
+.en-id { --h1: #5b2dbf; --h2: var(--sl-gold); position: relative; flex: none; display: grid; grid-template-columns: 44% 1fr; grid-template-rows: 36px 1fr; gap: 0 12px;
+  border-radius: 22px; overflow: hidden; color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--h1) 92%, #fff) 0%, var(--h1) 42%, color-mix(in srgb, var(--h1) 55%, #000) 100%);
+  box-shadow: 0 18px 40px #000a, 0 0 0 1.5px color-mix(in srgb, var(--h2) 70%, transparent), 0 0 34px color-mix(in srgb, var(--h1) 45%, transparent); }
+.en-idbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: #00000038; font: 900 10.5px system-ui; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.en-id.housed .en-idbar { background: var(--h2); color: color-mix(in srgb, var(--h1) 60%, #000); }
+.en-crest { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--sl-gold); color: #1c0c33; display: grid; place-items: center; font: 900 11px var(--display, system-ui); letter-spacing: 0; }
+.en-id.housed .en-crest { background: color-mix(in srgb, var(--h1) 70%, #000); color: var(--h2); }
+.en-idkind { margin-left: auto; color: var(--sl-gold); }
+.en-id.housed .en-idkind { color: inherit; }
+.en-idphoto-box { position: relative; margin: 10px 0 12px 12px; border-radius: 16px; overflow: hidden; border: 1.5px solid #ffffff40;
+  background: radial-gradient(ellipse 85% 70% at 50% 38%, color-mix(in srgb, var(--h1) 60%, #fff) 0%, color-mix(in srgb, var(--h1) 70%, #000) 100%); }
+.en-idinfo { display: flex; flex-direction: column; min-width: 0; padding: 12px 12px 12px 0; }
+.en-idinfo small { margin-top: 8px; font: 800 9.5px system-ui; letter-spacing: .14em; text-transform: uppercase; color: #ffffffa8; }
+.en-idinfo small:first-child { margin-top: 2px; }
+.en-idname { font: 900 19px/1.15 var(--display, system-ui); overflow-wrap: anywhere; }
+.en-idname.ph { color: #ffffff66; }
+.en-idnum { margin-top: 2px; font: 800 13.5px ui-monospace, Consolas, monospace; letter-spacing: .06em; color: #ffffffd9; }
+.en-idyear { font: 900 19px var(--display, system-ui); }
+.en-idtags { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0 0; padding: 0; list-style: none; }
+.en-idtags li { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; font: 800 11.5px system-ui; color: #1a0b2e; background: #fff; }
+.en-idtags li i { font-style: normal; margin-right: 4px; }
+.en-idtags li[data-g="course"] { background: var(--sl-him); } .en-idtags li[data-g="vibe"] { background: var(--sl-her); } .en-idtags li[data-g="looking"] { background: var(--sl-gold); }
+.en-idtags li.empty { background: none; color: #ffffff8c; border: 1.5px dashed #ffffff55; font-weight: 700; }
+.en-idtags li.next { color: var(--sl-gold); border-color: var(--sl-gold); box-shadow: 0 0 12px #f5c40088; animation: en-glow 1.4s ease-in-out infinite alternate; }
+@keyframes en-glow { from { box-shadow: 0 0 4px #f5c40044; } to { box-shadow: 0 0 14px #f5c400aa; } }
+.en-idq { margin-top: 8px; font: italic 600 12.5px/1.3 system-ui; color: #ffffffd0; }
+.en-holo { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(115deg, #fff0 30%, #ffffff24 42%, #9ff2ff1a 48%, #ffb3e61a 54%, #fff0 66%); background-size: 260% 100%; animation: en-holo 6s ease-in-out infinite; }
+@keyframes en-holo { 0%, 55% { background-position: 120% 0; } 100% { background-position: -60% 0; } }
 
-.en .en-stage { margin: 0 -14px; width: calc(100% + 28px); border: 0; border-radius: 0 0 30px 30px; overflow: hidden;
-  background:
-    linear-gradient(var(--sl-night), #140a2400 16%),
-    radial-gradient(ellipse 46% 13% at 50% 86%, #f5c4004d, #f5c40000 72%),
-    radial-gradient(ellipse 75% 70% at 50% 36%, #6d3cd0 0%, #36197a 40%, #1d0e3d 72%, #140a24 100%);
-  box-shadow: inset 0 -1px 0 #f5c40066, 0 14px 0 0 var(--sl-night), 0 18px 30px 0 var(--sl-night); }
-.en-beams, .en-spark { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.en-beams { background:
-    conic-gradient(from 162deg at 22% -8%, #fff0 0deg, #ffffff17 9deg, #fff0 19deg),
-    conic-gradient(from 178deg at 78% -8%, #fff0 0deg, #ffe7a015 9deg, #fff0 19deg);
-  mix-blend-mode: screen; }
-.en-spark { background-image:
-    radial-gradient(1.6px 1.6px at 12% 22%, #fff, #fff0), radial-gradient(1.2px 1.2px at 84% 16%, #ffe7a0, #fff0),
-    radial-gradient(1.4px 1.4px at 70% 48%, #fff, #fff0), radial-gradient(1.2px 1.2px at 22% 64%, #d9c4ff, #fff0),
-    radial-gradient(1.8px 1.8px at 90% 70%, #fff, #fff0), radial-gradient(1.2px 1.2px at 40% 10%, #fff, #fff0);
+/* Look: the card is the pinned stage (~40% of the screen; main.js locks --cc-stage-h). */
+.en[data-step="look"] .en-look { gap: 0; }
+.en .en-stage.en-id { position: sticky; top: calc(54px + var(--safe-t, 0px)); z-index: 7; width: 100%; margin: 4px 0 0; height: var(--cc-stage-h, max(300px, 40svh)); border: 0;
+  box-shadow: 0 18px 40px #000a, 0 0 0 1.5px color-mix(in srgb, var(--h2) 70%, transparent), 0 0 34px color-mix(in srgb, var(--h1) 45%, transparent), 0 -8px 0 8px var(--sl-night), 0 14px 0 8px var(--sl-night);
+  --cc-plinth: #2f1a5c; --cc-plinth-foot: #1a0d33; --cc-ring: #f5c400; }
+/* (the 3D stage runs past the photo's sides, so the camera frames by height and the student fills
+   the photo like an ID picture; a wide dance move is cropped by the photo's edge) */
+.en .en-idstage { position: absolute; inset: 0 -32%; width: auto; height: auto; min-height: 0; flex: none; border: 0; border-radius: 0; box-shadow: none; background: none; }
+.en .en-idstage .en-turn { bottom: 8px; }
+.en-spark { position: absolute; inset: 0; z-index: 1; pointer-events: none; background-image:
+    radial-gradient(1.6px 1.6px at 14% 20%, #fff, #fff0), radial-gradient(1.2px 1.2px at 82% 14%, #ffe7a0, #fff0),
+    radial-gradient(1.4px 1.4px at 76% 46%, #fff, #fff0), radial-gradient(1.2px 1.2px at 18% 62%, #d9c4ff, #fff0);
   animation: en-twinkle 3.2s ease-in-out infinite alternate; }
 @keyframes en-twinkle { from { opacity: .35; } to { opacity: 1; } }
-.en-turn { position: absolute; left: 50%; bottom: 10px; z-index: 3; transform: translateX(-50%); padding: 5px 12px; border-radius: 999px; background: #140a24b3; color: #e9dcff; font: 700 11.5px system-ui; letter-spacing: .02em; pointer-events: none; white-space: nowrap; animation: en-hint 5s ease forwards; }
+.en-turn { position: absolute; left: 50%; bottom: 8px; z-index: 3; transform: translateX(-50%); padding: 4px 9px; border-radius: 999px; background: #140a24b3; color: #e9dcff; font: 700 10.5px system-ui; pointer-events: none; white-space: nowrap; animation: en-hint 5s ease forwards; }
 .en-turn::before { content: '↔ '; color: var(--sl-gold); }
 @keyframes en-hint { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
-.en .cc-mute { z-index: 4; }
+.en .en-id .cc-mute { position: absolute; top: auto; bottom: 12px; right: 12px; left: auto; z-index: 6; width: 40px; height: 40px; }
+
+/* Who and vibe: a smaller card on top (pinned on vibe, so every pick visibly lands on it). */
+.en-id[data-id-step="who"], .en-id[data-id-step="vibe"] { grid-template-columns: 104px 1fr; height: auto; min-height: 176px; margin: 4px 0 14px; }
+.en-id[data-id-step="vibe"] { position: sticky; top: calc(6px + var(--safe-t, 0px)); z-index: 6; box-shadow: 0 18px 40px #000a, 0 0 0 1.5px color-mix(in srgb, var(--h2) 70%, transparent), 0 -8px 0 8px var(--sl-night); }
+.en-idphoto { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; }
+.en-idphoto img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+.en-idphoto img.whole { position: absolute; left: 50%; top: 6%; width: auto; height: 175%; max-width: none; transform: translateX(-50%); object-fit: contain; }
+.en-idphoto svg { width: 90%; height: auto; }
 
 /* The rows: the chosen name beside each label, bigger cards, a gold check on the chosen one. */
 .en .en-rows { gap: 14px; padding-top: 22px; }
@@ -142,12 +173,6 @@
 .en-vibe [data-g="bio"] { --g: #b48cff; }
 .en .en-vibe .en-q { margin: 4px 0 4px; font-size: 30px; text-shadow: 0 2px 18px #8b4dff88; }
 .en-lede { margin: 0 0 14px; font: 600 15px/1.35 system-ui; color: var(--sl-muted); }
-.en-says { position: sticky; top: calc(6px + var(--safe-t, 0px)); z-index: 5; padding: 10px 12px 12px; border-radius: 18px; background: #1f1036eb; border: 1.5px solid #ffffff1c; box-shadow: 0 10px 24px #0008; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
-.en-says small { display: block; margin-bottom: 7px; font: 800 10.5px system-ui; letter-spacing: .16em; text-transform: uppercase; color: var(--sl-lilac); }
-.en-says ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.en-says li { display: inline-flex; align-items: center; min-height: 30px; padding: 0 11px; border-radius: 999px; background: var(--g); color: #1a0b2e; font: 800 13px system-ui; animation: en-pop .3s cubic-bezier(.2, 1.6, .4, 1); }
-.en-says li.empty { background: none; border: 1.5px dashed color-mix(in srgb, var(--g) 55%, transparent); color: color-mix(in srgb, var(--g) 70%, #fff); font-weight: 700; animation: none; }
-.en-says li i { font-style: normal; margin-right: 5px; }
 @keyframes en-pop { from { transform: scale(.7); } to { transform: scale(1); } }
 .en-group { margin-top: 20px; }
 .en-gh { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; font: 900 18px var(--display, system-ui); color: var(--sl-text); }
@@ -165,6 +190,6 @@
 .en .en-vibe .en-line::after { content: '”'; margin-left: 2px; opacity: .7; }
 
 @media (prefers-reduced-motion: reduce) {
-  .en-spark, .en-turn, .en-says li, .en .en-vibe .en-chip[aria-pressed="true"] { animation: none; }
+  .en-spark, .en-turn, .en-holo, .en-idtags li.next, .en .en-vibe .en-chip[aria-pressed="true"] { animation: none; }
   .en .en-go::after { display: none; }
 }

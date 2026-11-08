@@ -403,6 +403,10 @@ function hydrateThumbs() {
   if (!chips.length) {
     const photo = app.querySelector('.cc-photo')
     if (photo && lastThumb.get('photo')) photo.innerHTML = `<img src="${lastThumb.get('photo')}" alt="">`
+    // (enrolment's student card on who and vibe: the whole student as dressed, cropped like an ID photo)
+    const idPhoto = app.querySelector('.en-idphoto')
+    const whole = lastThumb.get('whole')
+    if (idPhoto && (whole || lastThumb.get('photo'))) idPhoto.innerHTML = whole ? `<img class="whole" src="${whole}" alt="">` : `<img src="${lastThumb.get('photo')}" alt="">`
     return
   }
   if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
@@ -425,7 +429,10 @@ function hydrateThumbs() {
     // (kept even with no card on screen: the enrolment card at the end shows it)
     const putPhoto = (url) => { if (!url) return; lastThumb.set('photo', url); const node = app.querySelector('.cc-photo'); if (node) node.innerHTML = `<img src="${url}" alt="">` }
     // (and the whole student, kept for the stage's still next time this look opens)
-    if (!thumbNow(look, 'body')) thumbFor(look, 'body', () => Boolean(app.querySelector('.cc-stage')))
+    // (enrolment's card shows it on the next steps: lastThumb 'whole')
+    const whole = thumbNow(look, 'body')
+    if (whole) lastThumb.set('whole', whole)
+    else thumbFor(look, 'body', () => Boolean(app.querySelector('.cc-stage'))).then((url) => { if (url && JSON.stringify(draft.avatar) === JSON.stringify(look)) lastThumb.set('whole', url) })
     const ready = thumbNow(look, 'hair')
     if (ready) putPhoto(ready)
     else thumbFor(look, 'hair', () => Boolean(app.querySelector('.cc-photo, .cc-stage'))).then(putPhoto)
@@ -1284,6 +1291,7 @@ app.addEventListener('input', (event) => {
       draft.handle = candidates(draft.name)[0] || ''
       app.querySelector('.en #handle').value = draft.handle
     }
+    enrolCardText()
   }
   if (event.target.id === 'handle' && app.querySelector('.en #handle')) {
     draft.handleEdited = true
@@ -1292,13 +1300,21 @@ app.addEventListener('input', (event) => {
     const note = app.querySelector('[data-handle-note]')
     if (note) { const r = checkRules(tidy); note.textContent = r.ok ? `@${tidy} looks good.` : r.why }
   }
-  if (event.target.id === 'handle') draft.handle = event.target.value
+  if (event.target.id === 'handle') { draft.handle = event.target.value; enrolCardText() }
   if (event.target.id === 'email') draft.email = event.target.value
   if (event.target.id === 'composer') chat.draft = event.target.value
   if (event.target.id === 'residence') draft.residence = event.target.value
   if (event.target.id === 'course') draft.course = event.target.value
   if (['name', 'handle', 'residence', 'course'].includes(event.target.id)) syncCard()
 })
+
+// Enrolment's student card (src/ui/enrol.js idCard): your name and @handle as you type them.
+function enrolCardText() {
+  const name = app.querySelector('.en-id [data-card-name]')
+  if (name) { const n = draft.name.trim().replace(/^@/, ''); name.textContent = n || 'Your name'; name.classList.toggle('ph', !n) }
+  const handle = app.querySelector('.en-id [data-card-handle]')
+  if (handle) { const h = tidyHandle(draft.handle); handle.textContent = h ? `@${h} · ` : '' }
+}
 
 function syncCard() {
   const set = (key, text) => { const el = app.querySelector(`[data-card="${key}"]`); if (el && el.textContent !== text) el.textContent = text }
