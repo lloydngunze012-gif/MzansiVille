@@ -109,6 +109,7 @@ function lookStep(state, still) {
         <div class="cc-bob cc-dance">${avatarSvg(draft.avatar, code, 150)}</div>
       </div>`
   return `<div class="en-look">
+      ${themePicker(true)}
       ${idCard(state, { live: stage, step: 'look' }).replace('<i class="en-holo"', `<button class="cc-mute" type="button" data-act="sound" aria-label="${state.sound === false ? 'Turn music on' : 'Mute music'}" aria-pressed="${state.sound === false}">${state.sound === false ? '\u{1F507}' : '\u{1F3B6}'}</button><i class="en-holo"`)}
       <div class="en-rows">
         ${genderRow}
@@ -144,7 +145,6 @@ function whoStep(state) {
       <div class="en-houses">${houses}</div>
       <h3 class="en-sub">Where you're from ${place ? `<span class="en-fromnow">${esc(fromLabel(place))}</span>` : '<span>optional</span>'}</h3>
       <div class="en-from">${from}</div>
-      ${themePicker()}
     </div>`
 }
 
@@ -190,7 +190,6 @@ function cardStep(state, photo) {
   return `<div class="en-done">
       <h2 class="en-q">This is what other students see</h2>
       ${html}
-      ${themePicker()}
     </div>`
 }
 

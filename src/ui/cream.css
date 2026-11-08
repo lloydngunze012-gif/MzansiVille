@@ -537,3 +537,11 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
    neither scrolls away (owner, 8 Nov). */
 .en[data-step="who"], .en[data-step="vibe"] { padding-top: 0; }
 .en[data-step="who"] .en-top, .en[data-step="vibe"] .en-top { position: sticky; top: 0; z-index: 8; margin: 0 -14px; padding: calc(6px + var(--safe-t, 0px)) 14px 0; background: var(--cr-bg-2); }
+
+/* First screen: the game colour sits in one slim row right under Back / Skip, above the card. */
+.th-compact { flex-direction: row; align-items: center; gap: 10px; padding: 2px 0 6px; }
+.th-compact .th-lbl { flex: none; font-size: 11px; max-width: 54px; line-height: 1.1; }
+.th-compact .th-swatches { flex: 1; gap: 6px; }
+.th-compact .th-sw { min-height: 44px; flex-direction: row; gap: 6px; justify-content: center; }
+.th-compact .th-sw i { width: 20px; height: 20px; flex: none; }
+.th-compact .th-sw b { font-size: 11px; }

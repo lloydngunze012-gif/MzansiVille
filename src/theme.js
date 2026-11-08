@@ -22,9 +22,9 @@ export function applyTheme(id = themeOf()) {
   if (meta && t && !document.querySelector('.tc, .en')) meta.setAttribute('content', t.bg)
 }
 
-export function themePicker() {
+export function themePicker(compact = false) {
   const now = themeOf()
-  return `<div class="th-row" role="group" aria-label="Game colour"><span class="th-lbl">Game colour</span><div class="th-swatches">${THEMES.map((t) =>
+  return `<div class="th-row${compact ? ' th-compact' : ''}" role="group" aria-label="Game colour"><span class="th-lbl">Game colour</span><div class="th-swatches">${THEMES.map((t) =>
     `<button type="button" class="th-sw" data-app-theme="${t.id}" aria-pressed="${now === t.id}" aria-label="${t.label}"><i style="background:${t.bg}"></i><b>${t.label}</b></button>`).join('')}</div></div>`
 }
 
