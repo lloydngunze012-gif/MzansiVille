@@ -32,6 +32,8 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       await page.waitForTimeout(500)
       continue
     }
+    // (a random tap can land on the Talk button: the chat panel is a card like the rest, and a player closes it)
+    if (await page.locator('.chat-panel:not([hidden])').count()) { await tapEl(page.locator('.chat-panel .chat-x')); await page.waitForTimeout(300); continue }
     if (await page.locator('.map-overlay:not([hidden])').count()) { await tapEl(page.locator('.map-overlay [data-map="close"]')); continue }
     if (await page.locator('.g-sheet').isVisible().catch(() => false)) {
       log.sheets += 1

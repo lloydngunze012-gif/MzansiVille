@@ -74,7 +74,8 @@ async function approach(page, f, target) {
 // A card open (her order card at the front of the line, a place sheet) holds the player
 // still: close it like a player would (Goodbye, or the sheet's close), before walking off.
 async function closeCards(page, f) {
-  for (const sel of ['.g-talk [data-act="talk-bye"]', '.g-sheet [data-act="close-sheet"]']) {
+  // (walking off from the outdoor line can go in at the Caf door: the Caf is its own room since job 1, and the player steps out)
+  for (const sel of ['.g-talk [data-act="talk-bye"]', '.g-sheet [data-act="close-sheet"]', '[data-caf-out]']) {
     const b = page.locator(sel).first()
     if (await b.isVisible().catch(() => false)) {
       const box = await b.boundingBox()

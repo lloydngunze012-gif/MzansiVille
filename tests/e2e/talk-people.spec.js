@@ -133,6 +133,8 @@ test('student card: the title shows who you are becoming, with the five paths', 
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
   await page.goto('/?fast=1&morning=0&card=1#/profile') // a new query string reloads, so the seeded save is read
+  // (the stats sit behind the card's Stats toggle since Piece 1a)
+  await page.locator('.pc-stats-btn').tap()
   await expect(page.locator('.id-title')).toHaveText(/Becoming: The Hustler/)
   await expect(page.locator('.id-row')).toHaveCount(5)
   await page.screenshot({ path: `${OUT}/6-student-card.png`, fullPage: true })

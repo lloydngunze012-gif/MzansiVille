@@ -1073,6 +1073,7 @@ function startTalk(avatar) {
     // (Piece 3: the two-shot; the old high shot only where no two-shot spot works)
     const shot = conversationShot(avatar)
     closeShot = shot ? { ...shot, talk: true } : overShoulder(player.position, avatar.position)
+    talkAim = { a: { x: player.position.x, z: player.position.z }, b: { x: avatar.position.x, z: avatar.position.z }, timer: 0.5 }
   }
   const open = () => {
     if (talk) return
@@ -1097,10 +1098,27 @@ function startTalk(avatar) {
   open()
 }
 const TALK_REACH = 2.6
+// The two-shot of a chat follows the pair: someone walking through them shoves them aside,
+// and a shot left where it was shows a shoulder or nothing. Every half second, if either has
+// moved 0.2 m, a new shot (as aimConvo does for a chat with a real player).
+let talkAim = null
+function reaimTalk(dt) {
+  if (!talk || !talkAim || !closeShot?.talk) return
+  talkAim.timer -= dt
+  if (talkAim.timer > 0) return
+  talkAim.timer = 0.5
+  const them = talk.avatar
+  if (Math.hypot(player.position.x - talkAim.a.x, player.position.z - talkAim.a.z) < 0.2 && Math.hypot(them.position.x - talkAim.b.x, them.position.z - talkAim.b.z) < 0.2) return
+  talkAim.a = { x: player.position.x, z: player.position.z }
+  talkAim.b = { x: them.position.x, z: them.position.z }
+  const shot = conversationShot(them)
+  if (shot && !(closeShot.pos.distanceTo(shot.pos) < 0.3 && closeShot.look.distanceTo(shot.look) < 0.6)) closeShot = { ...shot, talk: true }
+}
 // The chat is over (goodbye, or an action that ends it): the camera comes back, the
 // person carries on, and the player is free.
 function endTalkHere() {
   if (!talk) return null
+  talkAim = null
   if (talk.walker) { talk.walker.talking = false; talk.walker.wait = 1 }
   if (talk.pose !== undefined) talk.avatar.userData.pose = talk.pose
   const them = talk.avatar
@@ -1312,8 +1330,10 @@ window.mzansiHeads = (ids = []) => {
     if (!head) continue
     const c = head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.1, 0))
     let inside = true
+    const ndc = { x0: 9, x1: -9 }
     for (const dx of [-0.13, 0.13]) for (const dy of [-0.14, 0.16]) for (const dz of [-0.13, 0.13]) {
       const p = c.clone().add(new THREE.Vector3(dx, dy, dz)).project(camera)
+      ndc.x0 = Math.min(ndc.x0, p.x); ndc.x1 = Math.max(ndc.x1, p.x)
       if (p.z > 1 || p.z < -1 || Math.abs(p.x) > 1 || Math.abs(p.y) > 1) inside = false
     }
     // (the HUD covers the top of the screen: a head under it counts as out of view)
@@ -1324,7 +1344,7 @@ window.mzansiHeads = (ids = []) => {
     ray.set(camera.position, c.clone().sub(camera.position).normalize())
     ray.far = dist - 0.25
     const hit = ray.intersectObjects(blockers, true).find((h) => h.object.visible && !h.object.userData.standIn && !h.object.userData.seeThrough && h.object.name !== 'beacon' && h.object.name !== 'badge' && h.object.type === 'Mesh')
-    out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId || a.userData.remote, inside, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
+    out.push({ id: a.userData.isPlayer ? 'player' : a.userData.personId || a.userData.remote, inside, ndc, underHud, dist: +dist.toFixed(2), hidden: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, shown: a === player ? (player.userData.headParts || []).every((p) => p.visible) : true })
   }
   return { mode: rig.mode, close: Boolean(closeShot), heads: out }
 }
@@ -2781,6 +2801,7 @@ function frameBody(now) {
     keepClearOfHud(dt)
     sceneTick(dt)
     if (convo) { convo.timer -= dt; if (convo.timer <= 0) { convo.timer = 0.5; aimConvo(false) } }
+    reaimTalk(dt)
     aimCamera(dt)
     // Eye view looks out of the player's eyes: hide their own head and hair (only for
     // that first-person camera: a close shot of a chat or a meal shows you whole).
