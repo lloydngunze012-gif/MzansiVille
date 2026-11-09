@@ -33,24 +33,33 @@ Written prices, kept as given:
 - A new player starts on R2,100.
 - A meal in these lists is R30 to R80. Snacks can be less. A show-off spread can be more, because it is the flex.
 - A taxi trip is R15 to R25. Chartering a whole van is a show-off, not a trip.
-- The used car is R12,000, and the licence comes first.
+- The first car is R4,500. The used runabout is R12,000. The licence comes first.
 - Gigs pay R120 to R240 a shift. R240 is exactly twice R120.
 
-The licence path at the driving school is the yard lesson (R180), the road lesson (R220) and the test (R450): R850. From R2,100 a player can hold a licence in week 1 and still have about R1,250. They cannot also drive away in the car.
+A game week here is 7 days. Light living, used only for this check, is one R40 meal and one R20 taxi a day: R60, or R420 across a full week.
 
-A game week here is 7 days. "Most days" is 5 of those 7. Light living, used only for this check, is one R40 meal and one R20 taxi a day: R60, or R420 across a full week.
+The best gig is stewarding at the stadium, R240. Worked every day that is R1,680. After light living, that is R1,260 saved in a week. An average gig is about R160, or R1,120 a week, which nets R700 after living. The smallest gig, folding at the laundromat, is R120, or R840 if it is worked every day.
 
-The best gig is stewarding at the stadium, R240. Worked every day that is R1,680. Worked on most days that is R1,200. The smallest gig, folding at the laundromat, is R120, or R840 if it is worked every day.
+**Week 1 goal: the driver's licence (R850).** The path is the yard lesson (R180), the road lesson (R220) and the test (R450). From R2,100 most players get it in week 1 and keep about R1,250.
 
-End of week 1, best gig every day, after light living: R2,100 + R1,680 − R420 = R3,360. The car is R12,000, so the player is R8,640 short. Saving R1,260 a week, the key becomes affordable at the end of week 8 (end of week 7 is R10,920; the eighth week crosses R12,000).
+**First car, R4,500.** Needs the licence. Best gig every day (R240) with light living (R60 a day):
 
-Most days on that same gig, same living costs: R2,100 + R1,200 − R420 = R2,880 at the end of week 1.
+- End of week 1, after the licence and living: R2,100 + R1,680 − R420 − R850 = R2,510.
+- End of week 2: R2,510 + R1,260 = R3,770.
+- End of week 3: R3,770 + R1,260 = R5,030.
 
-Spending nothing and working the best gig every day still ends week 1 on R3,780. Filling every slot (5 a day) at the R240 cap for 7 days earns R8,400, and with the starting money that is R10,500 before food. The licence fee sits on top of the car. No schedule inside these pay rules buys the used car in week 1.
+R5,030 covers the R4,500 first car.
 
-The lists keep the pay cap, the starting money, the meal and taxi prices, and the R12,000 car. The week-1 car line cannot be true beside those numbers. Two levers, if Claude wants that line to win: a gig would have to pay about R2,000 a shift, or the runabout would have to cost about R2,800 for a 5-day week on the best gig after light living. This file does not apply either lever.
+An average gig (about R160) nets R700 a week after living:
 
-Week-1 goals that do fit are the show-offs near R1,000 to R2,000 (the Lifecup tab, the year of laundry, the deluxe tank, the chartered van, the beach cabana), plus the R800 student phone. The car, the flagship, the season seat and the studio night are later.
+- End of week 1, after the licence: R2,100 + R1,120 − R420 − R850 = R1,950.
+- End of week 5: R1,950 + (R700 × 4) = R4,750.
+
+Around week 5 the first car is in reach.
+
+**Used runabout, R12,000.** A long goal. On the best gig every day with light living, from R2,100: end of week 7 is R2,100 + (R1,260 × 7) = R10,920; end of week 8 is R12,180. About week 8.
+
+Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (the Lifecup tab, the year of laundry, the deluxe tank, the chartered van, the beach cabana), plus the R800 student phone. The flagship, the season seat and the studio night stay later.
 
 ## Wave 1
 
@@ -165,7 +174,7 @@ Week-1 goals that do fit are the show-offs near R1,000 to R2,000 (the Lifecup ta
 | Learn the grinder | 30 | R0 | 0 / -4 / 0 / +3 / +3 | Yes | No | None | They let you pull one shot. It is ugly, and you understand the machine. |
 | Work the Lifecup rush | 120 | R0 | +220 / -22 / -8 / 0 / +3 | No | Yes | None | The orders stack, you stop reading the cups and start hearing them, and the tip jar clinks. |
 | Close Lifecup | 90 | R0 | +170 / -18 / -6 / 0 / +2 | No | Yes | None | Chairs up, the last flask is yours, and the sign flips while the street is still busy. |
-| Put the upstairs on your tab | 60 | R1,000 | -1000 / -4 / +12 / 0 / +16 | No | No | Better with friends here | You tell the bar the room is on you, and the afternoon gets suddenly generous. |
+| Put the upstairs on your tab | 60 | R1,000 | -1000 / -4 / +12 / 0 / +16 | No | No | Better with friends here | You tell the counter the room is on you, and the afternoon gets suddenly generous. |
 | Fill the loyalty card | 15 | R30 | -30 / +5 / +6 / 0 / +3 | Yes | No | None | The tenth stamp lands, the next cup is on the house, and the pride is out of proportion. |
 
 ### Lounge
@@ -227,9 +236,9 @@ Week-1 goals that do fit are the show-offs near R1,000 to R2,000 (the Lifecup ta
 
 ### Car dealership
 
-**Feel:** Bunting, a coffee flask, and a row of cars that have already lived a little. The used runabout is the one students mean.
+**Feel:** Bunting, a coffee flask, and a row of cars that have already lived a little. The first car is an old, honest little one; the used runabout is the later, bigger goal.
 **Open:** Morning, Lecture, Social, Free.
-**Mix:** 2 everyday, 2 social, 2 skill, 1 gig, 1 show-off, 2 only here.
+**Mix:** 2 everyday, 2 social, 2 skill, 1 gig, 1 first car, 1 later show-off, 1 only here.
 
 | Activity | Minutes | Cost | Money, Energy, Fullness, Grades, Social | Quick | Gig | Needs | Result |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -241,7 +250,7 @@ Week-1 goals that do fit are the show-offs near R1,000 to R2,000 (the Lifecup ta
 | Watch a handover | 40 | R0 | 0 / -4 / 0 / +3 / +3 | No | No | None | Keys, a signature, a photo by the bonnet. You see the order, so it will not spook you later. |
 | Work the showroom | 150 | R0 | +200 / -20 / -8 / 0 / +3 | No | Yes | None | You dust bonnets and point at the board. One customer comes back just to say thanks. |
 | Buy the used runabout | 120 | R12,000 | -12000 / -6 / -4 / 0 / +18 | No | No | Driver's licence | The key is yours. It has history, it starts, and the salesperson shakes your hand like you bought the row. |
-| Start the engine and stay put | 25 | R0 | 0 / -2 / 0 / +1 / +2 | Yes | No | None | They let you turn the key. The car shivers. Your hand stays off the gear. |
+| Buy the first car | 90 | R4,500 | -4500 / -6 / -4 / 0 / +14 | No | No | Driver's licence | An old, honest little car with one dent on the door, and it is all yours. |
 | Take a photo on a bonnet | 15 | R0 | 0 / -1 / 0 / 0 / +6 | Yes | No | None | You pose on a car you are leaving behind, and your friend keeps the picture anyway. |
 
 ### Greenway supermarket
@@ -708,4 +717,4 @@ Weekly income is one gig, repeated each day of a 7-day week. The smallest week i
 
 A middle gig is the library desk at R150, which is R1,050 if it is worked every day, or R750 on most days (5 of 7).
 
-The car check is in the Money section above. Short version: the best full week of gig money is R1,680. After a R40 meal and a R20 taxi each day, week 1 ends on R3,360 from a R2,100 start. The used runabout is R12,000 and needs the licence first (about R850). On this pay it becomes affordable at the end of week 8, not week 1.
+The car check is in the Money section above. Short version: week 1 is the licence (R850), leaving about R1,250. The first car is R4,500: best gig every day (R240) and light living (R60 a day) buy it at the end of week 3; an average gig (about R160) around week 5. The used runabout is R12,000, a long goal, about week 8 on the best gig.
