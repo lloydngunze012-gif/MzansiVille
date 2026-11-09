@@ -4,7 +4,7 @@ Design for Claude to review before Claude Code builds it. Not wired. This file i
 
 The campus sits in the middle of the city. A player walks, takes a minibus taxi, or drives. Inside a place they open Things to do and pick one row.
 
-Wave 1 is in the game at launch (17 places). Wave 2 opens after launch (13 places).
+Wave 1 is in the game at launch (18 places). Wave 2 opens after launch (12 places).
 
 ## How to read a row
 
@@ -40,7 +40,7 @@ A game week here is 7 days. Light living, used only for this check, is one R40 m
 
 The best gig is stewarding at the stadium, R240. Worked every day that is R1,680. After light living, that is R1,260 saved in a week. An average gig is about R160, or R1,120 a week, which nets R700 after living. The smallest gig, folding at the laundromat, is R120, or R840 if it is worked every day.
 
-**Week 1 goal: the driver's licence (R850).** The path is the yard lesson (R180), the road lesson (R220) and the test (R450). From R2,100 most players get it in week 1 and keep about R1,250.
+**Week 1 goal: the driver's licence (R850).** The driving school is in Wave 1, so the licence is available from launch. The path is the yard lesson (R180), the road lesson (R220) and the test (R450). From R2,100 most players get it in week 1 and keep about R1,250.
 
 **First car, R4,500.** Needs the licence. Best gig every day (R240) with light living (R60 a day):
 
@@ -194,7 +194,7 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 | Host the lounge | 120 | R0 | +150 / -16 / -6 / 0 / +6 | No | Yes | None | You seat people, teach one board game, and keep the song list from turning into a queue fight. |
 | Take the booth and the tower | 90 | R1,800 | -1800 / -6 / +10 / 0 / +16 | No | No | Better with friends here | A tower of mocktails, the booth to yourselves, and the room notices the order. |
 | Put your name on the karaoke list | 20 | R0 | 0 / -6 / 0 / 0 / +10 | Yes | No | None | You sing the chorus you know, sit down, and get applause you were not ready for. |
-| Play the last frame of the night | 30 | R20 | -20 / -4 / 0 / 0 / +8 | Yes | No | None | The lights flick once for last round, and the eight ball drops clean. |
+| Play the last frame of the night | 30 | R20 | -20 / -4 / 0 / 0 / +8 | Yes | No | None | The lights flick once for closing time, and the eight ball drops clean. |
 
 ### Gym
 
@@ -284,7 +284,7 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 | Walk the waterline | 30 | R0 | 0 / -6 / -3 / 0 / +2 | Yes | No | None | Shoes in one hand, a long line of footprints, and your head goes quiet. |
 | Play volleyball | 45 | R0 | 0 / -12 / -8 / 0 / +12 | No | No | Better with friends here | The net sags, your side still claims the ball was in, and the argument is the fun. |
 | Share fruit on a towel | 30 | R20 | -20 / -2 / +14 / 0 / +10 | Yes | No | Better with friends here | Naartjies get passed around and nobody hurries the afternoon. |
-| Swim to the near buoy | 30 | R0 | 0 / -14 / -6 / 0 / +2 | Yes | No | Daylight | You pick the close buoy, you make it, and the walk up the sand feels earned. |
+| Swim to the near buoy | 30 | R0 | 0 / -14 / -6 / 0 / +2 | Yes | No | Morning to Social only | You pick the close buoy, you make it, and the walk up the sand feels earned. |
 | Read the lifeguard board | 20 | R0 | 0 / -2 / 0 / +3 / +1 | Yes | No | None | Flags, times, and where the pull is. You could explain it to the next person. |
 | Push the ice-cream cart | 120 | R0 | +160 / -20 / -8 / 0 / +4 | No | Yes | None | The soft serve leans in the heat, and children appear the second you stop the cart. |
 | Book a cabana for your people | 120 | R1,600 | -1600 / -4 / +16 / 0 / +15 | No | No | Better with friends here | Shade, a fruit platter, and a stretch of morning that belongs to your table. |
@@ -340,7 +340,7 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 | Take a local trip | 25 | R20 | -20 / -3 / -2 / 0 / +3 | Yes | No | None | You pass the fare forward, the door slams, and your stop arrives before the back-seat story ends. |
 | Buy a vetkoek | 15 | R15 | -15 / +2 / +16 / 0 / +2 | Yes | No | None | Hot in the serviette, gone by the time the marshal points you to a van. |
 | Share the long seat | 30 | R20 | -20 / -4 / -2 / 0 / +11 | Yes | No | Better with friends here | Four of you, one story, and the aunty by the window supplies a better ending. |
-| Read the board with a friend | 30 | R20 | -20 / -3 / 0 / +1 / +9 | Yes | No | Better with friends here | You solve the route together and only nearly miss the right van. |
+| Read the board with a friend | 30 | R0 | 0 / -3 / 0 / +1 / +9 | Yes | No | Better with friends here | You solve the route together and only nearly miss the right van. |
 | Learn three hand signs | 20 | R0 | 0 / -2 / 0 / +3 / +2 | Yes | No | None | A caller shows you. You try one, and the right taxi actually slows. |
 | Time the gap | 30 | R0 | 0 / -2 / -2 / +2 / +1 | Yes | No | None | You watch the clock until you know the wait, and tomorrow you can leave res later. |
 | Call the routes | 90 | R0 | +160 / -18 / -6 / 0 / +5 | No | Yes | None | You call a destination clearly, people find the van, and the marshal bumps your shoulder. |
@@ -386,8 +386,6 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 | Catch the tunnel glimpse | 15 | R0 | 0 / +4 / 0 / 0 / +4 | Yes | No | None | Boots on concrete, close enough to hear, and the tunnel hums as they come through. |
 | Stay for the empty pitch | 30 | R0 | 0 / -3 / -2 / 0 / +3 | Yes | No | None | The stands thin. The ground staff start their work, and the evening lands softly. |
 
-## Wave 2
-
 ### Driving school
 
 **Feel:** Cones, a dual-control car, and an instructor who has already met every kind of nerves. The licence comes from here.
@@ -407,6 +405,8 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 | Book the defensive day | 180 | R2,500 | -2500 / -20 / -8 / +6 / +6 | No | No | Driver's licence | A full day on space and skids with the senior instructor. You leave calmer than the commute. |
 | Take the licence test | 50 | R450 | -450 / -14 / -4 / +2 / +6 | No | No | Yard lesson and road lesson done | The card is yours. Your hands wait until afterwards to shake. |
 | Practise the hill start | 30 | R120 | -120 / -8 / -2 / +3 / +1 | Yes | No | Yard lesson done | The car holds, rolls a thumb's width, then goes. You grin at an empty street. |
+
+## Wave 2
 
 ### Recording studio
 
@@ -625,12 +625,12 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 
 | Activity | Minutes | Cost | Money, Energy, Fullness, Grades, Social | Quick | Gig | Needs | Result |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Run one load and mind it | 40 | R30 | -30 / -4 / -2 / 0 / +1 | No | No | A load of laundry | The machine hops, you watch it, and the clothes come out smelling like a reset. |
+| Run one load and mind it | 40 | R30 | -30 / -4 / -2 / 0 / +1 | No | No | None | The machine hops, you watch it, and the clothes come out smelling like a reset. |
 | Fold what you already washed | 20 | R0 | 0 / -3 / 0 / 0 / +1 | Yes | No | None | The pile becomes a stack you can carry in one arm. |
 | Split two baskets with a friend | 50 | R30 | -30 / -5 / -2 / 0 / +10 | No | No | Better with friends here | Two machines, shared change, and a conversation that lasts exactly one spin cycle. |
 | Take the television chairs | 30 | R0 | 0 / +4 / 0 / 0 / +8 | Yes | No | Better with friends here | Sound down, subtitles on, and the commentary supplied by your people. |
 | Learn the stain chart | 20 | R0 | 0 / -2 / 0 / +3 / +1 | Yes | No | None | Oil, ink, the red sauce. You stop guessing and ruining a shirt. |
-| Sort a wash so the colours survive | 25 | R25 | -25 / -4 / -2 / +2 / 0 | Yes | No | A load of laundry | Darks, lights, and the one red item held back. The chart was right. |
+| Sort a wash so the colours survive | 25 | R25 | -25 / -4 / -2 / +2 / 0 | Yes | No | None | Darks, lights, and the one red item held back. The chart was right. |
 | Fold for the laundromat | 90 | R0 | +120 / -14 / -4 / 0 / +2 | No | Yes | None | Other people's warm towels, folded square. The pay feels fair for the heat. |
 | Buy the year plan | 30 | R1,000 | -1000 / -2 / 0 / 0 / +8 | Yes | No | None | They wash and fold your basket every week for the year. You drop it off and go live. |
 | Watch one sock go around | 20 | R0 | 0 / +8 / 0 / 0 / +2 | Yes | No | None | One sock, one drum, and your pulse matches it. You needed exactly that. |
@@ -638,7 +638,7 @@ Week-1 flex after the licence still fits the show-offs near R1,000 to R2,000 (th
 
 ## Summary
 
-Wave 1 has 17 places. Wave 2 has 13. That is 30 places, 10 rows each, 300 activities. Paid gigs: 35.
+Wave 1 has 18 places. Wave 2 has 12. That is 30 places, 10 rows each, 300 activities. Paid gigs: 35.
 
 The cheapest row at every place costs R0. The dearest row is that place's show-off.
 
@@ -661,7 +661,7 @@ The cheapest row at every place costs R0. The dearest row is that place's show-o
 | Taxi rank | 1 | Learn three hand signs, R0 | Charter a big taxi for the house, R1,200 |
 | Petrol station | 1 | Charge your phone in the shop, R0 | Buy the fancy tank and the deluxe wash, R1,100 |
 | Stadium | 1 | Watch training from up high, R0 | Buy a season seat on the halfway line, R8,000 |
-| Driving school | 2 | Read the learner's book, R0 | Book the defensive day, R2,500 |
+| Driving school | 1 | Read the learner's book, R0 | Book the defensive day, R2,500 |
 | Recording studio | 2 | Sit on the couch and listen back, R0 | Book a night lock-in with a player, R6,500 |
 | Campus radio station | 2 | Sit in on a show, R0 | Put your name on a week of stings, R3,000 |
 | Aquarium | 2 | Touch the outside rockpool, R0 | Book the tunnel after hours for six, R3,400 |
