@@ -94,6 +94,11 @@ async function sideOf(page, body, name, scene = 'campus') {
 }
 
 const playerBody = (page) => page.evaluate(() => window.mzansiBodies('campus', 'player')[0])
+// The pose reads 'sit' as the lowering starts (0.6 s of game time, longer at a low frame rate): measure the hips once they have settled on the seat.
+const settledBody = async (page) => {
+  await expect.poll(async () => (await playerBody(page)).phase ?? null, { timeout: 30000, intervals: [100] }).toBe(null)
+  return playerBody(page)
+}
 
 function expectSeated(b, what) {
   console.log(what, JSON.stringify({ id: b.id, seat: b.y, seatGap: b.seatGap, footGap: b.footGap, sole: b.sole, fit: b.fit, clip: b.walking, hips: b.hips }))
@@ -110,7 +115,7 @@ test('M2a sit on a Quad bench (Sit with them)', async ({ page }) => {
   await card.locator('[data-kind="sit"]').tap()
   await expect.poll(async () => { const r = await page.evaluate(() => [window.mzansiPlayerPose(), window.mzansiPlayerPos(), document.getElementById('world').dataset.activity, document.getElementById('world').dataset.activityStep]); if (process.env.DEBUG_M2) console.log('m2a', JSON.stringify(r)); return r[0] }, { timeout: 60000, intervals: [1000] }).toBe('sit')
   await page.waitForTimeout(800)
-  expectSeated(await playerBody(page), 'player on a Quad bench')
+  expectSeated(await settledBody(page), 'player on a Quad bench')
   await page.screenshot({ path: `${OUT}/M2-quad-bench.png` })
   await sideOf(page, 'player', 'M2-quad-bench-side')
   for (const b of (await bodies(page)).filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated on the Quad`)
@@ -128,7 +133,7 @@ test('M2b sit on a cafeteria chair (queue at Auntie Pinky, sit and eat)', async 
   await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 60000 }).toBe('sit')
   await page.waitForTimeout(800)
-  expectSeated(await playerBody(page), 'player on a caf chair')
+  expectSeated(await settledBody(page), 'player on a caf chair')
   await page.screenshot({ path: `${OUT}/M2-caf-chair.png` })
   await sideOf(page, 'player', 'M2-caf-chair-side')
   for (const b of (await bodies(page)).filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated at the caf`)
@@ -143,7 +148,7 @@ test('M2c sit on a library chair (Let\'s study)', async ({ page }) => {
   await card.locator('[data-kind="study"]').tap()
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 90000 }).toBe('sit')
   await page.waitForTimeout(800)
-  expectSeated(await playerBody(page), 'player on a library chair')
+  expectSeated(await settledBody(page), 'player on a library chair')
   await page.screenshot({ path: `${OUT}/M2-library-chair.png` })
   const all = await bodies(page)
   for (const b of all.filter((x) => x.pose === 'sit')) expectSeated(b, `${b.id} seated in the library`)
@@ -203,7 +208,7 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000, intervals: [50] }).toBe('sit')
   // (the pose reads 'sit' as the lowering starts: measure the hips once they have settled on the seat)
   await expect.poll(async () => (await playerBody(page)).phase ?? null, { timeout: 20000, intervals: [100] }).toBe(null)
-  expectSeated(await playerBody(page), 'player on the bed edge')
+  expectSeated(await settledBody(page), 'player on the bed edge')
   await page.screenshot({ path: `${OUT}/M3-1-edge.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000 }).toBe('lie')
   await page.waitForTimeout(500)
@@ -221,7 +226,7 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await page.screenshot({ path: `${OUT}/M3-5-getting-up.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000, intervals: [50] }).toBe('sit')
   await expect.poll(async () => (await playerBody(page)).phase ?? null, { timeout: 20000, intervals: [100] }).toBe(null)
-  expectSeated(await playerBody(page), 'player sitting up on the bed edge')
+  expectSeated(await settledBody(page), 'player sitting up on the bed edge')
   await page.screenshot({ path: `${OUT}/M3-6-sitting-up.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000 }).toBe('stand')
   await page.waitForTimeout(400)

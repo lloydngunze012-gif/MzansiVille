@@ -419,6 +419,34 @@ test('M6b through a lecture venue door: the door opens, no clipping', async ({ p
 })
 
 // (M4b, sit and stand on the bus stop bench of the res morning, was retired 9 Nov: the morning no longer has the bus-stop meet-cute, so the scene it tested is gone; M4c covers a bench)
+
+// Each framing in Top, Sims and Eye: every framed head fully on screen (not under the
+// HUD), not hidden behind anything, the camera not inside a head, the player's head shown.
+async function headsInThreeViews(page, ids, name) {
+  const results = []
+  for (const mode of ['top', 'sims', 'eye']) {
+    await page.evaluate((m) => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: m })), mode)
+    // (once the camera has glided into the shot)
+    await expect.poll(() => page.evaluate(() => { const d = JSON.parse(window.mzansiDebug()); return d.shot?.pos ? Math.hypot(...d.cam.map((v, i) => v - d.shot.pos[i])) : 0 }), { timeout: 20000, intervals: [300] }).toBeLessThan(0.25)
+    await page.waitForTimeout(400)
+    const r = await page.evaluate((list) => window.mzansiHeads(list), ids)
+    await page.screenshot({ path: `${OUT}/M7-${name}-${mode}.png` })
+    console.log(name, mode, JSON.stringify(r))
+    if (process.env.DEBUG_T) console.log('dbg', await page.evaluate((list) => JSON.stringify({ d: JSON.parse(window.mzansiDebug()), p: window.mzansiPlayerPos(), o: list.map((i) => window.mzansiPersonPos(i)), pose: window.mzansiPlayerPose() }), ids))
+    results.push(r)
+  }
+  for (const r of results) {
+    expect(r.close, `${name} ${r.mode}: still the framed shot`).toBe(true)
+    expect(r.heads.length, `${name} ${r.mode}: people framed`).toBeGreaterThanOrEqual(ids.length + 1)
+    for (const h of r.heads) {
+      expect(h.inside && !h.underHud, `${name} ${r.mode}: ${h.id}'s head on screen`).toBe(true)
+      expect(h.hidden, `${name} ${r.mode}: ${h.id}'s head not hidden`).toBeNull()
+      expect(h.dist, `${name} ${r.mode}: camera not inside ${h.id}'s head`).toBeGreaterThan(0.4)
+      expect(h.shown, `${name} ${r.mode}: ${h.id}'s head drawn`).toBe(true)
+    }
+  }
+}
+
 test('M7a heads in frame: a conversation in Top, Sims and Eye', async ({ page }) => {
   await campus(page, 'quad', '&a=21')
   await tapPerson(page, 'x12')
