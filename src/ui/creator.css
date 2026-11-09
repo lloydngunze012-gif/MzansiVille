@@ -253,3 +253,18 @@ svg.flag { flex: none; width: 21px; height: 14px; border-radius: 2px; vertical-a
   .en-spark, .en-turn, .en-holo, .en-idtags li.next, .en .en-vibe .en-chip[aria-pressed="true"] { animation: none; }
   .en .en-go::after { display: none; }
 }
+
+/* Where are you from? and Your roommate (owner, 9 Nov). Big tappable rows and cards, 390 px first. */
+.en-country .en-q, .en-roommate .en-q { margin-top: 14px; }
+.en-ctys { display: grid; gap: 8px; }
+.en .en-cty { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 16px; border-radius: 16px; font: 800 17px system-ui; text-align: left; }
+.en .en-cty svg.flag { width: 33px; height: 22px; border-radius: 3px; }
+.en .en-cty .flag-globe { font-size: 22px; }
+.en .en-cty[aria-pressed="true"]::after { content: '✓'; margin-left: auto; font-weight: 900; color: var(--sl-gold); }
+.en-roomies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.en .en-roomie { all: unset; cursor: pointer; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 150px; padding: 10px 12px 12px; border-radius: 16px; background: var(--sl-plum-2); border: 2px solid var(--sl-line); }
+.en .en-roomie .en-rface { display: block; width: 60px; height: 76px; margin: 0 0 4px; border-radius: 12px; overflow: hidden; background: color-mix(in srgb, var(--sl-gold) 14%, var(--sl-plum-3)); }
+.en .en-roomie .en-rface svg { display: block; width: 100%; height: auto; }
+.en .en-roomie b { font: 900 18px var(--display, system-ui); color: var(--sl-text); }
+.en .en-roomie small { font: 600 13px/1.25 system-ui; color: var(--sl-muted); }
+.en .en-roomie[aria-pressed="true"] { border-color: var(--sl-gold); background: var(--sl-plum-3); box-shadow: 0 0 0 3px #f5c40033; }

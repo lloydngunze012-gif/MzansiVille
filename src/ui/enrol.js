@@ -5,19 +5,22 @@ import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
 import { themePicker } from '../theme.js'
 import { tidyHandle } from '../handles.js'
-import { FROM_GROUPS, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
+import { COUNTRY_LIST, FROM_GROUPS, countryFlag, countryOf, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
+import { roommateFor, roommatesFor, roommateLook } from '../roommates.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
 // a progress dot, back and skip; then the finished player card, "This is what other
 // students see", and Enter campus. Under 45 seconds start to finish.
 //   look  - your look (the 3D student fills the screen; rows of cards under it)
+//   country - where are you from? (a big list; South Africa is pre-selected)
+//   roommate - your roommate: four cards for your res, the default pre-selected
 //   who   - name or @handle, house (big cards in its colours), where you're from (optional)
 //   vibe  - three tags (course, vibe, looking for), then one line for strangers (80
 //           characters, suggestions to tap)
 //   card  - your card as others see it
 // main.js handles the taps (enrol-next, enrol-back, enrol-skip, enrol-pick, enrol-enter).
 
-export const ENROL_STEPS = ['look', 'who', 'vibe', 'card']
+export const ENROL_STEPS = ['look', 'country', 'roommate', 'who', 'vibe', 'card']
 export { FROM } from '../from.js'
 export const LINES = [
   'New here, say howzit',
@@ -45,6 +48,7 @@ export function draftCard(district, draft) {
     look: draft.avatar,
     classOf: CLASS_OF,
     from: fromPlace(draft.from),
+    country: draft.country || 'South Africa',
   }
 }
 
@@ -79,7 +83,7 @@ function idCard(state, { live = '', step }) {
       <div class="en-idbar"><span class="en-crest" aria-hidden="true">U</span><span>${esc(house ? house.name : 'University of Mzansi')}</span><span class="en-idkind">${house ? `Class of ${CLASS_OF}` : 'Student'}</span></div>
       <div class="en-idphoto-box">${photo}</div>
       <div class="en-idinfo">
-        ${live ? '<small>Name</small>' : ''}<b class="en-idname${name ? '' : ' ph'}" data-card-name>${esc(name || 'Your name')}</b>${fromBadge(draft.from)}
+        ${live ? '<small>Name</small>' : ''}<b class="en-idname${name ? '' : ' ph'}" data-card-name>${esc(name || 'Your name')}</b>${fromBadge(draft.from || draft.country)}
         ${live ? '<small>Student no.</small>' : ''}<span class="en-idnum"><span data-card-handle>${live || !handle ? '' : `@${esc(handle)} · `}</span>${fmtNum(myNumber())}</span>
         ${live ? `<small>Class of</small><b class="en-idyear">${CLASS_OF}</b>` : ''}
         <ul class="en-idtags">${house ? '' : '<li class="empty">House</li>'}${tags}</ul>
@@ -122,6 +126,40 @@ function lookStep(state, still) {
     </div>`
 }
 
+// Where are you from? A big tappable list (South Africa first and pre-selected); each row has its
+// flag, drawn (src/from.js), no images.
+function countryStep(state) {
+  const { draft } = state
+  const mine = countryOf({ country: draft.country })
+  const rows = COUNTRY_LIST.map((c) => `<button class="en-chip en-cty" type="button" data-act="enrol-pick" data-k="country" data-v="${esc(c)}" aria-pressed="${mine === c}">${countryFlag(c)}<span>${esc(c)}</span></button>`).join('')
+  return `<div class="en-country">
+      ${draft.countryOnly ? '' : idCard(state, { step: 'country' })}
+      <h2 class="en-q">Where are you from?</h2>
+      <p class="en-lede">Soft Life starts in South Africa and is open to everyone. Your flag shows on your name tag.</p>
+      <div class="en-ctys">${rows}</div>
+    </div>`
+}
+
+// Your roommate: four students share your res; the default (your res, the skin closest to yours) is picked.
+function roommateStep(state) {
+  const { draft } = state
+  const gender = genderOf(draft.avatar)
+  const mine = roommateFor({ avatar: draft.avatar, roommate: draft.roommate })
+  const cards = roommatesFor(gender).map((r) => {
+    const look = roommateLook(r)
+    return `<button class="en-roomie" type="button" data-act="enrol-pick" data-k="roommate" data-v="${esc(r.id)}" data-roommate="${esc(r.id)}" aria-pressed="${mine.id === r.id}">
+        <span class="en-rface" aria-hidden="true">${avatarSvg({ gender: look.gender, skin: look.skin, hair: gender === 'male' ? 'crop' : 'curls', outfit: look.outfit, hairColor: look.hairColor }, '031', 60)}</span>
+        <b>${esc(r.name)}</b><small>${esc(r.blurb)}</small>
+      </button>`
+  }).join('')
+  return `<div class="en-roommate">
+      ${idCard(state, { step: 'roommate' })}
+      <h2 class="en-q">Your roommate</h2>
+      <p class="en-lede">${gender === 'male' ? "Four students share the men's res." : "Four students share the women's res."} Tap to change.</p>
+      <div class="en-roomies">${cards}</div>
+    </div>`
+}
+
 function whoStep(state) {
   const { district, draft } = state
   const houses = (district.houses || []).map((h) => `<button class="en-house" type="button" data-act="enrol-pick" data-k="residence" data-v="${esc(h.name)}" data-house-pick="${esc(h.id)}" style="--h1:${h.main};--h2:${h.accent}" aria-pressed="${draft.residence === h.name}"><b>${esc(h.name.replace(/ House$/, ''))}</b><small>${esc(h.vibe || '')}</small></button>`).join('')
@@ -136,8 +174,8 @@ function whoStep(state) {
   return `<div class="en-who">
       ${idCard(state, { step: 'who' })}
       <h2 class="en-q">Who are you?</h2>
-      <label class="en-field"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Thandi" enterkeyhint="next"></label>
-      <label class="en-field en-handle"><span>Your @handle</span><span class="en-at"><b aria-hidden="true">@</b><input id="handle" maxlength="20" value="${esc(tidyHandle(draft.handle))}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="thandi_m" enterkeyhint="done"${draft.handleLocked ? ' disabled' : ''}></span></label>
+      <label class="en-field"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Emma" enterkeyhint="next"></label>
+      <label class="en-field en-handle"><span>Your @handle</span><span class="en-at"><b aria-hidden="true">@</b><input id="handle" maxlength="20" value="${esc(tidyHandle(draft.handle))}" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="emma_m" enterkeyhint="done"${draft.handleLocked ? ' disabled' : ''}></span></label>
       <p class="en-hint" data-handle-note>${esc(draft.handleLocked ? `You can change your handle again on ${draft.handleLocked}.` : draft.handleNote || '3 to 20: lowercase letters, numbers, underscores. You can change it once a month.')}</p>
       ${draft.error ? `<p class="en-err" role="alert">${esc(draft.error)}</p>` : ''}
       ${(draft.handleSuggest || []).length ? `<div class="en-chips en-suggest"><span>Free:</span>${draft.handleSuggest.map((h) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="handle" data-v="${esc(h)}">@${esc(h)}</button>`).join('')}</div>` : ''}
@@ -196,7 +234,15 @@ function cardStep(state, photo) {
 export function enrolScreen(state, { still = '', photo = '' } = {}) {
   const { draft } = state
   const step = ENROL_STEPS.includes(draft.step) ? draft.step : 'look'
-  const body = step === 'look' ? lookStep(state, still) : step === 'who' ? whoStep(state) : step === 'vibe' ? vibeStep(state) : cardStep(state, photo)
+  // (an old save is only asked its country: one step, then back into the game)
+  if (draft.countryOnly) {
+    return `<main class="screen en" data-screen="create" data-step="country" data-country-only="1">
+    <header class="en-top"><span class="en-skip" aria-hidden="true"></span><span></span><span class="en-skip" aria-hidden="true"></span></header>
+    <div class="en-body">${countryStep(state)}</div>
+    <footer class="en-foot"><button class="en-go" type="button" data-act="enrol-country-save">Continue ›</button></footer>
+  </main>`
+  }
+  const body = step === 'look' ? lookStep(state, still) : step === 'country' ? countryStep(state) : step === 'roommate' ? roommateStep(state) : step === 'who' ? whoStep(state) : step === 'vibe' ? vibeStep(state) : cardStep(state, photo)
   const first = step === 'look'
   const last = step === 'card'
   const go = last ? `<button class="en-go" type="button" data-act="enrol-enter">${draft.edit ? 'Save changes' : 'Enter campus ›'}</button>`

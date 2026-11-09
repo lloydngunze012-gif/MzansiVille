@@ -41,7 +41,7 @@ test('bodies at the cafeteria: seated on chairs, the queue a line', async ({ pag
   await side(page, 'naledi', 'caf-naledi-seated')
   await side(page, 'luke', 'caf-luke-seated')
   await side(page, 'priya', 'caf-queue', 5, 1.6)
-  await side(page, 'auntie_pinky', 'caf-auntie')
+  await side(page, 'mama_liz', 'caf-auntie')
 })
 
 test('bodies at the Quad: benches, the stall queue, walkers', async ({ page }) => {
@@ -50,17 +50,17 @@ test('bodies at the Quad: benches, the stall queue, walkers', async ({ page }) =
   const ppl = await page.evaluate(() => window.mzansiPeople())
   const sitter = ppl.find((p) => p.pose === 'sit')
   if (sitter) await side(page, sitter.id, 'quad-bench-sitter')
-  await side(page, 'kea', 'quad-stall-queue', 5, 1.6)
+  await side(page, 'kayla', 'quad-stall-queue', 5, 1.6)
   await side(page, 'lethabo', 'quad-performer')
   await side(page, 'x0', 'quad-walker-x0')
   await side(page, 'x3', 'quad-walker-x3')
-  await side(page, 'amahle', 'quad-crush')
+  await side(page, 'mia', 'quad-crush')
 })
 
 test('queues are lines: straight, evenly spaced, and they move', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   await campus(page, 'cafeteria', '') // normal speed: read the line before it first moves
-  const pos = () => page.evaluate(() => ['thandi', 'jordan', 'priya', 'noah'].map((id) => window.mzansiPersonPos(id)))
+  const pos = () => page.evaluate(() => ['chloe', 'jordan', 'priya', 'noah'].map((id) => window.mzansiPersonPos(id)))
   const a = await pos()
   // One straight line (same x), evenly spaced (about 0.95 m).
   for (const p of a) expect(Math.abs(p.x - a[0].x)).toBeLessThan(0.05)

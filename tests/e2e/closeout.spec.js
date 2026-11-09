@@ -163,8 +163,8 @@ test('K3 natural legs: knees ahead, feet straight, walking, standing, sitting an
   await page.evaluate(() => window.mzansiSteer(0, 0))
   await page.waitForTimeout(2500)
   await page.screenshot({ path: `${OUT}/K3-1-standing.png` })
-  // Sit down at the caf and get up (queue at Auntie Pinky, sit and eat).
-  await page.evaluate(() => window.mzansiTalkTo('auntie_pinky'))
+  // Sit down at the caf and get up (queue at Mama Liz, sit and eat).
+  await page.evaluate(() => window.mzansiTalkTo('mama_liz'))
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 150000 })
   await expect(card).toHaveAttribute('data-phase', 'menu', { timeout: 150000 })

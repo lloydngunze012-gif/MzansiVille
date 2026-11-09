@@ -38,6 +38,14 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   await page.screenshot({ path: `${OUT}/1-look.png` })
   await tap(page.locator('[data-act="enrol-next"]'))
 
+  // 1b. Where are you from? (South Africa is pre-selected) and 1c. your roommate (the default is pre-selected).
+  await expect(page.locator('.en[data-step="country"]')).toBeVisible()
+  await expect(page.locator('[data-k="country"][aria-pressed="true"]')).toHaveText('South Africa')
+  await tap(page.locator('[data-act="enrol-next"]'))
+  await expect(page.locator('.en[data-step="roommate"]')).toBeVisible()
+  await expect(page.locator('.en-roomie[aria-pressed="true"]')).toHaveCount(1)
+  await tap(page.locator('[data-act="enrol-next"]'))
+
   // 2. Who you are: Next without a name says so; then name, house, where from.
   await expect(page.locator('.en[data-step="who"]')).toBeVisible()
   await tap(page.locator('[data-act="enrol-next"]'))
@@ -48,7 +56,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   await page.screenshot({ path: `${OUT}/2-who.png` })
   // Back keeps what you chose.
   await tap(page.locator('[data-act="enrol-back"]'))
-  await expect(page.locator('.en[data-step="look"]')).toBeVisible()
+  await expect(page.locator('.en[data-step="roommate"]')).toBeVisible()
   await tap(page.locator('[data-act="enrol-next"]'))
   await expect(page.locator('#name')).toHaveValue('Thandeka')
   const house = await page.locator('[data-house-pick][aria-pressed="true"] b').textContent()
@@ -103,7 +111,7 @@ test('Skip all the way: a valid student anyway', async ({ page }) => {
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0#/new')
-  for (const step of ['look', 'who', 'vibe']) {
+  for (const step of ['look', 'country', 'roommate', 'who', 'vibe']) {
     await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible()
     await page.locator('[data-act="enrol-skip"]').tap()
   }
@@ -120,7 +128,7 @@ test('Start over from the start screen: confirm, then a fresh enrolment', async 
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0&fresh=1#/new')
-  for (const step of ['look', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
+  for (const step of ['look', 'country', 'roommate', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
   await page.locator('[data-act="enrol-enter"]').tap()
   await page.waitForURL(/#\/(play|morning)/)
   await page.goto('/?morning=0&t=2#/')
@@ -144,7 +152,7 @@ test('@handle: follows your name, rules (official, too short), three suggestions
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0&h=1#/new')
-  await page.locator('[data-act="enrol-next"]').tap()
+  for (let i = 0; i < 3; i++) await page.locator('[data-act="enrol-next"]').tap()
   await page.locator('#name').fill('Thandeka Mokoena')
   const auto = await page.locator('#handle').inputValue()
   await page.locator('[data-house-pick]').first().tap()

@@ -470,7 +470,7 @@ export function createRun(district, character, now = new Date()) {
       handle: (character.handle || '').replace(/^@/, ''),
       districtId: meta.id,
       // Creator part 2: your story (funding, hometown, who you were, who you want to be, the dream, interest).
-      ...Object.fromEntries(['funding', 'hometown', 'past', 'path', 'dream', 'interest', 'bio', 'vibe', 'looking', 'from', 'handleChangedAt'].filter((k) => character[k]).map((k) => [k, character[k]])),
+      ...Object.fromEntries(['funding', 'hometown', 'past', 'path', 'dream', 'interest', 'bio', 'vibe', 'looking', 'from', 'country', 'roommate', 'handleChangedAt'].filter((k) => character[k]).map((k) => [k, character[k]])),
     },
     stats: { ...meta.start, money: meta.start.money + (FUNDING_MONEY[character.funding] || 0) },
     energyCap: 100,

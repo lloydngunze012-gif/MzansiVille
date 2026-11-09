@@ -150,11 +150,11 @@ test('A4: "Swap numbers": the contact appears in your phone', async ({ page }) =
   await shot(page, 'A4-2')
 })
 
-test('A5: tap Auntie Pinky from outside the line: back of the line, front, order, pay, sit and eat', async ({ page }) => {
+test('A5: tap Mama Liz from outside the line: back of the line, front, order, pay, sit and eat', async ({ page }) => {
   await student(page)
   await world(page, 'spawn=cafeteria&a=5')
   const money = (await runOf(page)).stats.money
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'queueOrder', { timeout: 10000 })
   await expect(page.locator('.act-say')).toContainText('Back of the line, baby!')
   await page.waitForTimeout(FAST ? 300 : 2500)

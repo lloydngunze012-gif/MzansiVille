@@ -23,6 +23,7 @@ import { themePicker } from '../theme.js'
 import './creator.css'
 import { venueFor } from '../venues.js'
 import { MENUS } from '../menus.js'
+import { flagOf } from '../from.js'
 import { talkActions } from '../engine/talkactions.js'
 import { fridgeName, itemOf } from '../engine/grocer.js'
 
@@ -665,7 +666,7 @@ function talkCard(run) {
   const close = t.res ? t.res.close : chat.close
   const level = t.res ? t.res.level : chat.level
   const head = `<div class="g-talk-head"><span class="g-talk-ic">${esc(chat.name.replace(/^Mam' /, '').slice(0, 1))}</span>
-    <div><h2>${esc(chat.name)}</h2><small>${esc(chat.role)}${chat.met || t.res ? '' : ' \u00b7 first meeting'}</small></div>
+    <div><h2>${esc(chat.name)}${chat.country ? ` <span class="g-talk-flag" title="${esc(chat.country)}">${flagOf(chat.country)}</span>` : ''}</h2><small>${esc(chat.role)}${chat.met || t.res ? '' : ' \u00b7 first meeting'}</small></div>
     <span class="g-talk-level">${esc(level)}<i style="width:${Math.max(4, close)}%"></i></span></div>`
   const acts = talkActions(run, t.id)
   const actRow = acts.length ? `<div class="g-talk-acts">${acts.map((a) => `<button type="button" class="g-talk-act" data-act="talk-act" data-kind="${a.kind}"><b>${esc(a.label)}</b><small>${esc(a.note)}</small></button>`).join('')}</div>` : ''

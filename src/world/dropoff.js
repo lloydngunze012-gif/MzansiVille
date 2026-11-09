@@ -11,7 +11,7 @@ import { loop as soundLoop } from '../audio.js'
 
 const AUTO_TALK = typeof location !== 'undefined' && new URLSearchParams(location.search).get('talk') === 'auto'
 
-// ctx: { scene, host, player, run, gate: {x, minZ, maxZ}, door: {x, z}, house, roommate, onUpdate, onDone }
+// ctx: { scene, host, player, run, gate: {x, minZ, maxZ}, door: {x, z}, house, roommate (name), roommateLook, welcome (a country line, or ''), onUpdate, onDone }
 export function startDropOff(ctx) {
   const { scene, host, player, run } = ctx
   const style = HOMES.styles[run.dropOff?.style] || HOMES.styles[HOMES.default]
@@ -262,10 +262,7 @@ export function startDropOff(ctx) {
     walkBtn.hidden = true
     if (suitcase) { player.remove(suitcase); suitcase = null }
     host.dataset.suitcase = '0'
-    const look = ctx.roommate === 'Sipho'
-      ? { model: 'male-a', skin: 'brown', outfit: 'jacket', topColor: '#1d7fb8', bottomColor: '#3a2f4f' }
-      : { model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' }
-    roommate = createAvatar(look)
+    roommate = createAvatar(ctx.roommateLook)
     roommate.name = 'roommate-door'
     roommate.userData.pose = 'stand'
     roommate.position.set(ctx.door.x + 1.1, 0, ctx.door.z - 0.2)
@@ -274,6 +271,8 @@ export function startDropOff(ctx) {
     scene.add(roommate)
     people.push(roommate)
     await line(ctx.roommate, `You must be my roommate! I'm ${ctx.roommate}. Welcome to ${ctx.house}. Drop your bags, we'll unpack later. You've got a 9:00 lecture!`, [`\u{1F44B} Hi, ${ctx.roommate}!`])
+    // A player from abroad gets one welcome about it (data/campusville/countries.json).
+    if (ctx.welcome) await line(ctx.roommate, ctx.welcome, ['\u{1F60A} Thanks!'])
     closeCard()
     say('done')
     ctx.onDone()

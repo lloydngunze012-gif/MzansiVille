@@ -32,11 +32,6 @@ export function genderOf(avatar = {}) {
   return avatar.hair === 'braids' || avatar.hair === 'curls' ? 'female' : 'male'
 }
 
-// The day 1 roommate shares the student's gender (res rooms are single-gender).
-export function roommateOf(avatar = {}) {
-  return genderOf(avatar) === 'male' ? 'Sipho' : 'Zanele'
-}
-
 export const bodies = [
   { id: 'regular', label: 'Regular' },
   { id: 'curvy', label: 'Curvy' },

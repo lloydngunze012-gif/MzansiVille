@@ -80,11 +80,11 @@ test('day 2 res morning: room to campus', async ({ page }) => {
   await expect(page).toHaveURL(/#\/morning/)
   await expect(page.locator('.g-goal')).toContainText('Get to your 9:00 lecture on time.')
   await expect(page.locator('.g-goal')).toContainText('min left')
-  // Zanele greets and waves, with her name on the bubble.
+  // Anisha greets and waves, with her name on the bubble.
   await expect(host).toHaveAttribute('data-wave', '1', { timeout: 20000 })
-  await expect(page.locator('.mm-bubble .mm-name')).toHaveText('Zanele')
+  await expect(page.locator('.mm-bubble .mm-name')).toHaveText('Anisha')
   await expect(host).toHaveAttribute('data-roommate', '1')
-  await shot('1a_zanele_wave')
+  await shot('1a_roommate_wave')
   // ?snooze=1: one snooze, the clock rolls 07:00 -> 07:10.
   await expect(host).toHaveAttribute('data-rolled', '07:10', { timeout: 20000 })
   await shot('1_room_wake')
@@ -136,10 +136,10 @@ test('day 2 res morning: room to campus', async ({ page }) => {
   // (enrolment has no story step since 6 Nov: the defaults)
   expect(run.character).toMatchObject({ funding: 'nsfas', path: 'scholar', dream: 'deans', interest: 'everyone' })
   expect(run.outDoor).toBe(true) // (campus starts at your house's door)
-  // The clock keeps the arrival time, and Zanele (met in the room) is the bestie with no repeat card.
+  // The clock keeps the arrival time, and Anisha (met in the room) is the bestie with no repeat card.
   const hhmm = `${String(Math.floor(run.minutes / 60)).padStart(2, '0')}:${String(run.minutes % 60).padStart(2, '0')}`
   expect(hhmm).toBe(arrived)
-  expect(run.bestieName).toBe('Zanele')
+  expect(run.bestieName).toBe('Anisha')
   expect(run.queue.some((card) => card.kind === 'bestie')).toBe(false)
   await expect(page.locator('[data-spawn="door"]')).toBeAttached({ timeout: 20000 })
   // Other students: 10-15 on campus, some of them walking between buildings.
@@ -185,9 +185,9 @@ test.skip('day 1 morning: forced late bus is Running late (no bus on day 1 since
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 40000 })
   const tapGo = () => page.locator('.mm-bar:not([hidden]) .mm-go').first().tap()
-  // A male student rooms with Sipho, not Zanele.
+  // A male student rooms with Ravi, not Anisha.
   await newGame(page, '?roommate=0&latebus=1&snooze=0&talk=auto&route=walk&meet=funny&seat=back', 'male')
-  await expect(host).toHaveAttribute('data-roomie', 'Sipho', { timeout: 20000 })
+  await expect(host).toHaveAttribute('data-roomie', 'Ravi', { timeout: 20000 })
   await atStep('kettle')
   await expect(host).toHaveAttribute('data-latebus', '1')
   await tapGo()
@@ -212,8 +212,8 @@ test.skip('day 1 morning: forced late bus is Running late (no bus on day 1 since
   await expect(page).toHaveURL(/#\/play/)
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.character.avatar.gender).toBe('male')
-  expect(run.bestieName).toBe('Sipho')
-  expect(run.crush).toMatchObject({ id: 'amahle', opener: 'funny', nameKnown: false, sat: false })
+  expect(run.bestieName).toBe('Ravi')
+  expect(run.crush).toMatchObject({ id: 'mia', opener: 'funny', nameKnown: false, sat: false })
   expect(errors).toEqual([])
 })
 
@@ -231,13 +231,13 @@ async function cardOnTop(page) {
   expect(top, 'the Continue button is on top').toBe(true)
 }
 
-test('the res morning to the end without a caf breakfast (Sipho, out hungry)', async ({ page }) => {
+test('the res morning to the end without a caf breakfast (Ravi, out hungry)', async ({ page }) => {
   test.setTimeout(240000)
   const host = page.locator('#morning3d')
   const atStep = (s) => expect(host).toHaveAttribute('data-step', s, { timeout: 45000 })
   await newGame(page, '?roommate=1&latebus=0&snooze=0&talk=auto', 'male')
-  await expect(page.locator('.mm-bubble')).toContainText('Sipho', { timeout: 30000 })
-  await expect(page.locator('.mm-bubble')).not.toContainText('Zanele')
+  await expect(page.locator('.mm-bubble')).toContainText('Ravi', { timeout: 30000 })
+  await expect(page.locator('.mm-bubble')).not.toContainText('Anisha')
   await atStep('kettle')
   const options = page.locator('.mm-choice')
   await expect(options).toHaveCount(4)
@@ -253,7 +253,7 @@ test('the res morning to the end without a caf breakfast (Sipho, out hungry)', a
   await expect(page).toHaveURL(/#\/play/)
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.morningDone).toBe(true)
-  expect(run.bestieName).toBe('Sipho')
+  expect(run.bestieName).toBe('Ravi')
 })
 
 test('the res morning to the end with a caf breakfast', async ({ page }) => {

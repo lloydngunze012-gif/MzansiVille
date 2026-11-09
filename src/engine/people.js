@@ -1,12 +1,16 @@
 // Talking to people: who they are, what they say this time, and what a reply does.
 // Memory lives on the run: run.people[id] = { chats, close, mood, last }.
-// Ids are named people ("zanele") or extra students ("x3", from extra_names).
+// Ids are named people ("chloe"), the eight roommates ("zoe", "ethan"...) or extra students ("x3", from extra_names).
 import DATA from '../../data/campusville/people.json'
 import { CRUSHES } from '../crush.js'
 import { crushChat, crushReply } from './crush-arc.js'
 import { identityTitle } from './identity.js'
+import { roommateById } from '../roommates.js'
 
 export function personInfo(id) {
+  // (the roommates share two scripts, one for the women's res and one for the men's: roommate_chats)
+  const room = roommateById(id)
+  if (room) return { id, name: room.name, gender: room.gender, ...DATA.roommate_chats[room.gender] }
   if (DATA.people[id]) return { id, ...DATA.people[id] }
   if (CRUSHES[id]) return { id, name: CRUSHES[id].name, gender: CRUSHES[id].gender, role: 'Second year', bio: 'Takes the 8:20. Judges the timetable.', chats: [] }
   const m = /^x(\d+)$/.exec(id || '')
@@ -55,6 +59,7 @@ export function chatFor(run, id) {
     name: info.name,
     role: info.role,
     bio: info.bio,
+    country: info.country || '', // (the international students: a flag by the name)
     met: mem.chats > 0,
     close: mem.close,
     level: levelOf(mem.close),

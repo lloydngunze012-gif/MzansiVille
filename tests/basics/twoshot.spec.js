@@ -49,7 +49,7 @@ test('T1 conversation two-shot in Top, Sims and Eye: eases in, heads in frame, e
         const p = window.mzansiPlayerPos()
         const open = (s) => s.x > 30 && s.x < 382 && s.y > 170 && s.y < 760 && !(s.x > 290 && s.y < 260)
         return window.mzansiPeople()
-          .filter((o) => !skip.includes(o.id) && !['auntie_pinky', 'mam_gugu'].includes(o.id))
+          .filter((o) => !skip.includes(o.id) && !['mama_liz', 'mam_gugu'].includes(o.id))
           .map((o) => ({ ...o, s: window.mzansiPersonOnScreen(o.id), d: Math.hypot(o.x - p.x, o.z - p.z) }))
           .filter((o) => o.s && !o.s.behind && open(o.s) && o.d < 14)
           .sort((a, b) => a.d - b.d)[0] || null

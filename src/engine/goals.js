@@ -29,7 +29,7 @@ export function dreamProgress(run) {
   }
 }
 
-const SRC_PEOPLE = ['bongani', 'lindiwe', 'ruan']
+const SRC_PEOPLE = ['bongani', 'leah', 'ruan']
 function srcTalks(run) {
   return SRC_PEOPLE.reduce((n, id) => n + (run.people?.[id]?.chats || 0), 0)
 }

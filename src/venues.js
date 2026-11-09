@@ -27,7 +27,7 @@ export const VENUES = {
     sitin: 'law_sitin',
   },
   science: {
-    id: 'science', name: 'Science', subject: 'Chemistry 101', lecturer: 'dr_mahlangu', lecturerName: 'Dr Mahlangu',
+    id: 'science', name: 'Science', subject: 'Chemistry 101', lecturer: 'dr_adams', lecturerName: 'Dr Adams',
     wall: 0xe8f1f2, side: 0xc9dde0, accent: 0x1d6f7b, prop: 'flasks',
     sitin: 'sci_sitin',
   },

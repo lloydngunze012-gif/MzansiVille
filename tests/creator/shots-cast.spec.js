@@ -1,4 +1,4 @@
-// The cast's hair colours on campus (Mam' Gugu purple, Auntie Pinky pink, Zanele yellow) with the new
+// The cast's hair colours on campus (Mam' Gugu purple, Mama Liz pink, Zoe yellow) with the new
 // hair shading, as the game's own camera sees them. Screenshots: docs/sprints/creator-studio/ (not committed).
 import { test } from '@playwright/test'
 import { PHONE, student } from '../basics/touch.js'
@@ -6,7 +6,7 @@ import { PHONE, student } from '../basics/touch.js'
 const OUT = 'docs/sprints/creator-studio'
 test.use(PHONE)
 test.setTimeout(400000)
-for (const [spawn, shot, who] of [['quad', 'cast-quad', 'mam_gugu'], ['cafeteria', 'cast-cafeteria', 'auntie_pinky'], ['quad', 'cast-quad-zanele', 'zanele']]) {
+for (const [spawn, shot, who] of [['quad', 'cast-quad', 'mam_gugu'], ['cafeteria', 'cast-cafeteria', 'mama_liz'], ['quad', 'cast-quad-zoe', 'zoe']]) {
   test(`${shot}`, async ({ page }) => {
     await student(page, { spawn })
     // walk up to her (Top view: tap where she stands), then the game's closer cameras

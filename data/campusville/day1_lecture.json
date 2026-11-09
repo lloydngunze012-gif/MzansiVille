@@ -1,7 +1,7 @@
 {
   "_keys": {
     "note": "Day 1, 9:00 lecture slice. Written by Content Writer. Same voice as day1_morning.json. UMzansi only, no real institution branding. Every line is kept under about 90 characters for phone screens.",
-    "who": "Who speaks: player, zanele, lecturer, student, auntie, narrator.",
+    "who": "Who speaks: player, roommate, lecturer, student, auntie, narrator.",
     "caption": "Narration line shown while something moves on screen.",
     "move": "The on-screen motion cue for that tap, so no tap is only a bar and numbers.",
     "variants": "on_time and late versions of the same beat. Pick by whether the player arrived by 09:00.",
@@ -47,7 +47,7 @@
         "label": "Front row",
         "note": "+Grades \u00b7 \u2212Social",
         "line": "Front row. Nobody is brave enough to sit near the lecturer's gaze.",
-        "zanele": { "who": "zanele", "text": "Front row? You are insane. I respect it." },
+        "roommate": { "who": "roommate", "text": "Front row? You are insane. I respect it." },
         "deltas": { "grades": 2, "social": -2 },
         "available_late": false
       },
@@ -56,30 +56,30 @@
         "label": "Back corner",
         "note": "+Energy \u00b7 \u2212Grades",
         "line": "Back corner. Good view of everyone else's mistakes.",
-        "zanele": { "who": "zanele", "text": "Back corner. A classic. I will visit." },
+        "roommate": { "who": "roommate", "text": "Back corner. A classic. I will visit." },
         "deltas": { "energy": 3, "grades": -2, "social": 2 },
         "available_late": true
       },
       {
-        "id": "zanele",
-        "label": "Next to Zanele",
+        "id": "roommate",
+        "label": "Next to {roommate}",
         "note": "+Social",
-        "line": "Zanele pats the seat beside her like she owns it. She might.",
-        "zanele": { "who": "zanele", "text": "I saved you a seat. And one biscuit. Do not tell." },
+        "line": "{roommate} pats the seat beside her like she owns it. She might.",
+        "roommate": { "who": "roommate", "text": "I saved you a seat. And one biscuit. Do not tell." },
         "deltas": { "social": 4 },
         "available_late": true
       }
     ]
   },
-  "zanele_lines": [
-    { "when": "seat", "who": "zanele", "text": "Sit, sit. We only have forty minutes of shame left." },
-    { "when": "seat_late", "who": "zanele", "text": "You were so slow. I almost told them you moved to Joburg." },
-    { "when": "moment", "who": "zanele", "text": "Did you see that? Tell me you saw that." },
-    { "when": "good", "who": "zanele", "text": "You are a genius. I will say it exactly once." },
-    { "when": "neutral", "who": "zanele", "text": "Fine. We live to fight another lecture." },
-    { "when": "bad", "who": "zanele", "text": "Ooh. That was bold. Slightly stupid, but bold." },
-    { "when": "end", "who": "zanele", "text": "Tuck shop? My treat. And you owe me a story." },
-    { "when": "end_alone", "who": "zanele", "text": "Text me from the back. I want a full report." }
+  "roommate_lines": [
+    { "when": "seat", "who": "roommate", "text": "Sit, sit. We only have forty minutes of shame left." },
+    { "when": "seat_late", "who": "roommate", "text": "You were so slow. I almost told them you moved to Joburg." },
+    { "when": "moment", "who": "roommate", "text": "Did you see that? Tell me you saw that." },
+    { "when": "good", "who": "roommate", "text": "You are a genius. I will say it exactly once." },
+    { "when": "neutral", "who": "roommate", "text": "Fine. We live to fight another lecture." },
+    { "when": "bad", "who": "roommate", "text": "Ooh. That was bold. Slightly stupid, but bold." },
+    { "when": "end", "who": "roommate", "text": "Tuck shop? My treat. And you owe me a story." },
+    { "when": "end_alone", "who": "roommate", "text": "Text me from the back. I want a full report." }
   ],
   "moments": [
     {
@@ -227,13 +227,13 @@
     "Chalk dust drifts in the light.",
     "A cough echoes. Somebody sniggers."
   ],
-  "sipho": {
-    "note": "Sipho replaces Zanele in the lecture for a male student. Same keys as zanele_lines and the zanele seat.",
+  "men": {
+    "note": "For a male roommate (Ethan, Marcus, Ryan, Ravi): replaces roommate_lines and the roommate seat. Same keys. {roommate} is the roommate's name.",
     "seat": {
-      "label": "Next to Sipho",
-      "line": "Sipho clears his bag off a seat and nods like it was always yours.",
-      "zanele": {
-        "who": "zanele",
+      "label": "Next to {roommate}",
+      "line": "{roommate} clears his bag off a seat and nods like it was always yours.",
+      "roommate": {
+        "who": "roommate",
         "text": "Saved you a spot. Charged you nothing. You’re welcome."
       }
     },

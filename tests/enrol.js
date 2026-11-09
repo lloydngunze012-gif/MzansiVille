@@ -1,10 +1,18 @@
-// Enrolment, tapped through like a player (src/ui/enrol.js): look -> who you are -> your
-// vibe -> your card -> Enter campus. Shared by every test that needs a new student.
+// Enrolment, tapped through like a player (src/ui/enrol.js): look -> where you are from -> your
+// roommate -> who you are -> your vibe -> your card -> Enter campus. Shared by every test that needs a new student.
 // t: a page or a frame. house: 1-based, in houses.json order (the old house list's
 // index); course: 1-based index into the course list, or a course name.
-export async function enrolUI(t, { name = 'Thandi', house = 1, course = 1, gender, bio, vibe, looking, from } = {}) {
+export async function enrolUI(t, { name = 'Thandi', house = 1, course = 1, gender, bio, vibe, looking, from, country, roommate, skin } = {}) {
   await t.locator('.en[data-step="look"]').waitFor({ timeout: 30000 })
   if (gender) await t.locator(`[data-gender="${gender}"]`).first().tap()
+  if (skin) await t.locator(`[data-act="avatar"][data-part="skin"][data-id="${skin}"]`).tap()
+  await t.locator('[data-act="enrol-next"]').tap()
+  // (where are you from: South Africa is pre-selected; then your roommate: the default is pre-selected)
+  await t.locator('.en[data-step="country"]').waitFor()
+  if (country) await t.locator(`[data-k="country"][data-v="${country}"]`).tap()
+  await t.locator('[data-act="enrol-next"]').tap()
+  await t.locator('.en[data-step="roommate"]').waitFor()
+  if (roommate) await t.locator(`[data-roommate="${roommate}"]`).tap()
   await t.locator('[data-act="enrol-next"]').tap()
   await t.locator('.en[data-step="who"] #name').fill(name)
   await t.locator('[data-house-pick]').nth(Math.max(0, (house || 1) - 1)).tap()

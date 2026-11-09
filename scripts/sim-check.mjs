@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { migrateCast } from '../src/cast-ids.js'
 import { filterText, cleanBio, canSend } from '../src/engine/filter.js'
 import { rankRows, sampleBoard } from '../src/engine/social-data.js'
 import { canonicalHouse, registerHouses } from '../src/houses.js'
@@ -107,7 +108,7 @@ check('every action in activities.csv plays a visible scene (no blank progress b
 
 check('goal ladder: three day goals (must, story, dream), a right-now nudge, the dream bar', () => {
   const run = createRun(district, { ...character, dream: 'hustle' })
-  run.crush = { met: 'bus', nameKnown: false, name: 'Amahle', closeness: 0 }
+  run.crush = { met: 'bus', nameKnown: false, name: 'Mia', closeness: 0 }
   startGoals(run)
   assert.deepEqual(run.goals.list.map((g) => g.kind), ['must', 'story', 'dream'])
   assert.deepEqual(run.goals.list.map((g) => g.id), ['lecture1', 'crushName', 'earn50'])
@@ -136,7 +137,7 @@ check('goal ladder: three day goals (must, story, dream), a right-now nudge, the
 
 check('crush arc: a beat a day at the Quad; replies set what later days remember', () => {
   const run = createRun(district, { ...character, interest: 'girls' })
-  run.crush = { id: 'amahle', name: 'Amahle', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: true }
+  run.crush = { id: 'mia', name: 'Mia', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: true }
   run.lectureResolved = true
   assert.match(rightNow(run).text, /from the bus is at the Quad/)
   const d1 = crushChat(run)
@@ -172,7 +173,7 @@ check('identity: New kid, then Becoming, then Known as, from what you do', () =>
 
 check('day summary: goals done and missed, then a cliffhanger text that opens tomorrow', () => {
   const run = createRun(district, character)
-  run.crush = { id: 'amahle', name: 'Amahle', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'bus', sat: true }
+  run.crush = { id: 'mia', name: 'Mia', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'bus', sat: true }
   startGoals(run)
   endDay(district, run, { slept: true })
   assert.equal(run.mode, 'summary')
@@ -232,7 +233,7 @@ check('storylines: roommate, rival, money, lecturer, SRC and home beats; two or 
   // With the crush beat every day 1-5, each day moves at least two arcs.
   for (let day = 1; day <= 5; day++) assert.ok(BEATS.filter((b) => b.day === day).length >= 1, `day ${day}`)
   const run = createRun(district, { ...character, funding: 'nsfas' })
-  run.bestieName = 'Zanele'
+  run.bestieName = 'Zoe'
   run.day = 3
   run.phase = 'leisure'
   const card = rollMoment(run, () => 0.99)
@@ -243,7 +244,7 @@ check('storylines: roommate, rival, money, lecturer, SRC and home beats; two or 
   chooseMoment(run, lend.id, 0)
   assert.equal(run.stats.money, money - 100)
   assert.equal(run.arcs.owed, 100)
-  assert.ok(run.people.zanele.close >= 6)
+  assert.ok(run.people.zoe.close >= 6)
   // The money beat reads your funding.
   const nsfasDay = createRun(district, { ...character, funding: 'nsfas' })
   nsfasDay.day = 2
@@ -260,7 +261,7 @@ check('the week: day themes, and the Friday test mark comes from the choices you
   worked.weekStudied = 3
   worked.prep = 8
   worked.arcs = { lecturer: 'impressed', rival: 'friend', owed: 100 }
-  worked.crush = { studyDate: true, nameKnown: true, name: 'Amahle' }
+  worked.crush = { studyDate: true, nameKnown: true, name: 'Mia' }
   const money = worked.stats.money
   const a = fridayTest(lazy)
   const b = fridayTest(worked)
@@ -929,6 +930,78 @@ check('every NPC spawn list has at least 3 different skin tones (docs/cast.md)',
   assert.ok(tones([...src('src/world/cast.js').matchAll(/skin: '(\w+)'/g)].map((m) => m[1])) >= 3, 'named cast (src/world/cast.js)')
   for (const f of ['src/world/lecture.js', 'src/world/home.js', 'src/world/cast.js']) {
     assert.ok(!/skin: \[|SKINS\s*=/.test(src(f)), `${f} has its own skin list: use skinmix.js`)
+  }
+})
+
+// CAST, ROOMMATES AND HOME COUNTRY (owner, 9 Nov; docs/cast.md)
+check('the cast was renamed: no old name or id is left in data/ or src/ (except the save mapping)', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const files = []
+  const walk = (dir) => {
+    for (const e of readdirSync(join(root, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${e.name}`
+      if (e.isDirectory()) walk(rel)
+      else if (/\.(js|json|css|csv|mjs)$/.test(e.name)) files.push(rel)
+    }
+  }
+  walk('src'); walk('data')
+  const old = /\b(zanele|sipho|auntie_pinky|dr_mahlangu|Auntie Pinky|Dr Mahlangu|Zanele|Sipho|Kabelo|Amahle|Lindiwe)\b|['"](kea|thandi|lindiwe|amahle|kabelo)['"]/
+  const hits = []
+  for (const f of files) {
+    if (f === 'src/cast-ids.js') continue
+    readFileSync(join(root, f), 'utf8').split('\n').forEach((line, i) => { if (old.test(line)) hits.push(`${f}:${i + 1}: ${line.trim().slice(0, 80)}`) })
+  }
+  assert.deepEqual(hits, [])
+})
+
+check('old saves: the renamed people, contacts, crush and roommate move to the new ids', () => {
+  const run = {
+    bestieName: 'Zanele',
+    character: { name: 'A', avatar: { gender: 'female' } },
+    people: { zanele: { chats: 2, close: 18 }, kea: { chats: 1, close: 5 }, naledi: { chats: 1, close: 4 }, auntie_pinky: { chats: 3, close: 9 } },
+    contacts: [{ id: 'lindiwe', name: 'Lindiwe', day: 2 }, { id: 'naledi', name: 'Naledi', day: 1 }],
+    crush: { id: 'amahle', name: 'Amahle', romance: true },
+  }
+  assert.equal(migrateCast(run), true)
+  assert.deepEqual(Object.keys(run.people).sort(), ['kayla', 'mama_liz', 'naledi', 'zoe'])
+  assert.equal(run.people.zoe.close, 18)
+  assert.deepEqual(run.contacts.map((c) => [c.id, c.name]), [['leah', 'Leah'], ['naledi', 'Naledi']])
+  assert.deepEqual([run.crush.id, run.crush.name], ['mia', 'Mia'])
+  assert.equal(run.bestieName, 'Zoe')
+  assert.equal(run.character.roommate, 'zoe', 'Zanele stays the roommate as Zoe')
+  assert.equal(migrateCast(run), false, 'a second time changes nothing')
+  const man = { bestieName: 'Sipho', character: { avatar: { gender: 'male' } }, people: { sipho: { chats: 1, close: 3 } }, crush: { id: 'kabelo', name: 'Kabelo' } }
+  migrateCast(man)
+  assert.deepEqual([man.bestieName, man.character.roommate, Object.keys(man.people)[0], man.crush.id], ['Ethan', 'ethan', 'ethan', 'daniel'])
+})
+
+check('roommates: four women and four men, one skin each in the cast mix; lines work for all eight', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const room = JSON.parse(readFileSync(join(root, 'data/campusville/roommates.json'), 'utf8'))
+  assert.deepEqual(room.women.map((r) => r.name), ['Zoe', 'Megan', 'Jade', 'Anisha'])
+  assert.deepEqual(room.women.map((r) => r.skin), ['deep', 'fair', 'brown', 'amber'])
+  assert.deepEqual(room.men.map((r) => r.name), ['Ethan', 'Marcus', 'Ryan', 'Ravi'])
+  assert.deepEqual(room.men.map((r) => r.skin), ['fair', 'deep', 'brown', 'amber'])
+  for (const r of [...room.women, ...room.men]) assert.equal(r.id, r.name.toLowerCase())
+  // No name-specific jokes: a roommate's lines never contain a roommate's name.
+  const names = [...room.women, ...room.men].map((r) => r.name)
+  const people = JSON.parse(readFileSync(join(root, 'data/campusville/people.json'), 'utf8'))
+  const text = JSON.stringify(people.roommate_chats)
+  for (const n of names) assert.ok(!new RegExp(`\b${n}\b`).test(text), `roommate_chats mention ${n}`)
+  for (const f of ['day1_morning', 'day1_lecture']) {
+    const t = readFileSync(join(root, `data/campusville/${f}.json`), 'utf8')
+    for (const n of names) assert.ok(!new RegExp(`\b${n}\b`).test(t), `${f}.json names ${n}: use {roommate}`)
+  }
+})
+
+check('international students: David (Nigeria), Grace (Kenya), Tendai (Zimbabwe), 3-5 friendly lines each', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const people = JSON.parse(readFileSync(join(root, 'data/campusville/people.json'), 'utf8')).people
+  for (const [id, name, country] of [['david', 'David Okafor', 'Nigeria'], ['grace', 'Grace Wanjiru', 'Kenya'], ['tendai', 'Tendai Moyo', 'Zimbabwe']]) {
+    assert.equal(people[id].name, name)
+    assert.equal(people[id].country, country)
+    const lines = people[id].chats.flatMap((c) => c.line ? [c.line] : c.lines ? c.lines : [c.warm, c.cold])
+    assert.ok(lines.length >= 3 && lines.length <= 10, `${id} has ${lines.length} lines`)
   }
 })
 

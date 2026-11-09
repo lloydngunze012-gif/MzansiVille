@@ -77,17 +77,17 @@ test('talk to Mam Gugu, an SRC campaigner and the roommate; they remember you', 
   await page.screenshot({ path: `${OUT}/0-quad-tags.png` })
   const social0 = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.social)
 
-  // (Mam' Gugu serves the queue now: tapping her sends you to the line; Kea, waiting in it, chats)
-  const first = await chat(page, 'kea', '1-gugu', 0, 'stall')
-  const second = await chat(page, 'kea', '2-gugu-again', 2) // (his first two replies start doing something together)
+  // (Mam' Gugu serves the queue now: tapping her sends you to the line; Kayla, waiting in it, chats)
+  const first = await chat(page, 'kayla', '1-gugu', 0, 'stall')
+  const second = await chat(page, 'kayla', '2-gugu-again', 2) // (his first two replies start doing something together)
   expect(second).not.toBe(first) // he remembers you
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
-  expect(run.people.kea.chats).toBe(2)
-  expect(run.people.kea.close).toBeGreaterThan(0)
+  expect(run.people.kayla.chats).toBe(2)
+  expect(run.people.kayla.close).toBeGreaterThan(0)
   expect(run.stats.social).toBeGreaterThan(social0)
 
-  await chat(page, 'lindiwe', '3-src', 0, 'src')
-  await chat(page, 'zanele', '4-roommate', 1, 'benches') // (reply 0 walks off together)
+  await chat(page, 'leah', '3-src', 0, 'src')
+  await chat(page, 'anisha', '4-roommate', 1, 'benches') // (reply 0 walks off together)
   expect(errors).toEqual([])
 })
 
@@ -98,16 +98,16 @@ test('the one from the bus is at the Quad: their tag is ? until you ask their na
   await newGame(page)
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
-    save.run.crush = { id: 'amahle', name: 'Amahle', gender: 'female', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: false }
+    save.run.crush = { id: 'mia', name: 'Mia', gender: 'female', romance: true, met: 'bus', nameKnown: false, closeness: 3, opener: 'funny', sat: false }
     save.run.lectureResolved = true
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
   await page.goto('/?fast=1&morning=0&spawn=quad#/play')
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
-  // Only your crush is at the Quad (Kabelo is not).
-  await expect.poll(async () => page.evaluate(() => Boolean(window.mzansiPersonOnScreen?.('amahle'))), { timeout: 20000 }).toBe(true)
-  expect(await page.evaluate(() => window.mzansiTalkTo('kabelo'))).toBe(false)
-  await page.evaluate(() => window.mzansiTalkTo('amahle'))
+  // Only your crush is at the Quad (Daniel is not).
+  await expect.poll(async () => page.evaluate(() => Boolean(window.mzansiPersonOnScreen?.('mia'))), { timeout: 20000 }).toBe(true)
+  expect(await page.evaluate(() => window.mzansiTalkTo('daniel'))).toBe(false)
+  await page.evaluate(() => window.mzansiTalkTo('mia'))
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 20000 })
   await expect(card.locator('h2')).toHaveText('Bus stop stranger')
@@ -115,7 +115,7 @@ test('the one from the bus is at the Quad: their tag is ? until you ask their na
   await page.waitForTimeout(1200)
   await page.screenshot({ path: `${OUT}/5-crush-line.png` })
   await card.locator('.g-talk-reply').first().tap()
-  await expect(card.locator('.g-talk-line')).toContainText('Amahle')
+  await expect(card.locator('.g-talk-line')).toContainText('Mia')
   await page.screenshot({ path: `${OUT}/5-crush-answer.png` })
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.crush.nameKnown).toBe(true)
@@ -151,7 +151,7 @@ test('day summary: goals, who you are becoming, the people, and a text on the ph
       earned: 120,
       bestieName: 'Zanele',
       people: { zanele: { chats: 2, close: 18 } },
-      crush: { id: 'amahle', name: 'Amahle', met: 'bus', nameKnown: false, closeness: 5, sat: true },
+      crush: { id: 'mia', name: 'Mia', met: 'bus', nameKnown: false, closeness: 5, sat: true },
       inbox: [{ ...text, day: 1, read: false }],
       summary: {
         day: 1, slept: true, stats: save.run.stats, text,
@@ -240,7 +240,7 @@ test('talking leads to doing: order a bunny chow, pick a size, pay, sit and eat'
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats)
   // Tapping her from outside the line: "Back of the line, baby!" and you join it.
-  await page.evaluate(() => window.mzansiTalkTo('auntie_pinky'))
+  await page.evaluate(() => window.mzansiTalkTo('mama_liz'))
   await expect(page.locator('#toast')).toContainText('Back of the line')
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'queueOrder', { timeout: 10000 })
   await page.waitForTimeout(1500)
@@ -297,6 +297,6 @@ test('talking leads to doing: a lecturer consultation and swapping numbers', asy
   await expect(page.locator('#world')).toHaveAttribute('data-activity-step', 'done', { timeout: 30000 })
   const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
   expect(run.contacts.map((c) => c.id)).toContain('naledi')
-  await page.goto('/?fast=1&morning=0&c=2#/profile')
+  await page.goto('/?fast=1&morning=0&c=2#/notices')
   await expect(page.locator('.phone-list')).toContainText('Naledi')
 })

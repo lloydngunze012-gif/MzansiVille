@@ -3,7 +3,8 @@
 // Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
 import { loop as soundLoop, sfx, water } from '../audio.js'
-import { genderOf, roommateOf } from '../avatar.js'
+import { genderOf } from '../avatar.js'
+import { roommateFor, roommateLook } from '../roommates.js'
 import { inTransition, createAvatar, gesture, layDown, markStandIn, poseAvatar } from './avatar3d.js'
 import LINES from '../../data/campusville/day1_morning.json'
 import { districtById } from '../districts/registry.js'
@@ -28,7 +29,9 @@ function busAfter(m, delay) {
 }
 const SNOOZE = 10
 const SNOOZE_MAX = 3
-let ROOMIE = 'Zanele'
+let ROOMIE = 'Zoe'
+let roomLook = null // the chosen roommate's look (roommates.json)
+let roomId = 'zoe'
 
 // Named spots in the morning scene (same names as world-designer's morning.json anchors), as 3D [x, z].
 export const ANCHORS = {
@@ -51,12 +54,12 @@ export function line(path, fallback, vars) {
   let text = path.split('.').reduce((node, key) => (node == null ? undefined : node[key]), LINES)
   if (text && typeof text === 'object' && typeof text.text === 'string') text = text.text
   if (typeof text !== 'string' || !text) text = fallback
-  // Sipho has his own lines; anything he has no line for falls back to the swap.
-  if (maleRoom && typeof LINES.sipho?.lines?.[path] === 'string') text = LINES.sipho.lines[path]
-  text = forGender(text).replace(/\{house\}/g, myHouse()?.name || 'Res')
+  // A male roommate has his own lines; anything he has no line for falls back to the swap.
+  if (maleRoom && typeof LINES.men?.lines?.[path] === 'string') text = LINES.men.lines[path]
+  text = forGender(text).replace(/\{roommate\}/g, ROOMIE).replace(/\{house\}/g, myHouse()?.name || 'Res')
   return vars ? text.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m)) : text
 }
-// The lines are written for Zanele and a female student; swap names and words
+// The lines are written for a female roommate ({roommate} is the name); swap the words
 // when the student (and so the roommate) is male.
 let maleRoom = false
 // The player's house (houses.json): its name in the lines, its colours on the door label.
@@ -74,7 +77,6 @@ function paintHouseLabel() {
 function forGender(text) {
   if (!maleRoom) return text
   return text
-    .replace(/Zanele/g, ROOMIE)
     .replace(/\bShe\b/g, 'He').replace(/\bshe\b/g, 'he')
     .replace(/\bherself\b/g, 'himself').replace(/\bher\b/g, 'his')
     .replace(/\bmy girl\b/g, 'my boy')
@@ -307,13 +309,11 @@ async function clockRoll(add) {
   await addMinutes(add, 0.9)
   node.innerHTML = `<span class="mm-roll"><b>${to}</b></span>`
 }
-// Zanele: red top, yellow headwrap. Sipho (for a male student): blue jacket.
-// The capsule arms and wrap are only the stand-in until the rigged model loads.
-function makeZanele() {
-  const z = createAvatar(maleRoom
-    ? { model: 'male-a', skin: 'brown', outfit: 'jacket', topColor: '#1d7fb8', bottomColor: '#3a2f4f' }
-    : { model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' })
-  z.name = maleRoom ? 'sipho' : 'zanele'
+// The roommate you chose (roommates.json). The capsule arms and wrap are only the stand-in until
+// the rigged model loads.
+function makeRoommate() {
+  const z = createAvatar(roomLook)
+  z.name = roomId
   const wrap = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0xf0c400, roughness: 0.7 }))
   wrap.position.y = 1.5
   wrap.scale.set(1, 1.25, 1)
@@ -659,7 +659,7 @@ function tick(now) {
   pinTo(uiq('.mm-float'), player.visible ? player : bus, 2.2)
   const b = uiq('.mm-bubble')
   pinTo(b, { roommate, crush: crushAv, bus }[b.dataset.who] || player, b.dataset.who === 'bus' ? 3.4 : 2.1)
-  // Zanele's name tag shows whenever she is in shot and not already talking.
+  // The roommate's name tag shows whenever they are in shot and not already talking.
   const tag = uiq('.mm-tag')
   v.set(roommate.position.x, 1.9, roommate.position.z).project(camera)
   tag.hidden = !roommate.visible || (!b.hidden && b.dataset.who === 'roommate') || Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z > 1
@@ -758,10 +758,10 @@ async function play() {
   camLook.copy(camTarget)
   run.minutes = Math.max(run.minutes, WAKE)
   opts.onUpdate()
-  // Zanele says hi first.
+  // The roommate says hi first.
   setStep('greet')
   // (on day 2 you met at the house door yesterday, the day you moved in: world/dropoff.js)
-  const hello = run.day > 1 ? line('zanele.wave_day2', 'Morning, roomie! First real morning in res \u{1F44B} Sleep okay?') : line('zanele.wave', 'Morning, roomie! I\u2019m Zanele \u{1F44B}')
+  const hello = run.day > 1 ? line('roommate.wave_day2', 'Morning, roomie! First real morning in res \u{1F44B} Sleep okay?') : line('roommate.wave', 'Morning, roomie! I\u2019m {roommate} \u{1F44B}')
   await Promise.all([wave(roommate), talk(hello, roommate)])
   bubble(run.day > 1 ? line('steps.wake.bubble_day2','07:00. Alarm. Day two in res\u2026 snooze.') : line('steps.wake.bubbles.0', '07:00. Alarm. Day one\u2026 snooze.'), player)
   setStep('wake')
@@ -786,8 +786,8 @@ async function play() {
     await clockRoll(SNOOZE)
   }
   host.dataset.snoozes = String(snoozes)
-  if (snoozes >= SNOOZE_MAX) await talk(line('late_variants.snoozed_too_long.zanele', 'I let you sleep. I regret it. Run.'), roommate)
-  else if (snoozes > 0) await talk(line('steps.wake.zanele', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
+  if (snoozes >= SNOOZE_MAX) await talk(line('late_variants.snoozed_too_long.roommate', 'I let you sleep. I regret it. Run.'), roommate)
+  else if (snoozes > 0) await talk(line('steps.wake.roommate', 'Mm. You snoozed {n} times. I counted.', { n: snoozes }), roommate)
   clockShow(false)
   walkTo(roommate, ANCHORS.roommate[0], ANCHORS.roommate[1], 1.6).then(() => face(roommate, ANCHORS.bed[0], ANCHORS.bed[1]))
   await talk(snoozes ? line('steps.wake.bubbles.2', 'Up, up, up!') : 'Up. Day one!', player)
@@ -1030,9 +1030,12 @@ export function startMorning(options) {
   if (player) scene.remove(player)
   if (roommate) scene.remove(roommate)
   if (crushAv) scene.remove(crushAv)
-  ROOMIE = roommateOf(opts.run.character?.avatar)
+  const rm = roommateFor(opts.run.character)
+  ROOMIE = rm.name
+  roomId = rm.id
+  roomLook = roommateLook(rm)
   paintHouseLabel()
-  maleRoom = genderOf(opts.run.character?.avatar) === 'male'
+  maleRoom = rm.gender === 'male'
   host.dataset.roomie = ROOMIE
   uiq('.mm-tag').textContent = ROOMIE
   player = createAvatar(opts.run.character?.avatar)
@@ -1040,7 +1043,7 @@ export function startMorning(options) {
   host.dataset.look = JSON.stringify(player.userData.look)
   player.userData.pose = 'stand'
   scene.add(player)
-  roommate = makeZanele()
+  roommate = makeRoommate()
   roommate.userData.pose = 'stand'
   scene.add(roommate)
   // The one from the bus stop (who it is depends on who you're interested in).

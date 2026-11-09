@@ -295,7 +295,7 @@ export function dressPlaces(layout, floor) {
       gesture,
       isPlayer: (a) => Boolean(a.userData.isPlayer),
     })
-    for (const [i, id] of ['kea', 'amir'].entries()) stallLine.join(person(id, slot(i).x, slot(i).z, stall.rotation.y + Math.PI))
+    for (const [i, id] of ['kayla', 'amir'].entries()) stallLine.join(person(id, slot(i).x, slot(i).z, stall.rotation.y + Math.PI))
     queue.stall = { front, slot, face: stall.rotation.y + Math.PI, vendor, line: stallLine, get people() { return stallLine.people }, vendorServes() { gesture(vendor, 'interact-right') } }
     const sl = new THREE.PointLight(0xffcf8a, 0, 7, 1.6)
     sl.position.set(stx, 2.2, stz)
@@ -309,7 +309,7 @@ export function dressPlaces(layout, floor) {
       const out = { x: Math.sin(b.rot), z: Math.cos(b.rot) }
       const side = { x: Math.cos(b.rot), z: -Math.sin(b.rot) }
       const at = (f, s) => [b.x + out.x * f + side.x * s, b.z + out.z * f + side.z * s]
-      for (const id of ['amahle', 'kabelo']) {
+      for (const id of ['mia', 'daniel']) {
         const [x, z] = at(1.5, 0)
         const crush = person(id, x, z, b.rot + Math.PI, { every: 7, move: 'emote-yes' })
         crush.userData.crush = true
@@ -339,7 +339,7 @@ export function dressPlaces(layout, floor) {
       // Campaigners stand beside their table, out from under the roof, so you see them from above.
       const back = new THREE.Vector3(1.6, 0, 0.35).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
       void c3
-      const campaigner = person(['bongani', 'lindiwe', 'ruan'][i], back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
+      const campaigner = person(['bongani', 'leah', 'ruan'][i], back.x, back.z, t.rotation.y, { every: 6 + i, move: i === 1 ? 'interact-left' : 'interact-right' })
       const frontAt = new THREE.Vector3(0, 0, 1.7).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.rotation.y).add(t.position)
       srcTables.push({ x, z, front: { x: frontAt.x, z: frontAt.z }, campaigner, slate })
       block(x, z, 2.4, 2)
@@ -374,7 +374,7 @@ export function dressPlaces(layout, floor) {
     const front = b.maxZ + 0.03
     // Serving window with a counter and a striped awning, right of the door.
     const glass = box(group, 3, 1.2, 0.08, mat(0x1d2a33, { emissive: 0xffc870, emissiveIntensity: 0.2 }), cx + 2.8, 1.9, front)
-    glass.userData.vendor = 'auntie_pinky'
+    glass.userData.vendor = 'mama_liz'
     vendorTaps.push(glass)
     glows.push({ material: glass.material, base: 1.2 })
     box(group, 3.2, 0.12, 0.55, 0xb0b0b0, cx + 2.8, 1.25, front + 0.27)
@@ -390,13 +390,13 @@ export function dressPlaces(layout, floor) {
     group.add(winLight)
     lights.push({ light: winLight, base: 14 })
     // The queue at the window.
-    // Serving counter under the awning; Auntie Pinky behind it, the queue in front.
+    // Serving counter under the awning; Mama Liz behind it, the queue in front.
     for (const m of [box(group, 3.2, 1.05, 0.6, 0xc9c9c9, cx + 2.8, 0.52, front + 1.15), box(group, 3.3, 0.06, 0.7, 0x8a8a8a, cx + 2.8, 1.07, front + 1.15)]) {
-      m.userData.vendor = 'auntie_pinky'
+      m.userData.vendor = 'mama_liz'
       m.userData.kind = 'caf counter'
       vendorTaps.push(m)
     }
-    const auntie = person('auntie_pinky', cx + 2.8, front + 0.5, 0, { every: 5 })
+    const auntie = person('mama_liz', cx + 2.8, front + 0.5, 0, { every: 5 })
     cafQueue.auntie = auntie
     cafQueue.front = { x: cx + 2.8, z: front + 2.05 }
     // One straight line facing the counter, evenly spaced.
@@ -415,7 +415,7 @@ export function dressPlaces(layout, floor) {
       isPlayer: (a) => Boolean(a.userData.isPlayer),
     })
     Object.defineProperty(cafQueue, 'people', { get: () => cafQueue.line.people })
-    ;['thandi', 'jordan', 'priya', 'noah'].forEach((id, i) => {
+    ;['chloe', 'jordan', 'priya', 'noah'].forEach((id, i) => {
       const s = cafQueue.slot(i)
       cafQueue.line.join(person(id, s.x, s.z, Math.PI, { every: 9 + i * 2, move: i === 0 ? 'interact-right' : 'emote-yes' }))
     })
@@ -424,7 +424,7 @@ export function dressPlaces(layout, floor) {
     const tx = b.minX - 3
     box(group, 4.4, 0.08, 6.4, 0x9a7048, tx, 0.04, cz)
     floor?.box(tx, cz, 2.2, 3.2, 0, 0.08)
-    for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'luke']]) {
+    for (const [dz, who] of [[-1.6, 'naledi'], [1.7, 'david']]) {
       prop('table', tx, cz + dz, { s: 2.3, rot: Math.PI / 2, y: 0.08 })
       // (chairs 0.6 m out from the table's sides: room to stand in front and sit)
       for (const [cx2, r] of [[tx - TERRACE_CHAIR, Math.PI / 2], [tx + TERRACE_CHAIR, -Math.PI / 2]]) {

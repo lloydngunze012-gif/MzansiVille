@@ -136,7 +136,7 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, w
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
   const talked = []
-  const skip = new Set(['auntie_pinky', 'mam_gugu', 'amahle', 'kabelo'])
+  const skip = new Set(['mama_liz', 'mam_gugu', 'mia', 'daniel'])
   let lost = 0
   for (let round = 0; round < 20 && talked.length < 5; round++) {
     // Someone on screen where a thumb can tap them (not under the HUD, the minimap,
@@ -145,7 +145,7 @@ test('K4 talk to 5 people: the tap answers within 1 s, replies lead somewhere, w
       const p = window.mzansiPlayerPos()
       const open = (s) => s.x > 20 && s.x < 392 && s.y > 150 && s.y < 770 && !(s.x > 290 && s.y < 260)
       return window.mzansiPeople()
-        .filter((o) => !done.includes(o.id) && !['auntie_pinky', 'mam_gugu'].includes(o.id))
+        .filter((o) => !done.includes(o.id) && !['mama_liz', 'mam_gugu'].includes(o.id))
         .map((o) => ({ ...o, s: window.mzansiPersonOnScreen(o.id), d: Math.hypot(o.x - p.x, o.z - p.z) }))
         .filter((o) => o.s && !o.s.behind && open(o.s))
         .sort((a, b) => a.d - b.d)[0] || null
@@ -230,7 +230,7 @@ test('K5 cafeteria queue: back of the line, one served at a time, served within 
   const f = await finger(page)
   // Four people in the line before you join.
   await expect.poll(async () => (await read.queue(page, 'caf')).people, { timeout: 30000 }).toBe(4)
-  const auntie = await read.person(page, 'auntie_pinky')
+  const auntie = await read.person(page, 'mama_liz')
   const t0 = Date.now()
   await f.tap(auntie.x, auntie.y)
   const log = []

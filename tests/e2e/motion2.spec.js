@@ -186,9 +186,9 @@ async function shootPhase(page, phase, name, where = 'campus') {
   await page.screenshot({ path: `${OUT}/${name}.png` })
 }
 
-test('M4a sit and stand: caf chair (queue at Auntie Pinky, sit and eat)', async ({ page }) => {
+test('M4a sit and stand: caf chair (queue at Mama Liz, sit and eat)', async ({ page }) => {
   await campus(page, 'cafeteria', '&a=22')
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 120000 })
   await expect(card).toHaveAttribute('data-phase', 'menu')
@@ -469,7 +469,7 @@ test('M7b heads in frame: studying together in Top, Sims and Eye', async ({ page
 
 test('M7c heads in frame: eating in Top, Sims and Eye', async ({ page }) => {
   await campus(page, 'cafeteria', '&a=22')
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 120000 })
   await expect(card).toHaveAttribute('data-phase', 'menu')
@@ -584,7 +584,7 @@ const eye = (page) => page.evaluate(() => window.dispatchEvent(new CustomEvent('
 test('S1 caf chair in Eye view: facing out of the chair, never inside it or the table', async ({ page }) => {
   await campus(page, 'cafeteria', '&a=22')
   await eye(page)
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 120000 })
   await expect(card).toHaveAttribute('data-phase', 'menu')

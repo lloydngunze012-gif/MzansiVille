@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { peersOnCampus } from '../presence.js'
+import { COUNTRY_LIST, flagSrc, isGlobe } from '../from.js'
 
 // The other real students (presence.js): the same character model as everyone, in
 // their own look, placed where the network says they are (interpolated there), with
@@ -11,14 +12,16 @@ import { peersOnCampus } from '../presence.js'
 const MAX_SHOWN = 24 // the nearest this many (a phone draws only so many people)
 const TAG_FAR = 45 // tags show this far away (NPC tags stop at 10 m)
 
-function makeTag(name, num) {
+// country: a home country (src/from.js), drawn as a small flag on the tag's right (owner, 9 Nov)
+function makeTag(name, num, country = '') {
   const canvas = document.createElement('canvas')
   canvas.width = 320
   canvas.height = 112
   const ctx = canvas.getContext('2d')
   ctx.font = 'bold 38px sans-serif'
   const numText = num.replace(/^(\d{2})(\d{3})(\d{3})$/, '$1 $2 $3')
-  const w = Math.min(312, Math.max(ctx.measureText(name).width + 64, 190))
+  const flagW = country ? 44 : 0
+  const w = Math.min(312, Math.max(ctx.measureText(name).width + 64 + flagW, 190 + flagW))
   const x0 = (320 - w) / 2
   ctx.fillStyle = 'rgba(10,40,30,0.88)'
   ctx.beginPath()
@@ -35,17 +38,31 @@ function makeTag(name, num) {
   ctx.fillStyle = '#ffffff'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText(name, 160 + 12, 40, w - 60)
+  ctx.fillText(name, 160 + 12 - flagW / 2, 40, w - 60 - flagW)
   ctx.font = 'bold 26px monospace'
   ctx.fillStyle = '#bff5d5'
   ctx.fillText(numText, 160, 80)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
+  if (country) {
+    // (the flag is drawn on the right of the name row: a picture once it has loaded, the globe as text)
+    const fx = x0 + w - 56
+    const src = flagSrc(country)
+    if (src) {
+      const img = new Image()
+      img.onload = () => { sprite.userData.flagDrawn = true; ctx.drawImage(img, fx, 26, 42, 28); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.5; ctx.strokeRect(fx, 26, 42, 28); texture.needsUpdate = true }
+      img.src = src
+    } else if (isGlobe(country)) {
+      ctx.font = '28px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff'; ctx.fillText('🌐', fx + 21, 42); texture.needsUpdate = true
+    }
+  }
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true }))
   sprite.renderOrder = 2
   sprite.name = 'player-tag'
   sprite.raycast = () => {}
   sprite.userData.text = `${name} ${num}`
+  sprite.userData.country = country
+  if (country && !flagSrc(country) && isGlobe(country)) sprite.userData.flagDrawn = true // (the globe is drawn at once)
   return sprite
 }
 
@@ -94,10 +111,11 @@ export function createOthers(scene) {
       poseAvatar(avatar, walking, entry.clock)
       // Name and student number, readable on a phone at any distance (the tag grows
       // with distance past 8 m, so it never shrinks to a speck).
-      const tagKey = `${peer.meta.name}|${peer.meta.num}`
+      const country = COUNTRY_LIST.includes(peer.meta.card?.country) ? peer.meta.card.country : ''
+      const tagKey = `${peer.meta.name}|${peer.meta.num}|${country}`
       if (entry.tagKey !== tagKey) {
         if (entry.tag) avatar.remove(entry.tag)
-        entry.tag = makeTag(peer.meta.name, peer.meta.num)
+        entry.tag = makeTag(peer.meta.name, peer.meta.num, country)
         entry.tag.position.y = 2.12
         avatar.add(entry.tag)
         entry.tagKey = tagKey
@@ -137,6 +155,8 @@ export function createOthers(scene) {
       walking: Boolean(e.walking),
       ready: Boolean(e.avatar.userData.rigged),
       tag: e.tag?.userData.text || '',
+      country: e.tag?.userData.country || '',
+      flagDrawn: Boolean(e.tag?.userData.flagDrawn),
       tagShown: Boolean(e.tag?.visible),
       dist: camera ? +camera.position.distanceTo(e.avatar.position).toFixed(1) : null,
     }))

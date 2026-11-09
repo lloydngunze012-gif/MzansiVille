@@ -2,7 +2,7 @@
 // in sizes ("Bunny chow please" -> "Quarter or half?"). Effects are what eating does.
 
 export const MENUS = {
-  auntie_pinky: {
+  mama_liz: {
     place: 'cafeteria',
     hello: 'What can I get you, baby?',
     items: [

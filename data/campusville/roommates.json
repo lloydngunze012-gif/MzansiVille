@@ -1,0 +1,15 @@
+{
+  "note": "The roommate pool (owner, 9 Nov). Women's res: four, men's res: four. A player's default is the same gender as their res and the skin closest to theirs (the first in this list on a tie). The id is the lowercase name (run.people[id], dialogue memory). 'look' is how they look in every scene; the lines are in day1_morning.json, day1_lecture.json, dropoff.js and people.json roommate_chats, written to work for all eight (no name-specific jokes).",
+  "women": [
+    { "id": "zoe", "name": "Zoe", "skin": "deep", "look": { "model": "female-b", "outfit": "hoodie", "topColor": "#d9534f", "hairColor": "#f0c400", "bottomColor": "#2b3a55" }, "blurb": "Loudest laugh in the house. Borrows everything." },
+    { "id": "megan", "name": "Megan", "skin": "fair", "look": { "model": "female-f", "outfit": "skirt", "topColor": "#2e8b57", "bottomColor": "#2b3a55", "hairColor": "#e0b85c" }, "blurb": "Up early, always has a plan, usually a snack." },
+    { "id": "jade", "name": "Jade", "skin": "brown", "look": { "model": "female-d", "outfit": "hoodie", "topColor": "#7b3fe4", "bottomColor": "#1c1915" }, "blurb": "Headphones on, door open. Great at playlists." },
+    { "id": "anisha", "name": "Anisha", "skin": "amber", "look": { "model": "female-d", "outfit": "jacket", "topColor": "#e8497a", "bottomColor": "#2b3a55" }, "blurb": "Calm in a crisis. Makes the best chai in res." }
+  ],
+  "men": [
+    { "id": "ethan", "name": "Ethan", "skin": "fair", "look": { "model": "male-a", "outfit": "jacket", "topColor": "#1d7fb8", "bottomColor": "#3a2f4f", "hairColor": "#6b4529" }, "blurb": "A plan for everything except mornings." },
+    { "id": "marcus", "name": "Marcus", "skin": "deep", "look": { "model": "male-d", "outfit": "hoodie", "topColor": "#f0c400", "bottomColor": "#1c1915" }, "blurb": "Gym at six, naps at two. Never misses a match." },
+    { "id": "ryan", "name": "Ryan", "skin": "brown", "look": { "model": "male-f", "outfit": "shirt", "topColor": "#2e8b57", "bottomColor": "#244e78" }, "blurb": "Chilled, funny, owns the only decent kettle." },
+    { "id": "ravi", "name": "Ravi", "skin": "amber", "look": { "model": "male-f", "outfit": "hoodie", "topColor": "#7b3fe4", "bottomColor": "#2b3a55" }, "blurb": "Quiet until the Springboks play. Then not." }
+  ]
+}

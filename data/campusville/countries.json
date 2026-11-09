@@ -1,0 +1,16 @@
+{
+  "note": "Where you are from (owner, 9 Nov). The creator lists these in this order; 'South Africa' is the default. 'flag' is the place name from.js draws the flag for. 'welcome' is the one line your roommate says at the house door on day 1 when you are not from South Africa (South Africa has none). Add a country by adding a row, a flag in src/from.js if it has none, and a welcome line.",
+  "default": "South Africa",
+  "countries": [
+    { "id": "South Africa", "flag": "South Africa", "welcome": "" },
+    { "id": "Nigeria", "flag": "Nigeria", "welcome": "All the way from Nigeria? You'll love it here. And I want a proper jollof recipe." },
+    { "id": "Kenya", "flag": "Kenya", "welcome": "All the way from Kenya? You'll love it here." },
+    { "id": "Ghana", "flag": "Ghana", "welcome": "All the way from Ghana? Welcome! I hear there's a famous jollof debate. I'm staying out of it." },
+    { "id": "Zimbabwe", "flag": "Zimbabwe", "welcome": "Zimbabwe! Welcome. Not too far from home, and you'll love it here." },
+    { "id": "Botswana", "flag": "Botswana", "welcome": "Botswana! Dumela, and welcome. You'll love it here." },
+    { "id": "Namibia", "flag": "Namibia", "welcome": "Namibia! Welcome. You've come a long way, and you'll love it here." },
+    { "id": "Zambia", "flag": "Zambia", "welcome": "Zambia! Welcome. You'll love it here." },
+    { "id": "Uganda", "flag": "Uganda", "welcome": "All the way from Uganda? Welcome! You'll love it here." },
+    { "id": "Other", "flag": "Overseas", "welcome": "You've come a long way to be here. Welcome, you'll love it here." }
+  ]
+}

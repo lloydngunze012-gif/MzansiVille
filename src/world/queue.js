@@ -1,4 +1,4 @@
-// One queue system for every counter (Auntie Pinky's window, Mam' Gugu's stall, any
+// One queue system for every counter (Mama Liz's window, Mam' Gugu's stall, any
 // counter to come): one ordered line, first come first served, one person served at a
 // time, nobody cuts in. The player joins at the back like anyone else; at the front the
 // line waits for them until they leave it (their order is done, or they walked off).

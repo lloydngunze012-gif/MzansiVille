@@ -65,6 +65,8 @@ export function emptyDraft() {
     vibe: '',
     looking: '',
     from: '',
+    country: 'South Africa', // (Where are you from? data/campusville/countries.json)
+    roommate: '', // (a roommate id; '' = the default for your res and skin)
     email: '',
     notice: '',
     error: '',
@@ -836,7 +838,7 @@ export function shotState(name) {
   run.queue = []
   run.promptSave = false
   run.morningNote = ''
-  run.bestieName = 'Thandi'
+  run.bestieName = 'Zoe'
   // Shot mode only: ?clock=HH:MM sets the time of day (map-direction screenshots).
   const clock = new URLSearchParams(location.search).get('clock')
   if (clock && /^\d\d:\d\d$/.test(clock)) {
@@ -876,7 +878,7 @@ export function shotState(name) {
     run.queue = [{ id: 'shot-twist', kind: 'twist', title: 'Meanwhile', text: 'Rain. You arrive soaked.' }]
   }
   if (name === 'bestie') {
-    run.queue = [{ id: 'shot-bestie', kind: 'bestie', title: 'Thandi', text: 'Thandi from Wave House holds the door and waits like they already decided you are their person.' }]
+    run.queue = [{ id: 'shot-bestie', kind: 'bestie', title: 'Zoe', text: 'Zoe from Wave House holds the door and waits like they already decided you are their person.' }]
   }
   if (name.startsWith('cam-')) state.screen = 'play'
   if (name === 'summary') {
@@ -912,7 +914,7 @@ export function shotState(name) {
   if (name === 'chat') {
     state.chat.offline = false
     state.chat.messages = [
-      { id: 'm1', user_id: 'u1', name: 'Sipho', residence: 'Peak House', body: 'Is the bus late or is it just me?' },
+      { id: 'm1', user_id: 'u1', name: 'Marcus', residence: 'Peak House', body: 'Is the bus late or is it just me?' },
       { id: 'm2', user_id: 'u2', name: 'Naledi', residence: 'Wave House', body: 'Stage 4. The library is on the generator.' },
       { id: 'm3', user_id: 'u3', name: 'Jordan', residence: 'Oakwinds House', body: 'Derby fit check at the quad.' },
     ]
@@ -920,7 +922,7 @@ export function shotState(name) {
   if (name === 'leaderboard') {
     state.board.rows = [
       { display_name: 'Aya M.', residence: 'Wave House', money: 1280, grades: 64, balanced: 70, rich_avg: 1280, dean_avg: 64, balanced_avg: 70 },
-      { display_name: 'Sipho', residence: 'Peak House', money: 2400, grades: 55, balanced: 48, rich_avg: 2400, dean_avg: 55, balanced_avg: 48 },
+      { display_name: 'Marcus', residence: 'Peak House', money: 2400, grades: 55, balanced: 48, rich_avg: 2400, dean_avg: 55, balanced_avg: 48 },
       { display_name: 'Naledi', residence: 'Wave House', money: 900, grades: 81, balanced: 62, rich_avg: 900, dean_avg: 81, balanced_avg: 62 },
     ]
   }

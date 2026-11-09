@@ -38,10 +38,10 @@ test('lecture: walk in, seat, moment, choice, result', async ({ page }) => {
   await page.screenshot({ path: `${OUT}/1_walk_in.png` })
   await atStep('seat')
   await expect(page.locator('[data-lc="choice"]')).toHaveCount(3)
-  await expect(page.locator('[data-lc="choice"]').nth(2)).toContainText('Next to Zanele')
+  await expect(page.locator('[data-lc="choice"]').nth(2)).toContainText('Next to Anisha')
   await page.screenshot({ path: `${OUT}/2_seat_choice.png` })
   await page.locator('[data-lc="choice"]').nth(2).tap()
-  await expect(host).toHaveAttribute('data-seat', 'zanele')
+  await expect(host).toHaveAttribute('data-seat', 'roommate')
 
   // (with ?fast=1 the moment can pass before the test looks: moment or the choice after it)
   await expect(host).toHaveAttribute('data-step', /moment|choice/, { timeout: 30000 })

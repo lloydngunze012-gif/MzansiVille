@@ -273,7 +273,7 @@ async function playLine(page, { which, vendor, spawn, name }) {
 }
 
 test('caf queue: join and leave five times, stand on slot 2: no jitter', async ({ page }) => {
-  await playLine(page, { which: 'caf', vendor: 'auntie_pinky', spawn: 'cafeteria', name: 'caf' })
+  await playLine(page, { which: 'caf', vendor: 'mama_liz', spawn: 'cafeteria', name: 'caf' })
 })
 
 test("Mam' Gugu's stall: join and leave five times, stand on slot 2: no jitter", async ({ page }) => {

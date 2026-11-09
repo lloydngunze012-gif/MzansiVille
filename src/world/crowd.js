@@ -17,7 +17,7 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)]
 // Personal space: nobody stands closer than this to anyone else (metres).
 const SPACE = 1.0
 
-// opts.roommate: 'zanele' or 'sipho', who sits on the first Quad bench.
+// opts.roommate: the roommate's id (zoe, ethan...), who sits on the first Quad bench.
 export function createCrowd(scene, campus, opts = {}) {
   const group = new THREE.Group()
   group.name = 'crowd'
@@ -54,7 +54,7 @@ export function createCrowd(scene, campus, opts = {}) {
     seats.push([quad.cx - 0.45, quad.cz - 4.75, 0, 0.3]) // on the stage step, back to the stage
     for (let i = 0; i < Math.min(SITTERS, seats.length); i++) {
       const [x, z, facing, y] = seats[i]
-      const id = [opts.roommate || 'zanele', 'aya', 'x9', 'x10'][i]
+      const id = [opts.roommate || 'zoe', 'aya', 'grace', 'tendai'][i]
       const avatar = createAvatar(lookForPerson(id, i + 9))
       avatar.userData.personId = id
       avatar.position.set(x, y, z)

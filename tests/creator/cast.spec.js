@@ -1,4 +1,4 @@
-// The cast with hair colours (Zanele yellow, Mam' Gugu purple, Auntie Pinky pink) must still read as
+// The cast with hair colours (Zoe yellow, Mam' Gugu purple, Mama Liz pink) must still read as
 // those colours with the hair shading: close up (lineup) and as the game's own camera sees them.
 import { test } from '@playwright/test'
 import fs from 'node:fs'

@@ -8,7 +8,7 @@ const lecture = JSON.parse(fs.readFileSync('data/campusville/day1_lecture.json',
 
 const DOES = {
   bye: 'Their answer, then one "Bye" button: the chat ends, they wave, you walk a few steps away.',
-  eat: 'You both walk to the caf queue (they walk behind you), the line moves, Auntie Pinky\'s menu opens at the front, you pay, then sit at one table and eat together (+Social, closer).',
+  eat: 'You both walk to the caf queue (they walk behind you), the line moves, Mama Liz\'s menu opens at the front, you pay, then sit at one table and eat together (+Social, closer).',
   study: 'You both walk to the library, go in, sit at the desks and study together (+Grades, +Social, closer).',
   sit: 'A bench right there: you both sit and chat (+Social, closer).',
   walk: 'You walk together to your lecture venue (if it is next) or across campus, chatting on the way (+Social, closer).',

@@ -1,4 +1,6 @@
-import { fromPlace } from './from.js'
+import { DEFAULT_COUNTRY, countryOf, fromForCountry, fromPlace, hasCountry } from './from.js'
+import { roommateFor } from './roommates.js'
+import { migrateCast } from './cast-ids.js'
 import { canonicalHouse } from './houses.js'
 import * as curtain from './curtain.js'
 import { isStaleLoad, reloadForUpdate } from './stale.js'
@@ -42,7 +44,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
-import { genderOf, outfitsFor, roommateOf } from './avatar.js'
+import { genderOf, outfitsFor } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
@@ -139,6 +141,8 @@ if (save.run?.character) {
   const h = houseOf(districtById(save.run.character.districtId || defaultDistrictId), save.run.character.residence)
   if (h && save.run.character.residence !== h.name) { save.run.character.residence = h.name; try { localStorage.setItem(KEY, JSON.stringify(save)) } catch { /* kept in memory */ } }
 }
+// The cast was renamed (9 Nov, docs/cast.md): an old save's people, contacts, crush and bestie move to the new ids.
+if (save.run && migrateCast(save.run)) { try { localStorage.setItem(KEY, JSON.stringify(save)) } catch { /* kept in memory */ } }
 let edits = []
 let draft = emptyDraft()
 let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
@@ -309,9 +313,9 @@ function endMorning(skip, result) {
   else run.resMorningDone = true
   delete run.morningStart
   curtain.cover('Arriving at UMzansi…', { instant: true }) // (home -> campus through the curtain; campus lifts it)
-  // Your roommate (Zanele, or Sipho for a male student) meets you at your house door on day 1,
+  // Your roommate (the one you chose, or the default for your res) meets you at your house door on day 1,
   // so they are the bestie and the day 1 "New bestie" card would only repeat it.
-  run.bestieName = roommateOf(run.character?.avatar)
+  run.bestieName = roommateFor(run.character).name
   run.queue = run.queue.filter((card) => card.id !== 'bestie-1')
   stopIntro()
   if (!skip && homeDay) {
@@ -586,6 +590,14 @@ function paint() {
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
   if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run) }
   const shot = new URLSearchParams(location.search).get('shot')
+  // An old save was never asked where it is from (owner, 9 Nov): the "Where are you from?" step, once,
+  // on the way into the game (South Africa pre-selected; a tap on Continue keeps it).
+  if (!shot && save.run?.character && !hasCountry(save.run.character) && !save.run.countryAsked && !draft.countryOnly
+    && ['play', 'morning', 'world'].includes(route().name)) {
+    draft = { ...emptyDraft(), countryOnly: true, step: 'country', avatar: { ...save.run.character.avatar }, from: fromPlace(save.run.character.from) }
+    location.hash = '#/new'
+    return
+  }
   if (!shot) rememberMorning(save.run)
   if (!shot && route().name === 'play' && morningWanted(save.run)) {
     morningSnapshot(save.run)
@@ -887,7 +899,7 @@ function talkAct(kind, answer = '') {
   }
   if (kind === 'eat') {
     // Both of you walk to her queue, line up, order, then sit at one table.
-    const vendor = /gugu|vetkoek/i.test(answer) ? 'mam_gugu' : 'auntie_pinky'
+    const vendor = /gugu|vetkoek/i.test(answer) ? 'mam_gugu' : 'mama_liz'
     together = { id, name, answer }
     endTalk({ keepFriend: true })
     paint()
@@ -1074,7 +1086,7 @@ function gameAct(act, button) {
     const res = replyTo(save.run, ui.talk.id, index)
     if (res) {
       ui.talk = { ...ui.talk, res, said }
-      const titled = addIdentity(save.run, ['bongani', 'lindiwe', 'ruan'].includes(ui.talk.id) ? { leader: 1 } : res.closeDelta > 0 ? { socialite: 1 } : {})
+      const titled = addIdentity(save.run, ['bongani', 'leah', 'ruan'].includes(ui.talk.id) ? { leader: 1 } : res.closeDelta > 0 ? { socialite: 1 } : {})
       if (titled && titled.level !== 'new') save.run.queue.push(identityCard(save.run, titled))
       const done = checkGoals(save.run)
       if (done.length) { flash(`\u{1F3AF} Goal done: ${goalText(save.run, done[0])}`); blip(1320) }
@@ -1147,7 +1159,7 @@ function gameAct(act, button) {
     // Walk to a spot in the place: the sheet closes so you watch yourself go.
     blip(600)
     go('play')
-    const queueOf = { 'cafeteria:queue': 'auntie_pinky', 'quad:stall': 'mam_gugu' }[`${button.dataset.place}:${button.dataset.spot}`]
+    const queueOf = { 'cafeteria:queue': 'mama_liz', 'quad:stall': 'mam_gugu' }[`${button.dataset.place}:${button.dataset.spot}`]
     if (queueOf) { setTimeout(() => joinQueue(queueOf, false), 300); return true }
     window.dispatchEvent(new CustomEvent('mzansi-walk-to', { detail: { place: button.dataset.place, spot: button.dataset.spot } }))
     return true
@@ -1201,7 +1213,7 @@ function finishTurn() {
 }
 
 // Skipping your name: a name to start with (change it any time from your card).
-const DEFAULT_NAMES = { female: ['Thandi', 'Lerato', 'Naledi', 'Emma', 'Chloe'], male: ['Sipho', 'Luyanda', 'Thabo', 'Daniel', 'Ethan'] }
+const DEFAULT_NAMES = { female: ['Amy', 'Lerato', 'Naledi', 'Emma', 'Hannah'], male: ['Liam', 'Luyanda', 'Thabo', 'Sam', 'Jake'] }
 function enrolDefaultName() {
   const list = DEFAULT_NAMES[genderOf(draft.avatar)] || DEFAULT_NAMES.female
   return list[Math.floor(Math.random() * list.length)]
@@ -1456,7 +1468,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
-    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
+    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return
@@ -1596,6 +1608,8 @@ app.addEventListener('click', async (event) => {
     const { k, v } = button.dataset
     // (a second tap on the chosen one clears an optional pick)
     draft[k] = draft[k] === v && ['from', 'vibe', 'looking', 'bio'].includes(k) ? '' : v
+    // (a country is also where you're from: the home style and the flag on your card follow it)
+    if (k === 'country') draft.from = fromForCountry(v, draft.from)
     if (k === 'bio') draft.notice = ''
     if (k === 'handle') { draft.handleEdited = true; draft.handleSuggest = []; draft.handleNote = `@${v} is free.` }
     draft.error = ''
@@ -1639,6 +1653,17 @@ app.addEventListener('click', async (event) => {
     window.scrollTo(0, 0)
     return
   }
+  // The old-save question: just the country step, then back into the game.
+  if (act === 'enrol-country-save' && save.run?.character) {
+    const country = draft.country || DEFAULT_COUNTRY
+    save.run.character = { ...save.run.character, country, from: fromForCountry(country, draft.from) }
+    save.run.countryAsked = true
+    draft = emptyDraft()
+    persist()
+    saveMyCard(save.run)
+    go('play')
+    return
+  }
   if (act === 'enrol-back') {
     captureForm()
     const i = ENROL_STEPS.indexOf(draft.step)
@@ -1673,6 +1698,8 @@ app.addEventListener('click', async (event) => {
       vibe: draft.vibe,
       looking: draft.looking,
       from: draft.from,
+      country: draft.country || DEFAULT_COUNTRY,
+      roommate: roommateFor({ avatar: draft.avatar, roommate: draft.roommate }).id,
       handleChangedAt: tidyHandle(draft.handle) !== (save.run?.character?.handle || '') ? new Date().toISOString() : save.run?.character?.handleChangedAt,
     }
     if (draft.edit && save.run) {
@@ -1684,6 +1711,8 @@ app.addEventListener('click', async (event) => {
       return
     }
     save.run = createRun(district, { ...character, ...storyWithDefaults(draft.story) })
+    // (the roommate you picked is your bestie from the start)
+    save.run.bestieName = roommateFor(save.run.character).name
     draft = emptyDraft()
     persist()
     saveMyCard(save.run)
@@ -1759,7 +1788,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'do' && button.dataset.id === 'caf_queue') {
     // The breakfast queue is the queue: stand in it, then order at the front.
     go('play')
-    setTimeout(() => joinQueue('auntie_pinky', false), 300)
+    setTimeout(() => joinQueue('mama_liz', false), 300)
     return
   }
   if (act === 'do' && LECTURE_ACTIONS.has(button.dataset.id) && lectureWanted(save.run)) {

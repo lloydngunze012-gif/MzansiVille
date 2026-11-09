@@ -1,17 +1,17 @@
 {
-  "note": "Day 1 morning lines. Written by Content Writer. Keys under 'steps' match the setStep ids in src/world/morning.js so Game Dev can look lines up by id. 'bubble' is a speech bubble (who says it), 'caption' is a narration line, 'move' is the on-screen motion cue. No balance numbers live here: effects stay in the game code and activities.csv. Roommate is Zanele, the bestie the player meets in person.",
+  "note": "Day 1 morning lines. Written by Content Writer. Keys under 'steps' match the setStep ids in src/world/morning.js so Game Dev can look lines up by id. 'bubble' is a speech bubble (who says it), 'caption' is a narration line, 'move' is the on-screen motion cue. No balance numbers live here: effects stay in the game code and activities.csv. The roommate is whichever of the eight in roommates.json the player picked, the bestie the player meets in person.",
   "goal": {
     "text": "Get to your 9:00 lecture on time.",
     "hint": "Eat something, head out, make it to your lecture.",
     "met": "You made it. 9:00 and you are already winning.",
     "failed": "Late. The lecturer notices. So does everyone else."
   },
-  "zanele": {
-    "name": "Zanele",
+  "roommate": {
+    "name": "{roommate}",
     "role": "Your roommate in the house. Your bestie from day one.",
     "look": "Oversized hoodie, one earbud in, hair wrapped for the night and not quite unwrapped.",
-    "intro": "That is Zanele. She will borrow things all year and return them with interest.",
-    "wave": "Morning, roomie! I’m Zanele 👋 Alarm’s about to go.",
+    "intro": "That is {roommate}. She will borrow things all year and return them with interest.",
+    "wave": "Morning, roomie! I’m {roommate} 👋 Alarm’s about to go.",
     "wave_day2": "Morning, roomie! First real morning in res 👋 Sleep okay?"
   },
   "steps": {
@@ -32,11 +32,11 @@
           "text": "Up, up, up!"
         }
       ],
-      "zanele": {
-        "who": "zanele",
+      "roommate": {
+        "who": "roommate",
         "text": "Mm. You snoozed {n} times. I counted. We are going to be friends."
       },
-      "move": "Blanket slides off, stripe of sun crosses the floor, Zanele rolls over in the other bed.",
+      "move": "Blanket slides off, stripe of sun crosses the floor, {roommate} rolls over in the other bed.",
       "question": "Alarm! Get up or snooze?"
     },
     "kettle": {
@@ -45,8 +45,8 @@
     },
     "kettle-walk": {
       "caption": "Slippers squeak across the tiles. Somebody else is already heading to the kettle.",
-      "zanele_walks_over": {
-        "who": "zanele",
+      "roommate_walks_over": {
+        "who": "roommate",
         "text": "Wait, I was first. I can smell it."
       }
     },
@@ -56,19 +56,19 @@
         "who": "player",
         "text": "Mmm… 2-minute noodles."
       },
-      "zanele": {
-        "who": "zanele",
+      "roommate": {
+        "who": "roommate",
         "text": "Save me the flavour sachet. I will pay you in gossip."
       }
     },
     "roommate": {
-      "caption": "The cupboard is empty. Zanele is standing there with the wrapper and a very guilty smile.",
+      "caption": "The cupboard is empty. {roommate} is standing there with the wrapper and a very guilty smile.",
       "bubble": {
-        "who": "zanele",
+        "who": "roommate",
         "text": "Sorry! Last packet 😅 I’ll buy more later."
       },
-      "introduction": "Hi, I'm Zanele. Your roommate. Let's do this properly.",
-      "move": "Zanele steps in with the wrapper, crinkles it, gives you the biggest sorry eyes.",
+      "introduction": "Hi, I'm {roommate}. Your roommate. Let's do this properly.",
+      "move": "{roommate} steps in with the wrapper, crinkles it, gives you the biggest sorry eyes.",
       "bare": "The shelf is bare. Your roommate got the last packet."
     },
     "choice_breakfast": {
@@ -106,8 +106,8 @@
         "who": "auntie",
         "text": "Noodles? Last one, my girl. Hurry, the bell is coming."
       },
-      "zanele_after": {
-        "who": "zanele",
+      "roommate_after": {
+        "who": "roommate",
         "text": "I will pay you back on NSFAS day. Pinky promise."
       },
       "fade": "🛒 Tuck shop… R12 noodles"
@@ -118,8 +118,8 @@
         "who": "player",
         "text": "Fine. I’ll survive till lunch…"
       },
-      "zanele": {
-        "who": "zanele",
+      "roommate": {
+        "who": "roommate",
         "text": "Take this biscuit. Do not tell anyone I am a nice person."
       }
     },
@@ -133,8 +133,8 @@
         "text": "Quick shower, get dressed…"
       },
       "caption": "Door, stairwell, sunshine. The whole house smells of toast and ambition.",
-      "zanele_at_door": {
-        "who": "zanele",
+      "roommate_at_door": {
+        "who": "roommate",
         "text": "Go go go! Save me a seat at the back if we have the same class."
       }
     },
@@ -193,15 +193,15 @@
         "who": "player",
         "text": "Come on, come on, come ON."
       },
-      "zanele_text": {
-        "who": "zanele",
+      "roommate_text": {
+        "who": "roommate",
         "text": "Where are you? Lecturer already looks angry."
       }
     },
     "snoozed_too_long": {
       "caption": "You snoozed one too many. The kettle never even gets a chance.",
-      "zanele": {
-        "who": "zanele",
+      "roommate": {
+        "who": "roommate",
         "text": "I let you sleep. I regret it. Run."
       }
     },
@@ -216,19 +216,19 @@
     "Your bag bounces against your back.",
     "A taxi hoots like it has an opinion."
   ],
-  "sipho": {
-    "name": "Sipho",
+  "men": {
+    "name": "{roommate}",
     "role": "Your roommate in the house, for a male student. Your bestie from day one.",
     "look": "Blue varsity jacket over a vest, one sock on, phone already at 12%.",
-    "intro": "That is Sipho. He has a plan for everything except mornings.",
-    "note": "Sipho has his own lines. Keys mirror the Zanele ones they replace (path in the morning code -> Sipho line).",
+    "intro": "That is {roommate}. He has a plan for everything except mornings.",
+    "note": "A male roommate (Ethan, Marcus, Ryan, Ravi) has his own lines. Keys mirror the ones they replace (path in the morning code -> line). {roommate} is the roommate's name.",
     "lines": {
-      "zanele.wave": "Ayy, roomie! I’m Sipho 👊 Your alarm is about to scream.",
-      "zanele.wave_day2": "Ayy, roomie! First real morning in res 👊 Sleep okay, bra?",
-      "steps.wake.zanele": "Snoozed {n} times, bra. I was keeping score.",
-      "late_variants.snoozed_too_long.zanele": "I tried, my guy. You fought the alarm and lost. Go!",
+      "roommate.wave": "Ayy, roomie! I’m {roommate} 👊 Your alarm is about to scream.",
+      "roommate.wave_day2": "Ayy, roomie! First real morning in res 👊 Sleep okay, bra?",
+      "steps.wake.roommate": "Snoozed {n} times, bra. I was keeping score.",
+      "late_variants.snoozed_too_long.roommate": "I tried, my guy. You fought the alarm and lost. Go!",
       "steps.roommate.bubble": "Eish, sorry! Last packet 😅 I’ll sort you out at lunch.",
-      "steps.roommate.bare": "The shelf is empty. Sipho is holding the last packet like a trophy."
+      "steps.roommate.bare": "The shelf is empty. {roommate} is holding the last packet like a trophy."
     }
   }
 }

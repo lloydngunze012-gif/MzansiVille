@@ -3,7 +3,8 @@
 // Loaded lazily (own chunk) from main.js, like the morning.
 import * as THREE from 'three'
 import LINES from '../../data/campusville/day1_lecture.json'
-import { genderOf, roommateOf } from '../avatar.js'
+import { genderOf } from '../avatar.js'
+import { roommateFor, roommateLook } from '../roommates.js'
 import { sfx, loop as soundLoop } from '../audio.js'
 import { createAvatar, CROWD_MODELS, gesture, poseAvatar } from './avatar3d.js'
 import { venueFor } from '../venues.js'
@@ -102,7 +103,8 @@ function walk(who, pts, speed = SPEED) {
 
 // ---------- lines ----------
 let male = false
-let roomie = 'Zanele'
+let roomie = 'Zoe'
+let roomLook = null // the chosen roommate's look (roommates.json)
 let venue = null
 let walls = []
 let stageProp = null
@@ -137,25 +139,27 @@ function dressVenue() {
 }
 function words(text) {
   if (typeof text === 'string' && venue && venue.id !== 'smig') text = text.replace(/SMIG/g, venue.name)
-  if (!male || typeof text !== 'string') return text
-  return text.replace(/Zanele/g, roomie)
+  if (typeof text !== 'string') return text
+  text = text.replace(/\{roommate\}/g, roomie)
+  if (!male) return text
+  return text
     .replace(/\bShe\b/g, 'He').replace(/\bshe\b/g, 'he')
     .replace(/\bherself\b/g, 'himself').replace(/\bher\b/g, 'him')
 }
 const WHO = { lecturer: 'Lecturer', student: 'Student', narrator: '', player: 'You' }
-// Sipho's own lecture lines (day1_lecture.json "sipho"), Zanele's otherwise.
+// A male roommate's own lecture lines (day1_lecture.json "men"), the women's otherwise.
 function roomieLine(when) {
-  if (male && LINES.sipho?.lines?.[when]) return { who: 'zanele', text: LINES.sipho.lines[when] }
-  return LINES.zanele_lines.find((l) => l.when === when)
+  if (male && LINES.men?.lines?.[when]) return { who: 'roommate', text: LINES.men.lines[when] }
+  return LINES.roommate_lines.find((l) => l.when === when)
 }
 function seatFor(option) {
-  if (!male || !LINES.sipho) return option
-  if (option.id === 'zanele') return { ...option, ...LINES.sipho.seat }
-  const other = LINES.sipho.seat_other?.[option.id]
-  return other ? { ...option, zanele: { who: 'zanele', text: other } } : option
+  if (!male || !LINES.men) return option
+  if (option.id === 'roommate') return { ...option, ...LINES.men.seat }
+  const other = LINES.men.seat_other?.[option.id]
+  return other ? { ...option, roommate: { who: 'roommate', text: other } } : option
 }
 function nameOf(who) {
-  if (who === 'zanele') return roomie
+  if (who === 'roommate') return roomie
   if (who === 'lecturer' && venue) return venue.lecturerName
   return WHO[who] ?? ''
 }
@@ -389,6 +393,7 @@ function place(avatar, r, s) {
   avatar.userData.pose = 'sit'
 }
 
+const INTERNATIONALS = { 3: 'grace', 8: 'tendai', 12: 'david' }
 function populate(late) {
   for (const s of students) scene.remove(s)
   students = []
@@ -402,7 +407,9 @@ function populate(late) {
       if (free.has(key) || key === roomieSeat) continue
       if ((r * 7 + s * 3) % 5 === 0) continue // a few empty seats
       const model = CROWD_MODELS[n % CROWD_MODELS.length]
-      const avatar = createAvatar({ model, gender: model.startsWith('female') ? 'female' : 'male', skin: skinFor(n), outfit: 'hoodie', topColor: TOPS[n % TOPS.length] })
+      // (three seats are the first-years from abroad, docs/cast.md; the rest are the usual mix)
+      const named = INTERNATIONALS[n]
+      const avatar = createAvatar(named ? lookForPerson(named) : { model, gender: model.startsWith('female') ? 'female' : 'male', skin: skinFor(n), outfit: 'hoodie', topColor: TOPS[n % TOPS.length] })
       place(avatar, r, s)
       avatar.userData.seat = key
       scene.add(avatar)
@@ -410,9 +417,7 @@ function populate(late) {
       n += 1
     }
   }
-  roommate = createAvatar(male
-    ? { model: 'male-a', skin: 'brown', outfit: 'jacket', topColor: '#1d7fb8', bottomColor: '#3a2f4f' }
-    : { model: 'female-b', skin: 'deep', outfit: 'hoodie', topColor: '#d9534f', hairColor: '#f0c400', bottomColor: '#2b3a55' })
+  roommate = createAvatar(roomLook)
   place(roommate, 1, 5)
   scene.add(roommate)
   students.push(roommate)
@@ -533,8 +538,8 @@ async function play() {
   setShot(null, { pos: [x * 0.7, y + 3.2, z + 3], look: [-0.6, 3.2, -6] })
   addDelta(total, seat.deltas)
   floatDelta(seat.deltas)
-  if (seat.id === 'zanele') say(seat.zanele)
-  else say({ who: 'zanele', text: seat.zanele.text })
+  if (seat.id === 'roommate') say(seat.roommate)
+  else say({ who: 'roommate', text: seat.roommate.text })
   await tapNext(uiq('.lc-say'))
 
   // 3. something happens
@@ -561,9 +566,9 @@ async function play() {
   if (outcome.tone === 'good') gesture(player, 'emote-yes')
   else if (outcome.tone === 'bad') gesture(player, 'emote-no')
   const reaction = roomieLine(outcome.tone)
-  if (seat.id === 'zanele' && reaction) say(reaction)
+  if (seat.id === 'roommate' && reaction) say(reaction)
   else say(null)
-  await tapNext(uiq(seat.id === 'zanele' && reaction ? '.lc-say' : '.lc-caption'))
+  await tapNext(uiq(seat.id === 'roommate' && reaction ? '.lc-say' : '.lc-caption'))
   if (moment.id === 'load_shedding') {
     boardText([`Welcome to ${venue.name}`, venue.subject])
     await tween(0.6, (k) => { hemi.intensity = HEMI * (0.15 + k * 0.85); sun.intensity = SUN * (0.05 + k * 0.95); lights(k) })
@@ -589,7 +594,7 @@ async function play() {
     wait(1.4 + i * 0.9).then(() => walk(student, [[AISLE_X, y, rowGap(r2)], ...aisleTo(r2).reverse(), [AISLE_X, 0, 9.6], [AISLE_X, 0, 11]], 1.4))
   })
   await tapNext(uiq('.lc-say'))
-  const end = roomieLine(seat.id === 'zanele' ? 'end' : 'end_alone')
+  const end = roomieLine(seat.id === 'roommate' ? 'end' : 'end_alone')
   say(end)
   await tapNext(uiq('.lc-say'))
 
@@ -638,8 +643,10 @@ export function startLecture(options) {
   if (running) return
   running = true
   tasks = []
-  roomie = roommateOf(opts.run.character?.avatar)
-  male = genderOf(opts.run.character?.avatar) === 'male'
+  const rm = roommateFor(opts.run.character)
+  roomie = rm.name
+  roomLook = roommateLook(rm)
+  male = rm.gender === 'male'
   host.dataset.roomie = roomie
   for (const node of uiRoot.children) node.hidden = true
   for (const who of [player, lecturer]) if (who) scene.remove(who)

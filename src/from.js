@@ -4,6 +4,7 @@
 // Countries (owner, 8 Nov): Elsewhere in Africa and Overseas each open a list of countries; the
 // country is the answer that's saved and shown (with its flag on the student card). The day-1 home
 // style looks up the country's region.
+import COUNTRY_DATA from '../data/campusville/countries.json'
 export const FROM = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape', 'Elsewhere in Africa', 'Overseas']
 // The old answers, and the province each is in.
 export const FROM_WAS = { Durban: 'KwaZulu-Natal', Joburg: 'Gauteng', Soweto: 'Gauteng', Pretoria: 'Gauteng', 'Cape Town': 'Western Cape' }
@@ -104,3 +105,47 @@ export function fromKey(from, table = {}) {
   const city = Object.keys(FROM_WAS).find((c) => FROM_WAS[c] === from && table[c])
   return city || from
 }
+
+// ---- Home country (owner, 9 Nov): the "Where are you from?" step of enrolment ----
+// character.country is one of the ids in data/campusville/countries.json (South Africa by default).
+// It rides on the player's card and name tag as a small drawn flag; the roommate welcomes a player
+// from abroad on day 1. `from` (province or country) stays the home-style answer: a country other than
+// South Africa also sets it, so the day-1 home follows the region (fromKey above).
+export const DEFAULT_COUNTRY = COUNTRY_DATA.default
+export const COUNTRY_LIST = COUNTRY_DATA.countries.map((c) => c.id)
+const countryRow = (id) => COUNTRY_DATA.countries.find((c) => c.id === id) || null
+
+// The country of a character (an old save has none: South Africa).
+export const countryOf = (character) => (countryRow(character?.country) ? character.country : DEFAULT_COUNTRY)
+// Has this save been asked? (an old save has no country; it sees the step once)
+export const hasCountry = (character) => Boolean(countryRow(character?.country))
+
+// The drawn flag for a country id ('Other' is the globe).
+export function countryFlag(country) {
+  const row = countryRow(country)
+  return row ? flagOf(row.flag) : ''
+}
+
+// One welcome line from the roommate for a player who is not from South Africa ('' for South Africa).
+export function countryWelcome(country) {
+  return countryRow(country)?.welcome || ''
+}
+
+// What `from` becomes when a country is picked: a country is its own answer; South Africa keeps
+// the province (cleared if it was a foreign country); Other is the world (the globe).
+export function fromForCountry(country, from = '') {
+  if (country === 'South Africa') return PROVINCES.includes(fromPlace(from)) ? from : ''
+  if (country === 'Other') return 'Overseas'
+  return country
+}
+
+// A country's flag as a picture the 3D name tags can draw (a data URL of the same drawn SVG).
+export function flagSrc(country) {
+  const row = countryRow(country)
+  if (!row) return ''
+  const html = flagOf(row.flag)
+  if (!html.startsWith('<svg')) return '' // (the globe is a character, not a drawing: the tag draws it as text)
+  const svg = html.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="90" height="60" ')
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+}
+export const isGlobe = (country) => Boolean(countryRow(country)) && countryRow(country).flag === 'Overseas'

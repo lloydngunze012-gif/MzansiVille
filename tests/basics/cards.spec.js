@@ -69,7 +69,7 @@ test('K10 open and close every card type, then a finger moves you within 100 ms'
     const who = await page.evaluate(() => {
       const p = window.mzansiPlayerPos()
       return window.mzansiPeople()
-        .filter((o) => !['auntie_pinky', 'mam_gugu'].includes(o.id))
+        .filter((o) => !['mama_liz', 'mam_gugu'].includes(o.id))
         .map((o) => ({ s: window.mzansiPersonOnScreen(o.id), d: Math.hypot(o.x - p.x, o.z - p.z) }))
         .filter((o) => o.s && !o.s.behind && o.s.x > 40 && o.s.x < 372 && o.s.y > 230 && o.s.y < 700)
         .sort((a, b) => a.d - b.d)[0]?.s || null

@@ -4,15 +4,15 @@
 import { genderOf } from './avatar.js'
 
 export const CRUSHES = {
-  amahle: {
-    id: 'amahle',
-    name: 'Amahle',
+  mia: {
+    id: 'mia',
+    name: 'Mia',
     gender: 'female',
     look: { model: 'female-d', gender: 'female', skin: 'brown', outfit: 'skirt', topColor: '#f2c14e', bottomColor: '#2b3a55', hairColor: '#1c1915' },
   },
-  kabelo: {
-    id: 'kabelo',
-    name: 'Kabelo',
+  daniel: {
+    id: 'daniel',
+    name: 'Daniel',
     gender: 'male',
     look: { model: 'male-d', gender: 'male', skin: 'deep', outfit: 'tee', topColor: '#2a9d8f', bottomColor: '#1c1915', hairColor: '#1c1915' },
   },
@@ -21,9 +21,9 @@ export const CRUSHES = {
 // interest: 'guys' | 'girls' | 'everyone' | 'none' (none: the same person, as a friend).
 export function crushFor(character = {}) {
   const interest = character.interest
-  if (interest === 'guys') return CRUSHES.kabelo
-  if (interest === 'girls') return CRUSHES.amahle
-  return genderOf(character.avatar) === 'male' ? CRUSHES.amahle : CRUSHES.kabelo
+  if (interest === 'guys') return CRUSHES.daniel
+  if (interest === 'girls') return CRUSHES.mia
+  return genderOf(character.avatar) === 'male' ? CRUSHES.mia : CRUSHES.daniel
 }
 
 // The name the game shows: their name once you know it, "Bus stop stranger" before.

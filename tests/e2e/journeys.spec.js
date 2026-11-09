@@ -44,11 +44,11 @@ async function tapPerson(page, id) {
   if (!ok || !started) await page.evaluate((who) => window.mzansiTalkTo(who), id)
 }
 
-test('J3: tap Auntie Pinky, queue, order a bunny chow, pay, sit and eat at a table, stand up', async ({ page }) => {
+test('J3: tap Mama Liz, queue, order a bunny chow, pay, sit and eat at a table, stand up', async ({ page }) => {
   await student(page)
   await world(page, 'spawn=cafeteria&j=3')
   const money = (await runOf(page)).stats.money
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'queueOrder', { timeout: 10000 })
   await page.waitForTimeout(2500)
   await shot(page, 'J3-1')

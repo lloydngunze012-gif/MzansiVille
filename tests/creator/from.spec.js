@@ -6,7 +6,7 @@ test('From: provinces in order, old saves still work', async ({ page }) => {
   await page.goto('/?morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?morning=0#/new')
-  await page.locator('[data-act="enrol-next"]').tap()
+  for (let i = 0; i < 3; i++) await page.locator('[data-act="enrol-next"]').tap()
   await page.locator('.en[data-step="who"]').waitFor()
   // (three pickers since 8 Nov: South Africa lists the provinces; Rest of Africa and World their
   // countries, then "somewhere else", saved as the old Elsewhere in Africa / Overseas answers)

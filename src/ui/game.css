@@ -384,7 +384,7 @@ body:has(#app .g-sheet,#app .g-result,#app .g-menu) #world .door-prompt,#world .
 #lecture3d canvas{display:block;width:100%;height:100%}
 .lc-caption{position:absolute;left:12px;right:12px;top:200px;margin:0;padding:10px 14px;border-radius:14px;background:#22143bf0;color:#fff6e6;font:700 15px system-ui;text-align:center}
 .lc-say{position:absolute;left:16px;right:16px;top:262px;margin:0;padding:10px 14px;border-radius:16px;background:#fff8ea;color:#22143b;font:700 15px system-ui;border:3px solid #2a1846}
-.lc-say[data-who=zanele]{background:#e8fff2}
+.lc-say[data-who=roommate]{background:#e8fff2}
 .lc-say .mm-name{display:block;font:900 11px system-ui;letter-spacing:.08em;text-transform:uppercase;color:#1f7a4a}
 .lc-caption[hidden],.lc-say[hidden]{display:none}
 .lc-float{left:50%;top:48%}
@@ -719,3 +719,5 @@ a.in-go{display:flex;align-items:center;justify-content:center;line-height:1.2;p
 /* Sound button in the HUD row: phones keep the row on one line (weekday dropped, buttons 30 px). */
 @media (max-width:420px){.g-row{gap:4px}.g-row .g-day{font-size:0}.g-row .g-day b{font-size:14px;margin:0}.g-row .g-gear,.g-row .g-soc{width:30px;height:30px;font-size:16px}.g-row .g-soc+.g-soc,.g-row .g-soc+.g-gear,.g-row .g-gear+.g-gear{margin-left:0}}
 @media (max-width:380px){.g-row{gap:3px}.g-row .g-clock i{display:none}.g-row .g-online{font-size:9.5px;padding:3px 3px}.g-row .g-gear,.g-row .g-soc{width:28px;height:28px}}
+/* A flag by an international student's name in the talk card (src/from.js flagOf). */
+.g-talk-flag { display: inline-flex; vertical-align: 2px; margin-left: 4px; }

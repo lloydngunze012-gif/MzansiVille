@@ -1,6 +1,7 @@
 import { getClient } from './net.js'
 import { cleanBio } from './engine/filter.js'
 import { myIdentity, peerMeta } from './presence.js'
+import { COUNTRY_LIST, countryOf } from './from.js'
 
 // The player card (build plan, Piece 1a): one screen, the same for you and for anyone
 // who taps you. Never an age. Saved to Supabase (player_cards, through
@@ -28,6 +29,8 @@ export function cardOf(run, num = myIdentity().num) {
     tags: { course: c.course || '', vibe: VIBES.includes(c.vibe) ? c.vibe : '', looking: LOOKING.includes(c.looking) ? c.looking : '' },
     // (where you're from: optional, on the card under your name and handle)
     from: cleanBio(c.from || '').text.slice(0, 30),
+    // (home country, 9 Nov: a flag on your name tag and card; only a country from countries.json)
+    country: countryOf(c),
     year: run?.year || 1,
     days: run?.day || 1,
     badges,
@@ -38,8 +41,8 @@ export function cardOf(run, num = myIdentity().num) {
 
 // The part of the card that rides along with presence (small: no look, sent anyway).
 export function compactCard(run) {
-  const { handle, bio, tags, year, days, badges, from } = cardOf(run)
-  return { handle, bio, tags, year, days, badges, from }
+  const { handle, bio, tags, year, days, badges, from, country } = cardOf(run)
+  return { handle, bio, tags, year, days, badges, from, country }
 }
 
 // ---------- Saving your card ----------
@@ -88,7 +91,7 @@ function fromPresence(id) {
   const c = m.card || {}
   return {
     name: m.name, num: m.num, house: m.house, look: m.look,
-    handle: c.handle || '', bio: c.bio || '', tags: c.tags || {}, year: c.year || 1, days: c.days || 1, badges: c.badges || [], from: String(c.from || '').slice(0, 30), classOf: CLASS_OF,
+    handle: c.handle || '', bio: c.bio || '', tags: c.tags || {}, year: c.year || 1, days: c.days || 1, badges: c.badges || [], from: String(c.from || '').slice(0, 30), country: COUNTRY_LIST.includes(c.country) ? c.country : '', classOf: CLASS_OF,
   }
 }
 

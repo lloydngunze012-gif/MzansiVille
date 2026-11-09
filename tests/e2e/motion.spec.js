@@ -122,9 +122,9 @@ test('M2a sit on a Quad bench (Sit with them)', async ({ page }) => {
   await saveVideo(page, 'M2-quad-bench')
 })
 
-test('M2b sit on a cafeteria chair (queue at Auntie Pinky, sit and eat)', async ({ page }) => {
+test('M2b sit on a cafeteria chair (queue at Mama Liz, sit and eat)', async ({ page }) => {
   await campus(page, 'cafeteria', '&a=22')
-  await tapPerson(page, 'auntie_pinky')
+  await tapPerson(page, 'mama_liz')
   const card = page.locator('.g-talk')
   await expect(card).toBeVisible({ timeout: 120000 })
   await expect(card).toHaveAttribute('data-phase', 'menu')

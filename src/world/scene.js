@@ -5,7 +5,9 @@ import { homePlaceId, houseOf } from '../engine/model.js'
 import { loop as soundLoop } from '../audio.js'
 import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
-import { genderOf, roommateOf } from '../avatar.js'
+import { genderOf } from '../avatar.js'
+import { roommateFor, roommateLook } from '../roommates.js'
+import { countryOf, countryWelcome } from '../from.js'
 import { lookForPerson, nameOf } from './cast.js'
 import { buildRoom } from './rooms.js'
 import { makeChair } from './furniture.js'
@@ -57,6 +59,8 @@ let mapUi
 let frame = 0
 let visible = false
 let builtId = ''
+// (what the campus was built for: a new roommate is a new person on the first Quad bench)
+const buildKey = (district, homeId, run) => `${district.meta.id}|${homeId}|${genderOf(run?.character?.avatar)}|${roommateFor(run?.character).id}`
 let spawnedKey = ''
 let forcedSteer = null // tests: hold the stick in one direction (mzansiSteer)
 let walking = false
@@ -1038,7 +1042,7 @@ function startTalk(avatar) {
   if (!player || talk) return
   const id = avatar.userData.personId
   // Vendors serve the queue: from outside the line, you are sent to the back of it.
-  if ((id === 'auntie_pinky' || id === 'mam_gugu') && window.mzansiVendorReady !== id) {
+  if ((id === 'mama_liz' || id === 'mam_gugu') && window.mzansiVendorReady !== id) {
     window.dispatchEvent(new CustomEvent('mzansi-vendor-tap', { detail: { id } }))
     return
   }
@@ -2297,15 +2301,15 @@ function rebuild(district, homeId) {
   campus = createCampus(district, homeId)
   scene.add(campus.group)
   scene.userData.floorAt = campus.floor.at // soles rest on paths, plazas and decks (avatar3d)
-  crowd = createCrowd(scene, campus, { roommate: roommateOf(currentRun?.character?.avatar).toLowerCase(), solid: (x, z) => blockedAt(x, z) })
+  crowd = createCrowd(scene, campus, { roommate: roommateFor(currentRun?.character).id, solid: (x, z) => blockedAt(x, z) })
   others = createOthers(scene)
-  builtId = `${district.meta.id}|${homeId}|${genderOf(currentRun?.character?.avatar)}`
+  builtId = buildKey(district, homeId, currentRun)
 }
 
 function respawn(district, run) {
   leaveHouse({ stay: true })
   const homeId = homePlaceId(district, run.character?.residence)
-  if (builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}`) rebuild(district, homeId)
+  if (builtId !== buildKey(district, homeId, run)) rebuild(district, homeId)
   if (player) scene.remove(player)
   player = createAvatar(run.character?.avatar)
   player.userData.isPlayer = true
@@ -2366,7 +2370,9 @@ function respawn(district, run) {
       scene, host, player, run, gate,
       door: doorPoint(homeBuilding),
       house: homeBuilding.name,
-      roommate: roommateOf(run.character?.avatar),
+      roommate: roommateFor(run.character).name,
+      roommateLook: roommateLook(roommateFor(run.character)),
+      welcome: countryWelcome(countryOf(run.character)),
       boom: campus.buildings.getObjectByName('boom'),
       walkTo: (x, z) => walkTo(x, z, null, { arrive: true }),
       rig,
@@ -2885,7 +2891,7 @@ export function showCampus(district, run) {
   currentRun = run
   const homeId = homePlaceId(district, run.character?.residence)
   const key = spawnKey(district, run)
-  const needs = builtId !== `${district.meta.id}|${homeId}|${genderOf(run.character?.avatar)}` || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))
+  const needs = builtId !== buildKey(district, homeId, run) || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))
   const enter = () => {
     refreshMarkers()
     const shot = new URLSearchParams(location.search).get('shot') || ''

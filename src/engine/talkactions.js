@@ -6,7 +6,7 @@
 import { MENUS } from '../menus.js'
 import { LECTURERS } from '../venues.js'
 
-const NO_ACTIONS = new Set(['bongani', 'lindiwe', 'ruan', 'lethabo'])
+const NO_ACTIONS = new Set(['bongani', 'leah', 'ruan', 'lethabo'])
 
 export function isContact(run, id) {
   return (run.contacts || []).some((c) => c.id === id)
