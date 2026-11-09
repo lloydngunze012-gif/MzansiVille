@@ -28,7 +28,7 @@ for (const [w, h] of [[390, 844], [360, 740]]) {
     await page.screenshot({ path: `${OUT}/${TAG}-${w}-male.png` })
     await page.locator('[data-act="enrol-next"]').tap()
     await page.locator('.en[data-step="who"]').waitFor()
-    await page.locator('.en-chips').last().scrollIntoViewIfNeeded()
+    await page.locator('[data-act="enrol-next"]').scrollIntoViewIfNeeded() // (the who step's last control: the old chips list is gone)
     await page.waitForTimeout(300)
     await page.screenshot({ path: `${OUT}/${TAG}-${w}-who.png` })
     await ctx.close()

@@ -227,7 +227,7 @@ test('K5 the creator: a loading shimmer while the 3D student loads, never the ol
     const s = document.querySelector('.cc-stage')
     const bob = s?.querySelector('.cc-bob')
     const load = s?.querySelector('.cc-loading')
-    return { has3d: s?.classList.contains('cc-has3d'), flat: bob ? getComputedStyle(bob).visibility !== 'hidden' : false, shimmer: load ? getComputedStyle(load).display !== 'none' : false }
+    return { has3d: s?.classList.contains('cc-has3d'), flat: bob ? getComputedStyle(bob).visibility !== 'hidden' : false, shimmer: load ? getComputedStyle(load).display !== 'none' : false, still: Boolean(s?.querySelector('.cc-still')) }
   })
   const early = await look()
   await page.screenshot({ path: `${OUT}/K5-1-loading.png` })
@@ -245,7 +245,8 @@ test('K5 the creator: a loading shimmer while the 3D student loads, never the ol
   await page.screenshot({ path: `${OUT}/K5-3-new-outfit.png` })
   console.log('creator', JSON.stringify({ early, loaded, changing: seen }))
   expect(early.flat, 'no flat character while loading').toBe(false)
-  expect(early.shimmer, 'a shimmer while loading').toBe(true)
+  // (the default look stands in as a pre-rendered still of the studio's framing; any other look shows the shimmer: render.js)
+  expect(early.shimmer || early.still, 'a shimmer or the still while loading').toBe(true)
   expect(loaded.shimmer, 'no shimmer once the student is in').toBe(false)
   expect(seen.every((s) => !s.flat), 'no flat character while a new outfit loads').toBe(true)
   await saveVideo(page, 'K5-creator')

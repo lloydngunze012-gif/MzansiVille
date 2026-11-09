@@ -171,7 +171,8 @@ function expectPlanted(list, what) {
   console.log(what, JSON.stringify(list))
   expect(list.some((t) => t.phase === 'lower'), `${what}: sat down`).toBe(true)
   for (const t of list) {
-    expect(t.feetMoved, `${what} ${t.phase}: feet planted`).toBeLessThan(0.03)
+    // (3.5 cm: the owner accepted the Quad bench's 3.1 cm foot slide on 1 Nov, docs/sprints/motion2/closeout)
+    expect(t.feetMoved, `${what} ${t.phase}: feet planted`).toBeLessThan(0.035)
     expect(t.frames, `${what} ${t.phase}: animated over several frames`).toBeGreaterThan(3)
   }
 }
@@ -343,12 +344,19 @@ function doorPass(samples, { axis, plane, gap, open }) {
 test('M6 through the res door and a lecture venue door: the door opens, no clipping', async ({ page }) => {
   test.setTimeout(600000)
   fs.mkdirSync(OUT, { recursive: true })
-  // The res door: day 1 morning, walking to the bus.
+  // The res door: the res morning (day 2), walking to the bus.
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await expect(page).toHaveURL(/#\/morning/)
+  // (day 1 is leaving home now: the res morning is day 2, so start the save on the morning of day 2)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { day: 2, phase: 'wake', minutes: 7 * 60, morningDone: true, mode: 'play' })
+    delete save.run.morningStart
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
   await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto&meet=bus#/morning')
   const host = page.locator('#morning3d')
   const samples = []
@@ -410,68 +418,7 @@ test('M6b through a lecture venue door: the door opens, no clipping', async ({ p
   await saveVideo(page, 'M6-lecture-door')
 })
 
-test('M4b sit and stand: the bus stop bench (day 1 morning)', async ({ page }) => {
-  test.setTimeout(600000)
-  fs.mkdirSync(OUT, { recursive: true })
-  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
-  await page.evaluate(() => localStorage.clear())
-  await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
-  await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
-  await expect(page).toHaveURL(/#\/morning/)
-  await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto&meet=bus#/morning')
-  const host = page.locator('#morning3d')
-  let recording = false
-  for (let i = 0; i < 900; i++) {
-    const step = await host.getAttribute('data-step')
-    if (step === 'walk-stop' && !recording) { await page.evaluate(() => window.mzansiRecord({ where: 'morning', ids: ['player'], feet: ['player'] })); recording = true }
-    if (recording && step !== 'walk-stop' && step !== 'stop') break
-    const walkChoice = page.locator('.mm-choice:visible', { hasText: 'Walk to the bus' })
-    if (await walkChoice.count()) await walkChoice.first().tap().catch(() => {})
-    else if (await page.locator('.mm-choice:visible').count()) await page.locator('.mm-choice:visible').first().tap().catch(() => {})
-    else if (await page.locator('.mm-bar:not([hidden]) .mm-go').count()) await page.locator('.mm-bar:not([hidden]) .mm-go').first().tap().catch(() => {})
-    else await page.locator('.mm-bubble:visible').first().tap({ timeout: 500 }).catch(() => {})
-    const b = recording && await page.evaluate(() => window.mzansiBodies('morning', 'player')[0])
-    if (b?.phase === 'lower') await page.screenshot({ path: `${OUT}/M4-bus-bench-lowering.png` })
-    if (b?.pose === 'sit' && !b.phase) await page.screenshot({ path: `${OUT}/M4-bus-bench-seated.png` })
-    await page.waitForTimeout(150)
-  }
-  const frames = await page.evaluate(() => window.mzansiRecordStop())
-  // The walk there never passes through the bench (x 14.9..17.1, z 4.7..5.1): the body's
-  // middle never over the bench (standing at its front edge, about to sit, is fine).
-  const through = frames.map((f) => f.people[0]).filter((p) => p && p.pose !== 'sit' && !p.phase && p.x > 14.9 && p.x < 17.1 && p.z > 4.7 && p.z < 5.1)
-  console.log('through the bench', through.length)
-  expect(through.length).toBe(0)
-  expectPlanted(transitions(frames), 'bus stop bench')
-  await saveVideo(page, 'M4-bus-bench')
-})
-
-// Each framing in Top, Sims and Eye: every framed head fully on screen (not under the
-// HUD), not hidden behind anything, the camera not inside a head, the player's head shown.
-async function headsInThreeViews(page, ids, name) {
-  const results = []
-  for (const mode of ['top', 'sims', 'eye']) {
-    await page.evaluate((m) => window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: m })), mode)
-    // (once the camera has glided into the shot)
-    await expect.poll(() => page.evaluate(() => { const d = JSON.parse(window.mzansiDebug()); return d.shot?.pos ? Math.hypot(...d.cam.map((v, i) => v - d.shot.pos[i])) : 0 }), { timeout: 20000, intervals: [300] }).toBeLessThan(0.25)
-    await page.waitForTimeout(400)
-    const r = await page.evaluate((list) => window.mzansiHeads(list), ids)
-    await page.screenshot({ path: `${OUT}/M7-${name}-${mode}.png` })
-    console.log(name, mode, JSON.stringify(r))
-    if (process.env.DEBUG_T) console.log('dbg', await page.evaluate((list) => JSON.stringify({ d: JSON.parse(window.mzansiDebug()), p: window.mzansiPlayerPos(), o: list.map((i) => window.mzansiPersonPos(i)), pose: window.mzansiPlayerPose() }), ids))
-    results.push(r)
-  }
-  for (const r of results) {
-    expect(r.close, `${name} ${r.mode}: still the framed shot`).toBe(true)
-    expect(r.heads.length, `${name} ${r.mode}: people framed`).toBeGreaterThanOrEqual(ids.length + 1)
-    for (const h of r.heads) {
-      expect(h.inside && !h.underHud, `${name} ${r.mode}: ${h.id}'s head on screen`).toBe(true)
-      expect(h.hidden, `${name} ${r.mode}: ${h.id}'s head not hidden`).toBeNull()
-      expect(h.dist, `${name} ${r.mode}: camera not inside ${h.id}'s head`).toBeGreaterThan(0.4)
-      expect(h.shown, `${name} ${r.mode}: ${h.id}'s head drawn`).toBe(true)
-    }
-  }
-}
-
+// (M4b, sit and stand on the bus stop bench of the res morning, was retired 9 Nov: the morning no longer has the bus-stop meet-cute, so the scene it tested is gone; M4c covers a bench)
 test('M7a heads in frame: a conversation in Top, Sims and Eye', async ({ page }) => {
   await campus(page, 'quad', '&a=21')
   await tapPerson(page, 'x12')
@@ -533,14 +480,8 @@ test('M3 into bed, sleep, get up next morning (res), planted', async ({ page }) 
   const lying = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0])
   console.log('lying', JSON.stringify({ bedGap: lying.bedGap }))
   expect(Math.abs(lying.bedGap)).toBeLessThan(0.03)
-  // The night passes: the day's summary, then Start day 2 wakes you in the same bed.
-  await expect.poll(async () => {
-    if (await page.getByRole('button', { name: /Start day 2/ }).first().isVisible()) return true
-    const next = page.locator('.g-result button[data-act="dismiss"], [data-screen-card] button[data-act="dismiss"]').first()
-    if (await next.isVisible()) await next.tap({ timeout: 2000 }).catch(() => {})
-    return false
-  }, { timeout: 90000, intervals: [1500] }).toBe(true)
-  await page.getByRole('button', { name: /Start day 2/ }).tap()
+  // The night passes (no end-of-day screen since 63aa80b): the next day opens on its own wake-up scene in the same bed.
+  await expect(page.locator('#world')).toHaveAttribute('data-activity', 'wakeUp', { timeout: 90000 })
   await shootPhase(page, 'rise', 'M3-3-getting-up')
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).toBe('stand')
   await page.waitForTimeout(2000)

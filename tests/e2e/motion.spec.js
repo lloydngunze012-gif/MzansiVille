@@ -199,9 +199,10 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await page.locator('.g-cta [data-act="place-open"]').tap()
   await page.locator('[data-act="do"][data-id="sleep"]').tap()
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'sleep', { timeout: 10000 })
-  // Getting in: sit on the edge first, then lie back.
-  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000, intervals: [50] }).toBe('sit')
-  await page.waitForTimeout(150)
+  // Getting in: sit on the edge first, then lie back. (the walk to the res door comes first: about 25 s at normal speed)
+  await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000, intervals: [50] }).toBe('sit')
+  // (the pose reads 'sit' as the lowering starts: measure the hips once they have settled on the seat)
+  await expect.poll(async () => (await playerBody(page)).phase ?? null, { timeout: 20000, intervals: [100] }).toBe(null)
   expectSeated(await playerBody(page), 'player on the bed edge')
   await page.screenshot({ path: `${OUT}/M3-1-edge.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000 }).toBe('lie')
@@ -210,14 +211,8 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await page.waitForTimeout(1200)
   expectLying(await playerBody(page), 'player in bed')
   await page.screenshot({ path: `${OUT}/M3-3-in-bed.png` })
-  await expect.poll(async () => {
-    if (await page.getByRole('button', { name: /Start day 2/ }).first().isVisible()) return true
-    const next = page.locator('.g-result button[data-act="dismiss"], [data-screen-card] button[data-act="dismiss"]').first()
-    if (await next.isVisible()) await next.tap({ timeout: 2000 }).catch(() => {})
-    return false
-  }, { timeout: 90000, intervals: [1500] }).toBe(true)
-  await page.getByRole('button', { name: /Start day 2/ }).tap()
-  await expect(page.locator('#world')).toHaveAttribute('data-activity', 'wakeUp', { timeout: 20000 })
+  // (no end-of-day screen since 63aa80b: sleeping starts the next day, which opens on its own wake-up scene)
+  await expect(page.locator('#world')).toHaveAttribute('data-activity', 'wakeUp', { timeout: 90000 })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000 }).toBe('lie')
   await page.waitForTimeout(1200)
   expectLying(await playerBody(page), 'player waking in bed')
@@ -225,7 +220,7 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await page.waitForTimeout(1300)
   await page.screenshot({ path: `${OUT}/M3-5-getting-up.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000, intervals: [50] }).toBe('sit')
-  await page.waitForTimeout(200)
+  await expect.poll(async () => (await playerBody(page)).phase ?? null, { timeout: 20000, intervals: [100] }).toBe(null)
   expectSeated(await playerBody(page), 'player sitting up on the bed edge')
   await page.screenshot({ path: `${OUT}/M3-6-sitting-up.png` })
   await expect.poll(() => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 30000 }).toBe('stand')
@@ -234,13 +229,20 @@ test('M3 night in res: into bed, sleep, get up next morning', async ({ page }) =
   await saveVideo(page, 'M3-bed')
 })
 
-test('M3b day 1 morning: on the mattress, then a natural get-up', async ({ page }) => {
+test('M3b res morning (day 2): on the mattress, then a natural get-up', async ({ page }) => {
   fs.mkdirSync(OUT, { recursive: true })
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?fast=1&roommate=1&latebus=0&snooze=0#/new')
   await enrolUI(page, { name: 'Thandi', house: 1, course: 1 })
   await expect(page).toHaveURL(/#\/morning/)
+  // (day 1 is leaving home now: the res morning is day 2, so start the save on the morning of day 2)
+  await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
+    Object.assign(save.run, { day: 2, phase: 'wake', minutes: 7 * 60, morningDone: true, mode: 'play' })
+    delete save.run.morningStart
+    localStorage.setItem('mzansiville.v1', JSON.stringify(save))
+  })
   // Back to normal speed for the get-up itself.
   await page.goto('/?roommate=1&latebus=0&snooze=0&talk=auto#/morning')
   await expect(page.locator('#morning3d')).toHaveAttribute('data-step', /greet|wake/, { timeout: 45000 })
