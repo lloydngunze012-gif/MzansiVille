@@ -606,7 +606,6 @@ html[data-theme] .en .en-done .en-sub { color: var(--en-accent); }
 .g-cta.g-route p, .g-cta.g-hint p { flex: 0 1 auto; max-width: min(440px, calc(100% - 24px)); }
 .g-cta.g-hint button { pointer-events: auto; }
 
-html[data-theme] .en .en-cty[aria-pressed="true"]::after { color: var(--cr-gold-dk); }
 html[data-theme] .en .en-roomie { background: #fff; border-color: var(--cr-line); }
 html[data-theme] .en .en-roomie .en-rface { background: var(--cr-tint); }
 html[data-theme] .en .en-roomie b { color: #1c1915; }

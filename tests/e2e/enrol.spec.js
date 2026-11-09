@@ -31,6 +31,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
 
   // 1. Your look: the student fills the screen; a hair card.
   await expect(page.locator('.en[data-step="look"]')).toBeVisible()
+  await expect(page.locator('select[data-country]')).toHaveValue('South Africa')
   const stage = await page.locator('.en-stage').boundingBox()
   await expect(page.locator('.en-dots li.now')).toHaveCount(1)
   await tap(page.locator('[data-part="hair"]').nth(1))
@@ -38,10 +39,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   await page.screenshot({ path: `${OUT}/1-look.png` })
   await tap(page.locator('[data-act="enrol-next"]'))
 
-  // 1b. Where are you from? (South Africa is pre-selected) and 1c. your roommate (the default is pre-selected).
-  await expect(page.locator('.en[data-step="country"]')).toBeVisible()
-  await expect(page.locator('[data-k="country"][aria-pressed="true"]')).toHaveText('South Africa')
-  await tap(page.locator('[data-act="enrol-next"]'))
+  // 1b. Your roommate (the default is pre-selected). (Where are you from? is the dropdown on the look page.)
   await expect(page.locator('.en[data-step="roommate"]')).toBeVisible()
   await expect(page.locator('.en-roomie[aria-pressed="true"]')).toHaveCount(1)
   await tap(page.locator('[data-act="enrol-next"]'))
@@ -111,7 +109,7 @@ test('Skip all the way: a valid student anyway', async ({ page }) => {
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0#/new')
-  for (const step of ['look', 'country', 'roommate', 'who', 'vibe']) {
+  for (const step of ['look', 'roommate', 'who', 'vibe']) {
     await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible()
     await page.locator('[data-act="enrol-skip"]').tap()
   }
@@ -128,7 +126,7 @@ test('Start over from the start screen: confirm, then a fresh enrolment', async 
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0&fresh=1#/new')
-  for (const step of ['look', 'country', 'roommate', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
+  for (const step of ['look', 'roommate', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
   await page.locator('[data-act="enrol-enter"]').tap()
   await page.waitForURL(/#\/(play|morning)/)
   await page.goto('/?morning=0&t=2#/')
@@ -208,7 +206,9 @@ test('the creator preview stays put: pinned top ~40%, options scroll beneath, ch
   // An outfit further down: the student changes now; the page stays where it was.
   const look0 = await page.locator('.cc-stage').getAttribute('data-look')
   const outfit = page.locator('[data-part="outfit"]').nth(2)
-  await outfit.scrollIntoViewIfNeeded()
+  // (centred, clear of the pinned card above and the Next bar below, so the tap itself never scrolls)
+  await outfit.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  await page.waitForTimeout(300)
   const y0 = await page.evaluate(() => window.scrollY)
   await outfit.tap()
   await page.waitForTimeout(400)

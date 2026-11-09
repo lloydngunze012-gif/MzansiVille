@@ -26,7 +26,7 @@ for (const [w, h] of [[390, 844], [360, 740]]) {
     await page.waitForFunction(() => window.mzansiStudio().mode === 'hold', null, { timeout: 15000 }).catch(() => {})
     await page.waitForTimeout(300)
     await page.screenshot({ path: `${OUT}/${TAG}-${w}-male.png` })
-    for (let i = 0; i < 3; i++) await page.locator('[data-act="enrol-next"]').tap()
+    for (let i = 0; i < 2; i++) await page.locator('[data-act="enrol-next"]').tap()
     await page.locator('.en[data-step="who"]').waitFor()
     await page.locator('[data-act="enrol-next"]').scrollIntoViewIfNeeded() // (the who step's last control: the old chips list is gone)
     await page.waitForTimeout(300)

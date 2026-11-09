@@ -63,7 +63,7 @@ The roommate is chosen in the creator ("Your roommate": four cards for your res,
 
 ## Where you're from (player, 9 Nov)
 
-Character creation has a "Where are you from?" step after the look step: South Africa (default), Nigeria, Kenya, Ghana, Zimbabwe, Botswana, Namibia, Zambia, Uganda, Other. Saved as `character.country`; its flag (drawn, no image downloads: src/from.js) shows on the player's name tag over their head, on the student card and on the profile. On day 1, a player who is not from South Africa gets one welcome line from the roommate at the house door (data/campusville/countries.json).
+Character creation has "Where are you from?" as a dropdown on the first (look) page, not a page of its own (9 Nov): every country, African ones first (South Africa on top and the default), then the rest of the world, each alphabetical; no "Other". A country without its own welcome line gets "All the way from {country}? You'll love it here." Saved as `character.country`; its flag (drawn, no image downloads: src/from.js) shows on the player's name tag over their head, on the student card and on the profile. On day 1, a player who is not from South Africa gets one welcome line from the roommate at the house door (data/campusville/countries.json).
 
 ## Home (data/campusville/homes.json)
 

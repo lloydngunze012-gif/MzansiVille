@@ -120,7 +120,15 @@ export const countryOf = (character) => (countryRow(character?.country) ? charac
 // Has this save been asked? (an old save has no country; it sees the step once)
 export const hasCountry = (character) => Boolean(countryRow(character?.country))
 
-// The drawn flag for a country id ('Other' is the globe).
+// The country dropdown (owner, 9 Nov): African countries first, then the rest of the world. Each option
+// shows its flag emoji (a Windows PC shows the two letters instead; the drawn flags stay on cards and tags).
+export const COUNTRY_GROUPS = [
+  { id: 'africa', label: 'Africa', countries: COUNTRY_DATA.countries.filter((c) => c.region === 'africa') },
+  { id: 'world', label: 'Rest of the world', countries: COUNTRY_DATA.countries.filter((c) => c.region !== 'africa') },
+]
+export const countryEmoji = (country) => { const iso = countryRow(country)?.iso; return iso ? String.fromCodePoint(...[...iso].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : '' }
+
+// The drawn flag for a country id (a globe where none is drawn).
 export function countryFlag(country) {
   const row = countryRow(country)
   return row ? flagOf(row.flag) : ''
