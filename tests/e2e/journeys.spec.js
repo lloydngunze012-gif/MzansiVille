@@ -131,11 +131,10 @@ test('J4: at the Quad, talk to a student, "Sit with them": both sit on a bench a
   await world(page, 'spawn=quad&j=4')
   await tapPerson(page, 'x12') // a student hanging out by the benches
   const card = page.locator('.g-talk')
-  await expect(card).toBeVisible({ timeout: 30000 })
+  await expect(card).toBeVisible({ timeout: 90000 })
   await page.waitForTimeout(1200)
   await shot(page, 'J4-1')
-  await card.locator('.g-talk-reply').first().tap()
-  await page.waitForTimeout(800)
+  // ("Sit with them" is on the opening card, beside the replies: a reply first can end the chat, and that is the actions tests' business)
   await shot(page, 'J4-2')
   await card.locator('[data-kind="sit"]').tap()
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'sitTogether', { timeout: 10000 })

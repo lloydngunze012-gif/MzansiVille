@@ -136,7 +136,7 @@ test('student card: the title shows who you are becoming, with the five paths', 
   // (the stats sit behind the card's Stats toggle since Piece 1a)
   await page.locator('.pc-stats-btn').tap()
   await expect(page.locator('.id-title')).toHaveText(/Becoming: The Hustler/)
-  await expect(page.locator('.id-row')).toHaveCount(5)
+  await expect(page.locator('.id-card .id-row')).toHaveCount(5) // (the five paths; the stat bars share the class)
   await page.screenshot({ path: `${OUT}/6-student-card.png`, fullPage: true })
 })
 

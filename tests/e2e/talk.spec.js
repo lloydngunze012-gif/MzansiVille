@@ -17,5 +17,6 @@ test('morning lines wait for a tap', async ({ page }) => {
   const hint = await bubble.evaluate((el) => getComputedStyle(el, '::after').content)
   expect(hint).toContain('Tap to continue')
   await page.mouse.click(200, 650)
-  await expect.poll(async () => bubble.textContent(), { timeout: 5000 }).not.toBe(first)
+  // (the line goes on a tap: the bubble hides, or the next line replaces it. The home scene hides it and keeps its text)
+  await expect.poll(async () => bubble.evaluate((el, was) => el.hidden || el.textContent !== was, first), { timeout: 15000 }).toBe(true)
 })

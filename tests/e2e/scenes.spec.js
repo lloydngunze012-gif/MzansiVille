@@ -50,6 +50,7 @@ for (const [id, place, phase, minutes] of CASES) {
     const btn = page.locator(`[data-act="do"][data-id="${id}"]`)
     await expect(btn).toBeVisible({ timeout: 10000 })
     await expect(btn).toBeEnabled()
+    const day0 = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.day)
     await btn.tap()
     const world = page.locator('#world')
     await expect(world).toHaveAttribute('data-activity-step', 'running', { timeout: 10000 })
@@ -59,7 +60,12 @@ for (const [id, place, phase, minutes] of CASES) {
       await page.waitForTimeout(at === 3 ? 3000 : 4000)
       await page.screenshot({ path: `${OUT}/${id}-${at}s.png` })
     }
-    await expect(world).toHaveAttribute('data-activity-step', 'done', { timeout: 60000 })
+    if (id === 'sleep') {
+      // (there is no end-of-day screen since 63aa80b: sleeping starts the next day, which opens on its own wake-up scene, so the step is running again)
+      await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.day), { timeout: 90000 }).toBe(day0 + 1)
+    } else {
+      await expect(world).toHaveAttribute('data-activity-step', 'done', { timeout: 60000 })
+    }
     expect(errors).toEqual([])
   })
 }

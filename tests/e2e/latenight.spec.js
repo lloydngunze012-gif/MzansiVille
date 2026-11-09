@@ -43,11 +43,20 @@ test('last slot at night: Late night on campus, carry on; bed starts the next da
   console.log('AFTER', JSON.stringify(after), 'TOAST', toast, 'BAR', bar)
   await page.screenshot({ path: `${OUT}/1-late-night.png`, timeout: 15000 }).catch((e) => console.log('SHOT', e.message.slice(0, 80)))
   // You carry on: walking still works (a tap on the ground moves you).
+  // (an open card or sheet pauses walking: a player closes it first)
+  for (let i = 0; i < 4; i++) {
+    const open = page.locator('.g-sheet [data-act="close-sheet"], .g-result [data-act="dismiss"], .g-card-modal button').first()
+    if (!(await open.isVisible().catch(() => false))) break
+    await open.tap().catch(() => {})
+    await page.waitForTimeout(500)
+  }
   const before = await page.evaluate(() => window.mzansiPlayerPos())
   const spot = await page.evaluate(() => { const p = window.mzansiPlayerPos(); for (const [dx, dz] of [[3, 3], [-3, 3], [3, -3], [-3, -3], [0, 4]]) { const s = window.mzansiScreenOf(p.x + dx, p.z + dz, 0); if (s && !s.behind && s.y > 300 && s.y < 700 && window.mzansiOpen(p.x + dx, p.z + dz)) return s } return null })
   if (spot) await page.touchscreen.tap(spot.x, spot.y)
-  await page.waitForTimeout(2500)
-  const moved = await page.evaluate((b) => { const p = window.mzansiPlayerPos(); return Math.hypot(p.x - b.x, p.z - b.z) }, before)
+  // (wait for the walk, never a fixed clock: a slow frame rate is a slow walk)
+  const away = () => page.evaluate((b) => { const p = window.mzansiPlayerPos(); return Math.hypot(p.x - b.x, p.z - b.z) }, before)
+  await expect.poll(away, { timeout: 30000, intervals: [500] }).toBeGreaterThan(0.5).catch(() => {})
+  const moved = await away()
   // Bed: Sleep needs no slot, and the next morning starts.
   await page.evaluate(() => { location.hash = '#/place/res_o' })
   const bed = page.locator('[data-act="do"][data-id="sleep"]')
