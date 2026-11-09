@@ -5,7 +5,7 @@ import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
 import { themePicker } from '../theme.js'
 import { tidyHandle } from '../handles.js'
-import { COUNTRY_GROUPS, FROM_GROUPS, countryEmoji, countryFlag, countryOf, flagOf, fromLabel, fromPlace, groupOf } from '../from.js'
+import { COUNTRY_GROUPS, countryEmoji, countryFlag, countryOf, flagOf, fromPlace, PROVINCES } from '../from.js'
 import { roommateFor, roommatesFor, roommateLook } from '../roommates.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
@@ -130,12 +130,19 @@ function lookStep(state, still) {
 // Where are you from? A dropdown like the ones on the who step: the pill shows your country with its
 // drawn flag, the phone's own list opens on tap (each option has its flag emoji; African countries
 // first, then the rest of the world). South Africa is the default. No intro text.
+// South Africa: which province? (optional) It picks the day-1 home (a suburban house or a township street house).
+function provincePick(state) {
+  const now = PROVINCES.includes(fromPlace(state.draft.from)) ? fromPlace(state.draft.from) : ''
+  return `<label class="en-frompick en-ctypick en-provpick" data-province-pick aria-pressed="${Boolean(now)}"><span>${esc(now || 'Province')}</span><b aria-hidden="true">▾</b>
+        <select data-province aria-label="Which province?"><option value="">Province (optional)</option>${PROVINCES.map((p) => `<option value="${esc(p)}"${p === now ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></label>`
+}
+
 function countryPick(state) {
   const mine = countryOf({ country: state.draft.country })
   const opts = COUNTRY_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${g.countries.map((c) => `<option value="${esc(c.id)}"${c.id === mine ? ' selected' : ''}>${countryEmoji(c.id)} ${esc(c.id)}</option>`).join('')}</optgroup>`).join('')
   return `<section class="en-row en-ctyrow"><h3>Where are you from?</h3>
-      <label class="en-frompick en-ctypick" data-country-pick aria-pressed="true">${countryFlag(mine)}<span>${esc(mine)}</span><b aria-hidden="true">▾</b>
-        <select data-country aria-label="Where are you from?">${opts}</select></label></section>`
+      <div class="en-ctypair"><label class="en-frompick en-ctypick" data-country-pick aria-pressed="true">${countryFlag(mine)}<span>${esc(mine)}</span><b aria-hidden="true">▾</b>
+        <select data-country aria-label="Where are you from?">${opts}</select></label>${mine === 'South Africa' ? provincePick(state) : ''}</div></section>`
 }
 
 // Your roommate: four students share your res; the default (your res, the skin closest to yours) is picked.
@@ -161,14 +168,6 @@ function roommateStep(state) {
 function whoStep(state) {
   const { district, draft } = state
   const houses = (district.houses || []).map((h) => `<button class="en-house" type="button" data-act="enrol-pick" data-k="residence" data-v="${esc(h.name)}" data-house-pick="${esc(h.id)}" style="--h1:${h.main};--h2:${h.accent}" aria-pressed="${draft.residence === h.name}"><b>${esc(h.name.replace(/ House$/, ''))}</b><small>${esc(h.vibe || '')}</small></button>`).join('')
-  // Where you're from: three pills, each opening the phone's own picker; the one you used shows your answer and its flag.
-  const place = fromPlace(draft.from)
-  const mine = groupOf(place)
-  const from = FROM_GROUPS.map((g) => {
-    const on = mine === g.id
-    return `<label class="en-frompick" data-from-group="${g.id}" aria-pressed="${on}">${on ? flagOf(place) : ''}<span>${esc(g.label)}</span><b aria-hidden="true">▾</b>
-        <select data-from aria-label="${esc(g.label)}"><option value="">${esc(on ? `${g.label}: none` : g.label)}</option>${g.places.map((p) => `<option value="${esc(p)}"${on && p === place ? ' selected' : ''}>${esc(fromLabel(p))}</option>`).join('')}</select></label>`
-  }).join('')
   return `<div class="en-who">
       ${idCard(state, { step: 'who' })}
       <h2 class="en-q">Who are you?</h2>
@@ -179,8 +178,6 @@ function whoStep(state) {
       ${(draft.handleSuggest || []).length ? `<div class="en-chips en-suggest"><span>Free:</span>${draft.handleSuggest.map((h) => `<button class="en-chip" type="button" data-act="enrol-pick" data-k="handle" data-v="${esc(h)}">@${esc(h)}</button>`).join('')}</div>` : ''}
       <h3 class="en-sub">Your house</h3>
       <div class="en-houses">${houses}</div>
-      <h3 class="en-sub">Where you're from ${place ? `<span class="en-fromnow">${esc(fromLabel(place))}</span>` : '<span>optional</span>'}</h3>
-      <div class="en-from">${from}</div>
     </div>`
 }
 

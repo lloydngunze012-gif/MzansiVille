@@ -2,26 +2,16 @@
 // old saves (a city) still load, show as their province, and keep their day-1 home style.
 import { test, expect } from '@playwright/test'
 
-test('From: provinces in order, old saves still work', async ({ page }) => {
+test('From: the country is the answer, old saves still work', async ({ page }) => {
   await page.goto('/?morning=0#/new')
   await page.evaluate(() => localStorage.clear())
   await page.goto('/?morning=0#/new')
-  for (let i = 0; i < 2; i++) await page.locator('[data-act="enrol-next"]').tap()
-  await page.locator('.en[data-step="who"]').waitFor()
-  // (three pickers since 8 Nov: South Africa lists the provinces; Rest of Africa and World their
-  // countries, then "somewhere else", saved as the old Elsewhere in Africa / Overseas answers)
-  await expect(page.locator('.en-frompick span')).toHaveText(['South Africa', 'Rest of Africa', 'World'])
-  const shown = await page.locator('[data-from-group="za"] option:not([value=""])').evaluateAll((o) => o.map((x) => x.value))
-  expect(shown).toEqual(['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape'])
-  const africa = await page.locator('[data-from-group="africa"] option').evaluateAll((o) => o.map((x) => x.value))
-  const world = await page.locator('[data-from-group="world"] option').evaluateAll((o) => o.map((x) => x.value))
-  expect(africa).toContain('Zimbabwe'); expect(africa.at(-1)).toBe('Elsewhere in Africa')
-  expect(world).toContain('United Kingdom'); expect(world.at(-1)).toBe('Overseas')
-  // A country: the pill shows it with its flag, and so does the card.
-  await page.locator('[data-from-group="africa"] select').selectOption('Zimbabwe')
-  await expect(page.locator('[data-from-group="africa"]')).toHaveAttribute('aria-pressed', 'true')
-  await expect(page.locator('[data-from-group="africa"] svg.flag')).toHaveCount(1)
-  await expect(page.locator('.en-fromnow')).toHaveText('Zimbabwe')
+  // (the three 'where you're from' pickers are gone, 9 Nov: the country dropdown on the first page is the answer)
+  await expect(page.locator('.en-frompick:not(.en-ctypick)')).toHaveCount(0)
+  // South Africa: a province dropdown under the country (it picks the home); another country: none
+  await expect(page.locator('select[data-province] option')).toHaveCount(10)
+  await page.locator('select[data-country]').selectOption('Zimbabwe')
+  await expect(page.locator('select[data-province]')).toHaveCount(0)
   await expect(page.locator('.en-id .en-idfrom')).toHaveText('Zimbabwe')
   await expect(page.locator('.en-id .en-idfrom svg.flag')).toHaveCount(1)
   const r = await page.evaluate(async () => {

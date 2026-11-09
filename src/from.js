@@ -8,7 +8,7 @@ import COUNTRY_DATA from '../data/campusville/countries.json'
 export const FROM = ['Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal', 'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape', 'Elsewhere in Africa', 'Overseas']
 // The old answers, and the province each is in.
 export const FROM_WAS = { Durban: 'KwaZulu-Natal', Joburg: 'Gauteng', Soweto: 'Gauteng', Pretoria: 'Gauteng', 'Cape Town': 'Western Cape' }
-const PROVINCES = FROM.slice(0, 9)
+export const PROVINCES = FROM.slice(0, 9)
 
 // Flags, drawn (Windows shows flag emoji as two letters). Simplified so they read at 21x14 px.
 // viewBox 30 x 20 for all.

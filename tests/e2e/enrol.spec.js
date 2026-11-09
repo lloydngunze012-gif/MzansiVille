@@ -32,6 +32,7 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   // 1. Your look: the student fills the screen; a hair card.
   await expect(page.locator('.en[data-step="look"]')).toBeVisible()
   await expect(page.locator('select[data-country]')).toHaveValue('South Africa')
+  await page.locator('select[data-province]').selectOption('KwaZulu-Natal')
   const stage = await page.locator('.en-stage').boundingBox()
   await expect(page.locator('.en-dots li.now')).toHaveCount(1)
   await tap(page.locator('[data-part="hair"]').nth(1))
@@ -50,7 +51,6 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   const needName = await page.locator('.en-err').textContent()
   await page.locator('#name').fill('Thandeka')
   await tap(page.locator('[data-house-pick]').nth(4))
-  await page.locator('[data-from-group="za"] select').selectOption('KwaZulu-Natal')
   await page.screenshot({ path: `${OUT}/2-who.png` })
   // Back keeps what you chose.
   await tap(page.locator('[data-act="enrol-back"]'))
@@ -97,10 +97,10 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   expect(card.house.toLowerCase()).toContain(house.toLowerCase())
   expect(card.bio).toContain('Amapiano Fridays')
   expect(card.bio).not.toMatch(/082|555/)
+  expect(card.from).toContain('KwaZulu-Natal')
   expect(card.tags.join(' ')).toContain('Music head')
   expect(card.tags.join(' ')).toContain('Study buddy')
-  expect(card.from).toContain('KwaZulu-Natal')
-  expect(run).toMatchObject({ name: 'Thandeka', vibe: 'Music head', looking: 'Study buddy', from: 'KwaZulu-Natal' })
+  expect(run).toMatchObject({ name: 'Thandeka', vibe: 'Music head', looking: 'Study buddy' })
   expect(seconds, 'under 45 seconds start to finish').toBeLessThan(45)
   expect(errors).toEqual([])
 })

@@ -1411,6 +1411,7 @@ function syncCard() {
 app.addEventListener('change', (event) => {
   // (enrolment: where you're from, from one of the three pickers)
   // (enrolment: the country dropdown on the first page; it is also where you're from, for the home style)
+  if (event.target.matches?.('.en select[data-province]')) { captureForm(); draft.from = event.target.value; const y = window.scrollY; paint(); window.scrollTo(0, y); return }
   if (event.target.matches?.('.en select[data-country]')) {
     captureForm()
     draft.country = event.target.value
@@ -1420,7 +1421,6 @@ app.addEventListener('change', (event) => {
     window.scrollTo(0, y)
     return
   }
-  if (event.target.matches?.('.en select[data-from]')) { captureForm(); draft.from = event.target.value; paint(); return }
   if (event.target.id === 'residence') { draft.residence = event.target.value; syncCard() }
   if (event.target.id === 'course') { draft.course = event.target.value; syncCard() }
   if (event.target.id === 'event-id') {

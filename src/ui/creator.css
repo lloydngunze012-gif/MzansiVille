@@ -260,6 +260,11 @@ svg.flag { flex: none; width: 21px; height: 14px; border-radius: 2px; vertical-a
 .en .en-ctypick { width: 100%; box-sizing: border-box; justify-content: flex-start; padding: 0 16px; font: 800 16px system-ui; }
 .en .en-ctypick span { flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .en .en-ctypick svg.flag { width: 27px; height: 18px; border-radius: 3px; flex: none; }
+.en-ctypair { display: flex; gap: 8px; }
+.en-ctypair .en-ctypick { flex: 1 1 0; min-width: 0; padding: 0 12px; }
+.en-ctypair .en-ctypick:first-child:not(:last-child) { flex: 1.25 1 0; }
+.en .en-provpick span { color: var(--sl-muted); font-weight: 700; }
+.en .en-provpick[aria-pressed="true"] span { color: inherit; font-weight: 800; }
 .en-country { padding-top: 24px; }
 .en-roomies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .en .en-roomie { all: unset; cursor: pointer; box-sizing: border-box; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 150px; padding: 10px 12px 12px; border-radius: 16px; background: var(--sl-plum-2); border: 2px solid var(--sl-line); }
