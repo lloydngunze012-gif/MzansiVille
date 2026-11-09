@@ -93,17 +93,19 @@ test('K10 open and close every card type, then a finger moves you within 100 ms'
   await clearCards(page, f)
   results.place = await stickLatency(page, f)
 
-  // 5. Day summary (setup: the day is over in the save), then the next day.
+  // 5. The end-of-day screen is gone (63aa80b: night falls and you carry on): a save left on the old
+  // summary goes straight on to the next morning, and the finger still moves you.
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('mzansiville.v1'))
     Object.assign(save.run, { mode: 'summary', queue: [], summary: { day: 1, slept: true, stats: { ...save.run.stats } } })
     localStorage.setItem('mzansiville.v1', JSON.stringify(save))
   })
   await page.reload()
-  await expect(page.locator('.g-summary')).toBeVisible({ timeout: 30000 })
-  await page.screenshot({ path: `${OUT}/K10-summary.png` })
-  await tapOn(page, f, page.locator('.g-summary [data-act="next"]'))
   await expect(page.locator('#world')).toHaveAttribute('data-on', '1', { timeout: 60000 })
+  await expect(page.locator('.g-summary')).toHaveCount(0)
+  // (the new day starts in bed: it plays the wake-up, then you are free)
+  await expect.poll(() => read.state(page), { timeout: 60000, intervals: [250] }).toBe('free')
+  expect((await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)).day, 'on to day 2').toBe(2)
   await clearCards(page, f)
   await page.waitForTimeout(1500)
   results.summary = await stickLatency(page, f)

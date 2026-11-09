@@ -1113,7 +1113,7 @@ function gameAct(act, button) {
   if (act === 'talk-eat' && ui.talk?.bought) { eatFood(button.dataset.how === 'sit'); return true }
   if (act === 'talk-more' && ui.talk) { ui.talk = { id: ui.talk.id }; paint(); return true }
   if (act === 'talk-bye') { endTalk({ away: button.dataset.away === '1' }); paint(); return true }
-  if (act === 'talk-phone') { endTalk(); go('profile'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
+  if (act === 'talk-phone') { endTalk(); go('notices'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'install-go') { promptInstall(); return true }
   if (act === 'sound') {

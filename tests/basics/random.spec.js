@@ -79,13 +79,25 @@ test('K8 random taps and stick moves: the controls never lock for more than 3 s'
       await f.up()
       const stNow = await read.state(page)
       if (dist(before, after) < 0.15 && !/Walk|Run/.test(answer || '') && ['free', 'walking', 'running'].includes(stNow)) {
-        // Against a wall? Try the other way before calling it locked.
-        const q = await nearMe(page, -Math.sin(a) * 170, Math.cos(a) * 170)
-        await f.tap(q.x, q.y)
-        await page.waitForTimeout(1500)
-        const back = await read.pos(page)
-        const answer2 = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0]?.clip)
-        if (dist(after, back) < 0.15 && !/Walk|Run/.test(answer2 || '')) log.locks.push({ st: stNow, stick: true, at: after })
+        // Against a wall, a bench or the stage (a tap on a solid spot walks to the nearest open one,
+        // or gives up after half a second: that is the game's rule, not a lock)? Try six other ways, a
+        // finger each, before calling it locked: only a player who moves for none of them is stuck.
+        let moved = false
+        let here = after
+        let lastQ = null
+        for (let k = 1; k <= 6 && !moved; k++) {
+          const b = a + Math.PI + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.5
+          const q = await nearMe(page, Math.sin(b) * 170, -Math.cos(b) * 170)
+          lastQ = q
+          if (q.x > 300 && q.y > 540) continue // (the Talk and Stop buttons are bottom right)
+          await f.tap(q.x, q.y)
+          await page.waitForTimeout(1500)
+          const now = await read.pos(page)
+          const clip = await page.evaluate(() => window.mzansiBodies('campus', 'player')[0]?.clip)
+          if (dist(here, now) >= 0.15 || /Walk|Run/.test(clip || '')) moved = true
+          here = now
+        }
+        if (!moved && ['free', 'walking', 'running'].includes(await read.state(page))) log.locks.push({ st: stNow, stick: true, at: after, q: lastQ, last: await page.evaluate(() => window.mzansiLastTap) })
       }
     }
   }

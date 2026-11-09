@@ -1,7 +1,12 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 8 Nov, Claude Code (Caf job 1 fixes).
+Last updated: 9 Nov, Claude Code (test health, in progress, NOT pushed).
+
+## Test health (owner, 9 Nov) - IN PROGRESS, nothing pushed (the new TEST RULE in CLAUDE.md says never push red)
+- Fixed so far (each passes alone; committed locally, not pushed). GAME was wrong: K9 house banners read mirrored from behind (buildings.js now uses signMesh); A4 "Check your phone" opened the profile, where the phone list no longer is (main.js talk-phone -> #/notices). TEST was wrong: K1 and K2 tapped under the Talk/Stop buttons (touch.js groundAhead and K2 spots keep clear of x>300,y>540); K10 step 5 (the end-of-day screen was removed in 63aa80b; now checks the save on the old summary goes to day 2 and waits for 'free' after the wake-up); K8 (one fallback tap was not enough against a bench or the stage: six directions now); T1 (skips someone with no room for a two-shot, the game's wider-shot fallback); A2 (the friend needs up to ~30 s to walk to the chair on a slow machine: poll 45 s); A3 (poll for the friend to be near, not a fixed 3.5 s); menu chat Send (guest taps the box -> "Make a free account to post" card: the test says Not now; cards from a new student's first moment are dismissed first; timeout 180 s).
+- Full suite at 2 workers (full1, 2.3 h): 220 passed, 27 failed, 35 skipped (fps gate), 16 did not run (serial siblings). The 27 are listed in the report to Lloyd; most are (a) timing tests that need the GPU to themselves (basics K7, K8, K10, T1, queue-jitter, talk T2/T3) and (b) tests for screens that changed (day 1 morning is now the home scene, #/profile no longer has the title, house_* buttons, map "go" to the Caf).
+- Reduced motion is already on (playwright.config.js reducedMotion: 'reduce'; cream.css stills the bobbing choices); lecture.spec.js has no forced taps; hud-colours expects the red pulse animation, which reduced motion correctly removes (test to fix).
 
 ## Caf job 1 fixes (owner's 390 px phone check, 8 Nov)
 - Camera (src/world/caf.js frameCamera/fitCamera): the Caf host (#caf3d) was never fixed to the window (a block above the game, which also pushed the top bar 844 px down); now position:fixed. Sims follows you but never looks past the walls (clamped, then a third of the way once you are at the front), distance 13, the picture pushed down by the height of the bars so no sign sits under them; coverage of the screen below the bars 85-99% in the room. Top fits the whole hall (16 m) squared to the screen (yaw 0, distance from the aspect), the room centred under the bars; on a portrait phone it is width-limited, so empty plum above and below is unavoidable.

@@ -16,6 +16,11 @@ Every job ends with a push to main and a production deploy (`npx vercel deploy -
 
 ---
 
+# TEST RULE (owner, 9 Nov). Every job runs the WHOLE e2e suite before pushing, and never pushes with a red test.
+`npx playwright test --config playwright.edge.config.js --workers=2` (everything under tests/, the basics included) plus `npm run check`: all green, then push and deploy. A test that fails is either the game's fault (fix the game) or the test's (fix the test and say why in docs/now.md); it is never skipped, retried until it passes, or left red for the next job. A flaky test gets its cause found (shared state or timing), not a retry. Tests wait for what they need (poll the state), never for a fixed clock; tests tap like a player (no force: true) and keep clear of the buttons that sit on the screen (the Talk and Stop buttons bottom right, the minimap bottom left). Reduced motion is set for every run (playwright.config.js), and the game stills its bobbing choices for players who ask for it.
+
+---
+
 # FLOATING CARDS RULE (owner, 8 Nov). The white/dark strip bug came back five times because each fix changed one card.
 Every floating card, caption, bubble bar and docked sheet is centred, width min(100% - 24px, 420px), never a full-width strip: ONE rule, src/ui/cards.css (loaded last in src/ui/game.js; padding, fonts and colours stay each card's own). A new floating card is added to that selector list and to the CARDS list in tests/e2e/cards.spec.js, which opens drop-off, res room, Day 1 lecture (caption, seat choice, moment, end card, result), activity result, a moment and the goals sheet at 390 and 1280 px and fails if a card is wider than 440 px, runs off screen, a wide painted layer is unlisted, or text is under 14 px (micro-labels such as eyebrows, names, pills: 11 px). Route and hint pills have a clear bar behind them (no white block). The Attend lecture result uses the new result card because endLecture (main.js) sets ui.delta: any code that calls applyAction must set ui.delta first, or the old plain "Done" card shows. Lecture choices bob (mm-hover) unless the player asks for reduced motion; playwright.config.js sets reducedMotion: 'reduce' for every e2e run, so tests tap normally (never force: true).
 

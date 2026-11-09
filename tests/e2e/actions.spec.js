@@ -94,7 +94,7 @@ test('A2: "Let\'s get something to eat": both walk to the caf, queue, buy, sit a
   await card.locator('[data-act="talk-eat"][data-how="sit"]').tap()
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'orderEat', { timeout: 10000 })
   await expect.poll(async () => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).toBe('sit')
-  await expect.poll(async () => page.evaluate(() => window.mzansiCompanion()?.pose), { timeout: 10000 }).toBe('sit')
+  await expect.poll(async () => page.evaluate(() => window.mzansiCompanion()?.pose), { timeout: 45000 }).toBe('sit') // (the friend starts walking to the chair once you have sat: a few metres at a walk, slower on a slow test machine)
   const seated = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiCompanion()])
   expect(Math.hypot(seated[0].x - seated[1].x, seated[0].z - seated[1].z)).toBeLessThan(2.5) // the same table
   await page.waitForTimeout(FAST ? 300 : 2500)
@@ -118,8 +118,9 @@ test('A3: "Let\'s study": both go to the library and study', async ({ page }) =>
   await expect(page.locator('#world')).toHaveAttribute('data-activity', 'groupStudy', { timeout: 10000 })
   await page.waitForTimeout(FAST ? 500 : 3500)
   await shot(page, 'A3-1')
-  const walking = await page.evaluate(() => [window.mzansiPlayerPos(), window.mzansiCompanion()])
-  if (walking[1].visible) expect(Math.hypot(walking[0].x - walking[1].x, walking[0].z - walking[1].z)).toBeLessThan(4)
+  // Your friend comes along beside you. A friend follows the trail you leave, so on a busy test machine
+  // (two workers drawing 3D at once) they trail further for a while: wait for them to be near, not for a clock.
+  await expect.poll(() => page.evaluate(() => { const [me, f] = [window.mzansiPlayerPos(), window.mzansiCompanion()]; return !f?.visible || Math.hypot(me.x - f.x, me.z - f.z) < 4 }), { timeout: 30000, intervals: [250] }).toBe(true)
   await expect.poll(async () => page.evaluate(() => window.mzansiPlayerPose()), { timeout: 120000 }).toBe('sit')
   await page.waitForTimeout(FAST ? 300 : 1500)
   await shot(page, 'A3-2')
@@ -143,7 +144,7 @@ test('A4: "Swap numbers": the contact appears in your phone', async ({ page }) =
   await page.waitForTimeout(FAST ? 200 : 800)
   await shot(page, 'A4-1')
   await card.locator('[data-act="talk-phone"]').tap()
-  await expect(page).toHaveURL(/#\/profile/)
+  await expect(page).toHaveURL(/#\/notices/) // (your phone lives on the Notices sheet since Piece 1a)
   await expect(page.locator('.phone-card')).toContainText(name)
   await page.waitForTimeout(FAST ? 200 : 800)
   await shot(page, 'A4-2')

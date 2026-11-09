@@ -68,7 +68,8 @@ test('K2 tap 5 ground spots in a row (mid-walk too), then tap yourself to stop',
   await student(page, { spawn: 'quad' })
   const f = await finger(page)
   // Five spots around the middle of the screen, the next tapped while still walking.
-  const spots = [[-120, -170], [130, -120], [-90, 80], [140, 120], [0, -140]]
+  // (never under the Talk and Stop buttons, bottom right, or the minimap, bottom left)
+  const spots = [[-120, -170], [130, -120], [-90, 80], [70, 110], [0, -140]]
   const results = []
   for (const [i, [dx, dy]] of spots.entries()) {
     await f.tap(206 + dx, 520 + dy)

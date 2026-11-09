@@ -4,6 +4,7 @@
 // The box in campus.js stays as a stand-in until the model loads.
 import * as THREE from 'three'
 import { loadModel } from './models.js'
+import { signMesh } from './text.js'
 
 const CITY = '/models/city/'
 const SUBURB = '/models/suburb/'
@@ -65,7 +66,7 @@ export function houseBanner(house, w = 0.95, h = 2.3) {
   ctx.restore()
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide }))
+  const plane = signMesh(new THREE.PlaneGeometry(w, h), texture, { transparent: true }) // (the back reads the right way round too)
   plane.name = 'house-banner'
   return plane
 }

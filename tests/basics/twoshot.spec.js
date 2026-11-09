@@ -64,6 +64,14 @@ test('T1 conversation two-shot in Top, Sims and Eye: eases in, heads in frame, e
       await page.waitForTimeout(1200)
       const into = await stopRecord(page)
       const shot = await page.evaluate(() => window.mzansiShot())
+      // (in a crowd there can be no free spot for the pair: the camera then keeps a wider shot, the
+      // game's fallback. This test is about the two-shot, so it talks to someone with room around them.)
+      if (!shot.eased) {
+        await tapOn(page, f, page.locator('.g-talk [data-act="talk-bye"]').first())
+        await page.waitForTimeout(1500)
+        done.push(who)
+        continue
+      }
       const heads = await page.evaluate((id) => window.mzansiHeads([id]), who)
       await page.screenshot({ path: `${OUT}/T1-${mode}.png` })
       // Goodbye: the camera eases back to the view you had.
@@ -74,7 +82,7 @@ test('T1 conversation two-shot in Top, Sims and Eye: eases in, heads in frame, e
       const after = await page.evaluate(() => window.mzansiShot())
       await page.screenshot({ path: `${OUT}/T1-${mode}-after.png` })
       done.push(who)
-      { const i0 = into.findIndex((x) => x.close && x.eased); console.log(mode, 'in', JSON.stringify(into.slice(Math.max(0, i0 - 2), i0 + 12).map((x) => [Math.round(x.t - into[i0].t), x.easing ? 1 : 0, x.eases, x.easeT]))) }
+      { const i0 = into.findIndex((x) => x.close && x.eased); if (i0 >= 0) console.log(mode, 'in', JSON.stringify(into.slice(Math.max(0, i0 - 2), i0 + 12).map((x) => [Math.round(x.t - into[i0].t), x.easing ? 1 : 0, x.eases, x.easeT]))) }
       result = {
         who,
         apart: shot.apart,

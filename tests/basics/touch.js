@@ -92,7 +92,7 @@ export async function groundAhead(page, metres) {
       const z = p.z + Math.cos(Math.PI + a) * m
       const s = window.mzansiScreenOf(x, z, 0)
       // (open ground only: not on the stage, a bench or a wall)
-      if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 170 && s.y < 780 && window.mzansiOpen(x, z)) return { x, z, s }
+      if (s && !s.behind && s.x > 30 && s.x < 382 && s.y > 170 && s.y < 780 && !(s.x > 300 && s.y > 540) /* (the Talk and Stop buttons sit bottom right) */ && window.mzansiOpen(x, z)) return { x, z, s }
     }
     return null
   }, metres)
