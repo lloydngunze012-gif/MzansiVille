@@ -153,7 +153,8 @@ for (const [w, h] of WIDTHS) {
       await page.waitForTimeout(1200)
       await page.locator('[data-act="do"][data-id="library_study"]').tap()
       const card = page.locator('.g-result.rc')
-      await expect(card).toBeVisible({ timeout: 60000 })
+      // (the study scene is frame-driven: on the software renderer, two browsers at once, a frame a second is a slow scene)
+      await expect(card).toBeVisible({ timeout: 180000 })
       await audit(page, 'result-card', w)
     })
 

@@ -18,6 +18,7 @@ export default {
   projects: [
     { name: 'timing', testMatch: TIMING, use },
     { name: 'rest', testIgnore: TIMING, use },
-    { name: 'quick', testMatch: QUICK, use },
+    // (the real GPU: the software renderer draws 1-4 fps with two browsers, and the quick set must stay under 10 minutes)
+    { name: 'quick', testMatch: QUICK, use: { ...use, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } } },
   ],
 }

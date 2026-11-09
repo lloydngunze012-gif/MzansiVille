@@ -105,6 +105,11 @@ for (const [style, from] of [['suburban', 'KwaZulu-Natal'], ['township', 'Limpop
     expect(run.home).toMatchObject({ style, sibling: 'deal' })
     const world = page.locator('#world')
     const money = run.stats.money
+    // (the cards move on by themselves in tests, 1.5 s each: a slow screenshot must not miss one, so every line shown is recorded)
+    await page.evaluate(() => {
+      window.__dpLines = []
+      new MutationObserver(() => { const t = document.querySelector('.dp-line')?.textContent; if (t && !window.__dpLines.includes(t)) window.__dpLines.push(t) }).observe(document.body, { subtree: true, childList: true, characterData: true })
+    })
     // (at 10x speed the car is in within a second: catch it arriving or just stopped)
     await expect(world).toHaveAttribute('data-dropoff', /arrive|goodbye/, { timeout: 30000 })
     await page.screenshot({ path: `${OUT}/${style}_7_gate_arrive.png` })
@@ -114,7 +119,7 @@ for (const [style, from] of [['suburban', 'KwaZulu-Natal'], ['township', 'Limpop
     await expect(world).toHaveAttribute('data-hug', '1', { timeout: 30000 })
     await page.waitForTimeout(300)
     await page.screenshot({ path: `${OUT}/${style}_9_hug.png` })
-    await expect(page.locator('.dp-card')).toContainText('For food, not for parties', { timeout: 30000 })
+    await expect.poll(() => page.evaluate(() => window.__dpLines.join(' | ')), { timeout: 30000 }).toContain('For food, not for parties')
     await page.screenshot({ path: `${OUT}/${style}_10_money.png` })
     await expect(world).toHaveAttribute('data-dropoff', 'walk', { timeout: 60000 })
     run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)

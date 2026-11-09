@@ -206,7 +206,8 @@ export function createPlayer({ blocked, onWalk, onGear }) {
 
       // Never step past the target in one frame.
       let move = speed * dt
-      if (!stick && route.length === 1) {
+      // (and never past a corner: a long frame, or ?fast=1 at a low frame rate, would swing back and forth across it)
+      if (!stick && route.length) {
         const t = route[0]
         move = Math.min(move, Math.hypot(t.x - body.position.x, t.z - body.position.z))
       }
