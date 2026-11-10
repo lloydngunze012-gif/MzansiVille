@@ -137,12 +137,12 @@ function provincePick(state) {
         <select data-province aria-label="Which province?"><option value="">Province (optional)</option>${PROVINCES.map((p) => `<option value="${esc(p)}"${p === now ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></label>`
 }
 
-function countryPick(state) {
+export function countryPick(state, { province = true } = {}) {
   const mine = countryOf({ country: state.draft.country })
   const opts = COUNTRY_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${g.countries.map((c) => `<option value="${esc(c.id)}"${c.id === mine ? ' selected' : ''}>${countryEmoji(c.id)} ${esc(c.id)}</option>`).join('')}</optgroup>`).join('')
   return `<section class="en-row en-ctyrow"><h3>Where are you from?</h3>
       <div class="en-ctypair"><label class="en-frompick en-ctypick" data-country-pick aria-pressed="true">${countryFlag(mine)}<span>${esc(mine)}</span><b aria-hidden="true">▾</b>
-        <select data-country aria-label="Where are you from?">${opts}</select></label>${mine === 'South Africa' ? provincePick(state) : ''}</div></section>`
+        <select data-country aria-label="Where are you from?">${opts}</select></label>${province && mine === 'South Africa' ? provincePick(state) : ''}</div></section>`
 }
 
 // Your roommate: four students share your res; the default (your res, the skin closest to yours) is picked.

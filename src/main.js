@@ -72,8 +72,16 @@ import './theme.js'
 import { watchStats, wireSfx } from './sfx.js'
 import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
 import { playerCardHtml } from './ui/card.js'
+import { STUDENTS } from './ui/quick.js'
+import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
+import { flush as flushScores, loadBadges, note as noteScore } from './scores.js'
+import { funnel, returning, startSession } from './events.js'
+import { BUILD, COMMIT, checkHealth } from './health.js'
 
 installErrorReporting()
+// Sessions and the funnel (src/events.js): this visit, and "link opened" as the first step.
+startSession()
+funnel('link_opened', { returning: returning() })
 // Install Soft Life (src/install.js): the service worker in the built game, and the menu
 // and #/install screen redrawn when Chrome offers to install or it's been installed.
 registerWorker()
@@ -150,6 +158,7 @@ let board = { tab: 'money', scope: 'all', rows: [], source: 'loading', error: ''
 let admin = { reports: [], eventId: 'nsfas_delayed', notice: '', allowed: false }
 // Lloyd's smoothness page (#/smooth): the range, the rows, the place whose stalls are open.
 let smoothPage = { range: '7d', rows: [], place: '', device: '', error: '', loading: false, injected: false }
+let healthState = null
 let timer = 0
 let merging = false
 let chatUnsub = null
@@ -165,6 +174,18 @@ function districtNow() {
 function persist() {
   if (save.run) save.run.noMoments = NO_MOMENTS
   localStorage.setItem(KEY, JSON.stringify(save))
+  // (finished activities waiting to be sent to Supabase: src/scores.js)
+  if (save.run?.outbox?.length) flushScores(save.run)
+}
+
+// Count one finished activity (src/scores.js): the save, the weekly leaderboard, the funnel. Returns what it scored.
+function countDone(id, place = '', cat) {
+  const run = save.run
+  if (!run) return null
+  const hit = noteScore(districtNow(), run, id, place, cat)
+  funnel('first_activity', { id })
+  if (hit && hit.points) toast(`\u{1F3C6} +${hit.points} ${hit.board[0].toUpperCase()}${hit.board.slice(1)}`)
+  return hit
 }
 
 function route() {
@@ -198,6 +219,7 @@ function state() {
     cardMini,
     ui,
     sound: soundOn(),
+    health: healthState,
   }
 }
 
@@ -493,6 +515,7 @@ function endLecture(result) {
   const before = { ...run.stats }
   const done = applyAction(district, run, 'lecture_attend')
   if (!done.ok) run.lectureResolved = true
+  else countDone('lecture_attend', venueFor(run).id)
   const caps = { energy: run.energyCap || 100, hunger: 100, grades: 100, social: 100, money: 1e9 }
   for (const [k, d] of Object.entries(result?.deltas || {})) {
     run.stats[k] = Math.max(0, Math.min(caps[k] ?? 100, (run.stats[k] || 0) + d))
@@ -598,6 +621,7 @@ function paint() {
     location.hash = '#/new'
     return
   }
+  if (!shot && route().name === 'new' && draft.quick && !draft.edit && !draft.countryOnly && !draft.preset) quickPreselect()
   if (!shot) rememberMorning(save.run)
   if (!shot && route().name === 'play' && morningWanted(save.run)) {
     morningSnapshot(save.run)
@@ -813,12 +837,14 @@ function eatFood(sit) {
   together = null
   talkScene('talk_eat', menu.place, { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name, ...(friend && { with: friend.id, name: friend.name }) }, () => {
     applyFx(save.run, b.fx)
+    countDone('talk_eat', menu.place, 'food')
     spendMinutes(sit ? 25 : 5)
     save.run.at = menu.place
     if (!friend) { flash(`\u{1F37D} ${b.label}: +${b.fx.hunger || 0} Fullness`); return }
     applyFx(save.run, { social: 4 })
     closer(save.run, friend.id, 8)
     markTogether(save.run, `eat:${friend.id}`)
+    countDone('hangout', menu.place, 'social')
     addIdentity(save.run, { socialite: 1 })
     flash(`\u{1F37D} Ate with ${friend.name}: +${b.fx.hunger || 0} Fullness, +4 Social`)
   })
@@ -839,6 +865,7 @@ function talkAct(kind, answer = '') {
   if (kind === 'order') { ui.talk = { id, menu: true }; paint(); return }
   if (kind === 'swap') {
     addContact(run, id, name)
+    countDone('friend_add', '', 'social')
     closer(run, id, 3)
     window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: 'good' } }))
     ui.talk = { id, swapped: true, answer }
@@ -864,6 +891,7 @@ function talkAct(kind, answer = '') {
       applyFx(run, { social: 4, energy: -2 })
       closer(run, id, 8)
       markTogether(run, id)
+      countDone('hangout', '', 'social')
       addIdentity(run, { socialite: 1 })
       spendMinutes(30)
       flash(`\u{1FA91} You and ${name}: +4 Social, closer`)
@@ -875,6 +903,7 @@ function talkAct(kind, answer = '') {
       applyFx(run, { grades: 3, social: 2, energy: -8 })
       closer(run, id, 5)
       markTogether(run, `study:${id}`)
+      countDone('hangout', 'library', 'social')
       run.weekStudied = (run.weekStudied || 0) + 1
       if (run.today?.day === run.day) run.today.studied += 1
       addIdentity(run, { scholar: 1 })
@@ -891,6 +920,7 @@ function talkAct(kind, answer = '') {
       applyFx(run, { social: 2, energy: -2 })
       closer(run, id, 5)
       markTogether(run, `walk:${id}`)
+      countDone('hangout', '', 'social')
       spendMinutes(10)
       save.run.at = to
       flash(`\u{1F6B6} Walked to ${placeName} with ${name}: +2 Social, closer`)
@@ -939,6 +969,12 @@ window.addEventListener('mzansi-dropoff-done', () => {
   const run = save.run
   if (!run) return
   delete run.dropOff
+  // (a roommate swapped at the door: applied now, so the campus is not rebuilt in the middle of the drop-off)
+  if (run.pendingRoommate) {
+    run.character.roommate = run.pendingRoommate
+    delete run.pendingRoommate
+    run.bestieName = roommateFor(run.character).name
+  }
   run.at = homePlaceId(districtNow(), run.character?.residence)
   run.outDoor = true
   run.lectureRoute = true
@@ -1085,6 +1121,7 @@ function gameAct(act, button) {
     const said = button.textContent.trim()
     const res = replyTo(save.run, ui.talk.id, index)
     if (res) {
+      countDone('talk_chat', '', 'social')
       ui.talk = { ...ui.talk, res, said }
       const titled = addIdentity(save.run, ['bongani', 'leah', 'ruan'].includes(ui.talk.id) ? { leader: 1 } : res.closeDelta > 0 ? { socialite: 1 } : {})
       if (titled && titled.level !== 'new') save.run.queue.push(identityCard(save.run, titled))
@@ -1210,6 +1247,65 @@ function finishTurn() {
   else if (mode === 'locked') go('locked')
   else go('play')
   if (mode === 'summary' || mode === 'over') sync()
+}
+
+// ---------- Quick start (src/ui/quick.js) ----------
+// One student is already picked when the screen opens (a different one each time), with its name in the name field.
+function quickPick(i, { keepName = false } = {}) {
+  const s = STUDENTS[i]
+  if (!s) return
+  draft.avatar = { ...s.avatar }
+  draft.preset = s.id
+  if (!keepName && !draft.nameTyped) draft.name = s.name
+  if (!draft.handleEdited) draft.handle = candidates(draft.name)[0] || ''
+}
+function quickPreselect() { quickPick(Math.floor(Math.random() * STUDENTS.length)) }
+
+// Play: a name, a student, a country. The house, course and roommate get a default; the @handle comes from the name.
+async function quickPlay() {
+  captureForm()
+  const district = districtNow()
+  const name = draft.name.trim().replace(/^@/, '')
+  if (name.length < 2) { draft.error = 'Your name needs at least 2 letters.'; paint(); return }
+  if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
+  draft.error = ''
+  funnel('play_tapped')
+  // The handle: the first free one from the name. A slow or missing check never holds the player up (3 s, then as it is).
+  const within = (p, fallback) => Promise.race([p, new Promise((r) => setTimeout(() => r(fallback), 3000))])
+  const free = await within(suggestFor(name), [])
+  const options = [...new Set([...free, ...candidates(name), `${tidyHandle(name).slice(0, 14) || 'student'}_${Math.floor(Math.random() * 9000) + 1000}`])].filter((h) => checkRules(h).ok)
+  let handle = options[0] || `student_${Math.floor(Math.random() * 9000) + 1000}`
+  for (const h of options.slice(0, 4)) {
+    const claim = await within(claimHandle(h), 'unchecked')
+    if (claim === 'ok' || claim === 'unchecked') { handle = h; break }
+  }
+  const houses = district.houses || []
+  const house = houses[Math.floor(Math.random() * houses.length)]
+  const course = district.courses[Math.floor(Math.random() * district.courses.length)]
+  const country = draft.country || DEFAULT_COUNTRY
+  const character = {
+    name, handle, residence: house?.name || district.residences[0]?.name || '', course, avatar: { ...draft.avatar },
+    country, from: fromForCountry(country, ''), roommate: '', handleChangedAt: new Date().toISOString(),
+  }
+  save.rulesAccepted = true
+  save.run = createRun(district, { ...character, ...storyWithDefaults({}) })
+  save.run.bestieName = roommateFor(save.run.character).name
+  save.run.quick = true // (finish your student card, and get R200, comes later: launch.js)
+  draft = emptyDraft()
+  persist()
+  saveMyCard(save.run)
+  go('play')
+}
+
+// "Finish your student card": the full look editor, vibe and card (the old enrol steps) on the player's own student.
+function openCardEditor() {
+  const run = save.run
+  if (!run?.character) return
+  const c = run.character
+  const locked = nextChange(c)
+  draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
+  ui.gear = false
+  go('new')
 }
 
 // Skipping your name: a name to start with (change it any time from your card).
@@ -1362,11 +1458,15 @@ app.addEventListener('input', (event) => {
   if (event.target.id === 'bio') { draft.bio = event.target.value; const n = app.querySelector('[data-bio-count]'); if (n) n.textContent = `${event.target.value.length}/${event.target.maxLength}` }
   if (event.target.id === 'name') {
     draft.name = event.target.value
+    draft.nameTyped = true
     // (the handle follows your name until you type your own)
     if (!draft.handleEdited && app.querySelector('.en #handle')) {
       draft.handle = candidates(draft.name)[0] || ''
       app.querySelector('.en #handle').value = draft.handle
     }
+    // (the quick start shows the @handle it will make from the name)
+    const hint = app.querySelector('[data-qs-handle]')
+    if (hint) { if (!draft.handleEdited) draft.handle = candidates(draft.name)[0] || ''; hint.innerHTML = draft.handle ? `Your @handle: <b>@${escHtml(tidyHandle(draft.handle))}</b>` : '' }
     enrolCardText()
   }
   if (event.target.id === 'handle' && app.querySelector('.en #handle')) {
@@ -1462,6 +1562,16 @@ app.addEventListener('click', async (event) => {
     go(`place/${place.dataset.place}`)
     return
   }
+  if (act === 'qs-pick') {
+    captureForm()
+    quickPick(Number(button.dataset.i))
+    paint()
+    return
+  }
+  if (act === 'qs-play') { await quickPlay(); return }
+  if (act === 'health-refresh') { loadHealthPage(); return }
+  if (act === 'lp-board') { ui.gear = false; paint(); openBoard(); return }
+  if (act === 'lp-feedback') { ui.gear = false; paint(); openFeedback('menu'); return }
   if (act === 'start') {
     draft = emptyDraft()
     go(save.rulesAccepted ? 'new' : 'rules')
@@ -1714,10 +1824,23 @@ app.addEventListener('click', async (event) => {
     }
     if (draft.edit && save.run) {
       save.run.character = { ...save.run.character, ...character }
+      // A quick-start student who finishes the full card: R200 once, and the badge "Card made".
+      const first = Boolean(save.run.quick && !save.run.cardDone)
+      if (first) {
+        save.run.cardDone = true
+        if (!save.run.cardPaid) {
+          save.run.cardPaid = true
+          save.run.stats.money = (save.run.stats.money || 0) + CARD_REWARD
+          if (!(save.run.badges || []).includes('card_made')) save.run.badges = [...(save.run.badges || []), 'card_made']
+        }
+        funnel('card_finished')
+      }
+      const fromPrompt = Boolean(draft.fromPrompt)
       draft = emptyDraft()
       persist()
       saveMyCard(save.run)
-      go('title')
+      go(fromPrompt || first ? 'play' : 'title')
+      if (first) setTimeout(() => toast(`\u{1FAAA} Student card done: +R${CARD_REWARD} and the Card made badge`), 400)
       return
     }
     save.run = createRun(district, { ...character, ...storyWithDefaults(draft.story) })
@@ -1846,6 +1969,7 @@ app.addEventListener('click', async (event) => {
             const before = { ...save.run.stats }
             const result = applyAction(district, save.run, id)
             if (!result.ok) { ui.notice = result.error; paint(); return }
+            countDone(id, button.dataset.place || '')
             save.run.at = button.dataset.place || save.run.at
             ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(save.run.stats[k] - before[k])]))
             autoAdvance()
@@ -1861,6 +1985,7 @@ app.addEventListener('click', async (event) => {
       const before = { ...save.run.stats }
       const result = applyAction(district, save.run, id)
       if (!result.ok) { ui.notice = result.error; paint(); return }
+      countDone(id, button.dataset.place || '')
       save.run.at = button.dataset.place || save.run.at
       ui.delta = Object.fromEntries(Object.keys(before).map((k) => [k, Math.round(save.run.stats[k] - before[k])]))
       autoAdvance()
@@ -2268,6 +2393,7 @@ function openPlayerCard(id, opts = {}) {
   el.dataset.opened = String(Date.now())
   requestAnimationFrame(() => el.classList.add('on'))
   loadCard(id, (card) => { if (sheetFor === id) { sheetCard = card; renderSheet() } })
+  sendPoke(id, 'look') // (they see nothing; a quick-start student is then asked to finish their card: launch.js)
 }
 // keep: the conversation goes on (Say hi opens the chat); otherwise it ends and the
 // camera eases back out of the two-shot.
@@ -2331,6 +2457,7 @@ function onSheetClick(event) {
   }
   if (k === 'friend' && save.run) {
     save.run.friends = (save.run.friends || []).filter((f) => f.id !== id).concat({ id, name: sheetCard?.name || 'Student', house: sheetCard?.house || '', num: sheetCard?.num || '', day: save.run.day })
+    countDone('friend_add', '', 'social')
     persist()
     sendPoke(id, 'friend')
     toast(`\u{1F91D} ${name} is on your friends list`)
@@ -2354,6 +2481,8 @@ function blockPlayer(id) {
   window.dispatchEvent(new CustomEvent('mzansi-block', { detail: { id } }))
 }
 window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id, event.detail))
+// Said something to a player on campus (src/chat.js): counted for the weekly leaderboard.
+window.addEventListener('mzansi-said', () => { countDone('player_say', '', 'social'); persist() })
 // Someone did something to you.
 onPoke(({ from, kind, name }) => {
   const who = String(name || 'Someone').split(' ')[0]
@@ -2362,3 +2491,31 @@ onPoke(({ from, kind, name }) => {
   if (kind === 'friend') toast(`\u{1F91D} ${who} added you as a friend`)
 })
 for (const id of save.blocks || []) hidePlayer(id)
+
+// ---------- Launch job (owner, 9 Nov): quick start, the card prompt, the weekly boards, feedback, health ----------
+let healthLoading = false
+async function loadHealthPage() {
+  healthLoading = true
+  healthState = null
+  paint()
+  try { healthState = await checkHealth() } catch { healthState = { at: new Date().toISOString(), build: BUILD, commit: COMMIT, connected: false, supabase: { ok: false }, sql: {}, rooms: [], players: 0 } }
+  healthLoading = false
+  if (route().name === 'health') paint()
+}
+window.addEventListener('hashchange', () => { if (route().name === 'health' && !healthLoading) loadHealthPage() })
+if (route().name === 'health') loadHealthPage()
+
+// The roommate swapped at the drop-off door is kept for when the drop-off is done (world/dropoff.js asks, launch.js shows the four cards).
+window.addEventListener('mzansi-swap-roommate', (event) => {
+  const done = event.detail.done
+  event.detail.done = (r) => { if (r && save.run) { save.run.pendingRoommate = r.id; persist() } done(r) }
+}, true)
+initLaunch({ save: () => save, persist, toast, route: () => route().name, openCardEditor, busy: () => Boolean(ui.talk || ui.gear) })
+// The lasting badges from weeks gone by ("Week 1 Top 3, Sport") join the ones on your card.
+if (save.run?.character) {
+  loadBadges().then((list) => {
+    const have = save.run?.badges || []
+    const add = list.filter((b) => !have.includes(b))
+    if (add.length && save.run) { save.run.badges = [...have, ...add]; persist(); saveMyCard(save.run) }
+  })
+}

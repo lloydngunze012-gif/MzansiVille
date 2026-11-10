@@ -52,6 +52,7 @@ export function say(raw) {
   stamps.push(now)
   const heard = sendSay(res.text)
   push({ id: 'me', name: 'You', text: res.text, t: now, me: true })
+  window.dispatchEvent(new CustomEvent('mzansi-said')) // (counted for the weekly leaderboard: main.js)
   return { ok: true, text: res.text, heard, note: res.removed.join(' ') }
 }
 

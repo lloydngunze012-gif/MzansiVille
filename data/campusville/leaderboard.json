@@ -1,0 +1,38 @@
+{
+  "_about": "Weekly leaderboard (owner, 9 Nov). Three boards. A score only comes from an activity with a daily limit (per player, per SAST day); Supabase checks the limit in the record_activity function, so a changed client cannot post more. Rules are built from activities.csv by src/engine/scores.js: the 'defaults' below pick the activities by what they do, 'pseudo' are the non-activity things you do (a chat, a new friend, a hangout), 'overrides' set one activity by id (board null = does not score). After a change run: npm run scores-sql  (rewrites the generated block in supabase/schema.sql; the owner re-runs that block in the Supabase SQL editor). npm run check fails if the block is stale.",
+  "timezone": "Africa/Johannesburg (SAST, UTC+2, no daylight saving)",
+  "resetsOn": "Monday 00:00 SAST",
+  "firstBadgeWeek": "2026-11-16",
+  "boards": [
+    { "id": "academics", "label": "Academics", "note": "Lectures, study, labs and exams" },
+    { "id": "social", "label": "Social", "note": "Chats, friends and hangouts" },
+    { "id": "sport", "label": "Sport", "note": "Gym, stadium, pool and pitch" }
+  ],
+  "defaults": {
+    "academics": { "minGrades": 3, "points": 10, "limit": 4 },
+    "sport": { "points": 10, "limit": 3 },
+    "social": { "minSocial": 5, "points": 6, "limit": 3 }
+  },
+  "sportPlaces": ["sports_centre"],
+  "sportIds": ["sports_gym", "quad_touch", "sport_.*"],
+  "pseudo": {
+    "talk_chat": { "board": "social", "points": 2, "limit": 10, "name": "Chat with someone" },
+    "player_say": { "board": "social", "points": 1, "limit": 10, "name": "Talk to a student" },
+    "friend_add": { "board": "social", "points": 5, "limit": 3, "name": "Make a friend" },
+    "hangout": { "board": "social", "points": 8, "limit": 4, "name": "Hang out with someone" }
+  },
+  "overrides": {
+    "lecture_attend": { "board": "academics", "points": 12, "limit": 3 },
+    "library_study": { "board": "academics", "points": 10, "limit": 4 },
+    "write_exam": { "board": "academics", "points": 20, "limit": 1 },
+    "tutor": { "board": "academics", "points": 12, "limit": 2 },
+    "sports_gym": { "board": "sport", "points": 12, "limit": 3 },
+    "quad_touch": { "board": "sport", "points": 10, "limit": 3 },
+    "res_party": { "board": "social", "points": 8, "limit": 2 },
+    "off_campus_party": { "board": "social", "points": 8, "limit": 1 },
+    "sport_watch": { "board": null },
+    "sport_lineup": { "board": null },
+    "lecture_back": { "board": null },
+    "lecture_skip": { "board": null }
+  }
+}

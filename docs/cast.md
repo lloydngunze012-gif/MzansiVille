@@ -61,6 +61,21 @@ The roommate is chosen in the creator ("Your roommate": four cards for your res,
 | Men's | ryan | Ryan | brown | decided 9 Nov |
 | Men's | ravi | Ravi | amber | decided 9 Nov |
 
+## Quick-start students (player presets, 9 Nov; data/campusville/quickstart.json)
+
+The one screen a new player sees offers eight ready-made students. The names are only suggestions (the player types their own); none is a roommate or a named student above, and each woman and man has one of the four skins (deep, fair, brown, amber), so the first screen is an even mix like the cast.
+
+| Look | Name suggested | Skin | Notes |
+|---|---|---|---|
+| Woman | Naledi | deep | dreads, shweshwe |
+| Woman | Emma | fair | blond bob, jacket |
+| Woman | Amy | brown | curly bun, dress |
+| Woman | Priya | amber | bob, hoodie |
+| Man | Thabo | deep | fade, hoodie |
+| Man | Sam | fair | parted brown hair, jacket |
+| Man | Jason | brown | crop, tee |
+| Man | Dev | amber | fade, the 031 Organt tee |
+
 ## Where you're from (player, 9 Nov)
 
 Character creation has "Where are you from?" as a dropdown on the first (look) page, not a page of its own (9 Nov): every country, African ones first (South Africa on top and the default), then the rest of the world, each alphabetical; no "Other". A country without its own welcome line gets "All the way from {country}? You'll love it here." Saved as `character.country`; its flag (drawn, no image downloads: src/from.js) shows on the player's name tag over their head, on the student card and on the profile. On day 1, a player who is not from South Africa gets one welcome line from the roommate at the house door (data/campusville/countries.json).

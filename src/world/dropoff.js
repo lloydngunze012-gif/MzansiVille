@@ -10,6 +10,8 @@ import { loadModel } from './models.js'
 import { loop as soundLoop } from '../audio.js'
 
 const AUTO_TALK = typeof location !== 'undefined' && new URLSearchParams(location.search).get('talk') === 'auto'
+// (?door=hold: tests that tap "Swap roommate" keep the lines at the house door from clicking themselves)
+const HOLD_DOOR = typeof location !== 'undefined' && new URLSearchParams(location.search).get('door') === 'hold'
 
 // ctx: { scene, host, player, run, gate: {x, minZ, maxZ}, door: {x, z}, house, roommate (name), roommateLook, welcome (a country line, or ''), onUpdate, onDone }
 export function startDropOff(ctx) {
@@ -46,9 +48,10 @@ export function startDropOff(ctx) {
       card.querySelector('.dp-name').textContent = name
       card.querySelector('.dp-line').textContent = text
       const acts = card.querySelector('.dp-acts')
-      acts.innerHTML = (buttons.length ? buttons : ['Next ›']).map((b, i) => `<button type="button" class="mm-go dp-go" data-i="${i}">${b}</button>`).join('')
+      // (a button is its words, or { label, small } for the quiet one next to it)
+      acts.innerHTML = (buttons.length ? buttons : ['Next ›']).map((b, i) => { const small = typeof b === 'object' && b.small; return `<button type="button" class="mm-go dp-go${small ? ' dp-small' : ''}" data-i="${i}"${small ? ' data-swap="1"' : ''}>${typeof b === 'object' ? b.label : b}</button>` }).join('')
       acts.querySelectorAll('button').forEach((b) => { b.onclick = () => { acts.innerHTML = ''; resolve(Number(b.dataset.i)) } })
-      if (AUTO_TALK) setTimeout(() => acts.querySelector('button')?.click(), 1500) // (tests: long enough to catch each line)
+      if (AUTO_TALK && !(HOLD_DOOR && phase === 'door')) setTimeout(() => acts.querySelector('button')?.click(), 1500) // (tests: long enough to catch each line)
     })
   }
   const closeCard = () => { card.hidden = true }
@@ -262,17 +265,32 @@ export function startDropOff(ctx) {
     walkBtn.hidden = true
     if (suitcase) { player.remove(suitcase); suitcase = null }
     host.dataset.suitcase = '0'
-    roommate = createAvatar(ctx.roommateLook)
-    roommate.name = 'roommate-door'
-    roommate.userData.pose = 'stand'
-    roommate.position.set(ctx.door.x + 1.1, 0, ctx.door.z - 0.2)
-    face(roommate, player.position.x, player.position.z)
+    let who = { name: ctx.roommate, look: ctx.roommateLook }
+    const standAtDoor = () => {
+      roommate = createAvatar(who.look)
+      roommate.name = 'roommate-door'
+      roommate.userData.pose = 'stand'
+      roommate.position.set(ctx.door.x + 1.1, 0, ctx.door.z - 0.2)
+      face(roommate, player.position.x, player.position.z)
+      scene.add(roommate)
+      people.push(roommate)
+    }
+    standAtDoor()
     face(player, roommate.position.x, roommate.position.z)
-    scene.add(roommate)
-    people.push(roommate)
-    await line(ctx.roommate, `You must be my roommate! I'm ${ctx.roommate}. Welcome to ${ctx.house}. Drop your bags, we'll unpack later. You've got a 9:00 lecture!`, [`\u{1F44B} Hi, ${ctx.roommate}!`])
+    // The roommate introduces themselves; a small "Swap roommate" opens the four cards (launch.js) and the one chosen steps in.
+    for (;;) {
+      const pick = await line(who.name, `You must be my roommate! I'm ${who.name}. Welcome to ${ctx.house}. Drop your bags, we'll unpack later. You've got a 9:00 lecture!`, [`\u{1F44B} Hi, ${who.name}!`, ...(ctx.swapRoommate ? [{ label: 'Swap roommate', small: true }] : [])])
+      if (pick !== 1) break
+      card.hidden = true
+      const next = await ctx.swapRoommate()
+      if (!next) continue
+      who = { name: next.name, look: next.look }
+      scene.remove(roommate)
+      people.splice(people.indexOf(roommate), 1)
+      standAtDoor()
+    }
     // A player from abroad gets one welcome about it (data/campusville/countries.json).
-    if (ctx.welcome) await line(ctx.roommate, ctx.welcome, ['\u{1F60A} Thanks!'])
+    if (ctx.welcome) await line(who.name, ctx.welcome, ['\u{1F60A} Thanks!'])
     closeCard()
     say('done')
     ctx.onDone()

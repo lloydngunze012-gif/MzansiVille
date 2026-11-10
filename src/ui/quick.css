@@ -1,0 +1,68 @@
+/* Quick start (src/ui/quick.js): eight students, a name, a country, Play. Sits on the enrolment's night-plum theme
+   (creator.css, class .en); everything here is the part that is only on this screen. */
+.qs .qs-brand { font: 800 15px/1 system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--sl-gold); }
+.qs-body { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+.qs .qs-h { margin: 2px 0 0; font: 800 26px/1.1 system-ui; color: var(--sl-text); text-shadow: 0 2px 18px #8b4dff88; }
+.qs-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.qs-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px 7px;
+  min-height: 112px; border-radius: 16px; background: var(--sl-plum-2); border: 2px solid var(--sl-line); color: var(--sl-text); -webkit-tap-highlight-color: transparent; }
+.qs-card b { font: 700 13px/1.1 system-ui; color: inherit; }
+.qs-card .qs-pic { display: block; width: 100%; height: 84px; }
+.qs-card .qs-pic svg, .qs-card .qs-pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.qs-card[aria-pressed="true"] { background: var(--sl-plum-3); border-color: var(--sl-gold); box-shadow: 0 0 0 3px #f5c40033; }
+.qs-card:active { transform: scale(.97); }
+.qs-card:focus-visible { outline: 2px solid var(--sl-gold); outline-offset: 2px; }
+.qs .qs-name { margin: 0; }
+.qs .qs-handle { margin: -4px 0 0; min-height: 18px; font: 600 14px/1.2 system-ui; color: var(--sl-muted); }
+.qs .qs-handle b { color: var(--sl-lilac); }
+.qs .qs-fine { margin: 2px 0 0; font: 500 13px/1.35 system-ui; color: var(--sl-muted); }
+.qs .qs-fine a { color: var(--sl-lilac); }
+.qs .en-ctyrow { margin: 0; }
+.qs .en-ctyrow h3 { margin: 0 0 6px; font: 800 11px system-ui; letter-spacing: .14em; color: var(--sl-lilac); text-transform: uppercase; }
+@media (max-height: 700px) { .qs-card { min-height: 98px; } .qs-card .qs-pic { height: 70px; } .qs .qs-h { font-size: 22px; } }
+@media (min-width: 700px) { .qs-body { max-width: 460px; margin: 0 auto; } }
+
+/* ---------- The launch job's pop-up cards (src/launch.js): swap roommate, finish your card, leaderboard, feedback.
+   One centred card (width and centring: src/ui/cards.css, .sl-pop is in its list). ---------- */
+.dp-acts .dp-small { flex: 0 0 auto; min-height: 52px; padding: 0 12px; background: transparent; color: #5b23c9; border: 2px solid #5b23c9; box-shadow: none; font-size: 14px; }
+.sl-pop-wrap { position: fixed; inset: 0; z-index: 70; }
+.sl-pop-scrim { position: absolute; inset: 0; background: #0009; }
+.sl-pop { position: absolute; top: 50%; transform: translateY(-50%); max-height: calc(100svh - 32px); overflow: auto; box-sizing: border-box; padding: 18px 16px;
+  background: linear-gradient(180deg, #fff8ea, #ffeccc); color: #2a1846; border: 3px solid #2a1846; border-radius: 20px; box-shadow: 0 6px 0 #2a1846, 0 24px 60px #000b;
+  font: 600 16px/1.35 system-ui, sans-serif; animation: gpop .2s ease-out; }
+.sl-pop h2 { margin: 2px 0 8px; font-size: 22px; line-height: 1.15; color: #5b23c9; }
+.sl-pop .lp-kicker { margin: 0; font: 800 11px system-ui; letter-spacing: .14em; text-transform: uppercase; color: #8a6300; }
+.sl-pop .lp-lede { margin: 6px 0 12px; font-size: 16px; }
+.sl-pop .lp-note { margin: 4px 0 8px; font-size: 14px; color: #5a4a78; }
+.lp-go, .lp-ghost { all: unset; box-sizing: border-box; cursor: pointer; text-align: center; font: 800 16px system-ui; min-height: 48px; line-height: 48px; padding: 0 16px; border-radius: 14px; flex: 1; -webkit-tap-highlight-color: transparent; }
+.lp-go { background: linear-gradient(180deg, #ffd23f, #f0b400); color: #2a1206; box-shadow: 0 3px 0 #a87400; display: block; width: 100%; }
+.lp-two .lp-go { width: auto; }
+.lp-ghost { background: #2a184612; color: #2a1846; border: 2px solid #2a184644; line-height: 44px; }
+.lp-two { display: flex; gap: 8px; margin-top: 12px; }
+.lp-go:active, .lp-ghost:active { transform: scale(.97); }
+.lp-roomies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 10px; }
+.lp-roomie { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 14px; background: #fff; border: 2px solid #2a184633; text-align: center; }
+.lp-roomie[aria-pressed="true"] { border-color: #f0b400; box-shadow: 0 0 0 3px #f0b40044; }
+.lp-roomie b { font-size: 16px; }
+.lp-roomie small { font: 600 12px/1.25 system-ui; color: #5a4a78; }
+.lp-face svg { width: 64px; height: 64px; }
+.lp-tabs { display: flex; gap: 6px; margin: 8px 0 4px; }
+.lp-tab { all: unset; flex: 1; box-sizing: border-box; cursor: pointer; text-align: center; font: 800 14px system-ui; min-height: 44px; line-height: 44px; border-radius: 12px; background: #2a184612; color: #2a1846; border: 2px solid transparent; }
+.lp-tab[aria-selected="true"] { background: #5b23c9; color: #fff; }
+.lp-list { list-style: none; margin: 4px 0 6px; padding: 0; display: grid; gap: 4px; }
+.lp-list li { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 10px; background: #fff8; font-size: 15px; }
+.lp-list li.me { background: #ffe08a; }
+.lp-list i { font: 800 15px system-ui; font-style: normal; color: #8a6300; text-align: center; }
+.lp-list span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lp-list small { font: 600 13px system-ui; color: #5a4a78; }
+.lp-list em { font: 800 16px system-ui; font-style: normal; }
+.lp-you { margin: 6px 0 10px; font: 800 17px system-ui; color: #2a1846; min-height: 22px; }
+.lp-stars { display: flex; gap: 6px; margin: 8px 0; }
+.lp-star { all: unset; cursor: pointer; flex: 1; text-align: center; min-height: 48px; line-height: 48px; font-size: 30px; color: #2a184633; border-radius: 12px; background: #2a184608; }
+.lp-star[aria-pressed="true"] { color: #f0b400; }
+.lp-field textarea { box-sizing: border-box; width: 100%; font: 600 16px system-ui; padding: 10px; border-radius: 12px; border: 2px solid #2a184633; background: #fff; color: #2a1846; resize: none; }
+/* #/health */
+.hl-list { margin: 8px 0 14px; display: grid; gap: 6px; }
+.hl-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #0001; font-size: 15px; }
+.hl-row dt { color: #5a4a78; } .hl-row dd { margin: 0; text-align: right; font-weight: 700; word-break: break-word; }
+.hl-yes { color: #126b3b; } .hl-no { color: #9b1f1f; }

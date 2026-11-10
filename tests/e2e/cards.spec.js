@@ -18,8 +18,8 @@ test.describe.configure({ timeout: 240000 })
 // Runs in the page: every visible card, and what is wrong with it.
 const AUDIT = ({ maxW, minText, micro }) => {
   const CARDS = ['.mm-bar', '.mm-card', '.lc-caption', '.lc-say', '.dp-card', '.dp-caption', '.dp-walk', '.g-result', '.g-card-wrap', '.g-goal',
-    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu', '.act-say', '.ps-leave']
-  const MICRO_SEL = '.g-kind, .mm-kind, .mm-name, .rc-eyebrow, small, .g-fx, .rc-cost, .rc-gain, .g-act-fx, .g-why, .g-left, .g-gk, .lc-name, .mm-tag, .dp-name'
+    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu', '.act-say', '.ps-leave', '.sl-pop']
+  const MICRO_SEL = '.lp-kicker, .g-kind, .mm-kind, .mm-name, .rc-eyebrow, small, .g-fx, .rc-cost, .rc-gain, .g-act-fx, .g-why, .g-left, .g-gk, .lc-name, .mm-tag, .dp-name'
   const shown = (el) => {
     const r = el.getBoundingClientRect(), s = getComputedStyle(el)
     return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && !el.closest('[hidden]') && Number(s.opacity) > 0.05
@@ -217,6 +217,26 @@ for (const [w, h] of WIDTHS) {
       await page.goto('/?fast=1&morning=0&reload=2#/play')
       await expect(page.locator('.g-goals')).toBeVisible({ timeout: 30000 })
       await audit(page, 'goals', w)
+    })
+
+    // The launch job's pop-ups (src/launch.js): the leaderboard, finish your card, feedback and the roommate swap, each one centred card.
+    test(`C8 launch pop-ups: leaderboard, finish your card, feedback, swap roommate @${w}`, async ({ page }) => {
+      await page.route('**/rest/v1/rpc/score_board', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ week: '2026-11-09', top: Array.from({ length: 10 }, (_, i) => ({ rank: i + 1, name: `Student ${i + 1}`, handle: `student_${i + 1}`, house: 'Wave House', points: 90 - i * 5, you: i === 3 })), you: { rank: 4, points: 75 } }) }))
+      await student(page, { patch: { phase: 'leisure', minutes: 15 * 60, morningDone: true, lectureResolved: true, queue: [], bestieSeen: { 1: true, 2: true, 3: true } } })
+      await page.goto('/?fast=1&morning=0&scores=1#/play')
+      await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 60000 })
+      await page.evaluate(() => window.mzansiLaunch.openBoard('academics'))
+      await expect(page.locator('.sl-pop .lp-list li')).toHaveCount(10, { timeout: 20000 })
+      await audit(page, 'launch-leaderboard', w)
+      await page.evaluate(() => window.mzansiLaunch.openFeedback('menu'))
+      await expect(page.locator('.sl-pop #lp-fb')).toBeVisible()
+      await audit(page, 'launch-feedback', w)
+      await page.evaluate(() => window.mzansiLaunch.promptCard())
+      await expect(page.locator('.sl-pop [data-lp="card-now"]')).toBeVisible()
+      await audit(page, 'launch-card-prompt', w)
+      await page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-swap-roommate', { detail: { done() {} } })))
+      await expect(page.locator('.sl-pop .lp-roomie')).toHaveCount(4)
+      await audit(page, 'launch-swap-roommate', w)
     })
   })
 }

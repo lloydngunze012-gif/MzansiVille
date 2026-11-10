@@ -12,6 +12,9 @@ import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
 import { themePicker } from '../theme.js'
 import { enrolScreen } from './enrol.js'
+import { quickScreen } from './quick.js'
+import { healthScreen } from './health.js'
+import { BUILD, COMMIT } from '../health.js'
 import { installScreen } from './install.js'
 import { smoothScreen } from './smooth.js'
 import { BIO_MAX } from '../engine/filter.js'
@@ -52,6 +55,13 @@ function stillOf(avatar) {
 // look would not match the studio's framing); any other look shows the shimmer while it loads.
 const stageStillOf = (avatar) => (JSON.stringify(avatar) === DEFAULT_LOOK ? '/creator-still.png' : '')
 
+// ?enrol=quick / ?enrol=full picks; otherwise a player gets the quick start and automated tests keep the full steps.
+function quickDefault() {
+  const q = new URLSearchParams(location.search).get('enrol')
+  if (q === 'quick') return true
+  if (q === 'full') return false
+  return !navigator.webdriver
+}
 export function emptyDraft() {
   return {
     name: '',
@@ -66,6 +76,8 @@ export function emptyDraft() {
     looking: '',
     from: '',
     country: 'South Africa', // (Where are you from? data/campusville/countries.json)
+    quick: quickDefault(), // (a new player sees the one-screen quick start, src/ui/quick.js; automation sees the full steps unless ?enrol=quick)
+    preset: '',
     roommate: '', // (a roommate id; '' = the default for your res and skin)
     email: '',
     notice: '',
@@ -762,6 +774,7 @@ export function view(state) {
   if (screen === 'rules') return rules()
   if (screen === 'credits') return credits()
   if (screen === 'install') return installScreen(state)
+  if (screen === 'health') return healthScreen(state.health, { build: BUILD, commit: COMMIT })
   if (screen === 'smooth') return smoothScreen(state)
   if (screen === 'privacy') {
     return legalText('privacy', 'Privacy', [
@@ -781,6 +794,7 @@ export function view(state) {
   }
   // (enrolment: three quick screens and your card, src/ui/enrol.js; the old one-page form
   // is kept below as create() but no longer shown)
+  if (screen === 'create' && state.draft.quick && !state.draft.edit && !state.draft.countryOnly) return quickScreen(state)
   if (screen === 'create') return enrolScreen(state, { still: stageStillOf(state.draft.avatar) })
   if (screen === 'morning' && state.run) return morningScreen(state)
   if (screen === 'lecture' && state.run) return lectureScreen(state)

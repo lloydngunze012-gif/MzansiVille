@@ -12,7 +12,13 @@ import { filterText } from './engine/filter.js'
 const params = new URLSearchParams(location.search)
 // ?room=<name> picks the channel (tests use their own). Automated tests without one
 // never join: they'd walk about on the live campus.
-const ROOM = params.get('room') || (navigator.webdriver ? '' : 'campus')
+const BASE = params.get('room') || (navigator.webdriver ? '' : 'campus')
+// A room holds at most 40 players (owner, 9 Nov: Supabase Realtime and a phone's drawing both have a limit). The 41st
+// player lands in campus-2, the next in campus-3. ?roomcap=<n> lowers it for tests.
+const CAP = Math.max(1, Number(params.get('roomcap')) || 40)
+let roomNo = 1
+const roomName = () => (roomNo === 1 ? BASE : `${BASE}-${roomNo}`)
+const ROOM = BASE // (is there a campus to join at all)
 const RATE = 250 // ms between updates while moving: 4 a second (while few are online)
 // Supabase's free plan carries 100 messages a second for the whole project, and every
 // delivery counts: with n players each update goes to n - 1 phones. Updates slow down
@@ -87,35 +93,71 @@ export function joinPresence(character, card = null) {
   setInterval(pump, 100)
   addEventListener('pagehide', leave)
   document.addEventListener('visibilitychange', () => {
-    // A phone that switches apps isn't on campus: gone at once, back with a hello.
+    // A phone that switches apps isn't on campus: gone at once, back with a hello (into the first room with space).
     if (document.hidden) leave()
-    else if (!channel) connect()
+    else if (!channel) { roomNo = 1; connect() }
   })
 }
 
 async function connect() {
   const client = await getClient()
   if (!client || channel) return
-  const ch = client.channel(`presence:${ROOM}`, { config: { broadcast: { self: false }, presence: { key: me.id } } })
+  const ch = client.channel(`presence:${roomName()}`, { config: { broadcast: { self: false }, presence: { key: me.id } } })
   channel = ch
-  ch.on('broadcast', { event: 'pos' }, ({ payload }) => heard(payload))
+  let accepted = false
+  let probed = false
+  // Who is in this room, oldest first: [[id, since]]. A joiner decides after the first sync: if 40 are
+  // already here, go to the next room; after joining, if a race left more than 40, the youngest ones move on.
+  const members = () => Object.entries(ch.presenceState()).map(([key, metas]) => [key, Math.min(...metas.map((m) => Number(m.t) || Infinity))])
+    .sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1))
+  const nextRoom = () => {
+    if (channel !== ch) return
+    roomNo += 1
+    channel = null
+    live = false
+    peers.clear()
+    notify()
+    client.removeChannel(ch)
+    connect()
+  }
+  const accept = () => {
+    accepted = true
+    live = true
+    joinedAt = Date.now()
+    lastMeta = 0
+    ch.track({ i: me.id, t: joinedAt }).catch(() => {})
+    ch.send({ type: 'broadcast', event: 'hello', payload: { i: me.id } }).catch(() => {})
+    send(true)
+    // (after the others have heard us: a race that left 41 sends the last to arrive on)
+    setTimeout(() => {
+      if (channel !== ch) return
+      const list = members()
+      const rank = list.findIndex(([id]) => id === me.id)
+      if (rank >= CAP) nextRoom()
+    }, 1500)
+  }
+  const probe = () => {
+    if (probed || channel !== ch) return
+    probed = true
+    const others = members().filter(([id]) => id !== me.id).length
+    if (others >= CAP) nextRoom()
+    else accept()
+  }
+  ch.on('broadcast', { event: 'pos' }, ({ payload }) => { if (accepted) heard(payload) })
     .on('broadcast', { event: 'hello' }, ({ payload }) => {
-      if (payload?.i && payload.i !== me.id) { lastMeta = 0; replyDue = Date.now() + 100 + Math.random() * 300 }
+      if (accepted && payload?.i && payload.i !== me.id) { lastMeta = 0; replyDue = Date.now() + 100 + Math.random() * 300 }
     })
     .on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.i))
     .on('broadcast', { event: 'poke' }, ({ payload }) => { if (payload?.to === me.id && payload.from !== me.id && !hidden.has(payload.from)) for (const fn of pokeListeners) fn(payload) })
     .on('broadcast', { event: 'say' }, ({ payload }) => { if (payload?.i && payload.i !== me.id && !hidden.has(payload.i) && typeof payload.text === 'string') for (const fn of sayListeners) fn(payload) })
+    .on('presence', { event: 'sync' }, probe)
     .on('presence', { event: 'leave' }, ({ key }) => drop(key))
     .subscribe((status) => {
       if (channel !== ch) return
       if (status === 'SUBSCRIBED') {
-        live = true
-        joinedAt = Date.now()
-        lastMeta = 0
-        ch.track({ i: me.id }).catch(() => {})
-        ch.send({ type: 'broadcast', event: 'hello', payload: { i: me.id } }).catch(() => {})
-        send(true)
-      } else live = false
+        // (the first sync normally follows at once; if it does not, decide on what is known after a second)
+        setTimeout(probe, 1000)
+      } else if (accepted) live = false
     })
 }
 
@@ -264,7 +306,7 @@ export function settled() {
   return live && Date.now() - joinedAt > 1200
 }
 export function connected() { return live }
-export function presenceRoom() { return ROOM }
+export function presenceRoom() { return roomName() }
 
 // The real students on the campus map, each placed where they were a moment ago (in
 // their own clock), between the two updates either side of that moment.
@@ -307,7 +349,9 @@ function sample(snaps, t, step) {
 
 // Tests (read only): who's here and what this phone sees of them.
 window.mzansiPresence = () => ({
-  room: ROOM,
+  room: roomName(),
+  base: BASE,
+  cap: CAP,
   live,
   rate: rate(),
   me: me && { id: me.id, num: me.num },

@@ -2373,6 +2373,8 @@ function respawn(district, run) {
       roommate: roommateFor(run.character).name,
       roommateLook: roommateLook(roommateFor(run.character)),
       welcome: countryWelcome(countryOf(run.character)),
+      // "Swap roommate": launch.js shows the four cards and answers with the one picked (or null); main.js keeps the pick for later
+      swapRoommate: () => new Promise((resolve) => window.dispatchEvent(new CustomEvent('mzansi-swap-roommate', { detail: { done: (r) => resolve(r ? { name: r.name, look: roommateLook(r) } : null) } }))),
       boom: campus.buildings.getObjectByName('boom'),
       walkTo: (x, z) => walkTo(x, z, null, { arrive: true }),
       rig,

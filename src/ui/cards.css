@@ -27,7 +27,9 @@
 :root .g-cta,
 :root body > .chat-panel,
 :root .pc-stats,
-:root .pc-sheet {
+:root .pc-sheet,
+/* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */
+:root .sl-pop {
   left: 0; right: 0; margin-inline: auto; transform-origin: center;
   width: var(--card-w); max-width: 420px; box-sizing: border-box;
 }

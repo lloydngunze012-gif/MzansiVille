@@ -1,0 +1,13 @@
+{
+  "_about": "Quick start (owner, 9 Nov): the eight ready-made students on the one screen a new player sees. Four women and four men, skins deep, fair, brown, amber for each. 'name' is only a suggestion: it fills the name field until the player types their own. Looks use the creator's own ids (src/avatar.js). Not cast members (docs/cast.md): none of these names is a roommate or a named student.",
+  "students": [
+    { "id": "q-naledi", "name": "Naledi", "avatar": { "gender": "female", "skin": "deep", "hair": "braids", "outfit": "shweshwe", "body": "regular" } },
+    { "id": "q-emma", "name": "Emma", "avatar": { "gender": "female", "skin": "fair", "hair": "crop", "outfit": "jacket", "body": "regular", "hairColor": "#e0b85c" } },
+    { "id": "q-amy", "name": "Amy", "avatar": { "gender": "female", "skin": "brown", "hair": "curls", "outfit": "dress", "body": "curvy", "hairColor": "#3a2416" } },
+    { "id": "q-priya", "name": "Priya", "avatar": { "gender": "female", "skin": "amber", "hair": "crop", "outfit": "hoodie", "body": "regular" } },
+    { "id": "q-thabo", "name": "Thabo", "avatar": { "gender": "male", "skin": "deep", "hair": "fade", "outfit": "hoodie", "body": "regular" } },
+    { "id": "q-sam", "name": "Sam", "avatar": { "gender": "male", "skin": "fair", "hair": "curls", "outfit": "jacket", "body": "regular", "hairColor": "#6b4529" } },
+    { "id": "q-jason", "name": "Jason", "avatar": { "gender": "male", "skin": "brown", "hair": "crop", "outfit": "shirt", "body": "regular" } },
+    { "id": "q-dev", "name": "Dev", "avatar": { "gender": "male", "skin": "amber", "hair": "fade", "outfit": "organt", "body": "regular" } }
+  ]
+}

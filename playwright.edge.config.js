@@ -8,9 +8,10 @@ const TIMING = [/[\\/]tests[\\/](basics|presence)[\\/].*\.spec\.js$/, /queue-jit
 const use = { ...base.use, channel: 'msedge' }
 
 // quick = the pre-push set, under 10 minutes: floating cards, the Caf, the lecture, the home drop-off, the result
-// card and the core action tests. `npm run test:quick` (with npm run check). It repeats tests the other two run:
+// card and the core action tests, and (9 Nov) the launch set: quick start, swap roommate, the card prompt, the leaderboard,
+// feedback, health. `npm run test:quick` (with npm run check). It repeats tests the other two run:
 // pick it with --project=quick, never together with them.
-const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions)\.spec\.js$/]
+const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions|launch)\.spec\.js$/]
 
 export default {
   ...base,

@@ -18,6 +18,7 @@ import { MOMENTS, chooseMoment, momentCard, rollMoment } from '../src/engine/mom
 import { BEATS } from '../src/engine/arcs.js'
 import { fridayTest } from '../src/engine/friday.js'
 import { mealCost } from '../src/engine/grocer.js'
+import { categoryOf, countActivity, limitLeft, resetIn, resetText, sastDay, sastWeek, scoreRules, weekNumber, badgeLabel } from '../src/engine/scores.js'
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { byDevice, byPlace, loadLine, median, p90, placeName, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
@@ -1002,6 +1003,83 @@ check('international students: David (Nigeria), Grace (Kenya), Tendai (Zimbabwe)
     assert.equal(people[id].country, country)
     const lines = people[id].chats.flatMap((c) => c.line ? [c.line] : c.lines ? c.lines : [c.warm, c.cold])
     assert.ok(lines.length >= 3 && lines.length <= 10, `${id} has ${lines.length} lines`)
+  }
+})
+
+check('weekly leaderboard: three boards, every rule has a daily limit, the week turns over Monday 00:00 SAST', () => {
+  const config = JSON.parse(read('leaderboard.json'))
+  const rules = scoreRules(district.activities, config)
+  assert.deepEqual(config.boards.map((b) => b.id), ['academics', 'social', 'sport'])
+  for (const board of ['academics', 'social', 'sport']) assert.ok(Object.values(rules).filter((r) => r.board === board).length >= 3, `${board} has rules`)
+  for (const [id, r] of Object.entries(rules)) {
+    assert.ok(r.limit >= 1 && r.limit <= 50 && r.points >= 1 && r.points <= 100, `${id}: ${JSON.stringify(r)}`)
+    assert.ok(district.activities.some((a) => a.id === id) || config.pseudo[id], `${id} is not an activity`)
+  }
+  assert.equal(rules.lecture_attend.board, 'academics')
+  assert.equal(rules.sports_gym.board, 'sport')
+  assert.equal(rules.lecture_skip, undefined)
+  assert.equal(rules.sport_pass, undefined) // (takes no slot: no points)
+  // SAST (UTC+2): Sunday 15 Nov 23:30 UTC is already Monday 16 Nov in South Africa
+  const sun = Date.parse('2026-11-15T21:59:00Z')
+  const mon = Date.parse('2026-11-15T22:00:00Z')
+  assert.equal(sastDay(sun), '2026-11-15')
+  assert.equal(sastWeek(sun), '2026-11-09')
+  assert.equal(sastDay(mon), '2026-11-16')
+  assert.equal(sastWeek(mon), '2026-11-16')
+  assert.equal(resetIn(mon), 7 * 864e5)
+  assert.equal(resetText(Date.parse('2026-11-18T10:00:00Z')), '4d 12h') // Wed 12:00 SAST -> next Monday 00:00
+  assert.equal(weekNumber('2026-11-09', config), 0)
+  assert.equal(weekNumber('2026-11-16', config), 1)
+  assert.equal(weekNumber('2026-11-30', config), 3)
+  assert.equal(badgeLabel('2026-11-16', 'sport', config), 'Week 1 Top 3, Sport')
+})
+
+check('every finished activity is counted for the player; a score stops at its daily limit and resets by SAST day and week', () => {
+  const config = JSON.parse(read('leaderboard.json'))
+  const rules = scoreRules(district.activities, config)
+  const run = createRun(district, character)
+  const t0 = Date.parse('2026-11-12T08:00:00Z')
+  const got = []
+  for (let i = 0; i < 5; i++) got.push(countActivity(run, { id: 'lecture_attend', place: 'smig', cat: 'academics' }, rules, config, t0 + i * 1000))
+  assert.deepEqual(got.map((g) => g && g.points), [12, 12, 12, null, null])
+  assert.equal(limitLeft(run, 'lecture_attend', rules, t0), 0)
+  assert.equal(run.scores.points.academics, 36)
+  // everything is counted, scored or not
+  countActivity(run, { id: 'wake_skip', place: 'res_o', cat: 'rest' }, rules, config, t0)
+  assert.equal(run.counts.total, 6)
+  assert.equal(run.counts.activity.lecture_attend, 5)
+  assert.equal(run.counts.place.smig, 5)
+  assert.equal(run.counts.category.academics, 5)
+  assert.equal(run.finished.length, 6)
+  assert.equal(run.outbox.length, 6)
+  assert.ok(run.outbox.every((e) => e.e && e.id && e.at))
+  assert.equal(new Set(run.outbox.map((e) => e.e)).size, 6) // (each event has its own id: a retried send does not count twice)
+  // the next SAST day the limit is fresh; the next week the points start again
+  assert.equal(countActivity(run, { id: 'lecture_attend', cat: 'academics' }, rules, config, t0 + 864e5).points, 12)
+  assert.equal(run.scores.points.academics, 48)
+  countActivity(run, { id: 'lecture_attend', cat: 'academics' }, rules, config, t0 + 5 * 864e5)
+  assert.equal(run.scores.points.academics, 12)
+  // categories for the colours and mood that come later
+  assert.equal(categoryOf(district.activities.find((a) => a.id === 'job_shift'), rules), 'work')
+  assert.equal(categoryOf(district.activities.find((a) => a.id === 'cafeteria_meal'), rules), 'food')
+})
+
+check('quick start: four women and four men, skins deep, fair, brown, amber each, valid looks, no cast name', () => {
+  const quick = JSON.parse(read('quickstart.json')).students
+  assert.equal(quick.length, 8)
+  for (const gender of ['female', 'male']) {
+    const group = quick.filter((s) => s.avatar.gender === gender)
+    assert.deepEqual(group.map((s) => s.avatar.skin), ['deep', 'fair', 'brown', 'amber'], gender)
+  }
+  const room = JSON.parse(read('roommates.json'))
+  const cast = new Set([...room.women, ...room.men].map((r) => r.name.toLowerCase()))
+  const looks = new Set(quick.map((s) => JSON.stringify(s.avatar)))
+  assert.equal(looks.size, 8, 'eight different looks')
+  for (const s of quick) {
+    assert.ok(!cast.has(s.name.toLowerCase()), `${s.name} is a roommate`)
+    assert.ok(['hoodie', 'shirt', 'jacket', 'organt', 'dress', 'skirt', 'shweshwe'].includes(s.avatar.outfit), s.id)
+    if (s.avatar.gender === 'male') assert.ok(['hoodie', 'shirt', 'jacket', 'organt'].includes(s.avatar.outfit), `${s.id}: men have no dress`)
+    assert.ok(['crop', 'curls', 'fade', 'braids'].includes(s.avatar.hair), s.id)
   }
 })
 

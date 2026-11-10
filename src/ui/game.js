@@ -21,6 +21,7 @@ import './cards.css'
 import { resultBody } from './result-card.js'
 import { themePicker } from '../theme.js'
 import './creator.css'
+import './quick.css'
 import { venueFor } from '../venues.js'
 import { MENUS } from '../menus.js'
 import { flagOf } from '../from.js'
@@ -292,7 +293,8 @@ function gearMenu(run) {
     ${themePicker()}
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>
-    <button type="button" data-act="nav" data-go="board">Leaderboard</button>
+    <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
+    <button type="button" data-act="nav" data-go="board">All-time boards</button>
     <button type="button" data-act="nav" data-go="chat">Campus chat</button>
     <button type="button" data-act="nav" data-go="rules">Community rules</button>
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
@@ -300,6 +302,7 @@ function gearMenu(run) {
     ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
     <button type="button" data-act="edit-char">Edit character</button>
     <button type="button" data-act="nav" data-go="notices">📢 Notices</button>
+    <button type="button" data-act="lp-feedback">Feedback</button>
     <button type="button" data-act="nav" data-go="settings">Settings</button>
     <p class="g-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
     ${run.userId ? '<button type="button" data-act="signout">Sign out</button>' : '<button type="button" data-act="nav" data-go="save">Save progress / sign in</button>'}
