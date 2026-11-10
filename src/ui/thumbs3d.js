@@ -7,11 +7,16 @@ import { appearNow, createAvatar, poseAvatar } from '../world/avatar3d.js'
 
 const W = 120
 const H = 200
+// The opening page's hero (src/ui/quick.js): the same full-body framing as 'body', just a bigger
+// canvas (crisper at ~45% of a phone screen) with a soft ground shadow under the feet.
+const SIZES = { hero: [240, 420] }
 const STORE = 'mzansiville.thumbs.v5' // (v5: curvy is reshaped; v4: dreads instead of braids)
 const KEEP = 60 // pictures kept on the phone
 let renderer = null
 let scene = null
 let camera = null
+let shadowTexture = null
+let sizeNow = [W, H] // (only resized when it actually changes: the hero kind is the only one that differs)
 const cache = new Map()
 let chain = Promise.resolve()
 let stored = null
@@ -43,11 +48,35 @@ function setup() {
   camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 50)
 }
 
+// A soft, blurred dark oval (a canvas radial gradient): under the feet, so a hero render has
+// somewhere to stand instead of floating on the transparent background.
+function shadowTex() {
+  if (shadowTexture) return shadowTexture
+  const c = document.createElement('canvas')
+  c.width = c.height = 128
+  const ctx = c.getContext('2d')
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
+  g.addColorStop(0, 'rgba(8,4,16,.4)')
+  g.addColorStop(0.7, 'rgba(8,4,16,.16)')
+  g.addColorStop(1, 'rgba(8,4,16,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 128, 128)
+  shadowTexture = new THREE.CanvasTexture(c)
+  return shadowTexture
+}
+
 async function render(avatar, kind) {
   if (!renderer) setup()
+  const [w, h] = SIZES[kind] || [W, H]
+  if (w !== sizeNow[0] || h !== sizeNow[1]) {
+    sizeNow = [w, h]
+    renderer.setSize(w, h, false)
+    camera.aspect = w / h
+    camera.updateProjectionMatrix()
+  }
   const av = createAvatar(avatar)
   await av.userData.ready
-  av.rotation.y = 0.35
+  av.rotation.y = kind === 'hero' ? 0.3 : 0.35
   av.userData.pose = 'stand'
   poseAvatar(av, false, 0.4)
   poseAvatar(av, false, 0.45)
@@ -55,6 +84,13 @@ async function render(avatar, kind) {
   appearNow(av)
   scene.add(av)
   av.updateMatrixWorld(true)
+  let ground = null
+  if (kind === 'hero') {
+    ground = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15), new THREE.MeshBasicMaterial({ map: shadowTex(), transparent: true, depthWrite: false }))
+    ground.rotation.x = -Math.PI / 2
+    ground.position.set(0, 0.003, 0.06)
+    scene.add(ground)
+  }
   // Frame it: the whole student (feet to the top of the hair) or head and shoulders.
   const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
   const [top, bottom] = kind === 'hair' ? [1.95, 1.3] : [1.95, -0.02]
@@ -66,6 +102,7 @@ async function render(avatar, kind) {
   renderer.render(scene, camera)
   const url = renderer.domElement.toDataURL('image/png')
   scene.remove(av)
+  if (ground) scene.remove(ground)
   av.userData.disposed = true
   return url
 }

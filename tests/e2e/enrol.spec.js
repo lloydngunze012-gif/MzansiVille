@@ -105,14 +105,19 @@ test('start screen -> look -> who -> vibe -> card -> campus, under 45 s, by taps
   expect(errors).toEqual([])
 })
 
+// Skip is for the OPTIONAL parts of enrolment; the name itself is mandatory (owner, 10 Nov: no fake
+// name option), so Skip on "who" only works once a real name is typed in.
+async function skipStep(page, step) {
+  await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible()
+  if (step === 'who') await page.locator('#name').fill('Lerato')
+  await page.locator('[data-act="enrol-skip"]').tap()
+}
+
 test('Skip all the way: a valid student anyway', async ({ page }) => {
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0#/new')
-  for (const step of ['look', 'roommate', 'who', 'vibe']) {
-    await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible()
-    await page.locator('[data-act="enrol-skip"]').tap()
-  }
+  for (const step of ['look', 'roommate', 'who', 'vibe']) await skipStep(page, step)
   await expect(page.locator('.en[data-step="card"]')).toBeVisible()
   await page.locator('[data-act="enrol-enter"]').tap()
   await page.waitForURL(/#\/(play|morning)/, { timeout: 20000 })
@@ -126,7 +131,7 @@ test('Start over from the start screen: confirm, then a fresh enrolment', async 
   await page.goto('/?morning=0#/')
   await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.v1', JSON.stringify({ rulesAccepted: true })) })
   await page.goto('/?morning=0&fresh=1#/new')
-  for (const step of ['look', 'roommate', 'who', 'vibe']) { await expect(page.locator(`.en[data-step="${step}"]`)).toBeVisible(); await page.locator('[data-act="enrol-skip"]').tap() }
+  for (const step of ['look', 'roommate', 'who', 'vibe']) await skipStep(page, step)
   await page.locator('[data-act="enrol-enter"]').tap()
   await page.waitForURL(/#\/(play|morning)/)
   await page.goto('/?morning=0&t=2#/')

@@ -1,26 +1,63 @@
-/* Quick start (src/ui/quick.js): eight students, a name, a country, Play. Sits on the enrolment's night-plum theme
-   (creator.css, class .en); everything here is the part that is only on this screen. */
-.qs .qs-brand { font: 800 15px/1 system-ui; letter-spacing: .12em; text-transform: uppercase; color: var(--sl-gold); }
-.qs-body { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 10px; }
-.qs .qs-h { margin: 2px 0 0; font: 800 26px/1.1 system-ui; color: var(--sl-text); text-shadow: 0 2px 18px #8b4dff88; }
-.qs-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.qs-card { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px 7px;
-  min-height: 112px; border-radius: 16px; background: var(--sl-plum-2); border: 2px solid var(--sl-line); color: var(--sl-text); -webkit-tap-highlight-color: transparent; }
-.qs-card b { font: 700 13px/1.1 system-ui; color: inherit; }
-.qs-card .qs-pic { display: block; width: 100%; height: 84px; }
-.qs-card .qs-pic svg, .qs-card .qs-pic img { width: 100%; height: 100%; object-fit: contain; display: block; }
-.qs-card[aria-pressed="true"] { background: var(--sl-plum-3); border-color: var(--sl-gold); box-shadow: 0 0 0 3px #f5c40033; }
-.qs-card:active { transform: scale(.97); }
+/* Quick start / the opening page (src/ui/quick.js): eight students, a name, a country, Play, over a
+   golden-hour still of the real SunnyBay. Sits on the enrolment's night-plum theme (creator.css, class
+   .en); everything here is the part that is only on this screen. */
+.qs2 { position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 100dvh; background: var(--sl-night); }
+
+/* The backdrop: a sunset gradient that shows at once, the real still layered over it (two
+   densities via image-set so it never asks for more than the screen needs); if the picture is
+   blocked or slow, the gradient alone still reads as SunnyBay at golden hour. A slow pan, off for
+   reduced motion. */
+.qs-backdrop { position: absolute; inset: 0; z-index: 0;
+  background-image: url('/opening-bg-900.webp'), linear-gradient(180deg, #e7bfa3 0%, #d79d7c 20%, #b97f72 40%, #6a4166 62%, #2a1646 84%, var(--sl-night) 100%);
+  background-size: 130% auto, cover; background-position: 50% 32%, 50% 32%; background-repeat: no-repeat;
+  animation: qs-pan 20s ease-in-out infinite alternate; }
+@media (min-width: 600px) { .qs-backdrop { background-image: url('/opening-bg-1600.webp'), linear-gradient(180deg, #e7bfa3 0%, #d79d7c 20%, #b97f72 40%, #6a4166 62%, #2a1646 84%, var(--sl-night) 100%); } }
+@keyframes qs-pan { from { background-position: 46% 30%, 50% 32%; } to { background-position: 54% 36%, 50% 32%; } }
+@media (prefers-reduced-motion: reduce) { .qs-backdrop { animation: none; } }
+/* The lower third fades to plum so the row and panel always read against it. */
+.qs-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 38%, rgba(20,10,36,.55) 62%, rgba(20,10,36,.92) 82%, var(--sl-night) 100%); }
+
+.qs2 > *:not(.qs-backdrop) { position: relative; z-index: 1; }
+.qs-top { display: flex; justify-content: center; padding: calc(10px + var(--safe-t, 0px)) 16px 0; }
+.qs-logo { font: 800 15px/1 system-ui; letter-spacing: .14em; text-transform: uppercase; color: var(--sl-text); text-shadow: 0 2px 12px #000a; }
+
+/* The hero: the picked student, large, warm-lit, a soft ground shadow (thumbs3d.js 'hero' kind).
+   A short bounce when the pick changes (not on every repaint: main.js / quick.js track that). */
+.qs-hero { flex: 1 1 auto; min-height: 30vh; display: flex; align-items: flex-end; justify-content: center; padding: 4px 0 0; }
+.qs-heropic { width: min(62vw, 230px); height: 45vh; max-height: 360px; display: flex; align-items: flex-end; justify-content: center; filter: drop-shadow(0 14px 18px rgba(0,0,0,.35)); }
+.qs-heropic svg, .qs-heropic img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; display: block; }
+.qs-heropic.qs-bounce { animation: qs-bounce .4s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes qs-bounce { 0% { transform: translateY(14px) scale(.96); opacity: .6; } 60% { transform: translateY(-6px) scale(1.02); opacity: 1; } 100% { transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .qs-heropic.qs-bounce { animation: none; } }
+
+/* The row: the eight students as round portraits, swiped horizontally. */
+.qs-row { flex: none; display: flex; gap: 10px; padding: 6px 16px 10px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.qs-row::-webkit-scrollbar { display: none; }
+.qs-card { all: unset; box-sizing: border-box; flex: none; scroll-snap-align: center; cursor: pointer; width: 60px; height: 60px; border-radius: 50%;
+  background: var(--sl-plum-2); border: 2.5px solid #ffffff33; box-shadow: 0 4px 10px #0007; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+.qs-card .qs-pic { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 100%; overflow: hidden; }
+.qs-card .qs-pic svg, .qs-card .qs-pic img { width: 128%; height: 128%; object-fit: cover; object-position: 50% 14%; display: block; }
+.qs-card[aria-pressed="true"] { border-color: var(--sl-gold); box-shadow: 0 0 0 3px #f5c40055, 0 4px 10px #000a; }
+.qs-card:active { transform: scale(.94); }
 .qs-card:focus-visible { outline: 2px solid var(--sl-gold); outline-offset: 2px; }
-.qs .qs-name { margin: 0; }
-.qs .qs-handle { margin: -4px 0 0; min-height: 18px; font: 600 14px/1.2 system-ui; color: var(--sl-muted); }
-.qs .qs-handle b { color: var(--sl-lilac); }
-.qs .qs-fine { margin: 2px 0 0; font: 500 13px/1.35 system-ui; color: var(--sl-muted); }
-.qs .qs-fine a { color: var(--sl-lilac); }
-.qs .en-ctyrow { margin: 0; }
-.qs .en-ctyrow h3 { margin: 0 0 6px; font: 800 11px system-ui; letter-spacing: .14em; color: var(--sl-lilac); text-transform: uppercase; }
-@media (max-height: 700px) { .qs-card { min-height: 98px; } .qs-card .qs-pic { height: 70px; } .qs .qs-h { font-size: 22px; } }
-@media (min-width: 700px) { .qs-body { max-width: 460px; margin: 0 auto; } }
+
+/* The panel: frosted glass over the fade, the name, handle, country, Play. */
+.qs-panel { flex: none; margin: 0 12px calc(14px + env(safe-area-inset-bottom, 0px)); padding: 14px 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px; background: rgba(43, 22, 80, .55); backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1.5px solid #ffffff26; box-shadow: 0 10px 30px #0007; display: flex; flex-direction: column; gap: 8px; }
+.qs2 .qs-name { margin: 0; }
+.qs2 .qs-name.qs-shake { animation: qs-shake .4s ease-in-out; }
+@keyframes qs-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@media (prefers-reduced-motion: reduce) { .qs2 .qs-name.qs-shake { animation: none; } }
+.qs2 .qs-handle { margin: -4px 0 0; min-height: 18px; font: 600 14px/1.2 system-ui; color: var(--sl-muted); }
+.qs2 .qs-handle b { color: var(--sl-lilac); }
+.qs-play { margin-top: 2px; }
+.qs2 .qs-fine { margin: 2px 0 0; font: 500 12px/1.35 system-ui; color: var(--sl-muted); text-align: center; }
+.qs2 .qs-fine a { color: var(--sl-lilac); }
+.qs2 .en-ctyrow { margin: 0; }
+.qs2 .en-ctyrow h3 { margin: 0 0 6px; font: 800 11px system-ui; letter-spacing: .14em; color: var(--sl-lilac); text-transform: uppercase; }
+@media (max-height: 780px) { .qs-hero { min-height: 22vh; } .qs-heropic { height: 34vh; width: min(54vw, 190px); } .qs-card { width: 50px; height: 50px; } .qs-panel { padding-top: 10px; gap: 6px; } .qs2 .qs-fine { font-size: 11px; } }
+@media (min-width: 700px) { .qs-panel { max-width: 420px; margin-left: auto; margin-right: auto; } .qs-row { justify-content: center; } }
 
 /* ---------- The launch job's pop-up cards (src/launch.js): swap roommate, finish your card, leaderboard, feedback.
    One centred card (width and centring: src/ui/cards.css, .sl-pop is in its list). ---------- */

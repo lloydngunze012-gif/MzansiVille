@@ -44,7 +44,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
-import { genderOf, outfitsFor } from './avatar.js'
+import { outfitsFor } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
 import { PATH_DREAM, storyWithDefaults } from './story.js'
@@ -72,7 +72,7 @@ import { saidBy } from './chat.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
 import { watchStats, wireSfx } from './sfx.js'
-import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
+import { candidates, checkRules, claimHandle, handleStatus, nameBlocked, nextChange, suggestFor, tidyHandle } from './handles.js'
 import { miniCardHtml, playerCardHtml } from './ui/card.js'
 import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
@@ -453,7 +453,36 @@ function syncPreview(viewState) {
 // last picture it had (never blank); the selected chips are drawn first.
 let thumbsPromise = null
 const lastThumb = new Map() // part|id -> the last picture that chip showed
+
+// The opening page (src/ui/quick.js): the eight round portraits (bust, kind 'hair') and the big
+// hero (full body, kind 'hero') are the real 3D models, swapped in once rendered; quickScreen()
+// only draws the instant flat-SVG placeholder so the screen is never empty while they render.
+function hydrateQuickThumbs() {
+  const qs = app.querySelector('.qs')
+  if (!qs) return
+  if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
+  thumbsPromise.then(({ thumbFor, thumbNow }) => {
+    app.querySelectorAll('.qs .qs-pic[data-i]').forEach((pic) => {
+      const i = Number(pic.dataset.i)
+      const s = STUDENTS[i]
+      if (!s) return
+      const put = (url) => { const node = app.querySelector(`.qs .qs-pic[data-i="${i}"]`); if (url && node) node.innerHTML = `<img src="${url}" alt="">` }
+      const ready = thumbNow(s.avatar, 'hair')
+      if (ready) put(ready)
+      else thumbFor(s.avatar, 'hair', () => Boolean(app.querySelector(`.qs .qs-pic[data-i="${i}"]`))).then(put)
+    })
+    const i = Number(app.querySelector('.qs .qs-heropic[data-hero]')?.dataset.i)
+    const s = STUDENTS[i]
+    if (!s) return
+    const put = (url) => { const node = app.querySelector('.qs .qs-heropic[data-hero]'); if (url && node && Number(node.dataset.i) === i) node.innerHTML = `<img class="whole" src="${url}" alt="">` }
+    const ready = thumbNow(s.avatar, 'hero')
+    if (ready) put(ready)
+    else thumbFor(s.avatar, 'hero', () => Number(app.querySelector('.qs .qs-heropic[data-hero]')?.dataset.i) === i).then(put)
+  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
+}
+
 function hydrateThumbs() {
+  hydrateQuickThumbs()
   const chips = [...app.querySelectorAll('.cc-chip.th[data-part]')].filter((chip) => ['outfit', 'hair', 'body'].includes(chip.dataset.part))
   // (the card at the end of enrolment: your portrait as dressed, made on the look screen)
   if (!chips.length) {
@@ -1354,14 +1383,16 @@ function finishTurn() {
 }
 
 // ---------- Quick start (src/ui/quick.js) ----------
-// One student is already picked when the screen opens (a different one each time), with its name in the name field.
-function quickPick(i, { keepName = false } = {}) {
+// One student is already picked when the screen opens (a different one each time); the name field is
+// never pre-filled with a fake name of its own (the preset's name is only a label on its portrait) — the
+// player's own name is mandatory, so the field starts empty and Play refuses until they type it.
+function quickPick(i) {
   const s = STUDENTS[i]
   if (!s) return
   draft.avatar = { ...s.avatar }
   draft.preset = s.id
-  if (!keepName && !draft.nameTyped) draft.name = s.name
-  if (!draft.handleEdited) draft.handle = candidates(draft.name)[0] || ''
+  // (no handle guess before they've typed a name: "@student" would be exactly the fake-name look we're avoiding)
+  if (!draft.handleEdited) draft.handle = draft.name.trim() ? candidates(draft.name)[0] || '' : ''
 }
 function quickPreselect() { quickPick(Math.floor(Math.random() * STUDENTS.length)) }
 
@@ -1370,8 +1401,10 @@ async function quickPlay() {
   captureForm()
   const district = districtNow()
   const name = draft.name.trim().replace(/^@/, '')
+  if (!name) { draft.error = 'Type your name to play'; paint(); return }
   if (name.length < 2) { draft.error = 'Your name needs at least 2 letters.'; paint(); return }
   if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
+  if (nameBlocked(name)) { draft.error = 'That name looks reserved. Pick another.'; paint(); return }
   draft.error = ''
   funnel('play_tapped')
   // The handle: the first free one from the name. A slow or missing check never holds the player up (3 s, then as it is).
@@ -1410,13 +1443,6 @@ function openCardEditor() {
   draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
   ui.gear = false
   go('new')
-}
-
-// Skipping your name: a name to start with (change it any time from your card).
-const DEFAULT_NAMES = { female: ['Amy', 'Lerato', 'Naledi', 'Emma', 'Hannah'], male: ['Liam', 'Luyanda', 'Thabo', 'Sam', 'Jake'] }
-function enrolDefaultName() {
-  const list = DEFAULT_NAMES[genderOf(draft.avatar)] || DEFAULT_NAMES.female
-  return list[Math.floor(Math.random() * list.length)]
 }
 
 function readCharacter() {
@@ -1852,12 +1878,13 @@ app.addEventListener('click', async (event) => {
     captureForm()
     const skip = act === 'enrol-skip'
     if (draft.step === 'who') {
-      const raw = draft.name.trim()
-      if (skip && raw.length < 2) draft.name = enrolDefaultName()
+      // Your real name is mandatory, never a fake default: Skip here only fills in the house, not the name.
       if (skip && !draft.residence) draft.residence = district.houses?.[Math.floor(Math.random() * (district.houses?.length || 1))]?.name || district.residences[0]?.name || ''
       const name = draft.name.trim().replace(/^@/, '')
+      if (!name) { draft.error = 'Type your name to play'; paint(); return }
       if (name.length < 2) { draft.error = 'Your name needs at least 2 letters.'; paint(); return }
       if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
+      if (nameBlocked(name)) { draft.error = 'That name looks reserved. Pick another.'; paint(); return }
       // The @handle: the rules here, then free on campus (Supabase); taken: three free ones.
       draft.handle = tidyHandle(draft.handle) || (skip || !draft.handleEdited ? (await suggestFor(name))[0] || '' : '')
       const rules = checkRules(draft.handle)

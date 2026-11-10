@@ -34,6 +34,17 @@ export function checkRules(handle) {
   return { ok: true, why: '' }
 }
 
+// A display name (not a handle: spaces, capitals and punctuation are fine) may not contain the same
+// reserved or official words as a handle — the same impersonation rule, just without the handle's own
+// character-class and length limits. Used before Play on the opening page (src/ui/quick.js) and on the
+// full enrol flow's "who" step (main.js).
+export function nameBlocked(name) {
+  const bare = String(name || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '')
+  if (!bare) return false
+  if (LIST.exact.includes(bare)) return true
+  return LIST.reserved.some((w) => bare.includes(w.replace(/_/g, '')))
+}
+
 // Handles to offer from a name: the name, with an underscore, a number, the year...
 export function candidates(name) {
   const words = String(name || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean)

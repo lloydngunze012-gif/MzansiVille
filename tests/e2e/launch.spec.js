@@ -4,11 +4,17 @@
 //   L3  the card prompt: after the first meal, never during a walk, R200 once, at most once a day, old saves never
 //   L4  the leaderboard: a returning player gets the card, a new one does not; three tabs, top 10, "You: #N"
 //   L5  launch safety: errors capped at 20 an hour, funnel steps in order, #/health, feedback (menu and third session)
+//   O1  the opening page: the picked student's hero is a real 3D render (not the flat placeholder), and tapping
+//       another portrait swaps it for that student's own render
+//   O2  a blocked backdrop still looks good (the sunset gradient alone), and Play never waits for it
+//   O3  an empty name shakes the field and says so; Play's gold button never greys out
+//   O4  the name and the handle both pass handle_blocklist.json before Play works
 // The score RPC's daily limit is tested against real Postgres in scripts/sql-check.mjs (npm run check).
 // Screenshots (on the PC, not committed): docs/sprints/launch/.
 // Run: npx playwright test tests/e2e/launch.spec.js --config playwright.gpu.config.js --workers=1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
+import BLOCKLIST from '../../data/campusville/handle_blocklist.json' with { type: 'json' }
 
 const OUT = 'docs/sprints/launch'
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
@@ -80,7 +86,7 @@ test('L1 a new player goes from the link to the home scene in under 30 s: one sc
   await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveCount(1)
   await expect(page.locator('select[data-country]')).toHaveValue('South Africa')
   const name = page.locator('#name')
-  await expect(name).not.toHaveValue('') // (the picked student's name is already there: Play works at once)
+  await expect(name).toHaveValue('') // (the player's own name is mandatory: never a fake default in the field)
   await expect(page.locator('[data-act="qs-play"]')).toBeVisible()
   // everything fits one 390 x 844 screen: nothing to scroll to
   const fits = await page.evaluate(() => { const b = document.querySelector('[data-act="qs-play"]').getBoundingClientRect(); return b.bottom <= innerHeight && document.documentElement.scrollHeight <= innerHeight + 2 })
@@ -126,11 +132,90 @@ test('L1b a name that is too short or not allowed stays on the screen; a returni
   await expect(page.locator('[data-act="start"]')).toHaveCount(0)
 })
 
+// ---------- O1/O2/O3/O4 the opening page ----------
+test('O1 the hero is the real 3D model, and swaps (with its own render) when another portrait is tapped', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await brandNew(page)
+  const hero = page.locator('.qs-heropic')
+  // a known baseline pick, whatever the random preselect landed on (same pick is a no-op, a real
+  // change bounces once): either way it settles on Naledi with her own render
+  await page.locator('[data-preset="q-naledi"]').tap()
+  await expect(hero.locator('img')).toBeVisible({ timeout: 15000 })
+  const first = await hero.locator('img').getAttribute('src')
+  expect(first).toMatch(/^data:image\/png/)
+  await shot(page, 'opening-390')
+  // a different student: a bounce plays, and the hero becomes THEIR own render (a different picture)
+  await page.locator('[data-preset="q-dev"]').tap()
+  await expect(hero).toHaveClass(/qs-bounce/)
+  await expect(hero.locator('img')).toBeVisible({ timeout: 15000 })
+  const second = await hero.locator('img').getAttribute('src')
+  expect(second).not.toBe(first)
+  // tapping the same, already-selected portrait again does nothing (the game's usual "already
+  // selected" tap, scene.js pulse): the pick and its render are undisturbed
+  await page.locator('[data-preset="q-dev"]').tap()
+  await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveAttribute('data-preset', 'q-dev')
+  await expect(hero.locator('img')).toHaveAttribute('src', second)
+  expect(errors).toEqual([])
+})
+
+test('O2 a blocked backdrop still looks good (the gradient alone), and Play works before it loads', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  // the backdrop images never arrive (blocked, or just painfully slow): the page never waits on them,
+  // so this goes straight for DOM content, not the full (image-inclusive) load event
+  await page.route('**/opening-bg-*.webp', () => new Promise(() => {})) // (never resolves)
+  await page.goto('/?fast=1&enrol=quick#/new', { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  const backdrop = page.locator('.qs-backdrop')
+  await expect(backdrop).toBeVisible()
+  const bg = await backdrop.evaluate((el) => getComputedStyle(el).backgroundImage)
+  expect(bg).toContain('linear-gradient') // (the sunset gradient is always in the layer list, image or not)
+  await shot(page, 'opening-blocked-390')
+  // Play still works: the screen never waited on the backdrop
+  await page.locator('#name').fill('Lerato')
+  await page.locator('[data-act="qs-play"]').tap()
+  await expect(page).toHaveURL(/#\/(play|morning)/, { timeout: 15000 })
+  expect(errors).toEqual([])
+})
+
+test('O3 an empty name shakes the field and says so; Play never greys out', async ({ page }) => {
+  await brandNew(page)
+  const play = page.locator('[data-act="qs-play"]')
+  const classBefore = await play.getAttribute('class')
+  await expect(page.locator('#name')).toHaveValue('') // (never a fake default to tap straight past)
+  await play.tap()
+  await expect(page.locator('.en-err')).toHaveText('Type your name to play')
+  await expect(page.locator('.qs-name')).toHaveClass(/qs-shake/)
+  await expect(play).toHaveAttribute('class', classBefore) // (the same gold button: never disabled or greyed)
+  await expect(play).toBeEnabled()
+})
+
+test('O4 the name and the handle both pass handle_blocklist.json before Play works', async ({ page }) => {
+  await brandNew(page)
+  // a reserved word as a name: refused outright, never quietly renamed or let through
+  await page.locator('#name').fill('Admin')
+  await page.locator('[data-act="qs-play"]').tap()
+  await expect(page.locator('.en-err')).toContainText('reserved')
+  await expect(page.locator('.qs')).toBeVisible()
+  await expect(page).toHaveURL(/#\/new/)
+  // an ordinary name: Play works, and the handle it lands on is never one of the blocklist's words
+  await page.locator('#name').fill('Thandiwe Nkosi')
+  await page.locator('[data-act="qs-play"]').tap()
+  await expect(page).toHaveURL(/#\/(play|morning)/, { timeout: 15000 })
+  const s = await save(page)
+  const bare = s.run.character.handle.replace(/_/g, '')
+  expect(BLOCKLIST.exact).not.toContain(bare)
+  expect(BLOCKLIST.reserved.some((w) => bare.includes(w.replace(/_/g, '')))).toBe(false)
+})
+
 test('L2 swap roommate at the house door: the roommate introduces themselves, four cards, the pick stays', async ({ page }) => {
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await brandNew(page, '&morning=0')
   await page.locator('[data-preset="q-thabo"]').tap()
+  await page.locator('#name').fill('Sipho')
   await page.locator('[data-act="qs-play"]').tap()
   await page.waitForURL(/#\/play/, { timeout: 30000 })
   await patchRun(page, { day: 1, phase: 'leisure', minutes: 8 * 60 + 15, morningDone: true, lectureResolved: false, lectureRoute: false, at: 'gate', dropOff: { style: 'suburban', day: 1 }, queue: [] })
@@ -332,6 +417,7 @@ test('L5a errors: at most 20 an hour from a phone, each with the player, build a
   // the funnel: link opened (the same table, kind funnel)
   const funnel = rows.filter((r) => r.kind === 'funnel')
   expect([...new Set(funnel.map((r) => r.message))]).toEqual(['link_opened']) // (the test clears the tab's memory and reloads: one more link_opened)
+  await page.locator('#name').fill('Lerato')
   await page.locator('[data-act="qs-play"]').tap()
   await expect.poll(() => [...new Set(rows.filter((r) => r.kind === 'funnel').map((r) => r.message))], { timeout: 20000 }).toEqual(['link_opened', 'play_tapped'])
   expect(rows.filter((r) => r.kind === 'funnel').pop().message).toBe('play_tapped')
