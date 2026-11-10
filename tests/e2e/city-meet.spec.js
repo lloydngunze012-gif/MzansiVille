@@ -24,10 +24,10 @@ test('M1 SunnyBay map: a back arrow (top left), and the phone back gesture close
 })
 
 test('M2 walking in SunnyBay costs energy; under 10 a hint shows and a door is still reachable', async ({ page }) => {
-  await atGate(page, { patch: { stats: { money: 1500, energy: 12, grades: 50, social: 30, hunger: 70 } } })
+  await atGate(page, { patch: { stats: { money: 1500, energy: 10.6, grades: 50, social: 30, hunger: 70 } } })
   await intoCity(page)
   const energyBefore = (await run(page)).stats.energy
-  expect(energyBefore).toBeLessThan(15)
+  expect(energyBefore).toBeLessThan(11) // (walking drains 0.5 a game minute since the compact-bar job: start just over the hint line)
   // a brisk walk across Town centre: energy drops, and the low-energy hint appears
   await page.evaluate(() => window.mzansiCity.teleport(0, 190, 0))
   await page.evaluate(() => window.mzansiCity.walkTo(45, 190))

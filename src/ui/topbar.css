@@ -1,0 +1,109 @@
+/* Compact top bar (owner, 10 Nov). One slim row at 390 px, at most 8% of the screen height:
+   the time pill with the day inside, five stat icons with whole numbers (no labels, no boxes),
+   one menu button with a dot for anything new. A low stat is a solid red pill with white text
+   and a slow, gentle pulse (about every 1.5 s: a soft scale and glow, never a flash); two low
+   stats pulse together (game.js gives them one shared animation-delay); reduced motion keeps
+   the red pill and drops the pulse. The tip, the timeline and the goal text drop down under the
+   bar as floating cards, so the bar never grows. Loaded after game.css and cream.css (it wins
+   over the old two-row HUD's rules), before cards.css (the one width rule for floating cards). */
+
+.g-hud.tb {
+  position: relative; z-index: 6; margin: 0; border-radius: 0;
+  padding: calc(5px + env(safe-area-inset-top, 0px)) 8px 5px;
+  background: var(--cr-bg); color: var(--cr-ink);
+  border-bottom: 1px solid var(--cr-line); box-shadow: 0 2px 10px #0000001f; backdrop-filter: none;
+}
+.screen > .g-hud.tb { margin: 0; position: sticky; top: 0; border-radius: 0; }
+.tb-row { display: flex; align-items: center; gap: 6px; height: 38px; }
+
+/* The time pill: weekday over the clock, the day's progress as a gold line along the bottom. */
+.tb-time {
+  all: unset; box-sizing: border-box; flex: none; position: relative; overflow: hidden; cursor: pointer;
+  display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px;
+  height: 36px; min-width: 56px; padding: 0 9px 2px; border-radius: 999px;
+  background: #2f1a5c; border: 1px solid #f5c400; color: #ffe08a; white-space: nowrap;
+}
+.tb-time i { display: none; } /* (the gold line along the bottom shows how far the day is) */
+.tb-time b { font: 800 11px/1 Figtree, system-ui, sans-serif; color: #fff; letter-spacing: .5px; text-transform: uppercase; opacity: .92; }
+.tb-time span { font: 800 15px/1 Figtree, system-ui, sans-serif; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
+.tb-time::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: var(--day, 0%); background: #f5c400; }
+.tb-time.on, .tb-time:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }
+
+/* The five stats: an icon and a whole number each, spread across the middle. */
+.g-hud.tb .tb-stats { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 1px; margin: 0; }
+.tb-stat {
+  all: unset; box-sizing: border-box; cursor: pointer; flex: none;
+  display: inline-flex; align-items: center; gap: 1px; height: 28px; padding: 0 3px; border-radius: 999px;
+  font: 800 14px/1 Figtree, system-ui, sans-serif; color: var(--cr-ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.tb-stat i { font-style: normal; }
+.tb-short { display: none; }
+.tb-ic { font-size: 12.5px; line-height: 1; }
+.tb-stat.mid i { color: #9a5800; }
+.tb-stat.on, .tb-stat:focus-visible { outline: 2px solid #f0c400; outline-offset: 0; }
+.tb-stat.low { background: #d42f25; color: #fff; padding: 0 6px 0 5px; }
+.tb-stat.low i { color: #fff; }
+.tb-stat.pulse { animation: tb-pulse 1.5s ease-in-out infinite; }
+@keyframes tb-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 #ff4a3d00; }
+  50% { transform: scale(1.07); box-shadow: 0 0 9px 2px #ff4a3d88; }
+}
+@media (prefers-reduced-motion: reduce) { .tb-stat.pulse { animation: none; } }
+
+/* The menu button: three bars, a red dot when something is new. */
+.tb-menu {
+  all: unset; box-sizing: border-box; flex: none; position: relative; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--cr-bg-2); border: 1.5px solid var(--cr-line);
+}
+.tb-menu > span { width: 16px; height: 2px; border-radius: 2px; background: var(--cr-ink); box-shadow: 0 -5px 0 var(--cr-ink), 0 5px 0 var(--cr-ink); }
+.tb-menu:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }
+.tb-dot { position: absolute; top: 3px; right: 3px; width: 9px; height: 9px; border-radius: 50%; background: #e0352b; box-shadow: 0 0 0 2px var(--cr-bg); }
+.g-menu .tb-dot { position: static; display: inline-block; vertical-align: 2px; margin-left: 4px; box-shadow: none; }
+.g-menu h3 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.g-menu h3 .g-online { font-family: system-ui, sans-serif; }
+
+/* What drops down under the bar: a stat's tip, the day's timeline. */
+.g-hud.tb .tb-pop {
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 7; margin-top: 0;
+  box-sizing: border-box; padding: 9px 12px; border-radius: 14px; font-size: 14px; line-height: 1.3;
+  box-shadow: 0 6px 18px #0003; animation: gpop .18s ease-out;
+}
+.g-hud.tb .tb-timeline { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); }
+.tb-pop-h { margin: 0 0 6px; font: 600 14px system-ui, sans-serif; color: var(--cr-muted); }
+.tb-pop-h b { color: var(--cr-ink); margin-right: 4px; }
+.tb-timeline .g-phases { margin-top: 0; }
+.tb-timeline .g-phases li b { font-size: 11px; }
+.tb-timeline .g-phases li small { font-size: 11px; }
+.tb-timeline .g-slots small { font-size: 11px; }
+
+/* The goal badge under the bar, and the goal text it opens. */
+.g-nowrow.tb-nowrow { position: relative; z-index: 5; display: flex; justify-content: flex-end; gap: 6px; margin: 6px 10px 0; pointer-events: none; }
+.tb-nowrow .g-goalsbtn { min-height: 32px; padding: 0 11px; font: 800 14px system-ui, sans-serif; }
+.tb-nowrow .g-goalsbtn.urgent { box-shadow: 0 0 0 2px #e0352b, 0 3px 10px #0006; }
+.tb-nowrow .g-goalsbtn.on { outline: 2px solid #22143b; }
+.tb-chip { all: unset; box-sizing: border-box; pointer-events: auto; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--cr-bg); border: 1.5px solid #e0573c; box-shadow: 0 3px 10px #0004; }
+.tb-goal { position: absolute; left: 0; right: 0; top: calc(100% + 6px); pointer-events: auto; display: flex; flex-direction: column; gap: 6px; animation: gpop .18s ease-out; }
+.tb-goal[hidden] { display: none; }
+.tb-goal .g-now { flex: none; white-space: normal; font-size: 14px; }
+.tb-goal-list { all: unset; box-sizing: border-box; cursor: pointer; display: block; padding: 9px 12px; border-radius: 14px; background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: 0 6px 18px #0003; font: 600 14px/1.35 system-ui, sans-serif; }
+.tb-goal-list ol { margin: 0 0 4px; padding: 0; list-style: none; }
+.tb-goal-list li.done { color: var(--cr-muted); text-decoration: line-through; }
+.tb-goal-list li b { display: inline-block; width: 14px; color: #a87400; }
+.tb-goal-list small { font-size: 12px; font-weight: 800; color: #a87400; }
+
+/* Narrow phones (360 px): a touch tighter. */
+@media (max-width: 374px) {
+  .tb-row { gap: 4px; }
+  .tb-time { min-width: 52px; padding: 0 7px 2px; }
+  .tb-stat { font-size: 13.5px; padding: 0 2px; }
+  .tb-ic { font-size: 12px; }
+  .tb-stat.low { padding: 0 5px 0 4px; }
+  .tb-menu { width: 34px; }
+  .tb-short { display: inline; }
+  .tb-full { display: none; }
+}
+
+/* In the Caf and SunnyBay their own buttons (Leave, the cameras, Campus) float over #app just under the bar: while a
+   drop-down is open the game layer comes up over them, the way it does for the menu (game.css). */
+body:has(.g-hud.tb .tb-pop) #app { z-index: 100; }

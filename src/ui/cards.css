@@ -34,6 +34,9 @@
 /* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */
 :root .sl-pop,
 /* SunnyBay (src/world/city.js): a door's "Opening soon", a taxi stop, a billboard; the map's ways-there panel (map.js). */
+/* The compact top bar (topbar.css): a stat's tip and the day's timeline drop down under it; the goal text under the goal badge. */
+:root .g-hud.tb .tb-pop,
+:root .tb-goal,
 :root .city-card,
 :root .cm-detail {
   left: 0; right: 0; margin-inline: auto; transform-origin: center;
@@ -56,12 +59,12 @@
 /* the goals sheet's week, dream and last-text lines: 14 px minimum */
 :root .g-week, :root .g-dream, :root .g-lasttext { font-size: 14px; }
 
-/* Queue and activity lines (owner, 8 Nov): the red Leave / Goodbye / Stop button (.ps-leave, styles.css, top 198 px)
+/* Queue and activity lines (owner, 8 Nov): the red Leave / Goodbye / Stop button (.ps-leave, styles.css, top 96 px since the compact top bar)
    and the line being said ("Bunny chow. Sharp, thank you!", .act-say) used to land on each other. The line is a
    docked card centred under the button, never pinned over a head: they stack, they never overlap. */
 :root #world .act-say {
   left: 0; right: 0; margin-inline: auto; width: max-content; max-width: var(--card-w); box-sizing: border-box;
-  top: calc(198px + 44px + 10px + env(safe-area-inset-top)); transform: none; text-align: center; font-size: 15px;
+  top: calc(96px + 44px + 10px + env(safe-area-inset-top)); transform: none; text-align: center; font-size: 15px;
 }
 :root #world .act-say b { font-size: 11px; }
 :root .ps-leave { max-width: var(--card-w); }

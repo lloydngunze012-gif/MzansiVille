@@ -378,7 +378,7 @@
   ],
   "fullName": "University of Mzansi",
   "energy": {
-    "walkPerMinute": 2,
+    "walkPerMinute": 0.5,
     "taxiCost": 3,
     "driveCost": 0,
     "lowThreshold": 10,

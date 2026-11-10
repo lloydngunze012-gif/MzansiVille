@@ -983,8 +983,10 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .cc-thumb.is3d { width: 60px; height: 92px; }
 .cc-thumb.is3d img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
-/* The one way out of whatever the player is doing (player-state.js). */
-.ps-leave{position:absolute;z-index:7;left:50%;transform:translateX(-50%);top:calc(198px + env(safe-area-inset-top));min-height:44px;padding:0 20px;border-radius:999px;border:2px solid #fff6e6;background:#c4372ef0;color:#fff6e6;font:800 15px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
+/* The one way out of whatever the player is doing (player-state.js). Just under the compact top bar and the goal
+   badge (owner, 10 Nov: the bar is one 49 px row now, so the button moved up from 198 px and the strip between it
+   and a conversation card is free for the two-shot's heads). */
+.ps-leave{position:absolute;z-index:7;left:50%;transform:translateX(-50%);top:calc(96px + env(safe-area-inset-top));min-height:44px;padding:0 20px;border-radius:999px;border:2px solid #fff6e6;background:#c4372ef0;color:#fff6e6;font:800 15px system-ui;box-shadow:0 4px 14px #0007;pointer-events:auto}
 .ps-leave[hidden]{display:none}
 
 /* Stop: bottom right while you move, thumb-sized, above everything (above Skip there). */

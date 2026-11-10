@@ -171,8 +171,9 @@ test('day 2 res morning: room to campus', async ({ page }) => {
   await expect(page.locator('.g-now')).toContainText(/lecture at SMIG/i)
   await expect(page.locator('.g-goalsbtn')).toContainText('0/3')
   await shot('10b_now_chip')
-  // Home keeps the save: Continue appears.
-  await page.locator('.g-home').first().tap()
+  // Home (in the menu since the compact top bar) keeps the save: Continue appears.
+  await page.locator('[data-act="gear"]').first().tap()
+  await page.locator('.g-menu .g-home').tap()
   await expect(page.locator('[data-act="continue"]')).toBeVisible()
   expect(errors).toEqual([])
 })

@@ -801,7 +801,7 @@ function paint() {
     shareBlob = drawShareCard(canvas, { district, run, url: shareUrl(), milestone: shot ? shown.shareMilestone : shareMilestone })
       .then(() => exportCard(canvas)).catch(() => null)
   }
-  if (app.dataset.screen !== 'title' && app.dataset.screen !== 'create' && !app.querySelector('.g-home')) {
+  if (app.dataset.screen !== 'title' && app.dataset.screen !== 'create' && !app.querySelector('.g-home, .g-hud')) {
     app.insertAdjacentHTML('beforeend', '<button class="g-home g-home-float" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>')
   }
   syncWorld(shown)
@@ -819,8 +819,17 @@ function stepOutOfCityForMenu() {
   cityPromise?.then((mod) => mod.stopCity())
   delete document.body.dataset.city
 }
+// Compact top bar (owner, 10 Nov): the bar and its menu work in the Caf too. A menu link
+// to another screen leaves the Caf scene the same quiet way (no curtain: the campus is
+// shown again when you come back to '#/play', by the Caf door where you went in).
+function stepOutOfCafForMenu() {
+  if (!cafLive) return
+  cafLive = false
+  cafPromise?.then((mod) => mod.stopCaf())
+  delete document.body.dataset.caf
+}
 function go(path) {
-  if (path !== 'play') stepOutOfCityForMenu()
+  if (path !== 'play') { stepOutOfCityForMenu(); stepOutOfCafForMenu() }
   const next = `#/${path}`
   if (location.hash === next) paint()
   else location.hash = next
@@ -1248,6 +1257,25 @@ function gameAct(act, button) {
     gameAct.t = setTimeout(() => { if (ui.tip) { ui.tip = ''; paint() } }, 5000)
     return true
   }
+  // Compact top bar (owner, 10 Nov): the time pill opens the day's timeline and it closes
+  // itself after 4 s; the goal badge shows the goal text for a few seconds.
+  if (act === 'timeline') {
+    ui.timeline = !ui.timeline
+    ui.tip = ''
+    blip(520)
+    paint()
+    clearTimeout(gameAct.tl)
+    if (ui.timeline) gameAct.tl = setTimeout(() => { if (ui.timeline) { ui.timeline = false; paint() } }, 4000)
+    return true
+  }
+  if (act === 'goal-peek') {
+    ui.goalPeek = !ui.goalPeek
+    blip(520)
+    paint()
+    clearTimeout(gameAct.gp)
+    if (ui.goalPeek) gameAct.gp = setTimeout(() => { if (ui.goalPeek) { ui.goalPeek = false; paint() } }, 6000)
+    return true
+  }
   if (act === 'skip-morning') { endMorning(true); return true }
   if (act === 'talk-reply' && ui.talk) {
     const index = Number(button.dataset.i)
@@ -1280,6 +1308,7 @@ function gameAct(act, button) {
     return true
   }
   if (act === 'goals' && save.run?.goals) {
+    ui.goalPeek = false
     save.run.queue = [goalsCard(save.run), ...save.run.queue.filter((card) => card.kind !== 'goals')]
     paint()
     return true
@@ -1796,6 +1825,8 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'nav') {
     ui.gear = false
+    // (Notices read: the menu's dot goes)
+    if (button.dataset.go === 'notices' && save.run && (save.run.inbox || []).length > (save.run.inboxSeen || 0)) { save.run.inboxSeen = save.run.inbox.length; persist() }
     go(button.dataset.go)
     return
   }

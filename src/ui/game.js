@@ -17,6 +17,7 @@ import { DAY_THEMES, WEEK_GOAL, weekStudied } from '../engine/friday.js'
 import './game.css'
 import './cream.css'
 import './result-card.css'
+import './topbar.css'
 import './cards.css'
 import { resultBody } from './result-card.js'
 import { themePicker } from '../theme.js'
@@ -195,37 +196,48 @@ export function placeStatus(district, run, placeId) {
   return { open: false, label: items.length ? 'done today' : '' }
 }
 
-// Stat colours (visual only): green at 70 and up, amber 40-69, red under 40; money green
-// above R500, amber R100-R500, red under R100. The number, the bar and a soft border take
-// the colour; a red pill also gets a down arrow (never colour alone). Only the single
-// lowest red stat pulses (how far into the red, so money and the others compare).
+/// Stat colours (visual only): green at 70 and up, amber 40-69, red under 40; money green
+// above R500, amber R100-R500, red under R100 (the existing low threshold). Compact top bar
+// (owner, 10 Nov): every low stat is a solid red pill with white text and a slow, gentle
+// pulse; two low stats pulse together (one shared phase), and reduced motion keeps the red
+// pill without the pulse.
 export function statBand(key, value) {
   const v = Number(value) || 0
   if (key === 'money') return v > 500 ? 'good' : v >= 100 ? 'mid' : 'low'
   return v >= 70 ? 'good' : v >= 40 ? 'mid' : 'low'
 }
-function redDepth(key, value) {
-  return (Number(value) || 0) / (key === 'money' ? 100 : 40)
+export function lowStats(stats) {
+  return STATS.map(([key]) => key).filter((key) => statBand(key, stats[key]) === 'low')
 }
-export function pulsingStat(stats) {
-  let worst = null
-  for (const [key] of STATS) {
-    if (statBand(key, stats[key]) !== 'low') continue
-    if (!worst || redDepth(key, stats[key]) < redDepth(worst, stats[worst])) worst = key
-  }
-  return worst
+const STAT_ICON = { money: '\u{1F4B0}', energy: '⚡', hunger: '\u{1F37D}️', grades: '\u{1F4D6}', social: '\u{1F465}' }
+const PULSE_MS = 1500
+// Always a whole number (energy drains in fractions while you walk); money past R10 000 as "R12k".
+export function statText(key, value) {
+  const v = Math.round(Number(value) || 0)
+  if (key !== 'money') return String(v)
+  return Math.abs(v) >= 10000 ? `${v < 0 ? '-' : ''}R${Math.round(Math.abs(v) / 1000)}k` : formatMoney(v)
 }
-function bar(key, word, value, max, pulse) {
-  const pct = Math.max(0, Math.min(100, Math.round((value / max) * 100)))
-  const shown = key === 'money' ? formatMoney(value) : value
+// Money from R1 000 to R9 999 also carries a short form ("R1.5k"), which the narrowest
+// phones show instead (topbar.css); the exact amount is in the tip and the label.
+function moneyShort(key, value) {
+  const full = esc(statText(key, value))
+  const v = Math.round(Number(value) || 0)
+  if (key !== 'money' || Math.abs(v) < 1000 || Math.abs(v) >= 10000) return full
+  const k = (Math.floor(Math.abs(v) / 100) / 10).toFixed(1).replace(/\.0$/, '')
+  return `<span class="tb-full">${full}</span><span class="tb-short">${v < 0 ? '-' : ''}R${k}k</span>`
+}
+function stat(key, word, value, phase) {
   const band = statBand(key, value)
   const low = band === 'low'
-  // (the HUD is redrawn often: the pulse keeps its place in the 2 s cycle, never restarts)
-  const phase = pulse ? ` style="animation-delay:-${Date.now() % 2000}ms"` : ''
-  return `<button class="g-stat ${band}${pulse ? ' pulse' : ''}${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" data-band="${band}" aria-label="${word} ${shown}${low ? ', low' : ''}"${phase}>
-    <span class="g-stat-top"><b>${word}</b><i>${low ? '<span class="g-low" aria-hidden="true">▼</span>' : ''}${esc(String(shown))}</i></span>
-    <span class="g-bar"><span style="width:${pct}%"></span></span>
-  </button>`
+  const exact = key === 'money' ? formatMoney(Math.round(Number(value) || 0)) : statText(key, value)
+  // (the HUD is redrawn often: the pulse keeps its place in the shared cycle, never restarts)
+  const delay = low ? ` style="animation-delay:-${phase}ms"` : ''
+  return `<button class="tb-stat ${band}${low ? ' pulse' : ''}${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" data-band="${band}" aria-label="${word} ${exact}${low ? ', low' : ''}"${delay}><span class="tb-ic" aria-hidden="true">${STAT_ICON[key]}</span><i>${moneyShort(key, value)}</i></button>`
+}
+// Something new behind the menu button: a notice or message you have not opened Notices
+// for yet (run.inboxSeen counts how many you have seen).
+export function menuNews(run) {
+  return (run?.inbox || []).length > (run?.inboxSeen || 0)
 }
 
 export function phaseStrip(district, run) {
@@ -247,26 +259,29 @@ function dayFill(mins) {
   return Math.round(Math.max(0, Math.min(1, (m - 360) / 960)) * 100)
 }
 
+// The compact top bar (owner, 10 Nov): one slim row at phone width. The time pill (the day
+// inside; tap it for the day's timeline, which closes itself after 4 s), the five stats as
+// icons with whole numbers (tap one for what it means), and one menu button (leaderboard,
+// chat, sound, settings and the rest) with a dot when something is new. Tips and the
+// timeline drop down under the bar, so the bar itself never grows.
 export function hud(district, run, opts = {}) {
   if (!run) return ''
-  const day = weekdayName(district.meta, run.day).slice(0, 3)
-  const tip = STATS.find((s) => s[0] === ui.tip) || CHIP_TIPS.find((s) => `chip-${s[0]}` === ui.tip)
-  const chips = statusChips(run)
-  return `<header class="g-hud">
-    <div class="g-row">
-      <button class="g-gear g-home" type="button" data-act="home" aria-label="Home">\u{1F3E0}</button>
-      <span class="g-day"><b>Day ${run.day}</b> ${day}</span>
-      <span class="g-clock" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i>${formatClock(run.minutes)}</span>
-      <span class="g-online" data-online title="Students on campus right now">${countLabel()}</span>
-      <a class="g-gear g-soc" href="#/board" aria-label="Leaderboards">\u{1F3C6}</a>
-      <a class="g-gear g-soc" href="#/chat" aria-label="Campus lobby">\u{1F4AC}</a>
-      <button class="g-gear g-mute" type="button" data-act="sound" aria-label="${soundOn() ? 'Mute sound' : 'Turn sound on'}" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '🔊' : '🔇'}</button>
-      <button class="g-gear" type="button" data-act="gear" aria-label="Menu">\u2699\uFE0F</button>
+  const day = weekdayName(district.meta, run.day)
+  const tipStat = STATS.find((s) => s[0] === ui.tip)
+  const tipChip = CHIP_TIPS.find((s) => `chip-${s[0]}` === ui.tip)
+  const tipValue = tipStat ? (tipStat[0] === 'money' ? formatMoney(Math.round(run.stats.money || 0)) : statText(tipStat[0], run.stats[tipStat[0]])) : ''
+  const tip = tipStat ? `${tipStat[1]}: ${tipValue}. ${tipStat[3]}` : tipChip ? tipChip[3] : ''
+  const phase = Date.now() % PULSE_MS
+  const news = menuNews(run)
+  const clock = formatClock(run.minutes)
+  return `<header class="g-hud tb">
+    <div class="g-row tb-row">
+      <button class="tb-time${ui.timeline ? ' on' : ''}" type="button" data-act="timeline" aria-expanded="${ui.timeline ? 'true' : 'false'}" aria-label="Day ${run.day}, ${day}, ${clock}. Today's timeline" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i><b>${day.slice(0, 3)}</b><span>${clock}</span></button>
+      <div class="g-stats tb-stats">${STATS.map(([k, w]) => stat(k, w, run.stats[k], phase)).join('')}</div>
+      <button class="tb-menu${news ? ' news' : ''}" type="button" data-act="gear" aria-label="Menu${news ? ', something new' : ''}" aria-expanded="${ui.gear ? 'true' : 'false'}"><span aria-hidden="true"></span>${news ? '<i class="tb-dot" aria-hidden="true"></i>' : ''}</button>
     </div>
-    <div class="g-stats">${STATS.map(([k, w]) => bar(k, w, run.stats[k], k === 'money' ? 3000 : (k === 'energy' ? run.energyCap : 100), k === pulsingStat(run.stats))).join('')}</div>
-    ${tip ? `<p class="g-tip" role="status">${esc(tip[3])}</p>` : ''}
-    ${chips.length ? `<p class="g-chips">${chips.map(([k, ic, c]) => `<button type="button" class="g-chip ${k}" data-act="stat" data-k="chip-${k}">${ic} ${esc(c)}</button>`).join('')}</p>` : ''}
-    ${opts.strip === false ? '' : phaseStrip(district, run)}
+    ${tip ? `<p class="g-tip tb-pop" role="status">${esc(tip)}</p>` : ''}
+    ${ui.timeline ? `<div class="tb-pop tb-timeline" role="status"><p class="tb-pop-h"><b>Day ${run.day}</b> ${esc(day)}</p>${phaseStrip(district, run)}</div>` : ''}
   </header>
   ${ui.gear ? gearMenu(run) : ''}`
 }
@@ -284,29 +299,33 @@ export function soundOn() {
   try { return localStorage.getItem('mzansiville.sound') !== 'off' } catch { return true }
 }
 
+// The one menu button's sheet: the four things the old top row held first (leaderboard,
+// chat, sound, settings), then the rest. Notices carry the dot while a message is unread.
 function gearMenu(run) {
+  const news = menuNews(run)
   return `<div class="g-scrim" data-act="gear"></div>
   <aside class="g-menu" role="dialog" aria-label="Menu">
-    <h3>Menu</h3>
-    ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
-    <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
-    ${themePicker()}
-    <button type="button" data-act="nav" data-go="milestones">Milestones</button>
-    <button type="button" data-act="nav" data-go="profile">Student card</button>
-    ${location.hash.startsWith('#/play') ? '<button type="button" data-act="city-map">\u{1F5FA} SunnyBay map</button>' : ''}
+    <h3>Menu <span class="g-online" data-online title="Students here right now">${countLabel()}</span></h3>
     <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
+    <button type="button" data-act="nav" data-go="chat">\u{1F4AC} Campus chat</button>
+    <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
+    <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>
+    <button type="button" data-act="nav" data-go="notices" class="${news ? 'news' : ''}">\u{1F4E2} Notices${news ? ' <i class="tb-dot" aria-label="new"></i>' : ''}</button>
+    ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
+    ${location.hash.startsWith('#/play') && document.body.dataset.caf !== '1' ? '<button type="button" data-act="city-map">\u{1F5FA} SunnyBay map</button>' : ''}
+    <button type="button" data-act="nav" data-go="profile">Student card</button>
+    <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="board">All-time boards</button>
-    <button type="button" data-act="nav" data-go="chat">Campus chat</button>
+    ${themePicker()}
+    ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
+    <button type="button" data-act="edit-char">Edit character</button>
+    <button type="button" data-act="lp-feedback">Feedback</button>
     <button type="button" data-act="nav" data-go="rules">Community rules</button>
     <button type="button" data-act="nav" data-go="privacy">Privacy</button>
     <button type="button" data-act="nav" data-go="credits">Credits</button>
-    ${location.hash.startsWith('#/morning') ? '<button type="button" data-act="skip-morning">Skip morning intro</button>' : ''}
-    <button type="button" data-act="edit-char">Edit character</button>
-    <button type="button" data-act="nav" data-go="notices">📢 Notices</button>
-    <button type="button" data-act="lp-feedback">Feedback</button>
-    <button type="button" data-act="nav" data-go="settings">Settings</button>
     <p class="g-fps">Frame rate: <b data-fps-live>${fpsText()}</b></p>
     ${run.userId ? '<button type="button" data-act="signout">Sign out</button>' : '<button type="button" data-act="nav" data-go="save">Save progress / sign in</button>'}
+    <button type="button" class="g-home" data-act="home">\u{1F3E0} Home screen</button>
     <button type="button" class="ghost" data-act="gear">Close</button>
   </aside>`
 }
@@ -550,13 +569,24 @@ function goalsCardHtml(run) {
   </aside>`
 }
 
-// The "right now" chip (top left) and the day-goal count beside it.
+/// The goal badge under the top bar (owner, 10 Nov: the goal chip shrinks to its "1/3"
+// badge; tapping it shows the goal text). The "right now" line and today's goals open
+// under it for a few seconds; tapping that opens the full goals card. An urgent line
+// (late for a lecture) keeps a red edge on the badge so it is never missed. The status
+// chips (exam week, falling behind...) sit beside it as icons; a tap explains them.
 function nowRow(run) {
   const now = rightNow(run)
   const list = run.goals?.day === run.day ? run.goals.list : []
-  if (!now && !list.length) return ''
+  const chips = statusChips(run)
+  if (!now && !list.length && !chips.length) return ''
   const done = list.filter((g) => g.done).length
-  return `<div class="g-nowrow">${now ? `<p class="g-now ${now.tone}" role="status" data-now>${now.icon} ${esc(now.text)}</p>` : ''}${list.length ? `<button type="button" class="g-goalsbtn${done === list.length ? ' win' : ''}" data-act="goals" aria-label="Today's goals">\u{1F3AF} ${done}/${list.length}</button>` : ''}</div>`
+  const open = Boolean(ui.goalPeek)
+  const badge = now || list.length
+    ? `<button type="button" class="g-goalsbtn${list.length && done === list.length ? ' win' : ''}${now?.tone === 'urgent' ? ' urgent' : ''}${open ? ' on' : ''}" data-act="goal-peek" aria-expanded="${open}" aria-label="Today's goals${list.length ? `, ${done} of ${list.length} done` : ''}">\u{1F3AF}${list.length ? ` ${done}/${list.length}` : ''}</button>`
+    : ''
+  const peek = `<div class="tb-goal"${open ? '' : ' hidden'}>${now ? `<p class="g-now ${now.tone}" role="status" data-now>${now.icon} ${esc(now.text)}</p>` : ''}${list.length ? `<button type="button" class="tb-goal-list" data-act="goals"><ol>${list.map((g) => `<li class="${g.done ? 'done' : ''}"><b>${g.done ? '✓' : '•'}</b> ${esc(goalText(run, g))}</li>`).join('')}</ol><small>All goals ›</small></button>` : ''}</div>`
+  const chipRow = chips.map(([k, ic, c]) => `<button type="button" class="g-chip tb-chip ${k}" data-act="stat" data-k="chip-${k}" aria-label="${esc(c)}">${ic}</button>`).join('')
+  return `<div class="g-nowrow tb-nowrow">${badge}${chipRow}${peek}</div>`
 }
 
 function summaryCard(state) {

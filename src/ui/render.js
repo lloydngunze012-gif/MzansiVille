@@ -341,10 +341,10 @@ export function summaryRows(morning, stats) {
     ['Social', morning?.social, stats.social],
   ]
   return rows.map(([label, from, to]) => {
-    if (from == null) return `<li><span>${label}</span><span>${label === 'Money' ? formatMoney(to) : to}</span></li>`
+    if (from == null) return `<li><span>${label}</span><span>${label === 'Money' ? formatMoney(to) : Math.round(to)}</span></li>`
     const delta = Math.round(to - from)
-    const shownFrom = label === 'Money' ? formatMoney(from) : from
-    const shownTo = label === 'Money' ? formatMoney(to) : to
+    const shownFrom = label === 'Money' ? formatMoney(from) : Math.round(from) // (whole numbers: energy drains in fractions while you walk)
+    const shownTo = label === 'Money' ? formatMoney(to) : Math.round(to)
     return `<li><span>${label}</span><span>${shownFrom} → ${shownTo} (${delta > 0 ? '+' : ''}${delta})</span></li>`
   }).join('')
 }

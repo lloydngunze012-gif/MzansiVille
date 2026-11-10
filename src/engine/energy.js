@@ -6,7 +6,7 @@
 import META from '../../data/campusville/meta.json' with { type: 'json' }
 
 const RATES = META.energy || {}
-export const WALK_PER_MINUTE = RATES.walkPerMinute ?? 2
+export const WALK_PER_MINUTE = RATES.walkPerMinute ?? 0.5
 export const TAXI_COST = RATES.taxiCost ?? 3
 export const DRIVE_COST = RATES.driveCost ?? 0
 export const LOW_THRESHOLD = RATES.lowThreshold ?? 10

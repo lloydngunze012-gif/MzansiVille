@@ -982,11 +982,25 @@ function shotFree(pos) {
   const bodies = everyone().concat(temps, others?.group.children || [])
   return !bodies.some((a) => a.visible !== false && Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < 0.5)
 }
+// Nothing between the camera and that head, both ways (compact-bar job, owner 10 Nov:
+// "the camera must not sit inside signs or roofs"). A mesh the follow camera has faded
+// see-through still counts: it is only faded while it hides you from the far camera, and
+// the two-shot stands much closer, inside or behind it. The ray runs from the head to
+// the camera as well, because a ray that starts inside a sign or a roof sees none of its
+// faces: from the head it meets that sign's outside first.
+function shotSolid(hit) {
+  return hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !isPart(hit.object)
+}
 function shotClear(pos, head) {
   const dir = head.clone().sub(pos)
-  shotRay.set(pos, dir.clone().normalize())
-  shotRay.far = Math.max(0, dir.length() - 0.3)
-  return !shotRay.intersectObjects([campus.group], true).some((hit) => hit.object.name !== 'ground' && !hit.object.isSprite && hit.object.visible && !hit.object.userData.seeThrough && !isPart(hit.object))
+  const len = dir.length()
+  dir.normalize()
+  shotRay.set(pos, dir)
+  shotRay.far = Math.max(0, len - 0.3)
+  if (shotRay.intersectObjects([campus.group], true).some(shotSolid)) return false
+  shotRay.set(head.clone().addScaledVector(dir, -0.3), dir.clone().negate())
+  shotRay.far = Math.max(0, len - 0.3)
+  return !shotRay.intersectObjects([campus.group], true).some(shotSolid)
 }
 // The two-shot of you and them, or null (too far, or nowhere to stand the camera).
 function conversationShot(them) {
@@ -1409,6 +1423,10 @@ window.mzansiShot = () => {
     back: mid ? +Math.hypot(camera.position.x - mid.x, camera.position.z - mid.z).toFixed(2) : null,
     height: +(camera.position.y - (campus?.floor?.at(camera.position.x, camera.position.z) ?? 0)).toFixed(2),
     apart: them ? +Math.hypot(them.position.x - player.position.x, them.position.z - player.position.z).toFixed(2) : null,
+    // (in a two-shot: both heads in plain view from where the camera is, nothing between, the camera inside nothing)
+    clearView: closeShot && them && campus ? shotClear(camera.position.clone(), headOf(player)) && shotClear(camera.position.clone(), headOf(them)) : null,
+    // (where both heads are on screen, in CSS pixels: you, then them)
+    heads: them ? [headOf(player), headOf(them)].map((h) => { const r = renderer.domElement.getBoundingClientRect(); const q = h.project(camera); return [Math.round(r.left + (q.x + 1) / 2 * r.width), Math.round(r.top + (1 - q.y) / 2 * r.height)] }) : null,
   }
 }
 window.mzansiQueue = (which = 'stall') => { const q = campus?.dressing.queue?.[which]; return q && { front: q.front, back: q.slot(q.line.order.length), people: q.people.length, order: q.line.order.map((a) => (a.userData.isPlayer ? 'player' : a.userData.personId)), serving: q.line.serving ? (q.line.serving.userData.isPlayer ? 'player' : q.line.serving.userData.personId) : null, vendor: q.vendor && { x: q.vendor.position.x, z: q.vendor.position.z } } }

@@ -449,7 +449,9 @@ function frameCamera(dt) {
   if (mode === 'top') target = { x: (X0 + X1) / 2, y: 0, z: (Z0 + Z1) / 2 }
   else if (mode === 'sims') target = { x: Math.max(p.x, X0 + 2.8), y: 0, z: Math.max(Z0 + 2.2, p.z <= SOFT_Z ? p.z : SOFT_Z + (p.z - SOFT_Z) * 0.4) }
   rig.apply(camera, target, dt, null)
-  const want = mode === 'eye' ? 0 : Math.round(barsBottom * (mode === 'top' ? 0.5 : 1.1))
+  // (Sims: pushed down a little more than the bars since the compact top bar, owner 10 Nov: with a 49 px bar the
+  // back counters' signs stay clear of it; still far less push than the old two-row bar gave)
+  const want = mode === 'eye' ? 0 : Math.round(barsBottom * (mode === 'top' ? 0.5 : 1.3))
   if (want !== shiftY) {
     shiftY = want
     const W = window.innerWidth, H = window.innerHeight
@@ -526,7 +528,7 @@ function ui() {
 #caf3d[hidden]{display:none}
 #caf3d canvas{display:block;width:100%;height:100%}
 body[data-caf="1"] #app{visibility:hidden;pointer-events:none}
-body[data-caf="1"] #app .g-hud{visibility:visible;pointer-events:none}
+body[data-caf="1"] #app .g-hud,body[data-caf="1"] #app .g-menu,body[data-caf="1"] #app .g-scrim{visibility:visible;pointer-events:auto}
 .caf-ui{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:Figtree,system-ui,sans-serif}
 .caf-ui[hidden]{display:none}
 .caf-ui button{pointer-events:auto;font:800 14px Figtree,system-ui,sans-serif;border:0;cursor:pointer;min-height:44px}
