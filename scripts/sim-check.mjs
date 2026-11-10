@@ -24,6 +24,8 @@ import { byDevice, byPlace, loadLine, median, p90, placeName, stallsOf, statusOf
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import { CITY, LOTS, PARTS, STOPS, WAVE2, canDrive, carAt, inCampus, offLimits, partAt, payDrive, payTaxi, taxiFare, waysTo } from '../src/city/plan.js'
 import { adsFor } from '../src/city/billboards.js'
+import { ALL_PLACES, PLACES, TEMPLATES, balance, cityActivities, folkSeed, openNow, opensAt, placeOf, rowState, runRow, slotOf, slotsFor } from '../src/city/places.js'
+import { buildProps } from '../src/world/cityprops.js'
 import {
   actionState,
   actionsAt,
@@ -1172,6 +1174,238 @@ check('SunnyBay street people take their skins from skinmix.js (CAST RULE)', () 
   const src = readFileSync(join(root, 'src/world/city.js'), 'utf8')
   assert.ok(/skin: skinFor\(i\)/.test(src) && !/skin: \[|SKINS\s*=/.test(src))
   assert.ok(new Set(Array.from({ length: 8 }, (_, i) => skinFor(i))).size >= 4)
+})
+
+// ---------- City job B: the places (docs/world-designer/city.md -> city.json; sunnybay.md, Places) ----------
+const cityRun = (patch = {}) => {
+  const r = createRun(district, { ...character }, new Date('2026-11-11T08:00:00Z'))
+  Object.assign(r, { phase: 'social', minutes: 13 * 60, slotsLeft: 5 }, patch)
+  r.stats = { money: 600, energy: 90, grades: 50, social: 30, hunger: 40, ...(patch.stats || {}) }
+  return r
+}
+const rowNamed = (place, name) => place.rows.find((r) => r.name === name)
+
+check('SunnyBay places: 18 open (6 rooms, 6 halls, 6 open ground) with 10 rows each; the 12 wave 2 places stay closed; no id clashes', () => {
+  assert.equal(ALL_PLACES.length, 30)
+  assert.equal(ALL_PLACES.reduce((n, p) => n + p.rows.length, 0), 300)
+  assert.equal(PLACES.length, 18)
+  assert.deepEqual(PLACES.map((p) => p.id).sort(), LOTS.map((l) => l.id).sort(), 'every wave 1 lot is an open place')
+  for (const t of ['room', 'hall', 'open']) assert.equal(PLACES.filter((p) => p.template === t).length, 6, t)
+  assert.deepEqual(PLACES.filter((p) => p.template === 'open').map((p) => p.id).sort(), ['beach', 'driving_school', 'park', 'petrol', 'stadium', 'taxi_rank'])
+  assert.deepEqual(PLACES.filter((p) => p.template === 'room').map((p) => p.id).sort(), ['bank', 'barber', 'clinic', 'dealership', 'lifecup', 'lounge'])
+  for (const p of PLACES) assert.equal(p.rows.length, 10, p.id)
+  const closed = ALL_PLACES.filter((p) => !p.isOpen)
+  assert.deepEqual(closed.map((p) => p.id).sort(), WAVE2.map((l) => l.id).sort(), 'the wave 2 places are the closed ones')
+  assert.ok(closed.every((p) => p.wave === 2 && !placeOf(p.id)))
+  // a row id is its activity id for the counts and the leaderboard: unique, short, and never a campus activity's
+  const ids = ALL_PLACES.flatMap((p) => p.rows.map((r) => r.id))
+  assert.equal(new Set(ids).size, 300)
+  assert.ok(ids.every((id) => id.length <= 60 && /^[a-z0-9_]+$/.test(id)))
+  assert.deepEqual(ids.filter((id) => district.activities.some((a) => a.id === id)), [])
+  // every place: one show-off (its dearest row), a free row, an Open line
+  for (const p of ALL_PLACES) {
+    assert.equal(p.rows.filter((r) => r.showoff).length, 1, p.id)
+    assert.equal(p.rows.find((r) => r.showoff).cost, Math.max(...p.rows.map((r) => r.cost)), p.id)
+    assert.ok(p.rows.some((r) => r.cost === 0 && !r.gig) && p.open.length >= 3, p.id)
+  }
+})
+
+check('SunnyBay places are dressed from data: colours, a sign, 4 to 8 props, one staff and 2 to 4 patrons in 3+ skin tones; every prop kind exists', () => {
+  for (const p of PLACES) {
+    const d = p.dress
+    assert.ok(d.staffRole && Array.isArray(d.staff) && d.staff.length >= 2, `${p.id} staff`)
+    assert.ok(d.people.length >= 2 && d.people.length <= 4, `${p.id} has ${d.people.length} patrons`)
+    assert.ok(d.props.length >= 4 && d.props.length <= 8, `${p.id} has ${d.props.length} props`)
+    const skins = Array.from({ length: 1 + d.people.length }, (_, i) => skinFor(folkSeed(p) + i))
+    assert.ok(new Set(skins).size >= 3, `${p.id} shows ${new Set(skins).size} skin tones`)
+    const made = buildProps(d.props, {})
+    assert.deepEqual(made.unknown, [], `${p.id} prop kinds`)
+    if (p.template === 'open') continue
+    for (const k of ['wall', 'floor', 'trim']) assert.ok(/^#[0-9a-f]{6}$/i.test(d[k]), `${p.id} ${k}`)
+    assert.ok(d.sign && d.sign === d.sign.toUpperCase(), `${p.id} sign`)
+    const [w, dd] = d.size || TEMPLATES[p.template].size
+    assert.ok(d.props.some((x) => ['counter', 'desk', 'altar', 'till'].includes(x.k)), `${p.id} has a counter or a focus point`)
+    // everything stands inside the room, and nobody stands in the doorway
+    for (const x of [...d.props, { x: d.staff[0], z: d.staff[1] }, ...d.people.map(([px, pz]) => ({ x: px, z: pz }))]) {
+      const lastX = x.x + (x.dx || 0) * ((x.n || 1) - 1)
+      const lastZ = x.z + (x.dz || 0) * ((x.n || 1) - 1)
+      assert.ok(Math.abs(x.x) <= w / 2 && Math.abs(lastX) <= w / 2 && Math.abs(x.z) <= dd / 2 && Math.abs(lastZ) <= dd / 2, `${p.id}: ${x.k || 'a person'} at ${x.x}, ${x.z} is outside the ${w} x ${dd} room`)
+    }
+    for (const [px, pz] of [d.staff, ...d.people]) assert.ok(!(Math.abs(px) < 1.6 && pz > dd / 2 - 3.2), `${p.id}: someone stands in the doorway`)
+  }
+  // staff are a role, never a name (so docs/cast.md lists none): one or two plain words
+  assert.ok(PLACES.every((p) => /^[A-Z][a-z-]+( [a-z]+){0,2}$/.test(p.dress.staffRole)))
+  const src = readFileSync(join(root, 'src/world/city.js'), 'utf8')
+  assert.ok(/createAvatar\(npcLook\(seed \+ i\)\)/.test(src), 'place people get their look (and skin) from npcLook')
+})
+
+check('SunnyBay rows: opening hours, money, the day slots (a quick row is a third of a slot), the clock, and friends', () => {
+  const mall = placeOf('mall')
+  const bank = placeOf('bank')
+  // hours: Morning = wake and transit, Free = leisure; a closed place says when it opens
+  assert.deepEqual(['wake', 'transit', 'lecture', 'social', 'leisure', 'night'].map((ph) => slotOf({ phase: ph })), ['morning', 'morning', 'lecture', 'social', 'free', 'night'])
+  const night = cityRun({ phase: 'night', minutes: 21 * 60 })
+  assert.equal(openNow(night, bank), false)
+  assert.deepEqual([opensAt(district.meta, night, bank).name, opensAt(district.meta, night, bank).time, opensAt(district.meta, night, bank).today], ['Morning', '07:00', false])
+  const early = cityRun({ phase: 'wake', minutes: 7 * 60 })
+  assert.equal(openNow(early, mall), false)
+  assert.deepEqual([opensAt(district.meta, early, mall).name, opensAt(district.meta, early, mall).time, opensAt(district.meta, early, mall).phase, opensAt(district.meta, early, mall).today], ['Lecture', '09:00', 'lecture', true])
+  assert.deepEqual([rowState(district, early, mall, mall.rows[0]).why, rowState(district, early, mall, mall.rows[0]).reason], ['closed', 'Closed now. Opens Lecture 09:00'])
+  // a row with its own hours (the beach swim: Morning to Social only)
+  const beach = placeOf('beach')
+  const swim = rowNamed(beach, 'Swim to the near buoy')
+  assert.equal(rowState(district, cityRun(), beach, swim).disabled, false)
+  assert.deepEqual([rowState(district, cityRun({ phase: 'leisure', minutes: 16 * 60 }), beach, swim).why, rowState(district, cityRun({ phase: 'leisure' }), beach, swim).reason], ['closed', 'Morning to Social only'])
+  // money: never taken when you cannot pay
+  const poor = cityRun({ stats: { money: 20 } })
+  const meal = rowNamed(mall, 'Eat at the food court')
+  assert.deepEqual([rowState(district, poor, mall, meal).why, rowState(district, poor, mall, meal).reason], ['money', 'Needs R45. You have R20.'])
+  assert.equal(runRow(district, poor, mall, meal).ok, false)
+  assert.equal(poor.stats.money, 20)
+  // a meal: the row's own numbers, fullness and energy capped
+  const r = cityRun()
+  const res = runRow(district, r, mall, meal)
+  assert.deepEqual([res.ok, res.delta.money, res.delta.hunger, res.delta.energy, res.delta.social], [true, -45, 36, 4, 2])
+  assert.deepEqual([r.stats.money, r.stats.hunger, r.minutes], [555, 76, 13 * 60 + 25])
+  // quick rows: the first opens a slot, the next two ride in it, the fourth opens another
+  assert.deepEqual([r.slotsLeft, r.city.thirds], [4, 2])
+  runRow(district, r, mall, rowNamed(mall, 'Walk the windows'))
+  runRow(district, r, mall, rowNamed(mall, 'Get measured'))
+  assert.deepEqual([r.slotsLeft, r.city.thirds], [4, 0])
+  runRow(district, r, mall, rowNamed(mall, 'Walk the windows'))
+  assert.deepEqual([r.slotsLeft, r.city.thirds], [3, 2])
+  // other rows: minutes over this part of the day's slot minutes, 1 to 3 slots
+  assert.deepEqual([40, 60, 90, 120, 180].map((m) => slotsFor(district.meta, { phase: 'lecture', day: 1 }, { minutes: m })), [1, 1, 2, 2, 3])
+  assert.deepEqual([40, 60, 90, 120, 180].map((m) => slotsFor(district.meta, { phase: 'social', day: 1 }, { minutes: m })), [1, 2, 2, 3, 3])
+  assert.deepEqual([40, 60, 90, 120, 180].map((m) => slotsFor(district.meta, { phase: 'leisure', day: 1 }, { minutes: m })), [1, 1, 1, 2, 3])
+  // the clock never runs past the end of this part of the day (Social ends 15:00)
+  const late = cityRun({ minutes: 14 * 60 + 50 })
+  runRow(district, late, mall, rowNamed(mall, 'Cheap seats'))
+  assert.equal(late.minutes, 15 * 60)
+  // no time left: greyed, and when the last slot goes it is night
+  const tired = cityRun({ slotsLeft: 1 })
+  assert.equal(rowState(district, tired, mall, rowNamed(mall, 'Cheap seats')).why, 'time')
+  runRow(district, tired, mall, rowNamed(mall, 'Lap the mall'))
+  assert.deepEqual([tired.slotsLeft, tired.phase], [0, 'night'])
+  // better with friends here: any other player counts; alone, Social is half, rounded down
+  const fit = rowNamed(mall, 'Share a fitting room')
+  assert.equal(fit.friends, true)
+  const alone = cityRun()
+  assert.deepEqual([runRow(district, alone, mall, fit, { friends: 0 }).delta.social, alone.stats.social], [5, 35])
+  const withOne = cityRun()
+  const full = runRow(district, withOne, mall, fit, { friends: 1 })
+  assert.deepEqual([full.delta.social, full.half], [10, false])
+  const lib = placeOf('city_library')
+  assert.equal(rowState(district, cityRun({ phase: 'lecture', minutes: 600 }), lib, rowNamed(lib, 'Share peanuts on the steps'), { friends: 0 }).social, 5)
+  assert.equal(rowState(district, cityRun(), placeOf('lounge'), rowNamed(placeOf('lounge'), 'Start a board game'), { friends: 0 }).social, 6) // (13 -> 6)
+})
+
+check('SunnyBay licence and car: yard lesson, road lesson, the test; a car needs the licence; the petrol rows need a car; then driving works', () => {
+  const school = placeOf('driving_school')
+  const cars = placeOf('dealership')
+  const petrol = placeOf('petrol')
+  const r = cityRun({ phase: 'lecture', minutes: 9 * 60, stats: { money: 6000 } })
+  const [yard, road, exam] = ['Take the yard lesson', 'Take the road lesson', 'Take the licence test'].map((n) => rowNamed(school, n))
+  assert.deepEqual([yard.grants, road.grants, exam.grants], ['yard', 'road', 'licence'])
+  assert.deepEqual([rowState(district, r, school, road).why, rowState(district, r, school, exam).why], ['lesson', 'lesson'])
+  assert.equal(rowState(district, r, school, exam).reason, 'Do the yard lesson and the road lesson first')
+  assert.equal(rowState(district, r, school, rowNamed(school, 'Practise the hill start')).why, 'lesson')
+  assert.equal(runRow(district, r, school, yard).ok, true)
+  assert.equal(rowState(district, r, school, exam).reason, 'Do the road lesson first')
+  assert.equal(runRow(district, r, school, road).ok, true)
+  assert.equal(rowState(district, r, cars, rowNamed(cars, 'Buy the first car')).why, 'licence')
+  assert.equal(canDrive(r), false)
+  const passed = runRow(district, r, school, exam)
+  assert.deepEqual([passed.ok, passed.granted, r.licence, r.stats.money], [true, 'licence', true, 6000 - 850])
+  assert.equal(rowState(district, r, school, exam).why, 'owned') // (once)
+  // the petrol station's car rows, before and after
+  const wash = rowNamed(petrol, 'Wash your own car twice')
+  assert.deepEqual([rowState(district, r, petrol, wash).why, rowState(district, r, petrol, wash).reason], ['car', 'Needs a car of your own'])
+  assert.equal(petrol.rows.filter((x) => x.need === 'car').length, 3)
+  const first = rowNamed(cars, 'Buy the first car')
+  const used = rowNamed(cars, 'Buy the used runabout')
+  assert.deepEqual([first.grants, first.cost, used.grants, used.cost, used.showoff], ['car:first', 4500, 'car:runabout', 12000, true])
+  r.slotsLeft = 5
+  const bought = runRow(district, r, cars, first)
+  assert.deepEqual([bought.ok, r.car.id, r.carAt, r.stats.money], [true, 'first', 'dealership', 6000 - 850 - 4500])
+  assert.deepEqual([canDrive(r), carAt(r)], [true, 'dealership'])
+  assert.equal(rowState(district, r, cars, first).why, 'owned')
+  assert.equal(rowState(district, r, petrol, wash).disabled, false)
+  assert.deepEqual([payDrive(r, 'beach').ok, carAt(r)], [true, 'beach'])
+  // the runabout later: a second car replaces the first
+  r.stats.money = 12500
+  r.slotsLeft = 5
+  assert.equal(runRow(district, r, cars, used).ok, true)
+  assert.deepEqual([r.car.id, rowState(district, r, cars, used).why, rowState(district, r, cars, first).why], ['runabout', 'owned', 'owned'])
+  // the defensive day needs the licence
+  assert.equal(rowState(district, cityRun({ stats: { money: 9000 } }), school, rowNamed(school, 'Book the defensive day')).why, 'licence')
+})
+
+check('SunnyBay gigs and show-offs: one paid city gig a game day, in any place; a show-off is bought once and kept for the card', () => {
+  const mall = placeOf('mall')
+  const cafe = placeOf('lifecup')
+  const r = cityRun()
+  const gig = rowNamed(mall, 'Hand out samples')
+  const paid = runRow(district, r, mall, gig)
+  assert.deepEqual([paid.ok, paid.delta.money, r.stats.money, r.stats.energy], [true, 140, 740, 74])
+  assert.deepEqual([rowState(district, r, mall, rowNamed(mall, 'Work the mall floor')).why, rowState(district, r, mall, gig).reason], ['gig', 'One city gig a day. Back tomorrow.'])
+  assert.equal(cafe.rows.filter((x) => rowState(district, r, cafe, x).why === 'gig').length, 2)
+  assert.equal(runRow(district, r, cafe, rowNamed(cafe, 'Close Lifecup')).ok, false)
+  assert.equal(r.stats.money, 740)
+  r.day += 1 // (the next game day)
+  r.slotsLeft = 5
+  assert.equal(rowState(district, r, mall, gig).disabled, false)
+  assert.equal(r.today?.earned >= 140 || r.earned >= 140, true) // (the "earn R50" goal sees city pay)
+  // every gig pays R120 to R240, costs energy, and is never free money: 22 of them in the open places
+  const gigs = PLACES.flatMap((p) => p.rows.filter((x) => x.gig))
+  assert.equal(gigs.length, 22)
+  assert.ok(gigs.every((g) => g.money >= 120 && g.money <= 240 && g.energy < 0 && g.cost === 0))
+  // a show-off: once, saved, the newest last
+  const rich = cityRun({ stats: { money: 9000 } })
+  const tab = rowNamed(cafe, 'Put the upstairs on your tab')
+  assert.equal(tab.showoff, true)
+  const first = runRow(district, rich, cafe, tab, { friends: 2 })
+  assert.deepEqual([first.ok, first.showoff, rich.stats.money, rich.showoffs.length], [true, true, 8000, 1])
+  assert.deepEqual([rowState(district, rich, cafe, tab).why, rowState(district, rich, cafe, tab).reason], ['owned', 'Already yours'])
+  rich.slotsLeft = 5
+  runRow(district, rich, placeOf('bank'), rowNamed(placeOf('bank'), 'Rent a small safe box for the year'))
+  assert.deepEqual(rich.showoffs.map((s) => s.name), ['Put the upstairs on your tab', 'Rent a small safe box for the year'])
+  assert.deepEqual(rich.showoffs.map((s) => s.place), ['Lifecup cafe', 'Bank'])
+})
+
+check('SunnyBay money check: the most the city pays in a game day and week, and the days to the licence and the first car', () => {
+  const b = balance(2100)
+  assert.deepEqual([b.best.name, b.best.place, b.perDay, b.perWeek], ['Steward the stands', 'Stadium', 240, 1680])
+  assert.deepEqual([b.licence, b.car], [850, 4500])
+  // from city.md's R2,100: the licence on day 1; the first car after 14 days of the best gig (19 with R60 a day of living)
+  assert.deepEqual([b.licenceDays, b.carDays, b.carDaysLiving], [0, 14, 19])
+  // from what a new student really starts with in the game
+  const start = createRun(district, { ...character }, new Date('2026-11-11T08:00:00Z')).stats.money
+  const real = balance(start)
+  console.log(`   city money check: best gig R${b.perDay} a game day, R${b.perWeek} a game week (one paid city gig a day). Licence R${b.licence}, first car R${b.car}. From R2,100: the car after ${b.carDays} game days of the best gig (${b.carDaysLiving} with R60 a day of living). From the game's own start of R${start}: licence after ${real.licenceDays} day(s) of the best gig, the car after ${real.carDays} (${real.carDaysLiving} with living).`)
+})
+
+check('SunnyBay rows on the weekly leaderboard: scored by leaderboard.json defaults, each with a daily limit; snacks and gigs at the gym do not score', () => {
+  const lb = JSON.parse(read('leaderboard.json'))
+  const acts = cityActivities()
+  assert.equal(acts.length, 180)
+  const rules = scoreRules(district.activities.concat(acts), lb)
+  const city = acts.filter((a) => rules[a.id])
+  const by = (board) => city.filter((a) => rules[a.id].board === board).length
+  assert.ok(city.length >= 90 && city.length <= 180, `${city.length} city rows score`)
+  assert.ok(by('academics') >= 20 && by('social') >= 40 && by('sport') >= 12, `${by('academics')} academics, ${by('social')} social, ${by('sport')} sport`)
+  assert.ok(city.every((a) => rules[a.id].limit >= 1 && rules[a.id].limit <= 4 && rules[a.id].points > 0))
+  assert.equal(rules.gym_learn_the_squat.board, 'sport')
+  assert.equal(rules.beach_play_volleyball.board, 'sport')
+  assert.equal(rules.city_library_put_your_phone_in_the_basket.board, 'academics')
+  assert.equal(rules.lounge_start_a_board_game.board, 'social')
+  assert.equal(rules.gym_buy_a_banana_and_a_water, undefined)
+  assert.equal(rules.gym_work_the_gym_desk, undefined)
+  assert.equal(rules.mall_walk_the_windows, undefined) // (+1 Social: too small to score)
+  // the campus rules are unchanged by the city's
+  const campus = scoreRules(district.activities, lb)
+  for (const [id, rule] of Object.entries(campus)) assert.deepEqual(rules[id], rule, id)
+  console.log(`   city rows that score: ${city.length} of 180 (${by('academics')} academics, ${by('social')} social, ${by('sport')} sport)`)
 })
 
 // LAST, on purpose: the wording is Cursor's (data/campusville/meta.json "smoothness"). This stops the

@@ -1037,6 +1037,10 @@ html:has(.tc), html:has(.tc) body, *:has(.tc) { background: #120d18 !important; 
 .pc-badges { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
 .pc-badge { font: 700 12px system-ui; background: #fff1c2; border: 1px solid #f0c400; border-radius: 12px; padding: 2px 8px; }
 .pc-badge.none { background: transparent; border-style: dashed; color: #9a8aa8; }
+/* City job B: show-offs bought in SunnyBay (the latest three) */
+.pc-flex { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 12px; }
+.pc-flex small { width: 100%; font: 800 11px system-ui; letter-spacing: .5px; text-transform: uppercase; color: #7b5a1e; }
+.pc-badge.flex { background: #fde7f3; border-color: #e0409a; }
 .pc-acts { display: flex; gap: 8px; }
 .pc-acts .btn { flex: 1; padding: 11px 6px; font-size: 14px; }
 .pc-notice { margin: 0; padding: 8px 12px; border-radius: 12px; background: #e6f7ea; color: #1d4a2a; font: 700 13px system-ui; }

@@ -1,8 +1,9 @@
 // SunnyBay, the short test for the quick project (City job A): out of the Main Gate into the city, the map,
-// a taxi to the Mall's door with the fare charged, an "Opening soon" door, and back onto campus.
+// a taxi to the Mall's door with the fare charged, the Mall open (City job B: you walk in and its list opens), and
+// back onto campus.
 // The full set is tests/e2e/city.spec.js.
 import { test, expect } from '@playwright/test'
-import { atGate, city, info, intoCity, money, run, tapWorld } from '../city.js'
+import { atGate, city, info, intoCity, leavePlace, money, run, tapWorld } from '../city.js'
 
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
 test.setTimeout(240000)
@@ -24,12 +25,14 @@ test('SunnyBay: out of the gate, the map, a taxi to the Mall, back onto campus',
   await expect(page.locator('.cm-detail [data-way="drive"]')).toBeDisabled() // (no licence, no car)
   await page.locator('.cm-detail [data-way="taxi"]').tap()
   await expect(city(page)).toHaveAttribute('data-rides', '1', { timeout: 60000 })
-  await expect(city(page)).toHaveAttribute('data-card', 'lot:mall')
-  await expect(page.locator('.city-card')).toContainText('Opening soon')
+  // the taxi stops at the Mall's door and you walk in: its Things to do list opens
+  await expect(city(page)).toHaveAttribute('data-card', 'todo:mall', { timeout: 30000 })
+  await expect(city(page)).toHaveAttribute('data-place', 'mall')
+  await expect(page.locator('.city-todo .ct-row')).toHaveCount(10)
   expect(await money(page)).toBe(before - 15)
   await expect(city(page)).toHaveAttribute('data-part', 'town')
-  // back: to the gate and in through it
-  await page.locator('.city-card [data-city="close"]').tap()
+  // back: out of the Mall, to the gate and in through it
+  await leavePlace(page)
   await page.evaluate(() => window.mzansiCity.teleport(0, 110, Math.PI))
   await page.waitForTimeout(400)
   await tapWorld(page, 0, 100)

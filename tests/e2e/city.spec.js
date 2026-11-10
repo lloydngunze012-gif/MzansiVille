@@ -11,7 +11,7 @@
 // Run: npx playwright test tests/e2e/city.spec.js --config playwright.gpu.config.js --workers=1
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
-import { atGate, city, info, intoCity, money, run, tapWorld } from '../city.js'
+import { atGate, city, info, intoCity, leavePlace, money, run, tapWorld } from '../city.js'
 
 const OUT = 'docs/sprints/city'
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, launchOptions: { args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } })
@@ -75,16 +75,20 @@ test('Y2 the map: tap the Mall pin, take a taxi, arrive at its door; the fare is
   await page.locator('.cm-detail [data-way="taxi"]').tap()
   // a short walk to the Campus gate stop, the ride (a moment, not a cutscene), the Mall's door
   await expect(city(page)).toHaveAttribute('data-rides', '1', { timeout: 60000 })
-  await expect(city(page)).toHaveAttribute('data-card', 'lot:mall')
-  const door = await page.evaluate(() => window.mzansiCity.plan.LOTS.find((l) => l.id === 'mall').door)
-  const at = await info(page)
-  expect(Math.hypot(at.player[0] - door.x, at.player[1] - door.z)).toBeLessThan(3)
+  // (City job B: the Mall is open, so the taxi's last step is in through its door, and its list opens)
+  await expect(city(page)).toHaveAttribute('data-card', 'todo:mall', { timeout: 30000 })
+  await expect(city(page)).toHaveAttribute('data-place', 'mall')
   expect(await money(page)).toBe(before - 15)
   expect((await run(page)).minutes).toBe(clock + 25)
-  await expect(page.locator('.city-card')).toContainText('Opening soon')
+  await expect(page.locator('.city-todo h3')).toContainText('Mall')
   await expect(city(page)).toHaveAttribute('data-part', 'town')
   console.log(`TAXI from the tap to the Mall's door: ${Date.now() - t0} ms`)
-  await shot(page, 'y2-mall-door-opening-soon')
+  await shot(page, 'y2-mall-things-to-do')
+  // out again: at the Mall's door
+  await leavePlace(page)
+  const door = await page.evaluate(() => window.mzansiCity.plan.LOTS.find((l) => l.id === 'mall').door)
+  const at = await info(page)
+  expect(Math.hypot(at.player[0] - door.x, at.player[1] - door.z)).toBeLessThan(6)
   expect(errors).toEqual([])
 })
 
@@ -98,7 +102,7 @@ test('Y3 a player with R5 is refused the taxi and can still walk', async ({ page
   await expect(page.locator('.cm-detail [data-way="taxi"]')).toBeDisabled()
   await expect(page.locator('.cm-detail [data-way="taxi"]')).toContainText('R10 short')
   await expect(page.locator('.cm-detail [data-way="walk"]')).toBeEnabled()
-  await page.locator('[data-cm="close"]').tap()
+  await page.locator('.cm-back').tap() // (the map's back arrow; the old selector matches it and Close)
   // at the stop: a friendly line, no fare taken, and "Walk there" walks
   const stop = await page.evaluate(() => window.mzansiCity.plan.STOPS.find((s) => s.id === 'gate'))
   await page.evaluate(([x, z]) => window.mzansiCity.teleport(x + 3, z - 4), [stop.x, stop.z]) // (the stop is a few steps along the road: on screen)
@@ -147,7 +151,7 @@ test('Y4 a licence and a car: the car is parked at res, drives to the Beach inst
   await expect(city(page)).toHaveAttribute('data-car', /^beach:/)
   const parked = (await city(page).getAttribute('data-car')).split(':')[1].split(',').map(Number)
   expect(Math.hypot(parked[0] - door.x, parked[1] - door.z)).toBeLessThan(14)
-  await page.locator('.city-card [data-city="close"]').tap()
+  await page.locator('.city-todo [data-city="todo-close"]').tap() // (the Beach's list opened where you parked)
   await shot(page, 'y4-car-parked-at-the-beach')
   // and from the city: on to the Arcade, the car follows; then home, and it is at res again
   await page.locator('[data-city="map"]').tap()
@@ -155,7 +159,9 @@ test('Y4 a licence and a car: the car is parked at res, drives to the Beach inst
   await page.locator('.cm-detail [data-way="drive"]').tap()
   await expect(city(page)).toHaveAttribute('data-car', /^arcade:/)
   expect(await money(page)).toBe(before - 16)
-  await page.locator('.city-card [data-city="close"]').tap()
+  // (you walk into the Arcade; out again before the drive home)
+  await expect(city(page)).toHaveAttribute('data-card', 'todo:arcade', { timeout: 30000 })
+  await leavePlace(page)
   await page.locator('[data-city="map"]').tap()
   await page.locator('.cm-pin[data-pin="campus"]').tap()
   await page.locator('.cm-detail [data-way="drive"]').tap()
@@ -175,7 +181,7 @@ test('Y5 a save without a licence cannot drive', async ({ page }) => {
   await expect(page.locator('.cm-detail [data-way="drive"]')).toBeDisabled()
   await expect(page.locator('.cm-detail [data-way="drive"]')).toContainText('licence')
   await shot(page, 'y5-no-licence')
-  await page.locator('[data-cm="close"]').tap()
+  await page.locator('.cm-back').tap() // (the map's back arrow; the old selector matches it and Close)
   await intoCity(page)
   expect(await page.evaluate(() => window.mzansiCity.canDrive())).toBe(false)
   expect(await page.evaluate(() => window.mzansiCity.travel('drive', 'beach').ok)).toBe(false)
@@ -217,11 +223,11 @@ test('Y6 every district: no void at the edges, draw calls and triangles, screens
   // street people follow the CAST RULE
   const skins = await page.evaluate(() => window.mzansiCity.npcSkins())
   expect(new Set(skins).size).toBeGreaterThanOrEqual(4)
-  // the things the report shows: the welcome sign, a billboard, an "Opening soon" door, a wave 2 plot, the sea, the hills
+  // the things the report shows: the welcome sign, a billboard, a door, a wave 2 plot, the sea, the hills
   const pose = async (name, pos, look, far) => { await page.evaluate(([p, l, f]) => window.mzansiCity.shot(p, l, f), [pos, look, far || 0]); await page.waitForTimeout(500); await shot(page, name) }
   await pose('y6-welcome-sign', [1.5, 3.2, 108.5], [0, 2, 119.6])
   await pose('y6-billboard', [-3, 4, 152], [-12, 5.6, 168])
-  await pose('y6-door-opening-soon', [-25, 4.5, 216], [-32, 3, 200])
+  await pose('y6-bank-door', [-25, 4.5, 216], [-32, 3, 200])
   await pose('y6-wave2-plot', [40, 5, 268], [40, 2, 254])
   await pose('y6-beach-and-sea', [240, 9, 30], [285, 0, -30])
   await pose('y6-hills-from-suburbs', [0, 6, -200], [0, 14, -420])
@@ -278,9 +284,10 @@ for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) 
       expect(small, `${name} small text`).toEqual([])
       await shot(page, `y8-${size.width}-${name}`)
     }
-    await page.evaluate(() => window.mzansiCity.goLot('bank'))
-    await page.evaluate(() => { const l = window.mzansiCity.plan.LOTS.find((x) => x.id === 'bank'); window.mzansiCity.teleport(l.door.x, l.door.z); window.mzansiCity.goLot('bank') })
-    await expect(city(page)).toHaveAttribute('data-card', 'lot:bank')
+    // (a wave 2 plot's board: the one door card that is still "Coming soon")
+    await page.evaluate(() => { const l = window.mzansiCity.plan.WAVE2.find((x) => x.id === 'tech'); window.mzansiCity.teleport(l.door.x, l.door.z); window.mzansiCity.goLot('tech') })
+    await expect(city(page)).toHaveAttribute('data-card', 'lot:tech')
+    await expect(page.locator('.city-card')).toContainText('Coming soon')
     await check('door')
     await page.locator('.city-card [data-city="close"]').tap()
     const stop = await page.evaluate(() => window.mzansiCity.plan.STOPS.find((s) => s.id === 'town'))

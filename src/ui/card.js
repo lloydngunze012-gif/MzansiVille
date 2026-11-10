@@ -19,6 +19,8 @@ export function playerCardHtml(card, house, opts = {}) {
   const bio = card.bio ? `“${esc(card.bio)}”` : opts.own ? '<span class="empty">Add one line about you</span>' : '<span class="empty">No bio yet</span>'
   const badges = (card.badges || []).length ? card.badges.map((b) => `<span class="pc-badge">\u{1F3C5} ${esc(b)}</span>`).join('') : '<span class="pc-badge none">No badges yet</span>'
   const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 96)
+  // (City job B: the latest three show-offs bought in SunnyBay)
+  const flex = (card.flex || []).slice(0, 3)
   const theme = 'white' // the student card is always white (owner, 8 Nov)
   return `<article class="pcard" style="${vars}" data-theme="${theme}" data-house="${esc(house?.id || '')}">
     <header class="pc-top"><span class="pc-house">${esc((house?.name || canonicalHouse(card.house) || 'UMzansi').toUpperCase())}</span><span class="pc-class">Class of ${esc(card.classOf || 2026)}</span></header>
@@ -35,6 +37,7 @@ export function playerCardHtml(card, house, opts = {}) {
     <ul class="pc-tags">${tagHtml}</ul>
     <dl class="pc-facts"><div><dt>Year</dt><dd>${esc(ORD[card.year] || `${card.year}th`)} year</dd></div><div><dt>On campus</dt><dd>${esc(card.days || 1)} day${(card.days || 1) === 1 ? '' : 's'}</dd></div><div><dt>UMzansi</dt><dd>Student</dd></div></dl>
     <div class="pc-badges">${badges}</div>
+    ${flex.length ? `<div class="pc-flex"><small>Show-offs</small>${flex.map((f) => `<span class="pc-badge flex">\u2728 ${esc(f)}</span>`).join('')}</div>` : ''}
   </article>`
 }
 

@@ -79,7 +79,7 @@ import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
 import { STUDENTS } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
-import { flush as flushScores, loadBadges, note as noteScore } from './scores.js'
+import { addActivities as addScoreActivities, flush as flushScores, loadBadges, note as noteScore } from './scores.js'
 import { funnel, returning, startSession } from './events.js'
 import { BUILD, COMMIT, checkHealth } from './health.js'
 
@@ -621,8 +621,9 @@ async function enterCity(spawn = { kind: 'gate' }, intent = null) {
     worldPromise?.then((mod) => mod.setVisible(false))
     cityPromise ||= import('./world/city.js')
     const mod = await cityPromise
+    addScoreActivities(mod.cityActivities()) // (the places' rows score on the weekly leaderboard)
     const district = districtNow()
-    await mod.startCity({ run: save.run, district, ads: adsFor(district.houses || []), spawn, intent, onExit: exitCity, onPay: cityPaid, onSave: citySaved })
+    await mod.startCity({ run: save.run, district, ads: adsFor(district.houses || []), spawn, intent, onExit: exitCity, onPay: cityPaid, onSave: citySaved, onRow: cityRow, onWait: cityWait })
   } catch (error) {
     console.error(error)
     exitCity('gate')
@@ -657,6 +658,25 @@ function cityPaid({ minutes = 0, kind = '' } = {}) {
   }
   if (kind === 'taxi') drainTaxi(run)
   else if (kind === 'car') drainDrive(run)
+  persist()
+  paint()
+}
+// City job B: a Things to do row was run in a SunnyBay place (world/city.js ran it through src/city/places.js): count it
+// (the save, the weekly leaderboard, the funnel), keep the save, show the new numbers on the top bar. A show-off goes
+// on your player card; the first paid gig or meal can bring the "finish your student card" prompt, as on campus.
+function cityRow({ place, row, result }) {
+  if (!save.run) return
+  countDone(row.id, place.id)
+  if (result.showoff || result.granted) { saveMyCard(save.run); joinPresence(save.run.character, compactCard(save.run)) }
+  persist()
+  paint()
+}
+// A door that opens later today: skip on to that part of the day (the same step as the campus's own "Skip to" button).
+function cityWait(phase) {
+  const run = save.run
+  if (!run || run.mode !== 'play') return
+  const district = districtNow()
+  for (let i = 0; i < 6 && run.phase !== phase && run.mode === 'play' && run.phase !== 'night'; i++) advancePhase(district, run)
   persist()
   paint()
 }
@@ -2591,7 +2611,7 @@ function renderSheet(reporting = false) {
     if (!body || !sheetCard) return
     const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
     const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
-    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive, moreOpen: sheetMore }); return }
+    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive && !document.body.dataset.cityPlace, moreOpen: sheetMore }); return }
     const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
     const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
     body.innerHTML = `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>

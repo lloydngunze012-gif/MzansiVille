@@ -120,7 +120,8 @@ export function actionState(district, run, action) {
   return { disabled: false, hidden: false, reason: '' }
 }
 
-function applyStats(run, deltas) {
+// (exported for the city's Things to do rows: src/city/places.js)
+export function applyStats(run, deltas) {
   const stats = run.stats
   if (deltas.money) stats.money = Math.round(stats.money + deltas.money)
   if (deltas.energy) stats.energy = clamp(stats.energy + deltas.energy, 0, run.energyCap)

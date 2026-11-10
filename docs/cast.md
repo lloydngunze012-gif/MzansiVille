@@ -106,6 +106,10 @@ Mama Liz takes the cafeteria counter on the campus (id mama_liz). Aunty Premi, U
 
 The extra student who was called Kyle is now Brandon, so the barista is the only Kyle.
 
+## SunnyBay place staff and patrons (City job B, 10 Nov)
+
+The 18 open places each have one staff member and 2 to 4 patrons. They have **no names**: a role only (Barista, Teller, Nurse, Librarian, Stylist, Lounge host, Salesperson, Till worker, Rank marshal, Pump attendant, Stadium steward, Driving instructor, Ice-cream vendor, Park keeper...), in `data/campusville/city_places.json` (`staffRole`). Their skins come from `src/world/skinmix.js` through the city's `npcLook`, three or more tones in every place (`npm run check`). If a place's staff is ever given a name, it goes in this file first.
+
 ## Extra students (people.json extra_names, ids x0..x19)
 
 Sizwe, Palesa, Karabo, Hannah (was Megan), Tumi, Ayanda, Nomsa, Brandon (was Kyle), Lerato, Dineo, Musa, Farah, Bandile, Zinhle, Thabo, Refilwe, Liam (was Ethan), Nandi, Sello, Ayesha. Three were renamed on 9 Nov only so they no longer share a name with a roommate (Megan, Ethan) or the barista (Kyle). Skins are set by position (skinmix.js), not by name, so a name never forces a look.

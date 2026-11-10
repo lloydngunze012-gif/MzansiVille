@@ -3,7 +3,8 @@
 // Inside the city there is no curtain: the five districts round the campus (Town centre, Suburbs,
 // Beachfront, Township, Industrial) are one continuous world. The plan is data
 // (data/campusville/sunnybay.json, src/city/plan.js), the still parts are built once and merged
-// (src/world/citybuild.js). Doors show "Opening soon": City job B fills the places.
+// (src/world/citybuild.js). The 18 places are open (City job B): a door leads into a Room or a Hall, an open-ground
+// place is its lot, and each has its Things to do (src/city/places.js, src/world/cityplace.js; "the places" below).
 //
 // Travel: walking always works and is free; a minibus taxi from any taxi stop (R15 next district, R25
 // across the city, 25 game minutes, a moment of under 3 s); a car when the save has run.licence and
@@ -12,6 +13,7 @@
 import * as THREE from 'three'
 import { loop as soundLoop } from '../audio.js'
 import { SPEED as FAST } from '../speed.js'
+import { formatMoney } from '../engine/format.js'
 import { smooth } from '../smooth.js'
 import * as curtain from '../curtain.js'
 import { onPoke, reportLocal, sendPoke, setArea } from '../presence.js'
@@ -30,6 +32,9 @@ import { checkLowHint, drainWalking, setRacing, speedFactor } from '../engine/en
 import { checkAway, noteOpen } from '../ui/minicard-state.js'
 import { countdown, inviteToast, onInvite, resultCard, sendInvite } from './together.js'
 import { BOUNDS, CITY, LOTS, PARTS, PIER, SPAWN, STOPS, WAVE2, atGate, canDrive, carAt, lotOf, moneyOf, nearestStop, offLimits, partAt, partOf, payDrive, payTaxi, stopOf, taxiFare } from '../city/plan.js'
+import { PLACES, SLOT_NAME, cityOf, folkSeed, openLine, openNow, opensAt, placeOf, rowState, runRow, slotOf } from '../city/places.js'
+import { buildInterior } from './cityplace.js'
+import { resultBody } from '../ui/result-card.js'
 
 const Q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
 const DEBUG = Q.get('citydebug') === '1'
@@ -61,6 +66,14 @@ let shot = null
 let lastSave = 0
 let rides = 0
 let race = null // { withId, withName, startAt, mine, theirs, waitingShown }: Race to the pier (item 6)
+// City job B: the places. inside: the Room or Hall you are in ({ place, room, lot }); todo: the place whose
+// Things to do sheet is open; folk: the staff and patrons standing at a place ({ id, list }); busy: a door, a row
+// or a result card is on screen (taps on the world wait).
+let inside = null
+let todo = null
+let folk = null
+let busy = false
+let doing = 0
 const ray = new THREE.Raycaster()
 const v3 = new THREE.Vector3()
 const box3 = new THREE.Box3()
@@ -84,9 +97,10 @@ function inSolid(x, z, pad) {
   for (const s of list) if (x > s.minX - pad && x < s.maxX + pad && z > s.minZ - pad && z < s.maxZ + pad) return true
   return false
 }
-const blockedAt = (x, z) => offLimits(x, z, 0.2) || inSolid(x, z, BODY)
+const blockedAt = (x, z) => (inside ? inside.room.blocked(x, z, BODY) : offLimits(x, z, 0.2) || inSolid(x, z, BODY))
 
-let grid = null // { cols, rows, cells: Uint8Array }
+let grid = null // { x0, z0, g, cols, rows, cells: Uint8Array }: the city's, or the room's while you are inside one
+let cityGrid = null
 function buildGrid() {
   const cols = Math.ceil((BOUNDS.x1 - BOUNDS.x0) / G)
   const rows = Math.ceil((BOUNDS.z1 - BOUNDS.z0) / G)
@@ -96,10 +110,19 @@ function buildGrid() {
     const z = BOUNDS.z0 + (r + 0.5) * G
     cells[r * cols + c] = offLimits(x, z, 0.9) || inSolid(x, z, 1.0) ? 1 : 0
   }
-  grid = { cols, rows, cells }
+  grid = cityGrid = { x0: BOUNDS.x0, z0: BOUNDS.z0, g: G, cols, rows, cells }
 }
-const cellOf = (x, z) => [Math.min(grid.cols - 1, Math.max(0, Math.floor((x - BOUNDS.x0) / G))), Math.min(grid.rows - 1, Math.max(0, Math.floor((z - BOUNDS.z0) / G)))]
-const centreOf = (c, r) => ({ x: BOUNDS.x0 + (c + 0.5) * G, z: BOUNDS.z0 + (r + 0.5) * G })
+// A room's own walk grid (half-metre cells: the aisles between shelves are narrow).
+function roomGrid(room) {
+  const g = 0.5
+  const cols = Math.ceil(room.W / g)
+  const rows = Math.ceil(room.D / g)
+  const cells = new Uint8Array(cols * rows)
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) cells[r * cols + c] = room.blocked(room.bounds.minX + (c + 0.5) * g, room.bounds.minZ + (r + 0.5) * g, 0.42) ? 1 : 0
+  return { x0: room.bounds.minX, z0: room.bounds.minZ, g, cols, rows, cells }
+}
+const cellOf = (x, z) => [Math.min(grid.cols - 1, Math.max(0, Math.floor((x - grid.x0) / grid.g))), Math.min(grid.rows - 1, Math.max(0, Math.floor((z - grid.z0) / grid.g)))]
+const centreOf = (c, r) => ({ x: grid.x0 + (c + 0.5) * grid.g, z: grid.z0 + (r + 0.5) * grid.g })
 const open = (c, r) => c >= 0 && r >= 0 && c < grid.cols && r < grid.rows && grid.cells[r * grid.cols + c] === 0
 function nearestOpen(x, z) {
   const [c0, r0] = cellOf(x, z)
@@ -113,7 +136,7 @@ function nearestOpen(x, z) {
 // A straight line a body can walk (sampled against the true outlines, not the grid).
 function clear(a, b) {
   const d = Math.hypot(b.x - a.x, b.z - a.z)
-  const n = Math.ceil(d / 0.6)
+  const n = Math.ceil(d / (inside ? 0.25 : 0.6))
   for (let i = 1; i < n; i++) { const t = i / n; if (blockedAt(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)) return false }
   return true
 }
@@ -182,7 +205,7 @@ function route(from, to) {
 }
 function freeNear(x, z) {
   if (!blockedAt(x, z)) return { x, z }
-  for (let r = 0.6; r < 9; r += 0.6) for (let a = 0; a < 12; a++) {
+  for (let r = inside ? 0.3 : 0.6; r < 9; r += inside ? 0.3 : 0.6) for (let a = 0; a < 12; a++) {
     const px = x + Math.cos(a * Math.PI / 6) * r
     const pz = z + Math.sin(a * Math.PI / 6) * r
     if (!blockedAt(px, pz)) return { x: px, z: pz }
@@ -201,6 +224,7 @@ function walkTo(x, z, then = null) {
   if (!spot) return false
   pending = then
   closeCard()
+  if (!inside) closeTodo()
   mover.walkTo(route(player.position, spot), {
     near: 0.25,
     done: (how) => {
@@ -218,6 +242,8 @@ function arrived(p) {
   if (p.lot) openLot(p.lot)
   else if (p.ride) ride(p.from, p.ride)
   else if (p.stop) openStop(p.stop)
+  else if (p.todo) openTodo(placeOf(p.todo))
+  else if (p.leave) { leavePlace(); return }
   save()
 }
 
@@ -255,6 +281,12 @@ function onTap(ndc) {
   }
   smooth.tap()
   mover.noteTap()
+  let ground = null
+  if (ray.ray.origin.y > 0 && ray.ray.direction.y < 0) ground = ray.ray.at(-ray.ray.origin.y / ray.ray.direction.y, new THREE.Vector3())
+  if (inside) { tapInside(ground); return }
+  // the staff of an open-ground place: their list
+  const keeper = folk?.list[0]?.avatar.position
+  if (keeper && boxHit(keeper.x - 0.5, keeper.x + 0.5, 0, 1.9, keeper.z - 0.5, keeper.z + 0.5) < Infinity) { const pl = placeOf(folk.id); if (pl) { goLot(pl.lot); return } }
   // a building, a billboard: the nearest one the finger is on
   let best = null
   let bestD = Infinity
@@ -267,8 +299,6 @@ function onTap(ndc) {
     const d = boxHit(b.x - 4.2, b.x + 4.2, 3.4, 7.8, b.z - 4.2, b.z + 4.2)
     if (d < bestD) { bestD = d; best = { board: b } }
   }
-  let ground = null
-  if (ray.ray.origin.y > 0 && ray.ray.direction.y < 0) ground = ray.ray.at(-ray.ray.origin.y / ray.ray.direction.y, new THREE.Vector3())
   if (best && (!ground || bestD < ground.distanceTo(ray.ray.origin))) {
     if (best.board) { openBoard(best.board); return }
     goLot(best.lot)
@@ -289,7 +319,7 @@ function goLot(lot) {
 // ---------- cards: a door, a taxi stop, a billboard ----------
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 const fill = (text, vars) => String(text).replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '')
-function uiBusy() { return Boolean(uiRoot?.querySelector('.city-ride:not([hidden])')) || mapUi?.isOpen() }
+function uiBusy() { return busy || Boolean(uiRoot?.querySelector('.city-ride:not([hidden])')) || mapUi?.isOpen() }
 function showCard(kind, id, html) {
   const node = uiRoot.querySelector('.city-card')
   node.innerHTML = html
@@ -304,15 +334,6 @@ function closeCard() {
   card = null
   uiRoot.querySelector('.city-card').hidden = true
   host.dataset.card = ''
-}
-function openLot(id) {
-  const lot = lotOf(id)
-  if (!lot) return
-  const soon = CITY.soon
-  const later = lot.wave === 2
-  showCard('lot', id, `<p class="cc-kind">${esc(partOf(lot.part).name)}</p><h3>${lot.icon ? `${lot.icon} ` : ''}${esc(lot.name)}</h3>
-    <p class="cc-tag">${esc(later ? soon.later : soon.title)}</p><p class="cc-line">${esc(fill(later ? soon.laterLine : soon.line, { name: lot.name }))}</p>
-    <div class="cc-row"><button type="button" data-city="close">Okay</button></div>`)
 }
 function openStop(id) {
   const stop = stopOf(id)
@@ -335,6 +356,332 @@ function refuse(res, dest) {
     <p class="cc-line">${esc(fill(CITY.travel.lines.short, { fare: res.fare, money: res.money }))}</p>
     <div class="cc-row"><button type="button" data-city="walk" data-x="${dest.x}" data-z="${dest.z}" data-lot="${dest.lot || ''}">Walk there</button><button type="button" data-city="close">Okay</button></div>`)
   host.dataset.refused = String(Number(host.dataset.refused || 0) + 1)
+}
+
+// ---------- the places (City job B): doors, Things to do, the rooms ----------
+// A door (or the entrance of an open-ground place) opens the place: a Room or a Hall is walked into (its own
+// room, built from data: src/world/cityplace.js), an open-ground place is the lot itself. Either way the Things to
+// do sheet lists that place's ten rows (src/city/places.js runs them). Spec: docs/world-designer/sunnybay.md, Places.
+const wait = (ms) => new Promise((r) => setTimeout(r, ms))
+const toast = (text) => window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text } }))
+const signed = (n) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`)
+const roomOrigin = (place) => ({ x: 2000 + PLACES.indexOf(place) * 160, z: 2000 }) // (far off the map: each place its own spot)
+
+// How many other players are in this place with you ("Better with friends here": any other player counts, NPCs never).
+function friendsHere(place) {
+  if (!others || !place) return 0
+  if (inside) {
+    if (inside.place.id !== place.id) return 0
+    const r = inside.room
+    return others.nearbyPositions(r.centre.x, r.centre.z, Math.hypot(r.W, r.D) / 2 + 1).length
+  }
+  const lot = place.lot
+  if (lot.area) {
+    const [x0, z0, x1, z1] = lot.area
+    return others.nearbyPositions((x0 + x1) / 2, (z0 + z1) / 2, Math.hypot(x1 - x0, z1 - z0) / 2 + 14).filter((p) => p.x > x0 - 12 && p.x < x1 + 12 && p.z > z0 - 12 && p.z < z1 + 12).length
+  }
+  return others.nearbyPositions(lot.door.x, lot.door.z, 25).length
+}
+
+function soonCard(lot) {
+  const soon = CITY.soon
+  const later = lot.wave === 2
+  showCard('lot', lot.id, `<p class="cc-kind">${esc(partOf(lot.part).name)}</p><h3>${lot.icon ? `${lot.icon} ` : ''}${esc(lot.name)}</h3>
+    <p class="cc-tag">${esc(later ? soon.later : soon.title)}</p><p class="cc-line">${esc(fill(later ? soon.laterLine : soon.line, { name: lot.name }))}</p>
+    <div class="cc-row"><button type="button" data-city="close">Okay</button></div>`)
+}
+// Outside its hours the door says when it opens (and, if that is later today, lets you wait for it).
+function closedCard(place) {
+  const o = opensAt(opts.district.meta, opts.run, place)
+  const lot = place.lot
+  showCard('closed', place.id, `<p class="cc-kind">${esc(partOf(lot.part).name)}</p><h3>${lot.icon ? `${lot.icon} ` : ''}${esc(place.name)}</h3>
+    <p class="cc-tag">Closed now</p><p class="cc-line">Opens ${o.today ? '' : 'tomorrow, '}${esc(o.name)} ${esc(o.time)}. Open: ${esc(openLine(place))}.</p>
+    <div class="cc-row">${o.today && opts.onWait ? `<button type="button" data-city="wait" data-phase="${o.phase}">Skip to ${esc(o.name)} ${esc(o.time)}</button>` : ''}<button type="button" data-city="close">Okay</button></div>`)
+}
+function openLot(id) {
+  const lot = lotOf(id)
+  if (!lot) return
+  const place = placeOf(id)
+  if (!place) { soonCard(lot); return }
+  if (inside) { if (inside.place.id === id) openTodo(place); return }
+  if (!openNow(opts.run, place)) { closedCard(place); return }
+  if (place.template === 'open') { seatFolk(place); openTodo(place); return }
+  goInside(place)
+}
+
+// ---- Things to do: the sheet ----
+function todoHtml(place) {
+  const run = opts.run
+  const friends = friendsHere(place)
+  const c = cityOf(run)
+  const rows = place.rows.map((row) => {
+    const st = rowState(opts.district, run, place, row, { friends })
+    const fx = [[row.energy, 'Energy'], [row.fullness, 'Fullness'], [row.grades, 'Grades'], [st.social, 'Social']].filter(([v]) => v).map(([v, label]) => `<small class="${v > 0 ? 'up' : 'down'}">${signed(v)} ${label}</small>`).join('')
+    const price = row.gig ? `<b class="ct-pay">+${formatMoney(row.money)}</b>` : row.cost ? `<b>${formatMoney(row.cost)}</b>` : '<b class="ct-free">Free</b>'
+    const tags = [row.quick ? '<small class="tag">Quick</small>' : '', row.gig ? '<small class="tag gig">Gig</small>' : '', row.showoff ? '<small class="tag flex">Show-off</small>' : '',
+      row.friends ? `<small class="tag ${friends ? 'with' : 'alone'}">${friends ? '\u{1F465} Friends here' : '\u{1F465} Half Social alone'}</small>` : ''].join('')
+    return `<button type="button" class="ct-row${st.disabled ? ' off' : ''}" data-city="row" data-row="${row.id}" data-why="${st.why}" aria-disabled="${st.disabled}">
+      <span class="ct-top"><strong>${esc(row.name)}</strong>${price}</span>
+      <span class="ct-meta">${row.minutes} min${tags}</span>
+      ${fx ? `<span class="ct-fx">${fx}</span>` : ''}
+      ${st.disabled ? `<span class="ct-why">${esc(st.reason)}</span>` : ''}
+    </button>`
+  }).join('')
+  const lot = place.lot
+  return `<header><div><p class="cc-kind">${esc(partOf(lot.part).name)} · Things to do</p><h3>${lot.icon ? `${lot.icon} ` : ''}${esc(place.name)}</h3></div><button type="button" class="ct-x" data-city="todo-close" aria-label="Close">✕</button></header>
+    <p class="ct-feel">${esc(place.feel)}</p>
+    <p class="ct-slots">${SLOT_NAME[slotOf(run)]} · ${run.slotsLeft} of ${run.slotsTotal} slots left${c.thirds ? ` · ${c.thirds} more quick one${c.thirds > 1 ? 's' : ''} fit in this slot` : ''}</p>
+    <div class="ct-list">${rows}</div>`
+}
+function openTodo(place) {
+  if (!place || !running) return
+  closeCard()
+  const node = uiRoot.querySelector('.city-todo')
+  node.innerHTML = todoHtml(place)
+  node.setAttribute('aria-label', `Things to do at ${place.name}`)
+  node.hidden = false
+  todo = place
+  host.dataset.card = `todo:${place.id}`
+  host.dataset.friends = String(friendsHere(place))
+}
+function closeTodo() {
+  if (!todo) return
+  todo = null
+  uiRoot.querySelector('.city-todo').hidden = true
+  if (host.dataset.card.startsWith('todo:')) host.dataset.card = ''
+}
+
+// ---- picking a row: a moment of doing it, then the result card ----
+async function pickRow(rowId) {
+  const place = todo
+  const row = place?.rows.find((r) => r.id === rowId)
+  if (!row || busy) return
+  const st = rowState(opts.district, opts.run, place, row, { friends: friendsHere(place) })
+  if (st.disabled) { toast(st.reason); return }
+  busy = true
+  closeTodo()
+  mover.stop()
+  pending = null
+  const to = folk?.id === place.id ? folk.list[0]?.avatar.position : null
+  if (to && Math.hypot(to.x - player.position.x, to.z - player.position.z) < 12) player.rotation.y = Math.atan2(to.x - player.position.x, to.z - player.position.z)
+  const ms = Math.max(350, 1500 / FAST)
+  const pill = uiRoot.querySelector('.city-doing')
+  pill.innerHTML = `<b>${esc(row.name)}</b><i></i>`
+  pill.style.setProperty('--ms', `${ms}ms`)
+  pill.hidden = false
+  gesture(player, 'emote-yes')
+  const mine = ++doing
+  await wait(ms)
+  pill.hidden = true
+  if (!running || mine !== doing) { busy = false; return }
+  const res = runRow(opts.district, opts.run, place, row, { friends: friendsHere(place) })
+  if (!res.ok) { busy = false; toast(res.error); openTodo(place); return }
+  opts.onRow?.({ place, row, result: res })
+  showResult(place, row, res)
+}
+function showResult(place, row, res) {
+  const type = row.gig ? 'work' : row.fullness >= 8 ? 'food' : row.grades >= 3 ? 'study' : ['gym', 'stadium'].includes(place.id) ? 'gym' : row.social >= 5 ? 'social' : row.cost >= 15 ? 'shop' : 'other'
+  const body = resultBody({ cardId: `city-${row.id}-${Date.now()}`, title: row.name, delta: res.delta, esc, line: row.result, type })
+  const notes = []
+  if (res.half) notes.push('\u{1F465} On your own this time, so half the Social. It pays in full with another player here.')
+  if (res.granted === 'yard') notes.push('\u{1F6A6} Yard lesson done. The road lesson is next.')
+  if (res.granted === 'road') notes.push('\u{1F6A6} Road lesson done. You can take the licence test now.')
+  if (res.granted === 'licence') notes.push("\u{1FAAA} Your driver's licence. A car is next: SunnyBay Cars, in the Suburbs.")
+  if (res.granted.startsWith('car:')) notes.push('\u{1F697} It is parked outside. Drive from the SunnyBay map: R8 a trip.')
+  else if (res.showoff) notes.push('✨ It shows on your player card now.')
+  for (const g of res.goals || []) notes.push(`\u{1F3AF} Goal done: ${g}`)
+  const node = uiRoot.querySelector('.city-result')
+  node.className = `g-result rc city-result${body.big ? ' big' : ''}`
+  node.setAttribute('aria-label', row.name)
+  node.innerHTML = `${body.html}${notes.map((n) => `<p class="cr-note">${esc(n)}</p>`).join('')}<button type="button" class="g-go block" data-city="result-ok">Continue</button>`
+  node.hidden = false
+  uiRoot.querySelector('.city-scrim').hidden = false
+  node.dataset.place = place.id
+  host.dataset.card = `result:${row.id}`
+  host.dataset.result = row.id
+  host.dataset.granted = res.granted || ''
+}
+function closeResult() {
+  const node = uiRoot.querySelector('.city-result')
+  if (node.hidden) return
+  const place = placeOf(node.dataset.place)
+  node.hidden = true
+  node.className = 'city-result' // (a .g-result only while it shows: launch.js calm() looks for one anywhere in the page)
+  uiRoot.querySelector('.city-scrim').hidden = true
+  host.dataset.card = ''
+  busy = false
+  if (!inside) showCar()
+  // (back to the list: the next thing, or a look at what the day still has room for)
+  if (place && (inside ? inside.place.id === place.id : Math.hypot(place.lot.door.x - player.position.x, place.lot.door.z - player.position.z) < 14)) openTodo(place)
+}
+
+// ---- the staff and the patrons of a place (CAST RULE: skins from skinmix.js, through npcLook) ----
+function clearFolk() {
+  if (!folk) return
+  for (const f of folk.list) { f.avatar.userData.disposed = true; scene?.remove(f.avatar) }
+  folk = null
+  if (host) host.dataset.folk = ''
+}
+function seatFolk(place) {
+  if (folk?.id === place.id) return
+  clearFolk()
+  const d = place.dress
+  const seed = folkSeed(place)
+  const spots = inside ? [inside.room.staff, ...inside.room.people] : [d.staff, ...(d.people || [])].filter(Boolean).map(([x, z, rot = 0]) => {
+    const p = freeNear(place.lot.door.x + x, place.lot.door.z + z) || { x: place.lot.door.x + x, z: place.lot.door.z + z }
+    return { x: p.x, z: p.z, rot: (rot * Math.PI) / 180 }
+  })
+  folk = {
+    id: place.id,
+    list: spots.map((s, i) => {
+      const avatar = createAvatar(npcLook(seed + i))
+      avatar.userData.pose = 'stand'
+      avatar.position.set(s.x, 0, s.z)
+      avatar.rotation.y = s.rot
+      scene.add(avatar)
+      return { avatar, i, staff: i === 0 }
+    }),
+  }
+  host.dataset.folk = `${place.id}:${folk.list.length}`
+}
+// Near an open-ground place its people stand on the lot; walk away and they are put away again.
+function folkNear() {
+  if (inside) return
+  const px = player.position.x
+  const pz = player.position.z
+  const near = PLACES.find((p) => p.template === 'open' && Math.hypot(p.lot.door.x - px, p.lot.door.z - pz) < 70)
+  if (near) seatFolk(near)
+  else if (folk) { const p = placeOf(folk.id); if (!p || Math.hypot(p.lot.door.x - px, p.lot.door.z - pz) > 100) clearFolk() }
+}
+
+// ---- in through the door, and back out to the same door ----
+// What the camera follows in a room: you, held back from the walls so the picture is the room and not the dark past
+// its edge (most of all near the door, where the camera looks in from behind you). Eye view follows you as it is.
+const viewAt = new THREE.Vector3()
+function roomView() {
+  if (rig.mode === 'eye') return player.position
+  const b = inside.room.bounds
+  const side = Math.min(3, (b.maxX - b.minX) / 2)
+  const south = Math.min(6.5, (b.maxZ - b.minZ) * 0.5)
+  return viewAt.set(Math.min(b.maxX - side, Math.max(b.minX + side, player.position.x)), 0, Math.min(b.maxZ - south, Math.max(b.minZ + 2.5, player.position.z)))
+}
+function indoorLight() {
+  const bg = new THREE.Color('#191226')
+  scene.background = bg
+  scene.fog.color.copy(bg)
+  sun.intensity = 0.95
+  hemi.intensity = 1.5
+}
+function syncBar() {
+  const on = Boolean(inside)
+  uiRoot.querySelector('.city-map').hidden = on
+  uiRoot.querySelector('.city-leave').hidden = !on
+  uiRoot.querySelector('.city-do').hidden = !on
+  const chip = uiRoot.querySelector('.city-chip b')
+  if (chip) chip.textContent = on ? inside.place.name : part.name
+}
+function veil(html) {
+  const node = uiRoot.querySelector('.city-ride')
+  if (html) { node.innerHTML = html; node.hidden = false } else node.hidden = true
+}
+async function goInside(place) {
+  if (busy || inside || !running) return
+  busy = true
+  mover.stop()
+  pending = null
+  closeCard()
+  closeTodo()
+  veil(`<div><span class="cr-van still">${place.lot.icon || '\u{1F6AA}'}</span><b>${esc(place.name)}</b></div>`)
+  try {
+    const o = roomOrigin(place)
+    const [room] = await Promise.all([buildInterior(place, o.x, o.z), wait(Math.max(150, 450 / FAST))])
+    if (!running) return
+    built.group.visible = false
+    for (const n of npcs) n.avatar.visible = false
+    if (carMesh) carMesh.visible = false
+    clearFolk()
+    scene.add(room.group)
+    inside = { place, room, lot: place.lot }
+    grid = roomGrid(room)
+    indoorLight()
+    rig.setDistance('sims', room.cam)
+    rig.setPitch(40)
+    rig.setDistance('top', room.top)
+    // (never inside each other: the ring of spots just inside the door, clear of whoever came in before you)
+    const spot = ringSpot(room.spawn.x, room.spawn.z, (x, z) => !room.blocked(x, z, BODY) && z < room.exit.z - 0.9, others ? others.nearbyPositions(room.spawn.x, room.spawn.z, 5) : [])
+    player.position.set(spot.x, 0, spot.z)
+    player.userData.lastPos?.set(spot.x, 0, spot.z)
+    player.rotation.y = Math.PI
+    rig.turnBehind(Math.PI)
+    rig.apply(camera, roomView(), 30, null)
+    seatFolk(place)
+    document.body.dataset.cityPlace = place.id
+    host.dataset.place = place.id
+    syncBar()
+    await curtain.awaitPeople(scene, appearNow, 2500)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    veil('')
+    busy = false
+  }
+  if (!running) return
+  save()
+  openTodo(place) // (if the room could not be built, the list still opens at the door)
+}
+// Put the room away and the city back (no fade, no walking: stopCity and leavePlace share it).
+function exitRoom() {
+  if (!inside) return null
+  const { room, lot } = inside
+  closeTodo()
+  scene?.remove(room.group)
+  room.dispose()
+  clearFolk()
+  inside = null
+  grid = cityGrid
+  if (built) built.group.visible = true
+  delete document.body.dataset.cityPlace
+  if (host) host.dataset.place = ''
+  rig.setDistance('sims', 25)
+  rig.setDistance('top', 105)
+  rig.setPitch(45)
+  return lot
+}
+async function leavePlace() {
+  if (!inside || busy) return
+  busy = true
+  mover.stop()
+  pending = null
+  veil(`<div><span class="cr-van still">\u{1F6AA}</span><b>${esc(partOf(inside.lot.part).name)}</b></div>`)
+  await wait(Math.max(120, 300 / FAST))
+  const lot = exitRoom()
+  if (running && lot) {
+    nightNow = -1
+    applyTime()
+    // (the camera looks at the door from the street side, so you and the door are in the picture; you face the street)
+    const into = { s: Math.PI, n: 0, e: -Math.PI / 2, w: Math.PI / 2 }[lot.side] ?? Math.PI
+    place(lot.door.x, lot.door.z, into)
+    player.rotation.y = into + Math.PI
+    showCar()
+    syncBar()
+    save()
+  }
+  veil('')
+  busy = false
+}
+// A tap while you are inside: the mat by the door leaves, the staff (or the counter in front of them) opens the
+// list, anywhere else on the floor walks there.
+function tapInside(ground) {
+  const { room, place } = inside
+  const st = room.staff
+  if (boxHit(st.x - 0.5, st.x + 0.5, 0, 1.9, st.z - 0.5, st.z + 0.5) < Infinity || (ground && Math.hypot(ground.x - st.x, ground.z - st.z) < 1.6)) {
+    if (Math.hypot(player.position.x - room.focus.x, player.position.z - room.focus.z) < 2.6) { mover.stop(); openTodo(place); return }
+    walkTo(room.focus.x, room.focus.z, { todo: place.id })
+    return
+  }
+  if (!ground) return
+  if (Math.abs(ground.x - room.exit.x) < 1.6 && ground.z > room.exit.z - 0.9) { walkTo(room.exit.x, room.exit.z, { leave: true }); return }
+  walkTo(Math.min(room.bounds.maxX - 0.5, Math.max(room.bounds.minX + 0.5, ground.x)), Math.min(room.bounds.maxZ - 0.5, Math.max(room.bounds.minZ + 0.5, ground.z)))
 }
 
 // ---------- the taxi and the car ----------
@@ -427,6 +774,7 @@ function drive(lotId) {
 }
 // From the map: a way to a pin. way: 'walk' | 'taxi' | 'drive'; target: a lot id, or 'campus'.
 function travel(way, target) {
+  if (inside) { const out = exitRoom(); nightNow = -1; applyTime(); place(out.door.x, out.door.z); syncBar() } // (from the map while you are in a place: out of its door first)
   const lot = target === 'campus' ? null : lotOf(target)
   const dest = lot ? destOfLot(lot) : { id: 'gate', name: 'Campus gate', part: 'campus', x: SPAWN.x, z: SPAWN.z }
   if (way === 'drive') return drive(lot ? lot.id : 'res')
@@ -503,6 +851,7 @@ function maybeShowResult(force = false) {
   })
 }
 onInvite('race', (from, name, data, { accept, decline }) => {
+  if (inside) { decline(); return } // (the race only shows outdoors: City job B)
   inviteToast({
     text: `${name} wants to race to the pier! \u{1F3C1}`,
     onAccept: () => { accept(); setRacing(true); startRace(from, name) },
@@ -589,6 +938,7 @@ function npcTick(dt) {
 
 // ---------- which district you are in: the chip, the room, the telemetry ----------
 function notePart(force) {
+  if (inside) return // (a room is in its lot's district)
   const now = partAt(player.position.x, player.position.z)
   if (now.id !== part.id || force) {
     part = now
@@ -607,7 +957,8 @@ function notePart(force) {
 function save() {
   if (!player || !running) return
   lastSave = performance.now()
-  opts.onSave?.({ x: +player.position.x.toFixed(1), z: +player.position.z.toFixed(1) })
+  const at = inside ? inside.lot.door : player.position // (left inside a place, you come back at its door)
+  opts.onSave?.({ x: +at.x.toFixed(1), z: +at.z.toFixed(1) })
 }
 
 // ---------- light ----------
@@ -621,6 +972,7 @@ function nightAt(minutes) {
 const SKY = { day: new THREE.Color('#bfe3f5'), dusk: new THREE.Color('#f2a36b'), night: new THREE.Color('#141c3a') }
 let nightNow = -1
 function applyTime() {
+  if (inside) return // (a room keeps its own light)
   const forced = Number(Q.get('hour'))
   const minutes = forced > 0 ? forced * 60 : opts?.run?.minutes ?? 12 * 60
   const n = nightAt(minutes)
@@ -680,6 +1032,46 @@ body[data-city="1"] #world{display:none}
 .city-ride .cr-van{font-size:54px;animation:city-van 1.2s ease-in-out infinite alternate}
 @keyframes city-van{from{transform:translateX(-26px)}to{transform:translateX(26px)}}
 @media (prefers-reduced-motion:reduce){.city-ride .cr-van{animation:none}}
+.city-card .cc-row button[data-city="wait"]{background:#f0c400;color:#1c1915}
+.city-ride .cr-van.still{animation:none}
+.city-leave,.city-do{position:absolute;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:0 16px;border-radius:24px;box-shadow:0 4px 14px #0006;min-height:48px!important;font-size:15px!important;white-space:nowrap}
+.city-leave{left:12px;background:#22143b;color:#fff}
+.city-do{left:118px;background:#f0c400;color:#1c1915}
+.city-leave[hidden],.city-do[hidden],.city-map[hidden]{display:none}
+.city-todo{position:absolute;left:0;right:0;bottom:0;margin:0 auto;box-sizing:border-box;max-height:60vh;display:flex;flex-direction:column;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 12px);border-radius:20px 20px 0 0;background:#fffaf0;color:#1c1915;border:1.5px solid #e2d4b8;border-bottom:0;box-shadow:0 -10px 30px #0006;pointer-events:auto}
+.city-todo[hidden]{display:none}
+.city-todo header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.city-todo h3{margin:2px 0 4px;font:800 20px Graduate,Figtree,system-ui,sans-serif}
+.city-todo .cc-kind{margin:0;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#7b5a1e}
+.city-todo .ct-x{width:44px;height:44px;flex:none;border-radius:50%;background:#f3e9d2;color:#1c1915;font-size:16px}
+.city-todo .ct-feel{margin:0 0 4px;font-size:14px;line-height:1.35;color:#4a4033}
+.city-todo .ct-slots{margin:0 0 8px;font-size:14px;font-weight:800;color:#7b5a1e}
+.city-todo .ct-list{overflow-y:auto;display:flex;flex-direction:column;gap:6px;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.ct-row{display:flex;flex-direction:column;gap:4px;align-items:stretch;text-align:left;flex:none;padding:9px 12px;border-radius:14px;background:#f3e9d2;color:#1c1915;min-height:56px!important}
+.ct-row .ct-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ct-row strong{font-size:15px;font-weight:800;line-height:1.25}
+.ct-row .ct-top b{font-size:14px;white-space:nowrap}
+.ct-row .ct-pay{color:#126b3b}
+.ct-row .ct-meta{font-size:14px;font-weight:600;color:#4a4033;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.ct-row small{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.ct-row small.tag{background:#22143b;color:#fff}
+.ct-row small.gig{background:#126b3b}.ct-row small.flex{background:#b7791f}.ct-row small.with{background:#c2247e}.ct-row small.alone{background:#7a7064}
+.ct-row .ct-fx{display:flex;flex-wrap:wrap;gap:4px}
+.ct-row small.up{background:#1f9d5a22;color:#126b3b}.ct-row small.down{background:#d0303018;color:#9b1f1f}
+.ct-row.off{background:#ece6da;cursor:default}
+.ct-row.off strong,.ct-row.off .ct-meta,.ct-row.off .ct-top b{color:#857b6e}
+.ct-row.off .ct-fx,.ct-row.off small.tag{opacity:.5}
+.ct-row .ct-why{font-size:14px;font-weight:800;color:#9b1f1f}
+.city-doing{position:absolute;left:0;right:0;top:36%;margin:0 auto;width:max-content;max-width:min(calc(100% - 24px),420px);box-sizing:border-box;padding:12px 18px 15px;border-radius:18px;background:#22143bf2;color:#fff;font-size:15px;text-align:center;box-shadow:0 8px 24px #0007;overflow:hidden}
+.city-doing[hidden]{display:none}
+.city-doing i{position:absolute;left:0;bottom:0;height:4px;width:100%;background:#f0c400;transform-origin:left;animation:city-doing var(--ms,1200ms) linear forwards}
+@keyframes city-doing{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.city-scrim{position:absolute;inset:0;background:#1c191555;pointer-events:auto}
+.city-scrim[hidden]{display:none}
+.city-ui .city-result{pointer-events:auto;z-index:2}
+.city-ui .city-result[hidden]{display:none}
+.city-result .cr-note{margin:8px 0 0;font-size:14px;line-height:1.35;font-weight:600}
+.city-result .g-go{margin-top:12px}
 .city-debug{position:absolute;left:50%;transform:translateX(-50%);bottom:84px;background:#0009;color:#fff;border-radius:14px;padding:4px 10px;font-size:12px}`
   document.head.append(style)
   document.body.insertAdjacentHTML('beforeend', `<div class="city-ui" id="city-ui" hidden>
@@ -687,24 +1079,36 @@ body[data-city="1"] #world{display:none}
     <div class="city-cams">${['top', 'sims', 'eye'].map((m) => `<button type="button" data-cam="${m}" aria-pressed="false">${m[0].toUpperCase() + m.slice(1)}</button>`).join('')}</div>
     <button class="city-map" type="button" data-city="map">🗺 SunnyBay map</button>
     <button class="city-stop" type="button" data-city="stop" aria-label="Stop walking" hidden>Stop</button>
+    <button class="city-leave" type="button" data-city="leave" hidden>← Leave</button>
+    <button class="city-do" type="button" data-city="todo" hidden>✨ Things to do</button>
     <div class="city-card" role="dialog" aria-live="polite" hidden></div>
+    <div class="city-todo" role="dialog" hidden></div>
+    <div class="city-doing" role="status" hidden></div>
+    <div class="city-scrim" data-city="result-ok" hidden></div>
+    <aside class="city-result" role="dialog" hidden></aside>
     <div class="city-ride" hidden></div>
     ${DEBUG ? '<div class="city-debug" data-stats></div>' : ''}
   </div>`)
   uiRoot = document.getElementById('city-ui')
   uiRoot.addEventListener('click', (e) => {
-    const b = e.target.closest('button')
+    const b = e.target.closest('button, .city-scrim')
     if (!b) return
     const act = b.dataset.city
     if (b.dataset.cam) { rig.setMode(b.dataset.cam); syncCams(); measureBars(); window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: b.dataset.cam })) }
     else if (act === 'close') closeCard()
+    else if (act === 'row') { if (b.getAttribute('aria-disabled') === 'true') toast(b.querySelector('.ct-why')?.textContent || 'Not now'); else pickRow(b.dataset.row) }
+    else if (act === 'todo-close') closeTodo()
+    else if (act === 'todo') { if (inside) openTodo(inside.place) }
+    else if (act === 'leave') leavePlace()
+    else if (act === 'result-ok') closeResult()
+    else if (act === 'wait') { const id = card?.id; opts.onWait?.(b.dataset.phase); closeCard(); applyTime(); if (id) openLot(id) }
     else if (act === 'stop') { mover.stop(); pending = null }
     else if (act === 'map') mapUi.open()
     else if (act === 'ride') { const s = stopOf(b.dataset.stop); if (s) ride(card?.id, destOfStop(s)) }
     else if (act === 'walk') { const lot = b.dataset.lot; walkTo(Number(b.dataset.x), Number(b.dataset.z), lot ? { lot } : null) }
   })
   mapUi = createCityMap(document.body, {
-    where: () => ({ x: player?.position.x || 0, z: player?.position.z || 0, facing: player?.rotation.y || 0, campus: false }),
+    where: () => (inside ? { x: inside.lot.door.x, z: inside.lot.door.z, facing: 0, campus: false } : { x: player?.position.x || 0, z: player?.position.z || 0, facing: player?.rotation.y || 0, campus: false }),
     run: () => opts?.run,
     go: (way, target) => travel(way, target),
   })
@@ -784,9 +1188,10 @@ function tick(now) {
   if (race && race.mine == null && Math.hypot(player.position.x - PIER.x, player.position.z - PIER.z) < 3) finishRace()
   soundLoop('footsteps', stepping)
   poseAvatar(player, stepping, clock)
-  npcTick(dt)
+  if (!inside) npcTick(dt)
+  if (folk) for (const f of folk.list) poseAvatar(f.avatar, false, clock + f.i * 1.7)
   others?.update(dt, camera, player.position, true, rig.mode === 'eye')
-  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, player.position, dt, null)
+  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, inside ? roomView() : player.position, dt, null)
   for (const p of player.userData.headParts || []) p.visible = rig.mode !== 'eye'
   notePart(false)
   reportLocal({ a: 'campus', x: player.position.x, z: player.position.z, y: 0, h: player.rotation.y, p: player.userData.pose || 'stand' })
@@ -796,18 +1201,23 @@ function tick(now) {
     const at = card.kind === 'lot' ? lotOf(card.id)?.door : card.kind === 'stop' ? stopOf(card.id) : null
     if (at && Math.hypot(at.x - player.position.x, at.z - player.position.z) > 7) closeCard()
   }
-  if (frameCount % 30 === 0) { measureBars(); applyTime() }
+  if (todo && !inside && stepping && frameCount % 20 === 0 && Math.hypot(todo.lot.door.x - player.position.x, todo.lot.door.z - player.position.z) > 10) closeTodo()
+  if (frameCount % 30 === 0) { measureBars(); applyTime(); folkNear() }
+  // (inside a place: stepping onto the mat by the door takes you back out)
+  if (inside && !busy && player.position.z > inside.room.exit.z - 0.3 && Math.abs(player.position.x - inside.room.exit.x) < 1.3) { leavePlace(); return }
   if (stepping && now - lastSave > 5000) save()
   // in through the gate: back on campus
-  if (performance.now() - enteredAt > 900 && atGate(player.position.x, player.position.z)) { leave('gate'); return }
+  if (!inside && performance.now() - enteredAt > 900 && atGate(player.position.x, player.position.z)) { leave('gate'); return }
   host.dataset.px = player.position.x.toFixed(2)
   host.dataset.pz = player.position.z.toFixed(2)
   host.dataset.cam = rig.mode
   renderer.render(scene, camera)
-  if (DEBUG && frameCount % 15 === 0) uiRoot.querySelector('[data-stats]').textContent = `${part.id} · ${renderer.info.render.calls} draws · ${Math.round(renderer.info.render.triangles / 1000)}k tris`
+  if (DEBUG && frameCount % 15 === 0) uiRoot.querySelector('[data-stats]').textContent = `${inside ? inside.place.id : part.id} · ${renderer.info.render.calls} draws · ${Math.round(renderer.info.render.triangles / 1000)}k tris`
   frameCount++
-  smooth.frame(now, 'city', part.id)
+  smooth.frame(now, 'city', inside ? `in.${inside.place.id}` : part.id)
 }
+
+export { cityActivities } from '../city/places.js'
 
 // ---------- start / leave ----------
 let starting = false
@@ -835,6 +1245,10 @@ export async function startCity(options) {
   ready = false
   host.dataset.ready = '0'
   host.dataset.card = ''
+  host.dataset.place = ''
+  host.dataset.folk = ''
+  busy = false
+  syncBar()
   freshScene()
   syncCams()
   try {
@@ -895,6 +1309,13 @@ export function stopCity() {
   input?.clearKeys?.()
   mapUi?.close()
   closeCard()
+  doing++
+  exitRoom()
+  clearFolk()
+  closeTodo()
+  busy = false
+  grid = cityGrid = null
+  if (uiRoot) { for (const sel of ['.city-result', '.city-scrim', '.city-doing', '.city-todo']) uiRoot.querySelector(sel).hidden = true; uiRoot.querySelector('.city-result').className = 'city-result' }
   if (host) { host.hidden = true; host.dataset.on = '0'; host.dataset.ready = '0' }
   if (uiRoot) { uiRoot.hidden = true; uiRoot.querySelector('.city-ride').hidden = true }
   others?.dispose?.()
@@ -950,6 +1371,17 @@ if (typeof window !== 'undefined') {
     shot: (pos, look, far) => { shot = pos ? { pos, look } : null; scene.fog.far = far || 640; scene.fog.near = far ? far * 0.8 : 150; measureBars() },
     cam: (mode) => { rig.setMode(mode); syncCams(); measureBars() },
     npcSkins: () => npcs.map((n) => n.avatar.userData.look?.skin),
+    // City job B (read-mostly): the place you are in or at, its people, and what each row would do now
+    place() {
+      const p = inside?.place || todo
+      return { inside: inside?.place.id || '', todo: todo?.id || '', friends: p ? friendsHere(p) : 0, folk: folk ? { id: folk.id, n: folk.list.length, skins: folk.list.map((f) => f.avatar.userData.look?.skin), at: folk.list.map((f) => [+f.avatar.position.x.toFixed(1), +f.avatar.position.z.toFixed(1)]) } : null, room: inside ? { w: inside.room.W, d: inside.room.D, tris: inside.room.tris, focus: inside.room.focus, exit: inside.room.exit, staff: inside.room.staff } : null }
+    },
+    rows(id) {
+      const p = placeOf(id)
+      return p ? p.rows.map((r) => ({ id: r.id, name: r.name, ...rowState(opts.district, opts.run, p, r, { friends: friendsHere(p) }) })) : []
+    },
+    places: () => PLACES.map((p) => ({ id: p.id, name: p.name, template: p.template, rows: p.rows.length, door: p.lot.door, part: p.lot.part })),
+    openLot: (id) => openLot(id),
     others: () => others?.report(camera) || [],
   }
 }

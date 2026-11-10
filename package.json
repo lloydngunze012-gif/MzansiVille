@@ -8,13 +8,14 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "seed": "node scripts/seed.mjs",
-    "check": "node scripts/sim-check.mjs && node scripts/scores-sql.mjs --check && node scripts/sql-check.mjs",
+    "check": "node scripts/city-build.mjs --check && node scripts/sim-check.mjs && node scripts/scores-sql.mjs --check && node scripts/sql-check.mjs",
     "shots": "playwright test",
     "test:cameras": "playwright test tests/screenshots.spec.js -g cam-",
     "test:cameras:edge": "playwright test tests/screenshots.spec.js -g cam- --config playwright.edge.config.js",
     "test:e2e": "playwright test --config playwright.edge.config.js --project=timing --workers=1 && playwright test --config playwright.edge.config.js --project=rest --workers=2",
     "test:quick": "npm run check && playwright test --config playwright.edge.config.js --project=quick --workers=2",
-    "scores-sql": "node scripts/scores-sql.mjs"
+    "scores-sql": "node scripts/scores-sql.mjs",
+    "city-data": "node scripts/city-build.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",

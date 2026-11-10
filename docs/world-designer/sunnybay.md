@@ -1,6 +1,6 @@
 # SunnyBay: the map
 
-City job A (owner, 10 Nov). The University of Mzansi sits in the middle of SunnyBay, a fictional coastal city. This file is the map: the districts, where every lot is, the travel rules and the structure. City job B and the designer read it before filling the places. The Things to do lists are in `docs/world-designer/city.md`.
+City job A (owner, 10 Nov), with the places of job B (same day). The University of Mzansi sits in the middle of SunnyBay, a fictional coastal city. This file is the map: the districts, where every lot is, the travel rules, the structure, and how the places work (Places). The designer reads it before changing a place. The Things to do lists are in `docs/world-designer/city.md`.
 
 Everything here comes from ONE data file, `data/campusville/sunnybay.json`. Move a lot, rename a road or change a fare there and the 3D city, the map screen and the tests follow.
 
@@ -71,7 +71,7 @@ Varsity Road (from the gate south through Town centre), Main Road (campus/town b
 
 ## The 18 place lots (wave 1)
 
-Each has a lot, a sign and a door (or a gate, for the open ones) with "Opening soon". `door` is where a player stands when they have arrived; job B opens the place from there.
+Each has a lot, a sign and a door (or a gate, for the open ones). `door` is where a player stands when they have arrived; the place opens from there (see Places, below).
 
 | Place | id | District | Centre (x, z) | Door (x, z) | What stands there |
 |---|---|---|---|---|---|
@@ -98,7 +98,7 @@ Names that would clash are already decided: the campus Library, Greenway Grocer 
 
 ## The 12 wave 2 plots
 
-A fenced, empty plot (22 x 16 m) with a board: "COMING SOON" and the place's name. On the map they are small grey dots.
+A fenced, empty plot (22 x 16 m) with a board: "COMING SOON" and the place's name. How one opens: Places, below. On the map they are small grey dots.
 
 | Place | id | District | Centre (x, z) |
 |---|---|---|---|
@@ -123,7 +123,7 @@ The Township has no wave 1 place (city.md puts none there); it has its taxi stop
 - **Minibus taxi.** Six stops: Campus gate (just outside the Main Gate), Town centre, Suburbs, Beachfront, Township, and the Taxi rank (Industrial's stop). R15 to the next district, R25 across the city, 25 game minutes (the clock never runs past the end of the current slot). The ride is a moment of about 2 s, not a cutscene. From a stop's card you ride to another stop; from the map you ride to a place's door. Not enough money: a friendly line, no money taken, and "Walk there".
   - Next to each other (R15): Campus with Town centre, Suburbs, Beachfront, Township; Town centre with Beachfront and Industrial; Suburbs with Beachfront and Township; Township with Industrial. Anything else is R25.
 - **Car.** Works when the save has both `run.licence === true` and `run.car` (any object, e.g. `{ id: 'first' }`). Trips are instant and cost R8 petrol. `run.carAt` says where it is parked: `'res'` (outside your house on campus, the default) or a lot's id (outside that place). You drive from where the car is: on campus when it is at res, in the city within 60 m of it; otherwise the map says where it is parked. Driving to the campus pin parks it at res.
-  - **Job B grants the licence and the car** (driving school's test, the dealership). Nothing in job A does. Set `run.licence = true` and `run.car = { id: '...' }`; everything else follows.
+  - **The licence and the car come from the places** (job B): the driving school's test sets `run.licence`, the dealership sets `run.car` and parks it outside (`run.carAt = 'dealership'`).
 - **Getting in and out.** Walk out of the Main Gate (a tap on the road at or past the gate): a short curtain, then you stand outside the gate facing the "Welcome to SunnyBay" sign. Walk in through the gate to go back. A save left in the city (`run.cityAt = { x, z }`) loads straight back there.
 - **The map** (`src/world/map.js`, `createCityMap`): titled "SunnyBay"; district outlines and names, a pin per place and one for the campus, yellow squares for taxi stops, grey dots for wave 2, where you are, how many players are in each district. A tap on a pin shows the ways there with the price and the time. On campus the campus map is the close-up and has a "SunnyBay" button; the menu has "SunnyBay map".
 
@@ -159,9 +159,91 @@ Twelve boards along the main roads, driven by `data/campusville/billboards.json`
 | The city seen from campus | `src/world/surroundings.js` |
 | Tests | `tests/e2e/city.spec.js` (Y1-Y8), `tests/e2e/city-quick.spec.js` (quick project), `tests/presence/city.spec.js`, `npm run check` |
 
-## For job B
+## Places (City job B, 10 Nov)
 
-- A place opens from `openLot(id)` in `src/world/city.js`: today it shows the "Opening soon" card. Replace that with the place's Things to do.
-- Give the licence and the car by setting `run.licence` and `run.car` (above).
+The 18 wave 1 places are open. A tap on a place's building, door or entrance walks you there; arriving opens the place.
+
+### Three templates
+
+| Template | What it is | Places |
+|---|---|---|
+| **Room** | a small interior you walk into through the door (14 x 11 m; the dealership 18 x 12) | Bank, Clinic, Barber and salon, Lifecup cafe, Lounge, Car dealership |
+| **Hall** | a big interior (20 x 15 m; the library 18 x 14, the gym 18 x 13, the arcade 20 x 14, the church 14 x 20) | Mall, SunnyBay Public Library, Gym, Church, Greenway SunnyBay, Arcade and bowling |
+| **Open ground** | the lot itself: no interior, no loading | Beach, Park, Taxi rank, Petrol station, Stadium, Driving school |
+
+- **Room and Hall.** The door takes you in behind a half-second veil with the place's name; you stand just inside, facing the room. The room is built from data when you enter and thrown away when you leave. It is two draw calls (one mesh for the floor, walls and every prop; one for the sign and the labels) plus the people. Its walls only show from inside, so the camera always looks into the room. **Way back out:** the "Leave" button, the mat by the door (walk onto it or tap it), or any trip from the map; you come out at the same door. A save left inside a place loads at its door.
+- **Open ground.** The entrance opens the list where you stand. The place's props stand round the entrance and are merged into the city's own meshes (no extra draw calls).
+- **People.** Each place has one staff member and 2 to 4 patrons, standing where the data says, skins from `src/world/skinmix.js` (the Cast Rule). They are unnamed (a role only: "Barista", "Teller"), so docs/cast.md lists no new names. A tap on the staff opens the list. At an open-ground place they appear when you are within 70 m.
+- **Players.** Everyone in the same place sees each other; the mini card, Wave and chat work as they do on the street. The Race to the pier is offered only outdoors (not inside a Room or Hall).
+
+### Things to do
+
+`docs/world-designer/city.md` is the source: 30 places x 10 rows. `npm run city-data` (scripts/city-build.mjs) writes `data/campusville/city.json` from it, and `npm run check` fails if the two disagree. All 300 rows are in the file; a place is playable when it has a wave 1 lot.
+
+The list is a bottom sheet (at most 60% of the screen). Each row shows its name, minutes, cost (or what a gig pays) and the stat changes. A row that cannot be picked is grey, with the reason:
+
+| Reason shown | When |
+|---|---|
+| Closed now. Opens Social 13:00 | the place is shut in this slot (the door itself says so, before the list) |
+| Morning to Social only | the row has its own hours |
+| Needs R45. You have R20. | not enough money |
+| Needs a driver's licence / Needs a car of your own | the row's Needs column |
+| Do the yard lesson first / Do the road lesson first | the driving school's order |
+| One city gig a day. Back tomorrow. | a paid city gig was already worked this game day |
+| Already yours / You have your licence / You already own a car | bought once |
+| Needs 2 slots. 1 left today. / No time left today. Home to bed. | the day's time |
+
+- **Slots.** city.md's Morning, Lecture, Social, Free, Night are the game's phases: Morning = wake and transit, Free = leisure. Outside a place's Open line the door says when it opens; if that is later the same day there is a "Skip to Social 13:00" button (the same step as the campus's own Skip button).
+- **Time.** A quick row (15 to 30 minutes) is a third of a day slot: the first opens a slot, the next two ride in it (a part-used slot does not carry over the night). Any other row takes its minutes divided by that part of the day's `meta.slotMinutes`, rounded, at least 1 and at most 3 slots. The clock moves by the row's minutes, never past the end of that part of the day.
+- **Better with friends here.** Any other player in the same place counts (NPCs never do). Alone the Social is half, rounded down, and the result card says so.
+- **Gigs.** Pay goes into Money; one paid city gig per game day per player, across all places. Campus jobs keep their own rules.
+- **Show-offs.** The dearest row of each place. Bought once; saved in `run.showoffs`; the latest three show on the buyer's full player card.
+- **Licence and car.** Driving school: the yard lesson, then the road lesson, then the test, which sets `run.licence`. Dealership: the first car (R4,500) or the used runabout (R12,000) needs the licence and sets `run.car` (`{ id: 'first' | 'runabout' }`); the car is then parked outside the dealership (`run.carAt`). The petrol station's car rows need `run.car`.
+- **Result.** The existing result card, with the row's own result line.
+
+### How a place is dressed from data
+
+`data/campusville/city_places.json`, one entry per place:
+
+```
+"lifecup": {
+  "heading": "Lifecup cafe",          its heading in city.md
+  "template": "room",                 room | hall | open
+  "size": [14, 11],                   optional: metres, wide x deep (default from "templates")
+  "wall": "#f6efe2", "floor": "#b98a5e", "trim": "#c2562a",
+  "sign": "LIFECUP · THE GOOD MILK",  on the far wall
+  "staffRole": "Barista",
+  "staff": [0, -4.8, 0],              x, z, facing in degrees (0 = toward the door)
+  "people": [[-4, -1.3, 150], ...],   2 to 4 patrons
+  "props": [ { "k": "counter", "x": 0, "z": -3.7, "w": 7, "c": "#c2562a" }, ... ]
+}
+```
+
+Interiors: metres from the middle of the floor, x east, z south; the door is the middle of the south wall. Open ground: metres from the lot's entrance (`at` in sunnybay.json). A prop is `{ k, x, z }` plus `rot` (degrees), `n`/`dx`/`dz` (a row of them), `w`, `d`, `c` (colour) and a few of its own (`chairs`, `stools`, `text`, `glass`, `model`). The kinds are in `src/world/cityprops.js` (about 60: counter, desk, till, shelf, bookshelf, rack, round, longtable, pew, booth, pool, lane, treadmill, car, stall, cart, net...). Kit models are the ones already in the game (public/models/props, cars: CC0); nothing new is downloaded.
+
+### Opening a wave 2 place later (data only)
+
+1. `data/campusville/sunnybay.json`: move its entry from `wave2` to `lots` and give it what a lot has: `sign`, `icon`, `w`, `d`, `h`, `door`, `look`, `wall`, `roof` (or `at` and `area` for open ground).
+2. `data/campusville/city_places.json`: add `template` and the dressing to its entry (it already has its `heading`).
+3. Its ten rows are already in `city.json`. Run `npm run scores-sql` so its rows get score rules, and the owner re-runs the SCORE RULES block of `supabase/launch.sql`. Until then the place works and its rows simply do not score.
+
+### Rooms (players)
+
+A place has no Realtime room of its own: you stay in the **district's room** (`campus.town`, `campus.suburbs`...; cap 40, then `-2`). Inside a Room or Hall your position is sent in that interior's own spot far off the map (each place has its own), so players in the same place see each other and players on the street do not see you. The map's count for the district includes the players inside its places.
+
+### Where the code is
+
+| What | File |
+|---|---|
+| Rows, hours, needs, running a row, the money check | `src/city/places.js` (data: `city.json`, `city_places.json`) |
+| city.md -> city.json | `scripts/city-build.mjs` (`npm run city-data`) |
+| The inside of a Room or Hall | `src/world/cityplace.js` |
+| Props | `src/world/cityprops.js` |
+| Doors, the sheet, the result, in and out, staff and patrons | `src/world/city.js` (`openLot`, `openTodo`, `pickRow`, `goInside`, `leavePlace`, `seatFolk`) |
+| Counting, the card, skipping to a slot | `src/main.js` (`cityRow`, `cityWait`) |
+| Tests | `tests/e2e/city-places.spec.js` (P1-P7), `tests/e2e/city-places-quick.spec.js` (quick project), `tests/presence/places.spec.js` (two phones in Lifecup), `npm run check` |
+
+## Changing a lot
+
 - A lot that needs a second door or a bigger building: change its row in `sunnybay.json` (`x`, `z`, `w`, `d`, `h`, `door`, `look`, colours). Looks today: `block`, `shop`, `columns`, `mall`, `church`, `showroom`, `market`, `arcade`, and the open ones `beach`, `park`, `rank`, `petrol`, `stadium`, `yard` (those use `at` for the entrance and `area` for their ground).
 - Content rule (CLAUDE.md): no nightclubs, bars, taverns or alcohol; the church is the only place of worship; no gambling, betting or crime activities for launch. `npm run check` looks for the words.

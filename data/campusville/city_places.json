@@ -1,0 +1,392 @@
+{
+  "_about": "City job B (owner, 10 Nov): how each SunnyBay place is built and dressed. The Things to do rows are NOT here: they are in city.json, which scripts/city-build.mjs writes from docs/world-designer/city.md (npm run city-data). 'heading' is the place's heading in city.md. 'template': room (small interior), hall (big interior) or open (the lot itself, no interior). Interiors: 'size' [w, d] metres, the door in the middle of the south wall; props are in room metres (x east, z south, 0,0 the middle of the floor). Open ground: props and people are metres from the lot's entrance ('at' in sunnybay.json). 'grants' names the rows that give something (yard, road, licence, car:first, car:runabout). A wave 2 place has only its heading until it opens: see docs/world-designer/sunnybay.md, Places.",
+  "templates": {
+    "room": {
+      "size": [14, 11],
+      "cam": 11,
+      "top": 20
+    },
+    "hall": {
+      "size": [20, 15],
+      "cam": 15,
+      "top": 28
+    },
+    "open": {}
+  },
+  "places": {
+    "mall": {
+      "heading": "Mall",
+      "template": "hall",
+      "wall": "#f3ede0",
+      "floor": "#e4ded0",
+      "trim": "#c24a3a",
+      "sign": "FOOD COURT · SHOPS · SCREENS",
+      "staffRole": "Food court server",
+      "staff": [5, -6.5, 0],
+      "people": [[4.2, -3.4, 180], [-6.4, -3.4, 180], [-2.2, 1.6, 90], [7.2, 0.7, 200]],
+      "props": [
+        { "k": "counter", "x": 5, "z": -5.2, "w": 7, "c": "#c24a3a" },
+        { "k": "menu", "x": 5, "z": -7.3, "w": 6, "text": "KOTA · JUICE · SWEETS" },
+        { "k": "round", "x": 3, "z": -1.2, "n": 3, "dx": 2.7, "chairs": 2 },
+        { "k": "round", "x": 4.3, "z": 2.6, "n": 2, "dx": 3, "chairs": 2 },
+        { "k": "rack", "x": -7.8, "z": -5.2, "n": 3, "dx": 2.2, "c": "#2456a6" },
+        { "k": "shelf", "x": -9.2, "z": -0.4, "rot": 90, "w": 5, "c": "#f0c400" },
+        { "k": "bench", "x": -3.6, "z": 2.8 },
+        { "k": "plant", "x": -1.2, "z": -6.6 }
+      ]
+    },
+    "bank": {
+      "heading": "Bank",
+      "template": "room",
+      "wall": "#e7e2d6",
+      "floor": "#6b7f95",
+      "trim": "#2d4a6b",
+      "sign": "TELLERS · STUDENT ACCOUNTS",
+      "staffRole": "Teller",
+      "staff": [0, -4.7, 0],
+      "people": [[0, -2.4, 180], [4.6, 1.2, 180], [-4.4, 1.6, 90]],
+      "props": [
+        { "k": "counter", "x": 0, "z": -3.6, "w": 9, "c": "#2d4a6b", "glass": true },
+        { "k": "kiosk", "x": 4.6, "z": 0, "c": "#f0c400" },
+        { "k": "chair", "x": -5.6, "z": 0.8, "n": 3, "dz": 1.1, "rot": 90 },
+        { "k": "desk", "x": -4.6, "z": -1.9, "c": "#7b5a3c" },
+        { "k": "safe", "x": 6.3, "z": -2.6 },
+        { "k": "plant", "x": 6, "z": 4.4 },
+        { "k": "rope", "x": -1.4, "z": -1.2, "n": 2, "dx": 2.8 }
+      ]
+    },
+    "clinic": {
+      "heading": "Clinic",
+      "template": "room",
+      "wall": "#f7f9f8",
+      "floor": "#d9e8e4",
+      "trim": "#2f9e8f",
+      "sign": "RECEPTION · TAKE A NUMBER",
+      "staffRole": "Nurse",
+      "staff": [-3, -4.7, 0],
+      "people": [[2.4, 1.9, 0], [4.6, 1.9, 0], [-3, -2.4, 180]],
+      "props": [
+        { "k": "counter", "x": -3, "z": -3.6, "w": 5, "c": "#2f9e8f" },
+        { "k": "chair", "x": 1.3, "z": 3, "n": 4, "dx": 1.1, "rot": 180 },
+        { "k": "tank", "x": 6.2, "z": -0.6 },
+        { "k": "bed", "x": 4.4, "z": -4, "c": "#9fd6cc" },
+        { "k": "cabinet", "x": -6.3, "z": 0.4, "rot": 90, "c": "#ffffff" },
+        { "k": "plant", "x": -6, "z": 4.4 },
+        { "k": "kiosk", "x": 0.4, "z": -2.2, "c": "#2f9e8f" }
+      ]
+    },
+    "city_library": {
+      "heading": "City library",
+      "template": "hall",
+      "size": [18, 14],
+      "wall": "#e6d2ad",
+      "floor": "#b08a5e",
+      "trim": "#7b4a2a",
+      "sign": "SUNNYBAY PUBLIC LIBRARY · QUIET PLEASE",
+      "staffRole": "Librarian",
+      "staff": [3.8, -6, 0],
+      "people": [[0.9, -0.6, 90], [-5.8, -0.5, 180], [3.8, -3.6, 180], [7.6, 4.8, 200]],
+      "props": [
+        { "k": "counter", "x": 3.8, "z": -4.8, "w": 5, "c": "#7b4a2a" },
+        { "k": "bookshelf", "x": -7, "z": -3.7, "n": 3, "dx": 2.4, "rot": 90, "w": 4.4 },
+        { "k": "bookshelf", "x": -7, "z": 2.7, "n": 3, "dx": 2.4, "rot": 90, "w": 4.4 },
+        { "k": "longtable", "x": 4.6, "z": -0.6, "w": 4, "chairs": 4 },
+        { "k": "longtable", "x": 4.6, "z": 2.9, "w": 4, "chairs": 4 },
+        { "k": "cabinet", "x": 8.3, "z": -5, "rot": 270, "c": "#8a6a44" },
+        { "k": "chute", "x": -1.4, "z": 6.4 },
+        { "k": "plant", "x": 8, "z": 6 }
+      ]
+    },
+    "barber": {
+      "heading": "Barber and salon",
+      "template": "room",
+      "wall": "#f2c94c",
+      "floor": "#3a3340",
+      "trim": "#22143b",
+      "sign": "CLIPPERS THIS SIDE · DRYERS THAT SIDE",
+      "staffRole": "Stylist",
+      "staff": [-1.6, -3.1, 0],
+      "people": [[-4, -3.6, 0], [4.6, 2, 270], [2.6, -1.4, 200]],
+      "props": [
+        { "k": "station", "x": -4, "z": -4.6, "n": 3, "dx": 4 },
+        { "k": "counter", "x": -5, "z": 2.9, "w": 2.6, "c": "#22143b" },
+        { "k": "round", "x": 4.8, "z": 3.4, "chairs": 2, "c": "#e8497a" },
+        { "k": "basin", "x": -6.3, "z": -1.2, "rot": 90 },
+        { "k": "dryer", "x": 6.2, "z": -1.4, "n": 2, "dz": 1.6, "rot": 270 },
+        { "k": "plant", "x": 6, "z": 4.6 }
+      ]
+    },
+    "lifecup": {
+      "heading": "Lifecup cafe",
+      "template": "room",
+      "wall": "#f6efe2",
+      "floor": "#b98a5e",
+      "trim": "#c2562a",
+      "sign": "LIFECUP · THE GOOD MILK",
+      "staffRole": "Barista",
+      "staff": [0, -4.8, 0],
+      "people": [[-4, -1.3, 150], [3.6, -0.6, 200], [-0.6, -2.6, 180]],
+      "props": [
+        { "k": "counter", "x": 0, "z": -3.7, "w": 7, "c": "#c2562a" },
+        { "k": "coffee", "x": 2.2, "z": -3.7 },
+        { "k": "fridge", "x": 5.8, "z": -4.7 },
+        { "k": "menu", "x": 0, "z": -5.3, "w": 6, "text": "FLAT WHITE · MUFFINS · LOYALTY CARD" },
+        { "k": "round", "x": -4, "z": 0, "chairs": 2 },
+        { "k": "round", "x": 3.6, "z": 0.6, "chairs": 2 },
+        { "k": "longtable", "x": 3.4, "z": 3.6, "w": 4, "chairs": 4 },
+        { "k": "plant", "x": -6, "z": 4.4 }
+      ]
+    },
+    "lounge": {
+      "heading": "Lounge",
+      "template": "room",
+      "wall": "#3b2a6b",
+      "floor": "#2a2140",
+      "trim": "#f0c400",
+      "sign": "POOL · BOARD GAMES · KARAOKE · MILKSHAKES",
+      "staffRole": "Lounge host",
+      "staff": [4, 4.1, 180],
+      "people": [[-3, -1.9, 180], [-4.6, -2.6, 0], [0.4, 1.9, 0]],
+      "props": [
+        { "k": "pool", "x": -2.4, "z": 0 },
+        { "k": "stage", "x": -4.6, "z": -4.2, "w": 3.6 },
+        { "k": "speaker", "x": -6.3, "z": -3.4, "n": 2, "dx": 3.6 },
+        { "k": "booth", "x": 4.6, "z": -3.9, "c": "#e8497a" },
+        { "k": "counter", "x": 4, "z": 2.9, "w": 4.4, "c": "#f0c400", "stools": 3 },
+        { "k": "round", "x": 0, "z": 3.4, "chairs": 3, "c": "#7b3fe4" },
+        { "k": "lights", "x": 0, "z": -5.3, "w": 12 }
+      ]
+    },
+    "gym": {
+      "heading": "Gym",
+      "template": "hall",
+      "size": [18, 13],
+      "wall": "#3a3f48",
+      "floor": "#4a4f58",
+      "trim": "#e8552f",
+      "sign": "SUNNYBAY GYM · ONE MORE REP",
+      "staffRole": "Gym desk",
+      "staff": [4.6, 4.9, 180],
+      "people": [[-6.6, -3.1, 180], [5.9, -1.2, 90], [-4.4, 1.2, 270], [0.4, -3.6, 180]],
+      "props": [
+        { "k": "treadmill", "x": -6.6, "z": -4.9, "n": 3, "dx": 2 },
+        { "k": "bike", "x": 0.4, "z": -5.2, "n": 2, "dx": 1.8 },
+        { "k": "weights", "x": 6, "z": -5.9, "w": 4.4 },
+        { "k": "press", "x": 4.4, "z": -0.8, "n": 2, "dx": 3 },
+        { "k": "mat", "x": -6.4, "z": 1.2, "n": 3, "dx": 2, "c": "#e8552f" },
+        { "k": "counter", "x": 4.6, "z": 3.6, "w": 4, "c": "#e8552f" },
+        { "k": "bell", "x": -7.2, "z": 5.2 },
+        { "k": "fan", "x": -8.2, "z": -1.4 }
+      ]
+    },
+    "church": {
+      "heading": "Church",
+      "template": "hall",
+      "size": [14, 20],
+      "wall": "#f4f1ea",
+      "floor": "#a5714a",
+      "trim": "#8a4b32",
+      "sign": "DOORS OPEN · TEA AFTER",
+      "staffRole": "Hall steward",
+      "staff": [4.2, 8.6, 270],
+      "people": [[-3.3, 4.7, 180], [3.3, -0.1, 180], [-3.3, -2.5, 180], [0, -5.2, 180]],
+      "props": [
+        { "k": "pew", "x": -3.3, "z": -3.6, "n": 5, "dz": 2.4, "w": 4.2 },
+        { "k": "pew", "x": 3.3, "z": -3.6, "n": 5, "dz": 2.4, "w": 4.2 },
+        { "k": "lectern", "x": 1.6, "z": -6.6 },
+        { "k": "altar", "x": 0, "z": -8.2, "w": 3 },
+        { "k": "cross", "x": 0, "z": -9.8 },
+        { "k": "speaker", "x": -5.4, "z": -8.2 },
+        { "k": "urn", "x": 5.6, "z": 8.6 },
+        { "k": "rug", "x": 0, "z": -0.6, "w": 1.6, "d": 16, "c": "#8a2f3a" }
+      ]
+    },
+    "dealership": {
+      "heading": "Car dealership",
+      "template": "room",
+      "size": [18, 12],
+      "wall": "#eef2f5",
+      "floor": "#cfd6dc",
+      "trim": "#1e5bb8",
+      "sign": "SUNNYBAY CARS · FIRST CARS WELCOME",
+      "staffRole": "Salesperson",
+      "staff": [5.6, 4.7, 180],
+      "people": [[-5.6, 0.6, 330], [0.6, 0.8, 20], [-6.6, 2.8, 180]],
+      "props": [
+        { "k": "car", "x": -5.4, "z": -2.4, "rot": 25, "model": "hatchback-sports", "c": "#f4f1e6" },
+        { "k": "car", "x": 0, "z": -2.8, "rot": 0, "model": "sedan" },
+        { "k": "car", "x": 5.4, "z": -2.4, "rot": 335, "model": "suv" },
+        { "k": "desk", "x": 5.6, "z": 3.6, "c": "#1e5bb8" },
+        { "k": "table", "x": -6.8, "z": 4.2, "flask": true },
+        { "k": "bunting", "x": 0, "z": -5.6, "w": 16 },
+        { "k": "plant", "x": 8.2, "z": -5 }
+      ],
+      "grants": {
+        "Buy the first car": "car:first",
+        "Buy the used runabout": "car:runabout"
+      }
+    },
+    "greenway_city": {
+      "heading": "Greenway supermarket",
+      "template": "hall",
+      "wall": "#f6f7f3",
+      "floor": "#e2e8de",
+      "trim": "#2f8f5b",
+      "sign": "GREENWAY SUNNYBAY · FRESH EVERY DAY",
+      "staffRole": "Till worker",
+      "staff": [-3.6, 5.2, 180],
+      "people": [[-5.9, -1.6, 90], [6.8, -3.2, 180], [-3.6, 2.7, 0], [3.6, -1, 270]],
+      "props": [
+        { "k": "shelf", "x": -7.4, "z": -1.6, "n": 4, "dx": 3, "rot": 90, "w": 6.4, "c": "#2f8f5b" },
+        { "k": "till", "x": -6.6, "z": 4, "n": 3, "dx": 3 },
+        { "k": "counter", "x": 6.8, "z": -5.2, "w": 5.4, "c": "#2f8f5b" },
+        { "k": "menu", "x": 6.8, "z": -7.3, "w": 5, "text": "HOT DELI · BREAD FROM THE OVEN" },
+        { "k": "fridge", "x": 9.2, "z": -1.2, "n": 3, "dz": 1.3, "rot": 270 },
+        { "k": "breadrack", "x": 6.6, "z": 1.6 },
+        { "k": "trolley", "x": 4.4, "z": 6.4, "n": 3, "dx": 1.1 }
+      ]
+    },
+    "beach": {
+      "heading": "Beach",
+      "template": "open",
+      "staffRole": "Ice-cream vendor",
+      "staff": [7.2, -2.6, 270],
+      "people": [[11, 4.6, 90], [15, 2.4, 200], [19.4, 6.4, 320]],
+      "props": [
+        { "k": "cart", "x": 6, "z": -4.4 },
+        { "k": "net", "x": 17, "z": 5.2, "w": 7 },
+        { "k": "towel", "x": 10.4, "z": 5.6, "c": "#e8497a" },
+        { "k": "flagboard", "x": 7, "z": 6 },
+        { "k": "cabana", "x": 14.6, "z": -4.6 }
+      ]
+    },
+    "park": {
+      "heading": "Park",
+      "template": "open",
+      "staffRole": "Park keeper",
+      "staff": [2.6, -17, 270],
+      "people": [[-2.4, -10.6, 90], [2.4, -26, 270], [-2.6, -34, 60]],
+      "props": [
+        { "k": "tin", "x": 2.5, "z": -6 },
+        { "k": "towel", "x": -3.2, "z": -12, "c": "#d6452f", "w": 2.4 },
+        { "k": "watertable", "x": 2.7, "z": -18.4 },
+        { "k": "sprinkler", "x": -2.6, "z": -26, "n": 2, "dz": -7 },
+        { "k": "tripod", "x": -2.5, "z": -36 }
+      ]
+    },
+    "arcade": {
+      "heading": "Arcade and bowling",
+      "template": "hall",
+      "size": [20, 14],
+      "wall": "#3a2452",
+      "floor": "#241836",
+      "trim": "#f0c400",
+      "sign": "ARCADE & BOWLING · WINS PAY IN CHEERS",
+      "staffRole": "Arcade desk",
+      "staff": [3.6, 4.6, 180],
+      "people": [[-5.5, 5.6, 180], [7.9, -2.7, 90], [2.6, 1.2, 180], [6.2, 2.1, 150]],
+      "props": [
+        { "k": "lane", "x": -7.6, "z": -0.9, "n": 3, "dx": 2.1, "d": 11 },
+        { "k": "cabinet2", "x": 9.2, "z": -5, "n": 4, "dz": 1.5, "rot": 270 },
+        { "k": "dancemat", "x": 4.6, "z": -4.6 },
+        { "k": "airhockey", "x": 2.6, "z": -0.4 },
+        { "k": "counter", "x": 3.6, "z": 3.4, "w": 4.6, "c": "#e8497a" },
+        { "k": "round", "x": 7.6, "z": 3.6, "chairs": 2, "c": "#1d7fb8" },
+        { "k": "lights", "x": 0, "z": -6.8, "w": 16 }
+      ]
+    },
+    "taxi_rank": {
+      "heading": "Taxi rank",
+      "template": "open",
+      "staffRole": "Rank marshal",
+      "staff": [1.2, -8.6, 180],
+      "people": [[6.6, -7.6, 270], [-6.6, -6.8, 90], [4.4, -11.4, 0]],
+      "props": [
+        { "k": "stall", "x": 7.6, "z": -9.4, "text": "VETKOEK" },
+        { "k": "routeboard", "x": -7.6, "z": -8.6 },
+        { "k": "crate", "x": 9.8, "z": -7.4, "n": 2, "dx": 0.9 },
+        { "k": "drum", "x": -5, "z": -10.6 }
+      ]
+    },
+    "petrol": {
+      "heading": "Petrol station",
+      "template": "open",
+      "staffRole": "Pump attendant",
+      "staff": [3.4, 14.6, 0],
+      "people": [[21.6, 14.2, 270], [-9.6, 24, 90], [1.6, 35.8, 0]],
+      "props": [
+        { "k": "lowwall", "x": 23.4, "z": 17, "rot": 90, "w": 6 },
+        { "k": "airline", "x": -10.6, "z": 25.4 },
+        { "k": "warmer", "x": 2.4, "z": 37.4 },
+        { "k": "bucket", "x": -15.4, "z": 31, "n": 2, "dx": 0.8 }
+      ]
+    },
+    "stadium": {
+      "heading": "Stadium",
+      "template": "open",
+      "staffRole": "Stadium steward",
+      "staff": [-0.9, 3.4, 90],
+      "people": [[-0.9, -7.4, 0], [-1.2, 8.2, 180], [-5.6, -1.6, 90]],
+      "props": [
+        { "k": "stall", "x": -0.7, "z": -9.4, "rot": 90, "text": "BOEREWORS ROLLS" },
+        { "k": "booth", "x": -0.7, "z": 9.6, "rot": 90, "c": "#2456a6", "ticket": true },
+        { "k": "bin", "x": 0.3, "z": -6.2 },
+        { "k": "bench", "x": -0.9, "z": 13.4, "rot": 90 }
+      ]
+    },
+    "driving_school": {
+      "heading": "Driving school",
+      "template": "open",
+      "staffRole": "Driving instructor",
+      "staff": [-9.4, -24.6, 90],
+      "people": [[-13.4, -26.4, 0], [-7.2, -21.4, 200], [-16.6, -24.2, 90]],
+      "props": [
+        { "k": "fridge", "x": -6.6, "z": -28.4 },
+        { "k": "chair", "x": -14.6, "z": -28.2, "n": 3, "dx": 1.1 },
+        { "k": "desk", "x": -10.4, "z": -26.2, "c": "#f08a24" },
+        { "k": "routeboard", "x": -3.4, "z": -16, "rot": 90, "text": "K53" }
+      ],
+      "grants": {
+        "Take the yard lesson": "yard",
+        "Take the road lesson": "road",
+        "Take the licence test": "licence"
+      }
+    },
+    "studio": {
+      "heading": "Recording studio"
+    },
+    "radio": {
+      "heading": "Campus radio station"
+    },
+    "aquarium": {
+      "heading": "Aquarium"
+    },
+    "night_market": {
+      "heading": "Night market"
+    },
+    "pool": {
+      "heading": "Swimming pool"
+    },
+    "skate": {
+      "heading": "Skate park"
+    },
+    "tech": {
+      "heading": "Phone and tech shop"
+    },
+    "boutique": {
+      "heading": "Fashion boutique"
+    },
+    "trail": {
+      "heading": "Hiking trail"
+    },
+    "gallery": {
+      "heading": "Art gallery"
+    },
+    "hall": {
+      "heading": "Community hall"
+    },
+    "laundromat": {
+      "heading": "Laundromat"
+    }
+  }
+}

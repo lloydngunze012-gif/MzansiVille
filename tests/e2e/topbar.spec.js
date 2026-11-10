@@ -123,11 +123,11 @@ test('B4 the time pill opens the timeline, which closes itself after 4 s; the go
   await student(page, { money: 1500, energy: 86, hunger: 70, grades: 55, social: 64 })
   await expect(page.locator('.tb-timeline')).toHaveCount(0)
   await page.locator('.tb-time').tap()
+  const opened = Date.now() // (the 4 s runs from the tap: start the clock here, not after the screenshots)
   await expect(page.locator('.tb-timeline .g-phases li.now')).toBeVisible()
   await expect(page.locator('.tb-timeline')).toContainText('Social')
   await page.screenshot({ path: `${OUT}/bar-timeline.png`, clip: { x: 0, y: 0, width: W, height: 200 } })
   await page.screenshot({ path: `${OUT}/bar-timeline-full.png` })
-  const opened = Date.now()
   await expect(page.locator('.tb-timeline')).toHaveCount(0, { timeout: 8000 })
   const took = Date.now() - opened
   console.log(`timeline closed after ~${took} ms`)

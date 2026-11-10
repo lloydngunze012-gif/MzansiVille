@@ -34,6 +34,8 @@ export function cardOf(run, num = myIdentity().num) {
     year: run?.year || 1,
     days: run?.day || 1,
     badges,
+    // (City job B: what you bought to show off in SunnyBay, the latest three, newest first)
+    flex: (run?.showoffs || []).slice(-3).reverse().map((s) => String(s.name || '').slice(0, 60)),
     look: c.avatar || {},
     classOf: CLASS_OF,
   }
@@ -41,8 +43,8 @@ export function cardOf(run, num = myIdentity().num) {
 
 // The part of the card that rides along with presence (small: no look, sent anyway).
 export function compactCard(run) {
-  const { handle, bio, tags, year, days, badges, from, country } = cardOf(run)
-  return { handle, bio, tags, year, days, badges, from, country }
+  const { handle, bio, tags, year, days, badges, from, country, flex } = cardOf(run)
+  return { handle, bio, tags, year, days, badges, from, country, flex }
 }
 
 // ---------- Saving your card ----------
@@ -92,6 +94,7 @@ function fromPresence(id) {
   return {
     name: m.name, num: m.num, house: m.house, look: m.look,
     handle: c.handle || '', bio: c.bio || '', tags: c.tags || {}, year: c.year || 1, days: c.days || 1, badges: c.badges || [], from: String(c.from || '').slice(0, 30), country: COUNTRY_LIST.includes(c.country) ? c.country : '', classOf: CLASS_OF,
+    flex: Array.isArray(c.flex) ? c.flex.slice(0, 3).map((f) => String(f).slice(0, 60)) : [],
   }
 }
 

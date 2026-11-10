@@ -33,7 +33,11 @@ test('two players in Town centre see each other; a player on campus sees neither
   await expect.poll(async () => (await others(b.page)).length, { timeout: 30000 }).toBe(1)
   const seen = (await others(a.page))[0]
   expect(Math.hypot(seen.x - 3, seen.z - 194)).toBeLessThan(2.5)
-  await expect(a.page.locator('[data-online]').first()).toHaveText('2 in Town centre')
+  // (the count the menu's title shows: the compact top bar moved it out of the bar)
+  await expect.poll(async () => (await presence(a.page)).label, { timeout: 10000 }).toBe('2 in Town centre')
+  await a.page.locator('[data-act="gear"]').first().tap()
+  await expect(a.page.locator('.g-menu [data-online]')).toHaveText('2 in Town centre')
+  await a.page.locator('.g-menu [data-act="gear"]').tap()
   // the one on campus is in the campus room, alone
   expect((await presence(c.page)).room).toBe(ROOM)
   expect((await presence(c.page)).count).toBe(1)

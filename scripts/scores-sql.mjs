@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { buildDistrict } from '../src/engine/model.js'
 import { scoreRules } from '../src/engine/scores.js'
+import { cityActivities } from '../src/city/places.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dir = join(root, 'data', 'campusville')
@@ -28,7 +29,8 @@ export function load() {
     greenway: JSON.parse(read('greenway.json')),
   })
   const config = JSON.parse(read('leaderboard.json'))
-  return { district, config, rules: scoreRules(district.activities, config) }
+  // (City job B: the rows of the open SunnyBay places score by the same defaults)
+  return { district, config, rules: scoreRules(district.activities.concat(cityActivities()), config) }
 }
 
 export function block(rules, config) {

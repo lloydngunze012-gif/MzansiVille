@@ -1,5 +1,5 @@
 {
-  "_about": "Weekly leaderboard (owner, 9 Nov). Three boards. A score only comes from an activity with a daily limit (per player, per SAST day); Supabase checks the limit in the record_activity function, so a changed client cannot post more. Rules are built from activities.csv by src/engine/scores.js: the 'defaults' below pick the activities by what they do, 'pseudo' are the non-activity things you do (a chat, a new friend, a hangout), 'overrides' set one activity by id (board null = does not score). After a change run: npm run scores-sql  (rewrites the generated block in supabase/schema.sql; the owner re-runs that block in the Supabase SQL editor). npm run check fails if the block is stale.",
+  "_about": "Weekly leaderboard (owner, 9 Nov). Three boards. A score only comes from an activity with a daily limit (per player, per SAST day); Supabase checks the limit in the record_activity function, so a changed client cannot post more. Rules are built from activities.csv, and from the rows of the open SunnyBay places (city.json: City job B), by src/engine/scores.js: the 'defaults' below pick the activities by what they do, 'pseudo' are the non-activity things you do (a chat, a new friend, a hangout), 'overrides' set one activity by id (board null = does not score). After a change run: npm run scores-sql  (rewrites the generated block in supabase/schema.sql; the owner re-runs that block in the Supabase SQL editor). npm run check fails if the block is stale.",
   "timezone": "Africa/Johannesburg (SAST, UTC+2, no daylight saving)",
   "resetsOn": "Monday 00:00 SAST",
   "firstBadgeWeek": "2026-11-16",
@@ -13,8 +13,8 @@
     "sport": { "points": 10, "limit": 3 },
     "social": { "minSocial": 5, "points": 6, "limit": 3 }
   },
-  "sportPlaces": ["sports_centre"],
-  "sportIds": ["sports_gym", "quad_touch", "sport_.*"],
+  "sportPlaces": ["sports_centre", "gym"],
+  "sportIds": ["sports_gym", "quad_touch", "sport_.*", "stadium_walk_the_outside_track", "beach_play_volleyball", "beach_swim_to_the_near_buoy", "park_jog_the_path", "park_play_a_loose_game", "mall_lap_the_mall", "arcade_take_a_lane_with_your_people", "arcade_play_the_dance_mat_alone"],
   "pseudo": {
     "talk_chat": { "board": "social", "points": 2, "limit": 10, "name": "Chat with someone" },
     "player_say": { "board": "social", "points": 1, "limit": 10, "name": "Talk to a student" },
@@ -33,6 +33,8 @@
     "sport_watch": { "board": null },
     "sport_lineup": { "board": null },
     "lecture_back": { "board": null },
-    "lecture_skip": { "board": null }
+    "lecture_skip": { "board": null },
+    "gym_buy_a_banana_and_a_water": { "board": null },
+    "gym_work_the_gym_desk": { "board": null }
   }
 }

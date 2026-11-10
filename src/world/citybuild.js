@@ -11,6 +11,8 @@
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { BOUNDS, CITY, FENCE_R, HOMES, LOTS, PARTS, PLOT, RING_OUT, STOPS, WAVE2 } from '../city/plan.js'
+import { PLACES } from '../city/places.js'
+import { buildProps, kitRefs } from './cityprops.js'
 
 const CELL = 128
 const ROAD = '#3b3c40'
@@ -122,6 +124,9 @@ async function model(ref, recolour, key = '') {
   baked[id] = root ? bakeObject(root, recolour) : null
   return baked[id]
 }
+
+// (the interiors of the places bake their kit props the same way: src/world/cityplace.js)
+export const bakeModel = model
 
 // ---------- the sign atlas: every sign, board and billboard on one texture ----------
 function makeAtlas(size = 2048) {
@@ -450,7 +455,6 @@ export async function buildCity(opts = {}) {
   }
 
   // ---------- 2 + 3. the lots: a building, a sign and a door each ----------
-  const soonCell = atlas?.cell(256, 64, board('#f0c400', '#22143b', 'OPENING SOON'))
   const SIDE = { s: [0, 1, 0], n: [0, -1, Math.PI], e: [1, 0, Math.PI / 2], w: [-1, 0, -Math.PI / 2] }
   const lotSign = (lot, x, y, z, rot, w = 9) => {
     if (!atlas) return
@@ -458,10 +462,9 @@ export async function buildCity(opts = {}) {
     sign(cell, w, w / 4, x, y, z, rot)
   }
   const doorway = (lot, x, z, rot) => {
-    // a dark door with the "Opening soon" notice on it
+    // a dark door (City job B: the places are open, so no notice on it)
     const [sx, sz] = [Math.round(Math.sin(rot)), Math.round(Math.cos(rot))]
     box(sz ? 2.4 : 0.25, 2.7, sz ? 0.25 : 2.4, x, 1.35, z, '#2a2233')
-    if (soonCell) sign(soonCell, 2.2, 0.55, x + sx * 0.16, 1.7, z + sz * 0.16, rot, false)
     doors.push({ lot: lot.id, x: x + sx * 0.5, z: z + sz * 0.5 })
   }
   const windowsRow = (cx, cz, len, y, rot, n, hex = '#9cc8de') => {
@@ -574,7 +577,6 @@ export async function buildCity(opts = {}) {
       for (const t of [-5, 5]) { box(0.5, 5, 0.5, ax, 2.5, az + t, '#f6f2ea'); solid(ax, az + t, 0.7, 0.7) }
       box(0.5, 0.6, 10.8, ax, 5.2, az, lot.roof)
       lotSign(lot, ax, 4.1, az, Math.PI / 2, 8.4)
-      if (soonCell) sign(soonCell, 2.6, 0.65, ax, 2.9, az, Math.PI / 2)
       doors.push({ lot: lot.id, x: ax, z: az })
       box(2.6, 0.2, 2.6, 276, 3.2, az + 16, '#f6f2ea'); box(2.4, 1.2, 2.4, 276, 3.9, az + 16, '#d6452f'); box(2.9, 0.2, 2.9, 276, 4.6, az + 16, '#f6f2ea')
       for (const [dx, dz] of [[-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]]) box(0.16, 3.2, 0.16, 276 + dx, 1.6, az + 16 + dz, '#8a5a3a')
@@ -610,7 +612,6 @@ export async function buildCity(opts = {}) {
       for (const t of [-3, 3]) { box(0.5, 4, 0.5, gx + t, 2, gz - 2, '#f6f2ea'); solid(gx + t, gz - 2, 0.7, 0.7) }
       box(6.6, 0.5, 0.5, gx, 4.1, gz - 2, lot.roof)
       lotSign(lot, gx, 3.3, gz - 2, 0, 5.6)
-      if (soonCell) sign(soonCell, 2.4, 0.6, gx, 2.4, gz - 2, 0)
       doors.push({ lot: lot.id, x: gx, z: gz })
     },
     rank(lot) {
@@ -626,7 +627,6 @@ export async function buildCity(opts = {}) {
       const [gx, gz] = lot.at
       for (const t of [-4.6, 4.6]) box(0.3, 5, 0.3, gx + t, 2.5, gz - 3, '#2f3338')
       lotSign(lot, gx, 4.3, gz - 3, 0, 9)
-      if (soonCell) sign(soonCell, 2.6, 0.65, gx, 2.9, gz - 3, 0)
       doors.push({ lot: lot.id, x: gx, z: gz })
     },
     petrol(lot) {
@@ -647,7 +647,6 @@ export async function buildCity(opts = {}) {
       box(0.5, 7, 0.5, gx - 24, 3.5, gz + 1.5, '#f6f2ea'); solid(gx - 24, gz + 1.5, 0.7, 0.7)
       lotSign(lot, gx - 24, 6.4, gz + 1.5, Math.PI, 6)
       lotSign(lot, cx, 5.4, cz - 6.1, Math.PI, 12)
-      if (soonCell) sign(soonCell, 2.6, 0.65, cx, 3.6, cz - 4.3, Math.PI)
       doors.push({ lot: lot.id, x: gx, z: gz })
     },
     stadium(lot) {
@@ -678,7 +677,6 @@ export async function buildCity(opts = {}) {
       for (const t of [-5, 5]) { box(0.6, 5.5, 0.6, gx - 3, 2.75, gz + t, '#f6f2ea'); solid(gx - 3, gz + t, 0.8, 0.8) }
       box(0.6, 0.7, 10.6, gx - 3, 5.8, gz, lot.roof)
       lotSign(lot, gx - 3, 4.6, gz, Math.PI / 2, 8.6)
-      if (soonCell) sign(soonCell, 2.6, 0.65, gx - 3, 3.3, gz, Math.PI / 2)
       doors.push({ lot: lot.id, x: gx, z: gz })
     },
     yard(lot) {
@@ -700,7 +698,6 @@ export async function buildCity(opts = {}) {
       const [gx, gz] = lot.at
       for (const t of [-5, 5]) box(0.4, 5, 0.4, gx - 2, 2.5, gz + t, '#2f3338')
       lotSign(lot, gx - 2, 4.4, gz, Math.PI / 2, 8.6)
-      if (soonCell) sign(soonCell, 2.6, 0.65, gx - 2, 3.1, gz, Math.PI / 2)
       doors.push({ lot: lot.id, x: gx, z: gz })
     },
   }
@@ -710,6 +707,20 @@ export async function buildCity(opts = {}) {
     push(colour(g, '#f08a24'))
   }
   for (const lot of LOTS) (looks[lot.look] || looks.block)(lot)
+  // City job B: an open-ground place is the lot itself, dressed from data (data/campusville/city_places.json):
+  // its props stand round the entrance, merged into the city's cells like everything else (no draw calls added).
+  if (!far) {
+    for (const place of PLACES) {
+      if (place.template !== 'open' || !place.dress.props?.length) continue
+      const kit = {}
+      await Promise.all(kitRefs(place.dress.props).map(async (ref) => { kit[ref] = await model(ref) }))
+      const { door } = place.lot
+      const made = buildProps(place.dress.props.map((p) => ({ ...p, x: door.x + p.x, z: door.z + p.z })), kit)
+      for (const g of made.geos) { if (!g.index) g.setIndex(Array.from({ length: g.attributes.position.count }, (_, i) => i)); push(g) }
+      for (const r of made.solids) solids.push(r)
+      for (const l of made.labels) if (atlas) sign(atlas.cell(256, Math.max(32, Math.round((256 * l.h) / l.w)), board(l.bg, l.fg, l.text)), l.w, l.h, l.x, l.y, l.z, l.rot, false)
+    }
+  }
 
   // wave 2: a fenced, empty plot with a board
   for (const lot of WAVE2) {

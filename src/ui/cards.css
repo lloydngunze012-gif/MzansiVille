@@ -38,6 +38,8 @@
 :root .g-hud.tb .tb-pop,
 :root .tb-goal,
 :root .city-card,
+/* City job B: a place's Things to do sheet (docked to the bottom, at most 60% of the screen). */
+:root .city-todo,
 :root .cm-detail {
   left: 0; right: 0; margin-inline: auto; transform-origin: center;
   width: var(--card-w); max-width: 420px; box-sizing: border-box;

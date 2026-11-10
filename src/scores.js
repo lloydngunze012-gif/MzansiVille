@@ -17,10 +17,14 @@ const live = () => !navigator.webdriver || new URLSearchParams(location.search).
 
 let rulesCache = null
 let rulesFor = null
+// City job B: the rows of SunnyBay's places score too. They arrive when the city is first loaded (main.js hands
+// them over: src/city/places.js cityActivities), so the rows' data stays out of the first download.
+let extra = []
+export function addActivities(list) { extra = list || []; rulesCache = null }
 export function rules(district) {
   if (rulesCache && rulesFor === district.activities) return rulesCache
   rulesFor = district.activities
-  rulesCache = scoreRules(district.activities, LB)
+  rulesCache = scoreRules(extra.length ? district.activities.concat(extra) : district.activities, LB)
   return rulesCache
 }
 
@@ -28,7 +32,7 @@ export function rules(district) {
 // Returns { board, points } when it scored.
 export function note(district, run, id, place = '', category = '') {
   const r = rules(district)
-  const action = district.activities.find((a) => a.id === id)
+  const action = district.activities.find((a) => a.id === id) || extra.find((a) => a.id === id)
   const cat = category || r[id]?.board || (action ? categoryOf(action, r) : 'social')
   const hit = countActivity(run, { id, place: place || action?.placeId || '', cat }, r, LB)
   for (const fn of listeners) fn({ id, place, cat, hit })

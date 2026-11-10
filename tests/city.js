@@ -58,3 +58,41 @@ export const tapWorld = async (page, x, z, y = 0) => {
   await page.touchscreen.tap(p.x, p.y)
 }
 
+// ---------- City job B: the places ----------
+export const placeNow = (page) => page.evaluate(() => window.mzansiCity.place())
+export const rowsOf = (page, id) => page.evaluate((x) => window.mzansiCity.rows(x), id)
+// Stand a few metres outside a place's door, facing it, and tap the door like a player. Resolves when its
+// Things to do sheet is open (or, with { sheet: false }, as soon as the tap is made).
+export async function toDoor(page, id, { sheet = true } = {}) {
+  const at = await page.evaluate((x) => {
+    const lot = window.mzansiCity.plan.LOTS.find((l) => l.id === x)
+    const out = { s: [0, 1], n: [0, -1], e: [1, 0], w: [-1, 0] }[lot.side]
+    return { door: lot.door, from: [lot.door.x + out[0] * 4, lot.door.z + out[1] * 4], facing: Math.atan2(-out[0], -out[1]) }
+  }, id)
+  await page.evaluate(([x, z, f]) => window.mzansiCity.teleport(x, z, f), [...at.from, at.facing])
+  await page.waitForTimeout(700)
+  await tapWorld(page, at.door.x, at.door.z)
+  if (sheet) await expect(city(page)).toHaveAttribute('data-card', `todo:${id}`, { timeout: 60000 })
+  return at
+}
+// Pick a row of the open sheet by its id; resolves with the result card on screen.
+export async function pickRow(page, rowId) {
+  const row = page.locator(`.city-todo .ct-row[data-row="${rowId}"]`)
+  await row.scrollIntoViewIfNeeded()
+  await row.tap()
+  await expect(page.locator('.city-result')).toBeVisible({ timeout: 20000 })
+}
+// A finger on a greyed row (Playwright's own tap waits for an "enabled" element; a finger does not).
+export async function fingerTap(page, locator) {
+  await locator.scrollIntoViewIfNeeded()
+  const b = await locator.boundingBox()
+  await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2)
+}
+export const closeResult = async (page) => { await page.locator('.city-result [data-city="result-ok"]').tap(); await expect(page.locator('.city-result')).toBeHidden() }
+// Out of a Room or a Hall: close the list, then Leave.
+export async function leavePlace(page) {
+  if (await page.locator('.city-todo').isVisible().catch(() => false)) await page.locator('.city-todo [data-city="todo-close"]').tap()
+  await page.locator('.city-leave').tap()
+  await expect(city(page)).toHaveAttribute('data-place', '', { timeout: 20000 })
+}
+
