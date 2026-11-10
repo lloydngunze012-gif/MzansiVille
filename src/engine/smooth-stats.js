@@ -87,6 +87,8 @@ export function loadLine(rows) {
 
 /** What a report's place id is called on the page: the place's name (places.csv), "<House> common
     room", "Paths between places", "Activity rooms", "Day 1 home (<style>)". Anything else keeps its id. */
+// The districts of SunnyBay (the city scene reports each as its place: scene 'city', place the district's id).
+const CITY_PARTS = { campus: 'Campus district (outside the fence)', town: 'Town centre', suburbs: 'Suburbs', beachfront: 'Beachfront', township: 'Township', industrial: 'Industrial' }
 export function placeName(id, { places = [], houses = [] } = {}) {
   const key = String(id ?? '')
   if (key.startsWith('common:')) {
@@ -98,6 +100,8 @@ export function placeName(id, { places = [], houses = [] } = {}) {
   if (key === 'room') return 'Activity rooms'
   if (key === 'morning') return 'Morning scene'
   if (key === 'lecture') return 'Lecture scene'
+  if (key === 'caf') return 'The Caf'
+  if (CITY_PARTS[key]) return `SunnyBay: ${CITY_PARTS[key]}`
   return places.find((p) => p.id === key)?.name || key
 }
 

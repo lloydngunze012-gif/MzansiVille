@@ -84,7 +84,7 @@ export const MOMENTS = [
     when: (run) => ['leisure', 'night'].includes(run.phase),
     text: () => '"Block O tonight. Bring your own cup. Don’t tell the RA." 47 people are typing.',
     choices: [
-      C('\u{1F57A} Go all night', { social: 6, energy: -15 }, 'You dance to every amapiano track ever made.', { identity: { socialite: 2 }, set: { hangover: true } }),
+      C('\u{1F57A} Go all night', { social: 6, energy: -15 }, 'You dance to every amapiano track ever made.', { identity: { socialite: 2 }, set: { partyTired: true } }),
       C('⏱️ Go for one hour', { social: 3, energy: -5 }, 'You leave at the perfect moment. Legendary.'),
       C('\u{1F3E0} Stay in', { energy: 5 }, 'You hear the bass through two walls. Peaceful, in a way.'),
     ],

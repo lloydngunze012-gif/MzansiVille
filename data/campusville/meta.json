@@ -80,7 +80,7 @@
     "hungrySleepBelow": 20,
     "hungrySleepEnergy": 75,
     "hungrySleepMessage": "You slept hungry",
-    "hangoverEnergy": -20,
+    "partyTiredEnergy": -20,
     "realDays": 3,
     "refillHour": 6,
     "refillMessage": "Energy refills at 06:00",

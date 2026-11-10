@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId, houseOf } from '../engine/model.js'
+import { FENCE_R, canDrive, carAt } from '../city/plan.js'
 import { loop as soundLoop } from '../audio.js'
 import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
@@ -29,9 +30,9 @@ import { createDust } from './dust.js'
 import { createPlayerState } from './player-state.js'
 import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
-import { doorPoint, frontPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
+import { doorPoint, frontOf, frontPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
 import { reportError } from '../errors.js'
-import { createCampusMap } from './map.js'
+import { createCampusMap, createCityMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
@@ -56,6 +57,7 @@ let hemi
 let ambient
 let sunTarget
 let mapUi
+let cityMap = null
 let frame = 0
 let visible = false
 let builtId = ''
@@ -268,6 +270,15 @@ function ensureRenderer() {
   // (the map is an order: whatever you were doing, you leave it and go)
   mapUi.setHandler((x, z) => { interrupt(); walkTo(x, z, null, { arrive: true }) })
   mapUi.setGo((id) => { interrupt(); goTo(id) })
+  // The city view (City job A): the same map module, opened from the campus map's "SunnyBay" button.
+  cityMap = createCityMap(document.body, {
+    where: () => ({ x: player?.position.x || 0, z: player?.position.z || 0, facing: player?.rotation.y || 0, campus: true }),
+    run: () => currentRun,
+    go: (way, target) => window.dispatchEvent(new CustomEvent('mzansi-city-go', { detail: { way, target } })),
+    campusMap: () => mapUi.open(),
+  })
+  mapUi.setCity(() => cityMap.open())
+  window.addEventListener('mzansi-open-city-map', () => { if (visible) cityMap.open() })
 
   hemi = new THREE.HemisphereLight(0xfff6e4, 0x6ea85a, 0.9)
   ambient = new THREE.AmbientLight(0xfff1dc, 0.25)
@@ -505,7 +516,14 @@ function pick(point, x, y) {
   const ground = raycaster.intersectObjects([campus.ground], true)[0]
   const place = building && (!ground || building.distance <= ground.distance + 0.05) && hitOf([building], 'placeId')
   if (place) return { kind: 'building', id: place.userData.placeId }
-  return ground ? { kind: 'ground', x: ground.point.x, z: ground.point.z } : null
+  if (ground) return { kind: 'ground', x: ground.point.x, z: ground.point.z }
+  // Past the lawn only the road out of the Main Gate is somewhere to go (SunnyBay: City job A).
+  const ray = raycaster.ray
+  if (ray.direction.y >= 0) return null
+  const t = -ray.origin.y / ray.direction.y
+  const gx = ray.origin.x + ray.direction.x * t
+  const gz = ray.origin.z + ray.direction.z * t
+  return gz > 70 && Math.abs(gx) < 45 && Math.hypot(gx, gz) < 140 ? { kind: 'ground', x: gx, z: gz } : null
 }
 // A tap: yourself (stop), a person (talk), a vendor's stall (her queue), a building (go
 // in), or the ground (walk there).
@@ -526,7 +544,12 @@ function tapped(point, x, y) {
   else if (hit.kind === 'person') startTalk(hit.node)
   else if (hit.kind === 'vendor') { const a = everyone().find((p) => p.userData.personId === hit.id); if (a) startTalk(a) }
   else if (hit.kind === 'building') { interrupt(); approach(hit.id) }
-  else { smooth.tap(); mover.noteTap(); interrupt(); walkTo(hit.x, hit.z) }
+  else {
+    smooth.tap(); mover.noteTap(); interrupt()
+    // (a tap past the fence by the Main Gate: out of the gate, into SunnyBay)
+    if (!inHouse && hit.z > 70 && Math.abs(hit.x) < 45 && Math.hypot(hit.x, hit.z) > FENCE_R - 1.5) walkTo(GATE_OUT.x, GATE_OUT.z)
+    else walkTo(hit.x, hit.z)
+  }
 }
 
 // Walk to a spot: a route round the buildings on the grid, ending exactly where asked.
@@ -591,11 +614,15 @@ function peopleInTheWay(keep, find) {
 // Is a body standing here inside something? Solid: every prop's outline, as a plain
 // box; otherwise only the map's edge and the buildings (scripted walks onto seats).
 // (BODY, a body's half-width, is defined with hitsSolid below)
+// The campus fence is solid (City job A): the only way out is the Main Gate, and past it is SunnyBay.
+const GATE_HALF = 4.4
+const fenced = (x, z) => Math.hypot(x, z) > FENCE_R - 0.5 && !(Math.abs(x) < GATE_HALF && z > 0)
 function blockedAt(x, z, solid = true) {
   if (room && x > room.bounds.minX - 1 && x < room.bounds.maxX + 1 && z > room.bounds.minZ - 1 && z < room.bounds.maxZ + 1) {
     return solid && room.blocks.concat(roomSolids).some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)
   }
   if (!solid) return pointBlocked(campus.grid, x, z)
+  if (fenced(x, z) && !dropOff) return true
   if ((boxesNear(x, z) || []).some((b) => x > b.minX - BODY && x < b.maxX + BODY && z > b.minZ - BODY && z < b.maxZ + BODY)) return true
   const cell = cellOf(x, z)
   return !(cell.c >= 0 && cell.r >= 0 && cell.c < campus.grid.cols && cell.r < campus.grid.rows)
@@ -2733,6 +2760,7 @@ function frameBody(now) {
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
       dust?.update(dt)
+      cityCheck()
     }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) smooth.moved()
@@ -2899,6 +2927,8 @@ export function showCampus(district, run) {
     const shot = new URLSearchParams(location.search).get('shot') || ''
     if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
     if (shot === 'map') mapUi.open()
+    applyArrive()
+    syncCar()
     setVisible(true)
   }
   if (arriving) return arriving
@@ -2925,4 +2955,73 @@ export function showCampus(district, run) {
 
 export function isWorldVisible() {
   return visible
+}
+
+// ---------- SunnyBay (City job A) ----------
+// Out of the Main Gate: walk to the gap in the fence; a few steps past it the city takes over (main.js).
+const GATE_OUT = { x: 0, z: FENCE_R + 2.6 }
+export function walkOut() {
+  if (!visible || !player) return
+  interrupt()
+  if (inHouse) leaveHouse()
+  walkTo(GATE_OUT.x, GATE_OUT.z)
+}
+function cityCheck() {
+  if (!player || dropOff || acting || inHouse || room) return
+  const p = player.position
+  if (p.z > FENCE_R + 1.4 && Math.abs(p.x) < GATE_HALF + 0.6) {
+    mover.stop()
+    // (stand back inside the gate: this is where you are if the city cannot start)
+    p.set(0, 0, FENCE_R - 3.5)
+    player.userData.lastPos?.set(p.x, 0, p.z)
+    window.dispatchEvent(new CustomEvent('mzansi-enter-city'))
+  }
+}
+// Back from the city: just inside the gate facing the campus, or at your house door when you drove home.
+let pendingArrive = null
+export function arriveFromCity(kind = 'gate') { pendingArrive = kind }
+function applyArrive() {
+  const kind = pendingArrive
+  pendingArrive = null
+  if (!kind || !player || !campus) return
+  mover.stop()
+  if (inHouse) leaveHouse()
+  if (kind === 'res') {
+    respawnAt(campus.layout.buildings.find((b) => b.id === homePlaceId(currentDistrict, currentRun?.character?.residence)) || nearestPlace())
+  } else {
+    player.position.set(0, 0, FENCE_R - 4)
+    player.userData.lastPos?.set(0, 0, FENCE_R - 4)
+    player.rotation.y = Math.PI
+    rig.turnBehind(Math.PI)
+  }
+  player.userData.pose = 'stand'
+}
+// Your car, parked outside your house (a save with run.licence and run.car, the car not left in the city).
+let myCar = null
+function syncCar() {
+  const want = canDrive(currentRun) && carAt(currentRun) === 'res' && campus
+  if (!want) { if (myCar) myCar.visible = false; host.dataset.car = ''; return }
+  const home = campus.layout.buildings.find((b) => b.id === homePlaceId(currentDistrict, currentRun?.character?.residence))
+  if (!home) return
+  // beside the door, clear of the path to it: a few metres along the front wall
+  const door = frontPoint(home, 3.2)
+  const f = frontOf(home.facing || 0)
+  const side = { x: f.z, z: -f.x }
+  let spot = null
+  for (const d of [6.5, -6.5, 9, -9]) {
+    const x = door.x + side.x * d
+    const z = door.z + side.z * d
+    if (!pointBlocked(campus.grid, x, z) && !pointBlocked(campus.grid, x + side.x * 1.6, z + side.z * 1.6) && Math.hypot(x, z) < FENCE_R - 4) { spot = { x, z }; break }
+  }
+  spot ||= { x: door.x + side.x * 6.5, z: door.z + side.z * 6.5 }
+  if (!myCar) {
+    myCar = new THREE.Group()
+    myCar.name = 'my-car'
+    loadModel('/models/cars/hatchback-sports.glb').then((src) => { const m = src.clone(true); m.scale.setScalar(1.6); myCar.add(m) }).catch(() => {})
+  }
+  if (myCar.parent !== scene) scene.add(myCar)
+  myCar.position.set(spot.x, 0, spot.z)
+  myCar.rotation.y = Math.atan2(side.x, side.z)
+  myCar.visible = true
+  host.dataset.car = `${spot.x.toFixed(1)},${spot.z.toFixed(1)}`
 }

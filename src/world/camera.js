@@ -136,6 +136,8 @@ export function createCameraRig() {
     },
     // A scene's own starting distance for a mode (the day-1 home is smaller than campus).
     setDistance(mode, d) { if (rig.distance[mode] !== undefined) rig.distance[mode] = d },
+    // A scene's own starting tilt in Sims view, within what a drag allows (45 to 60 degrees; the city looks further down the street).
+    setPitch(deg) { rig.pitch = Math.min(60, Math.max(45, deg)) * Math.PI / 180 },
     zoom(delta) {
       if (rig.mode === 'top') rig.distance.top = Math.min(110, Math.max(28, rig.distance.top + delta * 1.4))
       else if (rig.mode === 'eye') rig.distance.eye = Math.min(5.2, Math.max(1.8, rig.distance.eye + delta * 0.15))

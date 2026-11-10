@@ -1,10 +1,11 @@
 // What is around the campus, so it never floats in blue: a big ground plane, a ring
 // road, a palisade fence with a gap at the main gate, a parking lot, a taxi rank
-// with minibus taxis, and the edge of town (houses and shops with signs).
+// with minibus taxis, and SunnyBay past the ring road (the city of src/world/citybuild.js, seen from afar).
 // Cars and town buildings are Kenney Car Kit and City Kits (CC0).
 import * as THREE from 'three'
 import { signMesh } from './text.js'
 import { loadModel } from './models.js'
+import { buildCity } from './citybuild.js'
 
 const FENCE_R = 103
 const ROAD_IN = 106
@@ -50,7 +51,7 @@ export function addSurroundings(parent) {
   // Ground to the horizon, darker verge outside the fence.
   const ground = new THREE.Mesh(new THREE.CircleGeometry(460, 48), mat(0x5f9446))
   ground.rotation.x = -Math.PI / 2
-  ground.position.y = -0.08
+  ground.position.y = -0.6 // (under SunnyBay's own ground, below)
   ground.receiveShadow = true
   group.add(ground)
 
@@ -174,29 +175,30 @@ export function addSurroundings(parent) {
   lotPost.position.set(lot.x, 1.1, lot.z + lot.d / 2 + 0.25)
   group.add(lotPost)
 
-  // Taxi rank outside the gate: a shelter, minibus taxis with slogan stickers, a sign.
-  const rank = { x: 0, z: 121 }
-  const pave = new THREE.Mesh(new THREE.BoxGeometry(26, 0.05, 10), mat(0x8c8a84))
+  // The Campus gate taxi stop outside the gate, beside the road into town (SunnyBay's stop "gate",
+  // data/campusville/sunnybay.json): a shelter, minibus taxis with slogan stickers, a sign.
+  const rank = { x: -19, z: 118 }
+  const pave = new THREE.Mesh(new THREE.BoxGeometry(22, 0.05, 10), mat(0x8c8a84))
   pave.position.set(rank.x, -0.005, rank.z)
   pave.material.polygonOffset = true
   pave.material.polygonOffsetFactor = pave.material.polygonOffsetUnits = -2
   group.add(pave)
   const roofMat = mat(0xc62828)
-  const shelterRoof = new THREE.Mesh(new THREE.BoxGeometry(18, 0.2, 2.6), roofMat)
+  const shelterRoof = new THREE.Mesh(new THREE.BoxGeometry(14, 0.2, 2.6), roofMat)
   shelterRoof.position.set(rank.x, 3, rank.z + 4)
   shelterRoof.castShadow = true
   group.add(shelterRoof)
-  for (const x of [-8.5, -3, 3, 8.5]) {
+  for (const x of [-6.5, -2, 2, 6.5]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, 3, 0.16), steel)
     post.position.set(rank.x + x, 1.5, rank.z + 4.9)
     group.add(post)
   }
-  const rankSign = textPlane('TAXI RANK · TOWN · PINETOWN · DURBAN', { w: 9, h: 0.7, bg: '#f0c400', fg: '#22143b' })
+  const rankSign = textPlane('TAXI · TOWN · BEACHFRONT · SUBURBS', { w: 9, h: 0.7, bg: '#f0c400', fg: '#22143b' })
   rankSign.position.set(rank.x, 3.55, rank.z + 2.7)
   group.add(rankSign)
-  const slogans = ['MAMA’S PRAYER', 'EISH EXPRESS', 'SHARP SHARP', 'NO MONEY NO HONEY']
+  const slogans = ['MAMA’S PRAYER', 'EISH EXPRESS', 'SHARP SHARP']
   slogans.forEach((text, i) => {
-    const x = rank.x - 8 + i * 5.3
+    const x = rank.x - 6 + i * 5.3
     // Nose to the shelter, so the back window sticker faces campus.
     place('/models/cars/van.glb', x, rank.z - 0.5, { s: 1.75 })
     const sticker = textPlane(text, { w: 2, h: 0.32, bg: '#ffffff', fg: '#c62828', font: 44 })
@@ -205,41 +207,19 @@ export function addSurroundings(parent) {
     group.add(sticker)
   })
 
-  // The edge of town: houses and shops past the road, a few shop signs facing campus.
-  const shops = [
-    ['SPAZA · AIRTIME · BREAD', '#1f7a3a'],
-    ['TAVERN · ICE COLD', '#7a0e0e'],
-    ['HAIR & BEAUTY', '#7b3fe4'],
-    ['KOTA R25 · CHIPS', '#c45c22'],
-    ['PRINT & COPY', '#1e5bb8'],
-  ]
-  const houses = ['building-type-a', 'building-type-g', 'building-type-k', 'building-type-c', 'building-type-r']
-  const blocks = ['low-detail-building-a', 'low-detail-building-b', 'low-detail-building-wide-a', 'low-detail-building-c', 'low-detail-building-wide-b', 'low-detail-building-d']
-  let shop = 0
-  for (let i = 0; i < 46; i++) {
-    const a = (i / 46) * Math.PI * 2 + rand() * 0.05
-    if (Math.abs(a - Math.PI / 2) < 0.16) continue // keep the taxi rank clear
-    const r = 128 + rand() * 30
-    const x = Math.cos(a) * r
-    const z = Math.sin(a) * r
-    const rot = Math.atan2(-x, -z)
-    const near = r < 140 && shop < shops.length && i % 4 === 1
-    if (near || rand() < 0.4) {
-      place(`/models/city/${blocks[i % blocks.length]}.glb`, x, z, { rot, s: 7 + rand() * 3 })
-      if (near) {
-        const [text, bg] = shops[shop++]
-        const sign = textPlane(text, { w: 6, h: 0.9, bg })
-        sign.position.set(x - Math.sin(rot) * -4.2, 3, z - Math.cos(rot) * -4.2)
-        sign.rotation.y = rot
-        group.add(sign)
-      }
-    } else {
-      place(`/models/suburb/${houses[i % houses.length]}.glb`, x, z, { rot, s: 6 })
-    }
-    if (rand() < 0.6) place('/models/props/tree_default.glb', x + (rand() - 0.5) * 10, z + (rand() - 0.5) * 10, { s: 4 + rand() * 2 })
-  }
+  // Past the ring road: SunnyBay (City job A). The same city the city scene shows (src/world/citybuild.js, far: houses
+  // as plain blocks, no cars, signs or lamps), so what you see through the fence is where the gate leads. It replaces
+  // the old ring of houses and shops that stood for "the edge of town".
+  let shell = null
+  let night = 0
+  buildCity({ far: true }).then((city) => {
+    shell = city
+    city.group.position.y = -0.07 // (its ground under the campus's own ring road and gate road)
+    group.add(city.group)
+    city.applyNight(night)
+  }).catch((error) => console.warn('sunnybay: the far view did not build', error))
 
   return {
-    applyNight(n) { for (const material of glows) material.emissiveIntensity = n * 2.2 },
+    applyNight(n) { night = n; for (const material of glows) material.emissiveIntensity = n * 2.2; shell?.applyNight(n) },
   }
 }

@@ -22,6 +22,8 @@ import { categoryOf, countActivity, limitLeft, resetIn, resetText, sastDay, sast
 import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { byDevice, byPlace, loadLine, median, p90, placeName, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
+import { CITY, LOTS, PARTS, STOPS, WAVE2, canDrive, carAt, inCampus, offLimits, partAt, payDrive, payTaxi, taxiFare, waysTo } from '../src/city/plan.js'
+import { adsFor } from '../src/city/billboards.js'
 import {
   actionState,
   actionsAt,
@@ -256,7 +258,7 @@ check('the week: day themes, and the Friday test mark comes from the choices you
   const lazy = createRun(district, character)
   lazy.day = 5
   lazy.arcs = { lecturer: 'clash', noise: 'avoided' }
-  lazy.hangover = true
+  lazy.partyTired = true
   const worked = createRun(district, character)
   worked.day = 5
   worked.weekStudied = 3
@@ -1081,6 +1083,95 @@ check('quick start: four women and four men, skins deep, fair, brown, amber each
     if (s.avatar.gender === 'male') assert.ok(['hoodie', 'shirt', 'jacket', 'organt'].includes(s.avatar.outfit), `${s.id}: men have no dress`)
     assert.ok(['crop', 'curls', 'fade', 'braids'].includes(s.avatar.hair), s.id)
   }
+})
+
+// ---------- SunnyBay (City job A): the plan, the travel rules, billboards, the content rule ----------
+check('SunnyBay: six districts, 18 place lots and 12 wave 2 plots, each where it belongs; no name clashes with a campus place', () => {
+  assert.deepEqual(PARTS.map((p) => p.id), ['campus', 'town', 'suburbs', 'beachfront', 'township', 'industrial'])
+  const by = (part) => LOTS.filter((l) => l.part === part).map((l) => l.name)
+  assert.deepEqual(by('town'), ['Mall', 'Bank', 'Clinic', 'SunnyBay Public Library', 'Barber and salon', 'Lifecup cafe', 'Lounge'])
+  assert.deepEqual(by('suburbs'), ['Gym', 'Church', 'Car dealership', 'Greenway SunnyBay'])
+  assert.deepEqual(by('beachfront'), ['Beach', 'Park', 'Arcade and bowling'])
+  assert.deepEqual(by('industrial'), ['Taxi rank', 'Petrol station', 'Stadium', 'Driving school'])
+  assert.equal(LOTS.length, 18)
+  assert.equal(WAVE2.length, 12)
+  const campusNames = new Set(district.places.map((p) => p.name.toLowerCase()))
+  for (const lot of [...LOTS, ...WAVE2]) {
+    assert.ok(!campusNames.has(lot.name.toLowerCase()), `${lot.name} is also a campus place`)
+    assert.equal(partAt(lot.door.x, lot.door.z).id, lot.part, `the door of ${lot.name} is in ${lot.part}`)
+    assert.ok(!offLimits(lot.door.x, lot.door.z, 0.5), `the door of ${lot.name} is somewhere you can stand`)
+  }
+  assert.equal(new Set([...LOTS, ...WAVE2].map((l) => l.id)).size, 30)
+  // a taxi stop at the campus gate, the taxi rank, and one stop in every other district
+  assert.deepEqual(STOPS.map((s) => s.part).sort(), ['beachfront', 'campus', 'industrial', 'suburbs', 'town', 'township'])
+  assert.equal(STOPS.find((s) => s.part === 'industrial').id, 'rank')
+  for (const s of STOPS) assert.ok(!offLimits(s.x, s.z, 0.5) && partAt(s.x, s.z).id === s.part, `stop ${s.id}`)
+  // the campus fence is closed; the gate's corridor is the only way through it
+  assert.ok(inCampus(50, 50) && inCampus(0, -102) && !inCampus(0, 100) && !inCampus(0, 110))
+  // "next to" goes both ways
+  for (const p of PARTS) for (const n of p.next) assert.ok(PARTS.find((q) => q.id === n).next.includes(p.id), `${p.id} next to ${n}`)
+})
+
+check('SunnyBay travel: a taxi is R15 next door and R25 across the city, never when you cannot pay; a car needs a licence and a car, R8', () => {
+  assert.equal(taxiFare('campus', 'town'), 15)
+  assert.equal(taxiFare('town', 'industrial'), 15)
+  assert.equal(taxiFare('town', 'suburbs'), 25)
+  assert.equal(taxiFare('beachfront', 'township'), 25)
+  for (const a of PARTS) for (const b of PARTS) assert.ok([15, 25].includes(taxiFare(a.id, b.id)), 'a taxi trip is R15 to R25 (city.md)')
+  const poor = { stats: { money: 5 } }
+  const no = payTaxi(poor, 'campus', 'town')
+  assert.deepEqual([no.ok, no.fare, no.short, poor.stats.money], [false, 15, 10, 5])
+  const rich = { stats: { money: 100 } }
+  const yes = payTaxi(rich, 'campus', 'industrial')
+  assert.deepEqual([yes.ok, yes.fare, yes.minutes, rich.stats.money], [true, 25, 25, 75])
+  // the car: both a licence and a car, or nothing
+  assert.equal(canDrive({ licence: true }), false)
+  assert.equal(canDrive({ car: { id: 'first' } }), false)
+  assert.equal(payDrive({ stats: { money: 100 }, car: { id: 'first' } }, 'beach').ok, false)
+  const driver = { stats: { money: 100 }, licence: true, car: { id: 'first' } }
+  assert.equal(carAt(driver), 'res')
+  assert.deepEqual([payDrive(driver, 'beach').ok, driver.stats.money, carAt(driver)], [true, 92, 'beach'])
+  assert.equal(payDrive({ stats: { money: 3 }, licence: true, car: {} }, 'beach').why, 'short')
+  // the map's ways there: walking is always offered and free; from campus the taxi leaves from the gate stop
+  const beach = LOTS.find((l) => l.id === 'beach')
+  const ways = waysTo(poor, { x: 0, z: 0, campus: true }, { x: beach.door.x, z: beach.door.z, part: beach.part })
+  assert.ok(ways.walk.metres > 200 && ways.walk.minutes >= 1)
+  assert.deepEqual([ways.taxi.stop.id, ways.taxi.fare, ways.taxi.short, ways.car], ['gate', 15, 10, null])
+  const drive = waysTo(driver, { x: 0, z: 0, campus: true }, { x: 0, z: 200, part: 'town' })
+  assert.equal(drive.car.here, false) // (the car was left at the Beach)
+  assert.equal(CITY.travel.car.petrol, 8)
+})
+
+check('SunnyBay billboards: 8 to 12 boards, only Woza, Lifecup and Greenway as brands, a house ad on every board with no ad', () => {
+  const ads = adsFor(district.houses, new Date('2026-11-13T10:00:00Z'))
+  assert.ok(ads.length >= 8 && ads.length <= 12)
+  const brands = new Set(ads.filter((a) => !a.house).map((a) => a.brand))
+  assert.deepEqual([...brands].sort(), ['Greenway', 'Lifecup', 'Woza'])
+  assert.ok(ads.some((a) => a.house) && ads.filter((a) => a.house).every((a) => district.houses.some((h) => h.name === a.brand)), 'house ads are the seven houses')
+  assert.ok(adsFor(district.houses, new Date('2031-01-01T10:00:00Z')).every((a) => a.house), 'after the end date every board is a house ad')
+  assert.ok(adsFor(district.houses, new Date('2026-11-01T10:00:00Z')).every((a) => a.house), 'before the start date too')
+})
+
+// CONTENT RULE (owner, 9 Nov; CLAUDE.md): no nightclubs, bars, taverns or alcohol anywhere; the only place of worship is
+// the church; for launch, no gambling, betting or crime activities. This looks for the words in the game's own text.
+check('content rule: no alcohol, tavern, nightclub, casino, betting or lotto words in src/ or data/', () => {
+  const banned = /\b(alcohol\w*|beers?|wines?|taverns?|shebeens?|night ?clubs?|clubbing|pubs?|drunk\w*|hangovers?|booze|liquor|ciders?|whisk(e)?y|vodka|brandy|champagne|cocktails?|casinos?|lotto|lottery|betting|gambl\w*|jackpot|mosques?|temples?|shrines?)\b/i
+  const walk = (d) => readdirSync(join(root, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]))
+  const hits = []
+  for (const f of [...walk('src'), ...walk('data')]) {
+    if (!/\.(js|json|csv|css|html)$/.test(f)) continue
+    readFileSync(join(root, f), 'utf8').split('\n').forEach((line, i) => { const m = line.match(banned); if (m) hits.push(`${f}:${i + 1} "${m[0]}"`) })
+  }
+  assert.deepEqual(hits, [])
+  // the city has one place of worship, the church, and no lot that sells drink or takes bets
+  assert.deepEqual(LOTS.filter((l) => /church|chapel|worship/i.test(l.name)).map((l) => l.id), ['church'])
+  assert.ok(![...LOTS, ...WAVE2].some((l) => /\b(bar|tavern|club|casino|pub|bottle)\b/i.test(l.name)))
+})
+
+check('SunnyBay street people take their skins from skinmix.js (CAST RULE)', () => {
+  const src = readFileSync(join(root, 'src/world/city.js'), 'utf8')
+  assert.ok(/skin: skinFor\(i\)/.test(src) && !/skin: \[|SKINS\s*=/.test(src))
+  assert.ok(new Set(Array.from({ length: 8 }, (_, i) => skinFor(i))).size >= 4)
 })
 
 // LAST, on purpose: the wording is Cursor's (data/campusville/meta.json "smoothness"). This stops the

@@ -64,7 +64,9 @@ import { MENUS, itemOf } from './menus.js'
 import { LECTURERS } from './venues.js'
 import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
 import { clearErrors, installErrorReporting, readErrors } from './errors.js'
-import { hidePlayer, joinPresence, onPoke, sendPoke } from './presence.js'
+import { hidePlayer, joinPresence, onPoke, sendPoke, setArea } from './presence.js'
+import { payDrive } from './city/plan.js'
+import { adsFor } from './city/billboards.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
@@ -570,9 +572,94 @@ function exitCaf() {
   paint()
 }
 
+// SunnyBay, the city round the campus (City job A; world/city.js): its own scene, joined to the campus at the Main
+// Gate by the curtain. You get there by walking out of the gate (scene.js sends mzansi-enter-city), from the map
+// (mzansi-city-go: walk or taxi = walk out of the gate first, then carry on in the city; drive = straight there),
+// or by loading a save that was left in the city (run.cityAt). Back: walk in through the gate, or drive home.
+let cityLive = false
+let cityPromise = null
+let cityIntent = null // { way, target, at }: what the campus map asked for, picked up once you are out of the gate
+async function enterCity(spawn = { kind: 'gate' }, intent = null) {
+  if (cityLive || cafLive || !save.run || !hasGL()) return
+  cityLive = true
+  document.body.dataset.city = '1'
+  soundLoop('crowd', false)
+  try {
+    await curtain.cover('Into SunnyBay…')
+    worldPromise?.then((mod) => mod.setVisible(false))
+    cityPromise ||= import('./world/city.js')
+    const mod = await cityPromise
+    const district = districtNow()
+    await mod.startCity({ run: save.run, district, ads: adsFor(district.houses || []), spawn, intent, onExit: exitCity, onPay: cityPaid, onSave: citySaved })
+  } catch (error) {
+    console.error(error)
+    exitCity('gate')
+  }
+}
+function exitCity(kind = 'gate') {
+  if (!cityLive) return
+  cityLive = false
+  cityPromise?.then((mod) => mod.stopCity())
+  curtain.cover('Back to campus…', { instant: true }) // (the campus lifts it)
+  delete document.body.dataset.city
+  setArea('campus')
+  if (save.run) {
+    delete save.run.cityAt
+    save.run.at = kind === 'res' ? homePlaceId(districtNow(), save.run.character?.residence) : 'gate'
+    persist()
+  }
+  // (the campus puts you just inside the gate, or at your house door when you drove home)
+  if (hasGL()) (worldPromise ||= import('./world/scene.js')).then((mod) => mod.arriveFromCity(kind)).catch(() => {})
+  paint()
+}
+// A taxi or the car was paid for: the clock moves on for a taxi (never past the end of the slot), the top bar shows the money.
+function cityPaid({ minutes = 0 } = {}) {
+  const run = save.run
+  if (!run) return
+  if (minutes && run.mode === 'play') {
+    const phases = districtNow().meta.phases
+    const next = phases[phases.findIndex((p) => p.id === run.phase) + 1]
+    const limit = next ? toMinutes(next.start) - 1 : run.minutes + 60
+    run.minutes = Math.max(run.minutes, Math.min(limit, run.minutes + minutes))
+  }
+  persist()
+  paint()
+}
+function citySaved(at) {
+  if (!save.run || !cityLive) return
+  save.run.cityAt = at
+  persist()
+}
+window.addEventListener('mzansi-enter-city', () => {
+  const intent = cityIntent && Date.now() - cityIntent.at < 180000 ? { way: cityIntent.way, target: cityIntent.target } : null
+  cityIntent = null
+  enterCity({ kind: 'gate' }, intent)
+})
+// From the campus map's SunnyBay view: a way to a place in the city.
+window.addEventListener('mzansi-city-go', (event) => {
+  const { way, target } = event.detail || {}
+  if (!save.run || cityLive || !target) return
+  if (way === 'drive') {
+    const res = payDrive(save.run, target)
+    if (!res.ok) { toast(res.why === 'short' ? `Petrol is R${res.fare}. You have R${res.money}.` : 'You need a licence and a car to drive.'); return }
+    persist()
+    enterCity({ kind: 'lot', id: target, drove: true })
+    return
+  }
+  cityIntent = { way, target, at: Date.now() }
+  if (viewFlags.world) worldPromise?.then((mod) => mod.walkOut())
+  else enterCity({ kind: 'gate' }, { way, target })
+})
+
 function syncWorld(viewState) {
-  if (cafLive) return
+  if (cafLive || cityLive) return
   const morningOn = syncMorning(viewState) || syncLecture(viewState)
+  // (a save that was left in the city goes straight back there, not to the campus first)
+  if (!morningOn && viewState?.run?.cityAt && viewState.run === save.run && WORLD_SCREENS.has(viewState.screen) && viewState.screen === 'play' && hasGL() && !new URLSearchParams(location.search).get('shot')) {
+    const at = viewState.run.cityAt
+    enterCity({ kind: 'at', x: Number(at.x), z: Number(at.z) })
+    return
+  }
   const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket
   document.body.dataset.world = on || morningOn ? '1' : '0'
@@ -1571,6 +1658,14 @@ app.addEventListener('click', async (event) => {
   if (act === 'qs-play') { await quickPlay(); return }
   if (act === 'health-refresh') { loadHealthPage(); return }
   if (act === 'lp-board') { ui.gear = false; paint(); openBoard(); return }
+  // SunnyBay from the menu: the city view of the map on the 3D campus; from the 2D campus map, straight out of the gate.
+  if (act === 'city-map') {
+    ui.gear = false
+    paint()
+    if (viewFlags.world) window.dispatchEvent(new CustomEvent('mzansi-open-city-map'))
+    else enterCity({ kind: 'gate' })
+    return
+  }
   if (act === 'lp-feedback') { ui.gear = false; paint(); openFeedback('menu'); return }
   if (act === 'start') {
     draft = emptyDraft()

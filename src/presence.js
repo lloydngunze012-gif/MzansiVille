@@ -17,7 +17,13 @@ const BASE = params.get('room') || (navigator.webdriver ? '' : 'campus')
 // player lands in campus-2, the next in campus-3. ?roomcap=<n> lowers it for tests.
 const CAP = Math.max(1, Number(params.get('roomcap')) || 40)
 let roomNo = 1
-const roomName = () => (roomNo === 1 ? BASE : `${BASE}-${roomNo}`)
+// City job A: one room per district of SunnyBay, each with the same cap. The campus keeps its room ("campus",
+// "campus-2"...); a district's room is "campus.town", "campus.town-2"... (src/city/plan.js lists the districts).
+// The city scene calls setArea when you have been in a district for a moment; back on campus it is 'campus' again.
+let area = 'campus'
+let areaLabel = ''
+const baseOf = (a) => (a === 'campus' ? BASE : `${BASE}.${a}`)
+const roomName = () => (roomNo === 1 ? baseOf(area) : `${baseOf(area)}-${roomNo}`)
 const ROOM = BASE // (is there a campus to join at all)
 const RATE = 250 // ms between updates while moving: 4 a second (while few are online)
 // Supabase's free plan carries 100 messages a second for the whole project, and every
@@ -161,6 +167,54 @@ async function connect() {
     })
 }
 
+// Move to another district's room (or back to the campus room). label: its name for the count ("3 in Town centre").
+export function setArea(next, label = '') {
+  const changed = next !== area
+  area = next
+  areaLabel = next === 'campus' ? '' : label
+  lastCount = -1
+  if (changed && started && ROOM) {
+    leave()
+    roomNo = 1
+    connect()
+  }
+  notify()
+}
+export function presenceArea() { return area }
+
+// How many players are in each district right now, for the map: { campus: 3, town: 1, ... }. Your own district is
+// what this phone already knows; the others are read by listening in on each room's presence for a moment (no
+// broadcast, nothing is sent to anyone), the first room of each and the next while one is full. Kept for 20 s.
+let peeked = { at: 0, counts: null, busy: null }
+export function areaCounts(areas) {
+  if (!ROOM || !started) return Promise.resolve(null)
+  if (peeked.counts && Date.now() - peeked.at < 20000) return Promise.resolve({ ...peeked.counts, [area]: onlineCount() })
+  peeked.busy ||= (async () => {
+    const client = await getClient()
+    const counts = {}
+    if (!client) return null
+    const peek = (name) => new Promise((resolve) => {
+      let done = false
+      const ch = client.channel(`presence:${name}`)
+      const end = (n) => { if (done) return; done = true; client.removeChannel(ch); resolve(n) }
+      ch.on('presence', { event: 'sync' }, () => end(Object.keys(ch.presenceState()).length)).subscribe()
+      setTimeout(() => end(0), 2500)
+    })
+    await Promise.all(areas.filter((a) => a !== area).map(async (a) => {
+      let total = 0
+      for (let n = 1; n <= 3; n++) {
+        const got = await peek(n === 1 ? baseOf(a) : `${baseOf(a)}-${n}`)
+        total += got
+        if (got < CAP) break
+      }
+      counts[a] = total
+    }))
+    peeked = { at: Date.now(), counts, busy: null }
+    return counts
+  })().catch(() => { peeked.busy = null; return null })
+  return peeked.busy.then((counts) => (counts ? { ...counts, [area]: onlineCount() } : null))
+}
+
 function leave() {
   const ch = channel
   if (!ch) return
@@ -249,7 +303,8 @@ function notify() {
   if (n !== lastCount) {
     lastCount = n
     const label = countLabel()
-    for (const el of document.querySelectorAll('[data-online]')) { el.textContent = label; el.title = `${n} student${n === 1 ? '' : 's'} on campus` }
+    for (const el of document.querySelectorAll('[data-online]')) { el.textContent = label; el.title = `${n} student${n === 1 ? '' : 's'} ${areaLabel ? `in ${areaLabel}` : 'on campus'}` }
+    for (const el of document.querySelectorAll('[data-city-online]')) el.textContent = n > 1 ? `${n} here` : ''
   }
   for (const fn of listeners) fn()
 }
@@ -262,7 +317,7 @@ export function onlineCount() {
 }
 export function countLabel() {
   const n = Math.max(1, onlineCount())
-  return `${n} on campus`
+  return areaLabel ? `${n} in ${areaLabel}` : `${n} on campus`
 }
 // Someone did something to you (Piece 1a: wave, hi, friend): { from, kind, name }.
 const pokeListeners = new Set()
@@ -350,6 +405,7 @@ function sample(snaps, t, step) {
 // Tests (read only): who's here and what this phone sees of them.
 window.mzansiPresence = () => ({
   room: roomName(),
+  area,
   base: BASE,
   cap: CAP,
   live,

@@ -29,7 +29,10 @@
 :root .pc-stats,
 :root .pc-sheet,
 /* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */
-:root .sl-pop {
+:root .sl-pop,
+/* SunnyBay (src/world/city.js): a door's "Opening soon", a taxi stop, a billboard; the map's ways-there panel (map.js). */
+:root .city-card,
+:root .cm-detail {
   left: 0; right: 0; margin-inline: auto; transform-origin: center;
   width: var(--card-w); max-width: 420px; box-sizing: border-box;
 }

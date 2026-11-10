@@ -111,3 +111,14 @@ The rows are in `data/campusville/activities.csv`. Every scene below already exi
 - tests/e2e/map-go.spec.js "2D map: tap the cafeteria": under SwiftShader (~5 fps) the 3D walk from the house to the cafeteria sticks at the Quad stage ("Tap to enter The Quad", data-going stays cafeteria). Same on the code before the new map (checked by stashing), so not the map; fine on the real GPU. Movement checks below 20 fps are inconclusive anyway.
 - Map home crowd chips are a snapshot when the map draws; they don't follow players live until the map redraws.
 - Map home gold route is a smooth curve from you to the starred place, not traced along the paths.
+
+## SunnyBay (City job A, 10 Nov)
+- City: other players are visible but a tap on one does nothing; chat bubbles and the Talk button are campus-only.
+- City: the game menu, bottom bar and prompts are hidden while you are in the city (only the top bar shows).
+- City: your car is not solid (campus and city), and other players do not see it.
+- City: street people walk up and down one pavement; they do not cross roads, sit, or talk.
+- City: the 2D campus map (map view mode) has no pin for the city; only the menu entry.
+- City: lot buildings are hand-built blocks; brand billboards are drawn from text until billboards.json has images.
+- City: at night the lot signs and billboards are not lit differently (they are always bright); windows and lamps glow.
+- Campus: the gatehouse building still blocks the middle of the gate road; the way out walks round it.
+- Campus: "Bus to town" at the bus stop still leads to Greenway Grocer on campus, not to SunnyBay.

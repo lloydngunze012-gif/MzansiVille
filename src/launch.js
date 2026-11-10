@@ -62,6 +62,7 @@ export function calmWhy() {
   if (dlg) return `a card is open (${dlg.className || dlg.tagName})`
   if (api.busy?.()) return 'talking or menu'
   if (document.body.dataset.caf) return 'in the Caf'
+  if (document.body.dataset.city) return 'in the city'
   const world = document.getElementById('world')
   if (world) {
     if (world.dataset.on !== '1' || world.dataset.ready !== '1') return 'campus not ready'

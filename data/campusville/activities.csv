@@ -99,7 +99,7 @@ res_other_wash,night,res_other,Late laundry chat,0,-3,0,2,0,1,"Machine 3 eats so
 off_pack,morning,off_campus,Pack the bag by the door,0,-2,0,0,0,0,"Laptop, charger, hope; the charger is always last"
 off_stop,transit,off_campus,Walk to the bus from home,0,-4,0,0,0,1,"Fresh air; the dog next door has opinions"
 off_return,lecture,off_campus,Go home for the forgotten textbook,-12,-8,-1,0,0,1,"The taxi fare hurts more than the lecture you miss"
-off_supper,social,off_campus,Supper before the ride back,-25,0,0,3,20,1,"Home cooking hits different; leftovers are a gamble"
+off_supper,social,off_campus,Supper before the ride back,-25,0,0,3,20,1,"Home cooking hits different; leftovers are a surprise"
 off_couch,leisure,off_campus,An hour on the couch,0,6,-1,-2,0,1,"Rest; the TV remote has other plans"
 off_late,night,off_campus,Key in the gate,0,-3,0,0,0,0,"Home at last; the gate lock is stiff"
 house_tea,morning,house,Tea in the common room,-3,3,0,1,6,0,"Rooibos from the house tin; somebody always refills it"

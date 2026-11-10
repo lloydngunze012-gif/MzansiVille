@@ -293,6 +293,7 @@ function gearMenu(run) {
     ${themePicker()}
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="profile">Student card</button>
+    ${location.hash.startsWith('#/play') ? '<button type="button" data-act="city-map">\u{1F5FA} SunnyBay map</button>' : ''}
     <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
     <button type="button" data-act="nav" data-go="board">All-time boards</button>
     <button type="button" data-act="nav" data-go="chat">Campus chat</button>

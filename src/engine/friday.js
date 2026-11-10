@@ -30,7 +30,7 @@ export function fridayTest(run) {
   add(run.crush?.studyDate ? 3 : 0, `The library sessions with ${run.crush?.nameKnown ? run.crush.name : 'your study buddy'}`)
   add(run.moments?.surprise_test?.choice === 0 ? 3 : run.moments?.surprise_test?.choice === 1 ? -3 : 0, run.moments?.surprise_test?.choice === 1 ? 'You winged the surprise test' : 'You studied for the surprise test')
   add(a.noise === 'avoided' ? -2 : 0, 'The midnight music battle cost you sleep')
-  add(run.hangover ? -4 : 0, 'Thursday’s party is still in your head')
+  add(run.partyTired ? -4 : 0, 'Thursday’s party is still in your head')
   const mark = Math.max(18, Math.min(96, base + lines.reduce((t, l) => t + l.n, 0)))
   const rival = a.rival === 'compete' ? 74 : a.rival === 'friend' ? 71 : 68
   const result = {

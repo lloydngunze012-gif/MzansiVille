@@ -1,0 +1,115 @@
+{
+  "name": "SunnyBay",
+  "welcome": "Welcome to SunnyBay",
+  "welcomeSub": "Town centre ahead · Beachfront east · Suburbs north",
+  "bounds": {
+    "x0": -336,
+    "z0": -296,
+    "x1": 298,
+    "z1": 326
+  },
+  "parts": [
+    { "id": "campus", "name": "Campus", "rect": [-160, -125, 150, 125], "ground": "#6a9c50", "pave": "#d9cfb6", "ink": "#2f6a3a", "next": ["town", "suburbs", "beachfront", "township"] },
+    { "id": "town", "name": "Town centre", "rect": [-160, 125, 150, 330], "ground": "#b7b0a2", "pave": "#d6d0c4", "ink": "#5b5f6b", "next": ["campus", "beachfront", "industrial"] },
+    { "id": "suburbs", "name": "Suburbs", "rect": [-160, -300, 150, -125], "ground": "#4f8c4a", "pave": "#cfc7b4", "ink": "#2c6a48", "next": ["campus", "beachfront", "township"] },
+    { "id": "beachfront", "name": "Beachfront", "rect": [150, -300, 300, 330], "ground": "#e3cf9c", "pave": "#f1e6cb", "ink": "#b7791f", "next": ["campus", "town", "suburbs"] },
+    { "id": "township", "name": "Township", "rect": [-340, -300, -160, 100], "ground": "#c08a5a", "pave": "#d2a676", "ink": "#a4552b", "next": ["campus", "suburbs", "industrial"] },
+    { "id": "industrial", "name": "Industrial", "rect": [-340, 100, -160, 330], "ground": "#8b8f94", "pave": "#a9adb1", "ink": "#4a4f57", "next": ["town", "township"] }
+  ],
+  "roads": [
+    { "name": "Varsity Road", "rect": [-4, 113, 4, 326] },
+    { "name": "Main Road", "rect": [-160, 126, 150, 134] },
+    { "name": "Market Street", "rect": [-336, 211, 150, 219] },
+    { "name": "Hill Road", "rect": [-160, -134, 150, -126] },
+    { "name": "Oak Avenue", "rect": [-4, -296, 4, -113] },
+    { "name": "Crescent Road", "rect": [-152, -219, 150, -211] },
+    { "name": "Marine Drive", "rect": [150, -296, 158, 326] },
+    { "name": "Unity Road", "rect": [-336, -4, -113, 4] },
+    { "name": "Unity Road", "rect": [113, -4, 250, 4] },
+    { "name": "River Road", "rect": [-160, -296, -152, 326] },
+    { "name": "Bokamoso Street", "rect": [-264, -296, -256, 100] },
+    { "name": "Factory Road", "rect": [-264, 100, -256, 326] },
+    { "name": "Thuto Street", "rect": [-336, -154, -181, -146] },
+    { "name": "Pier Road", "rect": [158, 110, 250, 118] }
+  ],
+  "river": { "name": "Bay River", "rect": [-181, -300, -163, 330] },
+  "bridges": [
+    { "name": "Unity Bridge", "z": 0 },
+    { "name": "Market Bridge", "z": 215 }
+  ],
+  "gate": {
+    "x": 0,
+    "z": 106,
+    "name": "UMzansi Main Gate",
+    "icon": "🎓"
+  },
+  "stops": [
+    { "id": "gate", "part": "campus", "name": "Campus gate", "x": -19, "z": 119, "van": [-29, 121.6, 1.5708] },
+    { "id": "town", "part": "town", "name": "Town centre stop", "x": -16, "z": 222.5, "van": [-26, 216.5, 1.5708] },
+    { "id": "suburbs", "part": "suburbs", "name": "Suburbs stop", "x": 14, "z": -138, "van": [22, -132, 1.5708] },
+    { "id": "beachfront", "part": "beachfront", "name": "Beachfront stop", "x": 162, "z": 14, "van": [155.5, 22, 0] },
+    { "id": "township", "part": "township", "name": "Township stop", "x": -198, "z": 8, "van": [-208, 2, 1.5708] },
+    { "id": "rank", "part": "industrial", "name": "Taxi rank", "x": -215, "z": 206, "van": [-226, 213.5, 1.5708] }
+  ],
+  "travel": {
+    "taxi": {
+      "near": 15,
+      "far": 25,
+      "minutes": 25
+    },
+    "car": {
+      "petrol": 8
+    },
+    "lines": {
+      "short": "Eish, the fare is R{fare} and you have R{money}. No stress: it's a nice walk.",
+      "ride": "{from} to {to}",
+      "noCar": "Needs a driver's licence and a car",
+      "carAway": "Your car is parked at {place}",
+      "walk": "Walking is always free"
+    }
+  },
+  "soon": {
+    "title": "Opening soon",
+    "line": "{name} opens its doors soon. Have a look around SunnyBay in the meantime.",
+    "later": "Coming soon",
+    "laterLine": "{name} is on its way to SunnyBay. This plot is kept for it."
+  },
+  "lots": [
+    { "id": "mall", "name": "Mall", "sign": "SUNNYBAY MALL", "part": "town", "icon": "🛍", "x": 96, "z": 178, "w": 60, "d": 36, "h": 9, "door": "s", "look": "mall", "wall": "#f3ede0", "roof": "#c24a3a" },
+    { "id": "bank", "name": "Bank", "sign": "SUNNYBAY BANK", "part": "town", "icon": "🏦", "x": -32, "z": 192, "w": 20, "d": 16, "h": 8, "door": "s", "look": "columns", "wall": "#e7e2d6", "roof": "#2d4a6b" },
+    { "id": "clinic", "name": "Clinic", "sign": "CLINIC", "part": "town", "icon": "🏥", "x": -72, "z": 192, "w": 24, "d": 16, "h": 5.5, "door": "s", "look": "block", "wall": "#f7f9f8", "roof": "#2f9e8f" },
+    { "id": "city_library", "name": "SunnyBay Public Library", "short": "Public Library", "sign": "SUNNYBAY PUBLIC LIBRARY", "part": "town", "icon": "📚", "x": -118, "z": 190, "w": 30, "d": 20, "h": 7, "door": "s", "look": "columns", "wall": "#d9b98a", "roof": "#7b4a2a" },
+    { "id": "barber", "name": "Barber and salon", "short": "Barber", "sign": "BARBER & SALON", "part": "town", "icon": "💈", "x": -22, "z": 246, "w": 16, "d": 12, "h": 4.5, "door": "e", "look": "shop", "wall": "#f2c94c", "roof": "#22143b" },
+    { "id": "lifecup", "name": "Lifecup cafe", "short": "Lifecup", "sign": "LIFECUP", "part": "town", "icon": "☕", "x": 26, "z": 196, "w": 16, "d": 10, "h": 4.5, "door": "s", "look": "shop", "wall": "#f6efe2", "roof": "#c2562a" },
+    { "id": "lounge", "name": "Lounge", "sign": "THE LOUNGE", "part": "town", "icon": "🎱", "x": -24, "z": 286, "w": 20, "d": 16, "h": 5.5, "door": "e", "look": "shop", "wall": "#3b2a6b", "roof": "#f0c400" },
+    { "id": "gym", "name": "Gym", "sign": "SUNNYBAY GYM", "part": "suburbs", "icon": "🏋", "x": -62, "z": -240, "w": 26, "d": 18, "h": 6.5, "door": "s", "look": "block", "wall": "#2b2f36", "roof": "#e8552f" },
+    { "id": "church", "name": "Church", "sign": "SUNNYBAY CHURCH", "part": "suburbs", "icon": "⛪", "x": 72, "z": -244, "w": 16, "d": 26, "h": 8, "door": "s", "look": "church", "wall": "#f4f1ea", "roof": "#8a4b32" },
+    { "id": "dealership", "name": "Car dealership", "short": "Cars", "sign": "SUNNYBAY CARS", "part": "suburbs", "icon": "🚗", "x": -72, "z": -160, "w": 34, "d": 16, "h": 5.5, "door": "s", "look": "showroom", "wall": "#eef2f5", "roof": "#1e5bb8" },
+    { "id": "greenway_city", "name": "Greenway SunnyBay", "short": "Greenway", "sign": "GREENWAY SUNNYBAY", "part": "suburbs", "icon": "🛒", "x": 62, "z": -160, "w": 44, "d": 22, "h": 6.5, "door": "s", "look": "market", "wall": "#f6f7f3", "roof": "#2f8f5b" },
+    { "id": "beach", "name": "Beach", "sign": "SUNNYBAY BEACH", "part": "beachfront", "icon": "🏖", "x": 262, "z": 0, "w": 0, "d": 0, "h": 0, "door": "w", "look": "beach", "wall": "#f0c400", "roof": "#1d7fb8", "at": [252, 0], "area": [250, -296, 298, 326] },
+    { "id": "park", "name": "Park", "sign": "BAYSIDE PARK", "part": "beachfront", "icon": "🌳", "x": 198, "z": -82, "w": 0, "d": 0, "h": 0, "door": "s", "look": "park", "wall": "#2f6a3a", "roof": "#2f6a3a", "at": [198, -40], "area": [166, -120, 232, -44] },
+    { "id": "arcade", "name": "Arcade and bowling", "short": "Arcade", "sign": "ARCADE & BOWLING", "part": "beachfront", "icon": "🎳", "x": 198, "z": 90, "w": 40, "d": 24, "h": 6.5, "door": "s", "look": "arcade", "wall": "#e8497a", "roof": "#22143b" },
+    { "id": "taxi_rank", "name": "Taxi rank", "sign": "SUNNYBAY TAXI RANK", "part": "industrial", "icon": "🚐", "x": -215, "z": 182, "w": 0, "d": 0, "h": 0, "door": "s", "look": "rank", "wall": "#f0c400", "roof": "#c62828", "at": [-204, 204], "area": [-242, 164, -188, 200] },
+    { "id": "petrol", "name": "Petrol station", "short": "Petrol", "sign": "PETROL · CAR WASH", "part": "industrial", "icon": "⛽", "x": -214, "z": 252, "w": 0, "d": 0, "h": 0, "door": "n", "look": "petrol", "wall": "#f7f9f8", "roof": "#d6452f", "at": [-214, 223], "area": [-242, 226, -186, 280] },
+    { "id": "stadium", "name": "Stadium", "sign": "SUNNYBAY STADIUM", "part": "industrial", "icon": "🏟", "x": -302, "z": 272, "w": 0, "d": 0, "h": 0, "door": "e", "look": "stadium", "wall": "#b9bec4", "roof": "#2456a6", "at": [-268, 272], "area": [-334, 228, -270, 316] },
+    { "id": "driving_school", "name": "Driving school", "short": "Driving", "sign": "DRIVING SCHOOL", "part": "industrial", "icon": "🚦", "x": -300, "z": 160, "w": 0, "d": 0, "h": 0, "door": "e", "look": "yard", "wall": "#f6efe2", "roof": "#f08a24", "at": [-268, 160], "area": [-334, 120, -270, 202] }
+  ],
+  "wave2": [
+    { "id": "studio", "name": "Recording studio", "part": "industrial", "x": -216, "z": 132 },
+    { "id": "radio", "name": "Campus radio station", "part": "campus", "x": 128, "z": -104 },
+    { "id": "aquarium", "name": "Aquarium", "part": "beachfront", "x": 198, "z": 186 },
+    { "id": "night_market", "name": "Night market", "part": "township", "x": -220, "z": 52 },
+    { "id": "pool", "name": "Swimming pool", "part": "suburbs", "x": 118, "z": -256 },
+    { "id": "skate", "name": "Skate park", "part": "beachfront", "x": 198, "z": -200 },
+    { "id": "tech", "name": "Phone and tech shop", "part": "town", "x": 40, "z": 246 },
+    { "id": "boutique", "name": "Fashion boutique", "part": "town", "x": 40, "z": 286 },
+    { "id": "trail", "name": "Hiking trail", "part": "suburbs", "x": -122, "z": -280 },
+    { "id": "gallery", "name": "Art gallery", "part": "town", "x": -76, "z": 246 },
+    { "id": "hall", "name": "Community hall", "part": "township", "x": -302, "z": -60 },
+    { "id": "laundromat", "name": "Laundromat", "part": "township", "x": -220, "z": -60 }
+  ],
+  "homes": [
+    { "id": "suburban", "part": "suburbs", "name": "Family homes", "sign": "JACARANDA CLOSE", "x": 118, "z": -196 },
+    { "id": "township", "part": "township", "name": "Family homes", "sign": "HIGH MAST STREET", "x": -300, "z": -222 }
+  ]
+}

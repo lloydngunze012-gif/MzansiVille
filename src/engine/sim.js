@@ -341,7 +341,7 @@ export function endDay(district, run, opts = {}) {
   if (run.phase === 'lecture') skipLecture(district, run, cards)
   if (!run.attendedToday) run.lectureStreak = 0
   if (!run.pendingNight) {
-    run.pendingNight = { slept: Boolean(opts.slept), hungry: false, hangover: run.hangover }
+    run.pendingNight = { slept: Boolean(opts.slept), hungry: false, partyTired: run.partyTired }
   }
   if (!run.eventSeen) revealEvent(district, run)
   if (run.examWeek && run.day % meta.calendar.examEvery === 0 && !run.wroteExam) {
@@ -406,9 +406,9 @@ function applyMorning(district, run) {
     energy = Math.max(0, energy + rules.noSleepEnergy)
     run.morningNote = 'You did not sleep. Energy is down.'
   }
-  if (night.hangover) energy = Math.max(0, energy + rules.hangoverEnergy)
+  if (night.partyTired) energy = Math.max(0, energy + rules.partyTiredEnergy)
   run.stats.energy = clamp(energy, 0, run.energyCap)
-  run.hangover = false
+  run.partyTired = false
   run.pendingNight = null
 }
 
@@ -503,7 +503,7 @@ export function createRun(district, character, now = new Date()) {
     lastEventLine: 'A quiet day so far.',
     lastStatLine: '',
     pendingNight: null,
-    hangover: false,
+    partyTired: false,
     morningNote: '',
     mode: 'play',
     sessionKey: sessionKey(now, meta.day.refillHour),
@@ -720,7 +720,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
     run.energyCap = 102
     run.gymThisWeek = true
   }
-  if (action.tags.includes('party')) run.hangover = true
+  if (action.tags.includes('party')) run.partyTired = true
   if (action.tags.includes('shop') && !run.referralCode) {
     run.referralCode = referralCode(district.shop, `${run.character.name}|${run.day}`)
     cards.push({
@@ -732,7 +732,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   }
   if (action.tags.includes('phone')) revealEvent(district, run)
   if (action.tags.includes('sleep')) {
-    run.pendingNight = { slept: true, hungry: hungrySleep, hangover: run.hangover }
+    run.pendingNight = { slept: true, hungry: hungrySleep, partyTired: run.partyTired }
     if (hungrySleep) run.lastEventLine = district.meta.day.hungrySleepMessage
   }
 

@@ -1,0 +1,10 @@
+{
+  "note": "Billboards along SunnyBay's main roads (City job A). slots: how many boards stand in the city (8 to 12). Each ad: brand (the big word), line (the small one), image (optional: a picture drawn over the whole board, 2:1, e.g. /img/ads/woza.webp; empty draws the brand and line in bg/fg colours), link (optional: opens when a player taps the board and then Visit), start and end (dates, YYYY-MM-DD, both inclusive; outside them the ad is not shown), boards (how many boards it takes, default 1). A board with no ad shows a University of Mzansi house ad (house: the line for those, {house} is the house's name). Brands allowed: Woza, Lifecup, Greenway.",
+  "slots": 12,
+  "house": { "line": "University of Mzansi" },
+  "ads": [
+    { "id": "woza", "brand": "Woza", "line": "Tap. Paid. Sorted.", "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 3, "bg": "#22143b", "fg": "#f0c400" },
+    { "id": "lifecup", "brand": "Lifecup", "line": "Coffee in Town centre", "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 2, "bg": "#f6efe2", "fg": "#c2562a" },
+    { "id": "greenway", "brand": "Greenway", "line": "Fresh every day", "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 3, "bg": "#2f8f5b", "fg": "#ffffff" }
+  ]
+}

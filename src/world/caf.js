@@ -194,6 +194,11 @@ async function buildRoom() {
   group.add(floor)
   B.box('honeyLight', PATIO.x1 - PATIO.x0 + 0.6, 0.12, PATIO.z1 - PATIO.z0 + 0.4, (PATIO.x0 + PATIO.x1) / 2 - 0.1, -0.06, (PATIO.z0 + PATIO.z1) / 2) // patio deck
   B.box('walnut', X1 - X0 + 0.4, 0.1, 0.2, 0, -0.05, Z1 + 0.1) // a step along the front
+  // outside (City job A: no void anywhere): the campus lawn all round the Caf to the horizon, a paved apron, the path
+  // from the main door. The sky is the scene's background (LIGHTS), never plum.
+  B.box('#6a9c50', 240, 0.1, 240, 0, -0.26, 0)
+  B.box('#d9cfb6', PATIO.x1 - X0 + 7, 0.1, Z1 - Z0 + 7, (X0 + PATIO.x1) / 2, -0.19, 0.5)
+  B.box('#e4d2b0', 3.8, 0.1, 40, DOOR.x, -0.17, Z1 + 23)
 
   // back wall: cream above a honey panel, a gold rail, a walnut skirting
   const wallH = (len, x, z, rot) => {
@@ -374,9 +379,9 @@ async function buildRoom() {
 
 // ---------- lighting: one directional light plus ambient (+ the emergency light) ----------
 const LIGHTS = {
-  day: { bg: '#2a1750', hemi: ['#fff3de', '#c9b48c', 1.4], sun: ['#ffe6bd', 2.3, [-6, 12, 14]], emer: 0, bulbs: false, window: '#fff7dc', fog: '#2a1750', sub: '' },
-  evening: { bg: '#170b2e', hemi: ['#ffcf99', '#5a4636', 0.75], sun: ['#ff9a4d', 0.9, [-12, 5, 12]], emer: 0, bulbs: true, window: '#ff9e5a', fog: '#170b2e', sub: '' },
-  load: { bg: '#0d0818', hemi: ['#8c8fb0', '#2a2a36', 0.2], sun: ['#7a86b8', 0, [-6, 12, 14]], emer: 1, bulbs: false, window: '#252a40', fog: '#0d0818', sub: 'COLD FOOD ONLY' },
+  day: { bg: '#bfe3f5', hemi: ['#fff3de', '#c9b48c', 1.4], sun: ['#ffe6bd', 2.3, [-6, 12, 14]], emer: 0, bulbs: false, window: '#fff7dc', fog: '#bfe3f5', sub: '' },
+  evening: { bg: '#d98f66', hemi: ['#ffcf99', '#5a4636', 0.75], sun: ['#ff9a4d', 0.9, [-12, 5, 12]], emer: 0, bulbs: true, window: '#ff9e5a', fog: '#d98f66', sub: '' },
+  load: { bg: '#10162f', hemi: ['#8c8fb0', '#2a2a36', 0.2], sun: ['#7a86b8', 0, [-6, 12, 14]], emer: 1, bulbs: false, window: '#252a40', fog: '#10162f', sub: 'COLD FOOD ONLY' },
 }
 let hemi, sun, emer
 export const LIGHT_NAMES = Object.keys(LIGHTS)
@@ -517,7 +522,7 @@ function ui() {
   if (uiRoot) return
   const style = document.createElement('style')
   style.textContent = `
-#caf3d{position:fixed;inset:0;z-index:0;touch-action:none;background:#2a1750}
+#caf3d{position:fixed;inset:0;z-index:0;touch-action:none;background:#bfe3f5}
 #caf3d[hidden]{display:none}
 #caf3d canvas{display:block;width:100%;height:100%}
 body[data-caf="1"] #app{visibility:hidden;pointer-events:none}
