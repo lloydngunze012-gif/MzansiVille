@@ -174,6 +174,14 @@ export function createOthers(scene) {
   function avatarOf(id) {
     return shown.get(id)?.avatar || null
   }
+  // Everyone drawn here within radius of (cx, cz): for the ring-of-spots arrival
+  // (src/world/ring.js), so two players arriving a moment apart don't land on top of
+  // each other.
+  function nearbyPositions(cx, cz, radius) {
+    const out = []
+    for (const { avatar } of shown.values()) if (Math.hypot(avatar.position.x - cx, avatar.position.z - cz) < radius) out.push({ x: avatar.position.x, z: avatar.position.z })
+    return out
+  }
 
-  return { group, update, dispose, report, gestureOf, positionOf, avatarOf, count: () => shown.size }
+  return { group, update, dispose, report, gestureOf, positionOf, avatarOf, nearbyPositions, count: () => shown.size }
 }

@@ -325,9 +325,11 @@ export function onPoke(fn) {
   pokeListeners.add(fn)
   return () => pokeListeners.delete(fn)
 }
-export function sendPoke(to, kind) {
+// extra: small extra fields a poke carries along (Meeting people, item 6: an invite's
+// id and data), merged in after the protected ones so they can never be overwritten.
+export function sendPoke(to, kind, extra = {}) {
   if (!channel || !live || !meta) return false
-  channel.send({ type: 'broadcast', event: 'poke', payload: { to, from: me.id, kind, name: meta.n, num: meta.s } }).catch(() => {})
+  channel.send({ type: 'broadcast', event: 'poke', payload: { ...extra, to, from: me.id, kind, name: meta.n, num: meta.s } }).catch(() => {})
   return true
 }
 // Piece 3, chat: a message goes out on the channel with where you stood when you said

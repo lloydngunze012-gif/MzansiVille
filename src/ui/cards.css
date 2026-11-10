@@ -28,6 +28,9 @@
 :root body > .chat-panel,
 :root .pc-stats,
 :root .pc-sheet,
+/* Meeting people (owner, 10 Nov): the mini player card (its own ⋯ menu is a small
+   anchored dropdown, not a centred card, same as .g-menu: its own sizing in styles.css). */
+:root .pc-mini-body,
 /* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */
 :root .sl-pop,
 /* SunnyBay (src/world/city.js): a door's "Opening soon", a taxi stop, a billboard; the map's ways-there panel (map.js). */

@@ -1,6 +1,9 @@
-// C2 (Piece 1a): two phones. A writes a bio on their card; B taps A on campus and A's
-// card slides up (name, house, bio, tags); Wave and Add friend reach A; one tap
-// closes; Report hides A from B. Touch only; hooks only READ.
+// C2 (Piece 1a; Meeting people, owner 10 Nov, item 1 changed the default card to the
+// mini strip). Two phones. A writes a bio on their card; B taps A on campus and A's
+// mini card opens (name, vibe, grey line), never blocking B's own movement; "View full
+// card" (the ⋯ menu) shows the old full card (house, bio, tags); Wave (with a "Wave
+// back" action toast) and Add friend (also behind ⋯) reach A; Report hides A from B.
+// Touch only; hooks only READ.
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { measureFps } from '../fps.js'
@@ -96,36 +99,58 @@ test('C2 tap another player: their card slides up; Wave, Add friend, Report', as
   // (not a movement test: the fps is reported, the test isn't skipped below 20)
   console.log(`FPS ${await measureFps(A)}, ${await measureFps(B)}`)
 
-  for (let i = 0; i < 6 && !(await B.locator('.pc-sheet .pcard').isVisible().catch(() => false)); i++) {
+  // Meeting people, item 1: the tap opens the mini card first, never a dialog (B can
+  // still walk while it's up).
+  for (let i = 0; i < 6 && !(await B.locator('.pc-mini-body .pc-mini-name').isVisible().catch(() => false)); i++) {
     await tapA(page, B, BX)
     await page.waitForTimeout(900)
   }
-  await expect(B.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await expect(B.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
+  await expect(page.locator(`[name="b"]`)).toBeVisible() // (sanity: B's own view, still running)
   await page.waitForTimeout(600)
-  const shown = { name: await B.locator('.pc-sheet .pc-name').textContent(), house: await B.locator('.pc-sheet .pc-house').textContent(), bio: await B.locator('.pc-sheet .pc-bio').textContent(), tags: await B.locator('.pc-sheet .pc-tags li').allTextContents() }
-  await page.screenshot({ path: `${OUT}/C2-card-up.png` })
+  const miniName = await B.locator('.pc-mini-name').textContent()
+  const miniVibe = await B.locator('.pc-mini-vibe').textContent()
+  await page.screenshot({ path: `${OUT}/C2-mini-card.png` })
 
-  // Wave: A hears it.
-  await tapIn(page, B.locator('[data-pc="wave"]'))
-  await expect(A.locator('#toast')).toContainText('Kabelo waved at you', { timeout: 8000 })
-  await page.screenshot({ path: `${OUT}/C2-wave.png` })
-  // Add friend: A hears it; B's button says Friends.
+  // View full card (the ⋯ menu): the house, bio and tags only show there.
+  await tapIn(page, B.locator('[data-pc="more"]'))
+  await tapIn(page, B.locator('[data-pc="full"]'))
+  await expect(B.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await page.waitForTimeout(400)
+  const shown = { name: await B.locator('.pc-sheet .pc-name').textContent(), house: await B.locator('.pc-sheet .pc-house').textContent(), bio: await B.locator('.pc-sheet .pc-bio').textContent(), tags: await B.locator('.pc-sheet .pc-tags li').allTextContents() }
+  await page.screenshot({ path: `${OUT}/C2-full-card.png` })
+  await tapIn(page, B.locator('.pc-sheet [data-pc="close"]').first())
+  await expect(B.locator('.pc-sheet-wrap.on')).toHaveCount(0, { timeout: 3000 })
+
+  // Wave: A hears it, with a "Wave back" action toast (item 2).
   await page.waitForTimeout(600)
   await tapA(page, B, BX)
+  await expect(B.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
+  await tapIn(page, B.locator('[data-pc="wave"]'))
+  await expect(A.locator('#toast-action')).toContainText('Kabelo waved at you', { timeout: 8000 })
+  await expect(A.locator('#toast-action button')).toContainText('Wave back')
+  await page.screenshot({ path: `${OUT}/C2-wave.png` })
+  // Add friend (behind the ⋯ menu): A hears it; the menu's button says Friends.
+  await page.waitForTimeout(600)
+  await tapA(page, B, BX)
+  await tapIn(page, B.locator('[data-pc="more"]'))
   await tapIn(page, B.locator('[data-pc="friend"]'))
   await expect(A.locator('#toast')).toContainText('added you as a friend', { timeout: 8000 })
+  // (the ⋯ menu closes itself after an action, so it never covers the card)
   const friendBtn = await B.locator('[data-pc="friend"]').textContent()
-  // One tap on the scrim closes it.
-  await (await finger(page, BX)).tap(200, 90)
+  // The mini card's own Close.
+  await tapIn(page, B.locator('.pc-mini-x'))
   await expect(B.locator('.pc-sheet-wrap.on')).toHaveCount(0, { timeout: 3000 })
-  // Report: A disappears from B's campus.
+  // Report (behind the ⋯ menu): A disappears from B's campus.
   await page.waitForTimeout(600)
   await tapA(page, B, BX)
+  await tapIn(page, B.locator('[data-pc="more"]'))
   await tapIn(page, B.locator('[data-pc="report"]'))
   await tapIn(page, B.locator('[data-pc="report-Rude or hateful"]'))
   await expect.poll(async () => (await B.evaluate(() => window.mzansiOthers())).length, { timeout: 5000 }).toBe(0)
   await page.screenshot({ path: `${OUT}/C2-reported.png` })
-  console.log('C2', JSON.stringify({ shown, friendBtn }))
+  console.log('C2', JSON.stringify({ miniName, miniVibe, shown, friendBtn }))
+  expect(miniName).toContain('Thandeka')
   expect(shown.name).toBe('Thandeka')
   expect(shown.bio).toContain('amapiano on Fridays')
   expect(shown.tags.join(' ')).toContain('Music head')

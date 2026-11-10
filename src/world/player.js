@@ -58,6 +58,7 @@ export function createPlayer({ blocked, onWalk, onGear }) {
   let shown = 0 // the gear last shown (a puff of dust on each step up)
   let lastTap = -1e9
   let held = 0 // seconds a direction has been held
+  let speedScale = 1 // below 10 energy: a slower pace, never a stop (energy.js speedFactor)
 
   function remaining() {
     let len = 0
@@ -143,6 +144,8 @@ export function createPlayer({ blocked, onWalk, onGear }) {
     set pace(v) { pace = v },
     get moving() { return moving },
     get speed() { return speed },
+    get speedScale() { return speedScale },
+    set speedScale(v) { speedScale = Math.min(1, Math.max(0.3, v)) },
     remaining: () => (body ? remaining() : 0),
 
     update(dt) {
@@ -186,6 +189,7 @@ export function createPlayer({ blocked, onWalk, onGear }) {
         }
       }
 
+      want *= speedScale
       // Ramp toward the asked-for speed. Slowing down is quicker than speeding up.
       const rate = want > speed ? ACCEL : BRAKE
       speed += clamp(want - speed, -rate * dt, rate * dt)

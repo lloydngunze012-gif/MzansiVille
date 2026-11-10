@@ -40,6 +40,8 @@ import * as curtain from '../curtain.js'
 import { createWalks } from './walks.js'
 import { smooth } from '../smooth.js'
 import { SPEED, ms } from '../speed.js'
+import { checkLowHint, drainWalking, speedFactor } from '../engine/energy.js'
+import { checkAway, noteOpen } from '../ui/minicard-state.js'
 
 const host = document.getElementById('world')
 
@@ -354,6 +356,14 @@ function ensureRenderer() {
     if (them?.avatar) startConvo(them.kind, them.id, them.avatar)
   })
   window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
+  // Meeting people, item 4: a wave or a hi you received turns you to face them, same as
+  // tapping them does.
+  window.addEventListener('mzansi-face-peer', (event) => {
+    const avatar = others?.avatarOf(event.detail.id)
+    if (!player || !avatar || (player.userData.pose || 'stand') !== 'stand') return
+    if (Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z) > 8) return
+    player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
+  })
   // Used by tests and the map: walk to a building's door and enter it.
   window.addEventListener('mzansi-walk-to', (event) => { if (visible && typeof event.detail === 'string') approach(event.detail) })
 }
@@ -536,6 +546,7 @@ function tapped(point, x, y) {
   if (hit.kind === 'player') {
     // (within 4 m: a conversation, and its two-shot, starts as their card slides up)
     startConvo('player', hit.id, others?.avatarOf(hit.id))
+    if (player) noteOpen(hit.id, player.position.x, player.position.z)
     window.dispatchEvent(new CustomEvent('mzansi-player-card', { detail: { id: hit.id } }))
     return
   }
@@ -2756,11 +2767,17 @@ function frameBody(now) {
       const push = input.stick() || forcedSteer
       if (push) interrupt()
       mover.setStick(push?.x, push?.z, push?.run, push?.mag)
+      mover.speedScale = speedFactor(currentRun)
       frameFrom = { x: player.position.x, z: player.position.z }
       if (scriptMove && !push) walking = scripted(scriptMove, dt)
       else walking = mover.update(dt)
       dust?.update(dt)
       cityCheck()
+      // Meeting people, items 1 and 5: never inside each other's mini card (walking
+      // away closes it), and walking costs a little energy.
+      checkAway(player.position.x, player.position.z)
+      if (walking) drainWalking(currentRun, dt)
+      checkLowHint(currentRun)
     }
     // The player's state follows what they're doing when nothing else holds it.
     if (walking) smooth.moved()

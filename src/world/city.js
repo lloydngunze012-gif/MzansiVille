@@ -14,8 +14,8 @@ import { loop as soundLoop } from '../audio.js'
 import { SPEED as FAST } from '../speed.js'
 import { smooth } from '../smooth.js'
 import * as curtain from '../curtain.js'
-import { reportLocal, setArea } from '../presence.js'
-import { appearNow, createAvatar, poseAvatar } from './avatar3d.js'
+import { onPoke, reportLocal, sendPoke, setArea } from '../presence.js'
+import { appearNow, createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { bindInput } from './input.js'
 import { createPlayer } from './player.js'
@@ -25,7 +25,11 @@ import { loadModel } from './models.js'
 import { skinFor } from './skinmix.js'
 import { buildCity } from './citybuild.js'
 import { createCityMap } from './map.js'
-import { BOUNDS, CITY, LOTS, PARTS, SPAWN, STOPS, WAVE2, atGate, canDrive, carAt, lotOf, moneyOf, nearestStop, offLimits, partAt, partOf, payDrive, payTaxi, stopOf, taxiFare } from '../city/plan.js'
+import { ringSpot } from './ring.js'
+import { checkLowHint, drainWalking, setRacing, speedFactor } from '../engine/energy.js'
+import { checkAway, noteOpen } from '../ui/minicard-state.js'
+import { countdown, inviteToast, onInvite, resultCard, sendInvite } from './together.js'
+import { BOUNDS, CITY, LOTS, PARTS, PIER, SPAWN, STOPS, WAVE2, atGate, canDrive, carAt, lotOf, moneyOf, nearestStop, offLimits, partAt, partOf, payDrive, payTaxi, stopOf, taxiFare } from '../city/plan.js'
 
 const Q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
 const DEBUG = Q.get('citydebug') === '1'
@@ -56,6 +60,7 @@ let npcs = []
 let shot = null
 let lastSave = 0
 let rides = 0
+let race = null // { withId, withName, startAt, mine, theirs, waitingShown }: Race to the pier (item 6)
 const ray = new THREE.Raycaster()
 const v3 = new THREE.Vector3()
 const box3 = new THREE.Box3()
@@ -184,6 +189,13 @@ function freeNear(x, z) {
   }
   return null
 }
+// Meeting people (item 3): never inside each other. Every arrival point (spawn, a
+// door, a taxi stop, a map pin) is a ring of spots (src/world/ring.js): the nearest
+// one free of buildings AND of anyone else who has just arrived at the same point.
+function arrivalSpot(x, z, radius = 5) {
+  const taken = others ? others.nearbyPositions(x, z, radius) : []
+  return ringSpot(x, z, (px, pz) => !blockedAt(px, pz), taken)
+}
 function walkTo(x, z, then = null) {
   const spot = freeNear(x, z)
   if (!spot) return false
@@ -216,10 +228,31 @@ function boxHit(minX, maxX, minY, maxY, minZ, maxZ) {
   const hit = ray.ray.intersectBox(box3, v3)
   return hit ? hit.distanceTo(ray.ray.origin) : Infinity
 }
+// Meeting people (item 1): a tap on a real player (campus already does this; the city
+// cut it to City job A's own report) opens their mini card. Within reach, you turn to
+// face them first (item 4), same as the campus does on a tap.
+function playerHit(ndc) {
+  if (!others) return null
+  ray.setFromCamera(ndc, camera)
+  const hit = ray.intersectObjects(others.group.children, true).find((h) => h.object.name === 'hit')
+  let node = hit?.object
+  while (node && !node.userData.remote) node = node.parent
+  return node ? { id: node.userData.remote, avatar: node } : null
+}
 function onTap(ndc) {
   if (!running || !player || !ready || uiBusy()) return
   ray.setFromCamera(ndc, camera)
   if (ray.intersectObject(player, true)[0]) { mover.stop(); pending = null; return }
+  const other = playerHit(ndc)
+  if (other) {
+    smooth.tap()
+    if ((player.userData.pose || 'stand') === 'stand' && Math.hypot(other.avatar.position.x - player.position.x, other.avatar.position.z - player.position.z) < 6) {
+      player.rotation.y = Math.atan2(other.avatar.position.x - player.position.x, other.avatar.position.z - player.position.z)
+    }
+    noteOpen(other.id, player.position.x, player.position.z)
+    window.dispatchEvent(new CustomEvent('mzansi-player-card', { detail: { id: other.id } }))
+    return
+  }
   smooth.tap()
   mover.noteTap()
   // a building, a billboard: the nearest one the finger is on
@@ -244,12 +277,13 @@ function onTap(ndc) {
   if (!ground) return
   // a door, a plot's board, a taxi stop: within a few metres of the finger
   for (const lot of [...LOTS, ...WAVE2]) if (Math.hypot(lot.door.x - ground.x, lot.door.z - ground.z) < 3.5) { goLot(lot); return }
-  for (const s of STOPS) if (Math.hypot(s.x - ground.x, s.z - ground.z) < 4.5) { walkTo(s.x, s.z, { stop: s.id }); return }
+  for (const s of STOPS) if (Math.hypot(s.x - ground.x, s.z - ground.z) < 4.5) { const spot = arrivalSpot(s.x, s.z); walkTo(spot.x, spot.z, { stop: s.id }); return }
   walkTo(ground.x, ground.z)
 }
 function goLot(lot) {
   if (Math.hypot(player.position.x - lot.door.x, player.position.z - lot.door.z) < 2.2) { mover.stop(); openLot(lot.id); return }
-  walkTo(lot.door.x, lot.door.z, { lot: lot.id })
+  const spot = arrivalSpot(lot.door.x, lot.door.z)
+  walkTo(spot.x, spot.z, { lot: lot.id })
 }
 
 // ---------- cards: a door, a taxi stop, a billboard ----------
@@ -307,7 +341,7 @@ function refuse(res, dest) {
 const destOfStop = (s) => ({ id: s.id, name: s.name, part: s.part, x: s.x, z: s.z })
 const destOfLot = (l) => ({ id: l.id, lot: l.id, name: l.name, part: l.part, x: l.door.x, z: l.door.z })
 function place(x, z, facing) {
-  const spot = freeNear(x, z) || { x, z }
+  const spot = arrivalSpot(x, z)
   mover.stop()
   pending = null
   player.position.set(spot.x, 0, spot.z)
@@ -396,12 +430,89 @@ function travel(way, target) {
   const lot = target === 'campus' ? null : lotOf(target)
   const dest = lot ? destOfLot(lot) : { id: 'gate', name: 'Campus gate', part: 'campus', x: SPAWN.x, z: SPAWN.z }
   if (way === 'drive') return drive(lot ? lot.id : 'res')
-  if (way === 'walk') { walkTo(dest.x, dest.z, lot ? { lot: lot.id } : null); return { ok: true } }
+  if (way === 'walk') { const spot = arrivalSpot(dest.x, dest.z); walkTo(spot.x, spot.z, lot ? { lot: lot.id } : null); return { ok: true } }
   const near = nearestStop(player.position.x, player.position.z)
   if (near.dist < 9) { ride(near.stop.id, dest); return { ok: true } }
-  walkTo(near.stop.x, near.stop.z, { ride: dest, from: near.stop.id })
+  const stopSpot = arrivalSpot(near.stop.x, near.stop.z)
+  walkTo(stopSpot.x, stopSpot.z, { ride: dest, from: near.stop.id })
   return { ok: true }
 }
+
+// ---------- Wave and Race to the pier (Meeting people, items 2, 4 and 6) ----------
+// Someone waved or said hi at you (main.js's onPoke, via a 'mzansi-remote-gesture' and
+// a 'mzansi-face-peer' it dispatches): their avatar on this phone plays the gesture,
+// and you turn to face them first, the same as tapping them does.
+function facePeer(id) {
+  const avatar = others?.avatarOf(id)
+  if (!player || !avatar || (player.userData.pose || 'stand') !== 'stand') return
+  if (Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z) > 8) return
+  player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
+}
+window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
+window.addEventListener('mzansi-face-peer', (event) => facePeer(event.detail.id))
+
+// Race to the pier: invite -> accept -> 3-2-1 -> run there yourself -> whoever
+// touches it first wins. A reusable invite/countdown/result flow (src/world/together.js);
+// this file only knows where the pier is and when you've reached it.
+function startRace(withId, withName) {
+  if (!running || race) return
+  facePeer(withId)
+  race = { withId, withName, startAt: 0, mine: null, theirs: null, waitingShown: false }
+  countdown(() => { if (running && race) { race.startAt = performance.now(); window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: '\u{1F3C1} Go! First to touch the pier wins.' } })) } })
+}
+// Touching down right at the pier often crosses into Beachfront the same moment: the
+// district room switch (presence.js setArea) can drop the first race-finish poke while
+// it reconnects, so this resends a few times rather than trusting a single send.
+function finishRace() {
+  if (!race || race.mine != null || !race.startAt) return
+  const mine = race.mine = (performance.now() - race.startAt) / 1000
+  const withId = race.withId
+  gesture(player, 'emote-yes')
+  let tries = 0
+  const resend = () => {
+    if (!race || race.mine !== mine || race.theirs != null) return
+    sendPoke(withId, 'race-finish', { ms: mine })
+    tries += 1
+    if (tries < 7) setTimeout(resend, 700)
+  }
+  resend()
+  setTimeout(() => { if (race && race.mine != null && race.theirs == null) maybeShowResult(true) }, 45000)
+  maybeShowResult()
+}
+function endRace() { race = null; setRacing(false) }
+function maybeShowResult(force = false) {
+  if (!race || race.mine == null) return
+  setRacing(false)
+  if (race.theirs == null && !force) {
+    if (!race.waitingShown) {
+      race.waitingShown = true
+      resultCard({ title: '\u{1F3C1} You touched the pier!', lines: [`Your time: ${race.mine.toFixed(1)}s`, `Waiting for ${race.withName}…`], onClose: endRace })
+    }
+    return
+  }
+  const withId = race.withId
+  const withName = race.withName
+  const solo = race.theirs == null
+  const iWon = solo || race.mine <= race.theirs
+  resultCard({
+    title: iWon ? '\u{1F3C6} You win!' : `\u{1F3C1} ${withName} wins!`,
+    lines: solo ? [`Your time: ${race.mine.toFixed(1)}s`, `${withName} didn’t finish.`] : [`You: ${race.mine.toFixed(1)}s`, `${withName}: ${race.theirs.toFixed(1)}s`],
+    rematch: true,
+    onRematch: () => { endRace(); sendInvite('race', withId, withName); window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `Race invite sent to ${withName}. Waiting…` } })) },
+    onClose: endRace,
+  })
+}
+onInvite('race', (from, name, data, { accept, decline }) => {
+  inviteToast({
+    text: `${name} wants to race to the pier! \u{1F3C1}`,
+    onAccept: () => { accept(); setRacing(true); startRace(from, name) },
+    onDecline: decline,
+  })
+})
+window.addEventListener('mzansi-together-accepted', (event) => { if (event.detail?.kind === 'race') { setRacing(true); startRace(event.detail.withId, event.detail.withName) } })
+window.addEventListener('mzansi-together-declined', (event) => { if (event.detail?.kind === 'race') window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `${event.detail.withName} said no thanks.` } })) })
+window.addEventListener('mzansi-together-timeout', (event) => { if (event.detail?.kind === 'race') window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `${event.detail.toName} didn’t answer.` } })) })
+onPoke((payload) => { if (payload.kind === 'race-finish' && race && payload.from === race.withId) { race.theirs = payload.ms; maybeShowResult() } })
 
 // ---------- people on the street (CAST RULE: skins from skinmix.js) ----------
 function npcLook(i) {
@@ -534,7 +645,7 @@ function ui() {
 #city3d[hidden]{display:none}
 #city3d canvas{display:block;width:100%;height:100%}
 body[data-city="1"] #app{visibility:hidden;pointer-events:none}
-body[data-city="1"] #app .g-hud{visibility:visible;pointer-events:none}
+body[data-city="1"] #app .g-hud,body[data-city="1"] #app .g-menu,body[data-city="1"] #app .g-scrim{visibility:visible;pointer-events:auto}
 body[data-city="1"] #world{display:none}
 .city-ui{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:Figtree,system-ui,sans-serif;--city-top:64px}
 .city-ui[hidden]{display:none}
@@ -664,9 +775,13 @@ function tick(now) {
   if (!scene || !player || !ready) return
   const s = uiBusy() ? null : input.stick()
   if (s) { mover.setStick(s.x, s.z, s.run, s.mag); pending = null } else mover.setStick(0, 0)
+  mover.speedScale = speedFactor(opts.run)
   mover.update(dt)
   const stepping = mover.moving
-  if (stepping) smooth.moved()
+  if (stepping) { smooth.moved(); drainWalking(opts.run, dt) }
+  checkLowHint(opts.run)
+  checkAway(player.position.x, player.position.z)
+  if (race && race.mine == null && Math.hypot(player.position.x - PIER.x, player.position.z - PIER.z) < 3) finishRace()
   soundLoop('footsteps', stepping)
   poseAvatar(player, stepping, clock)
   npcTick(dt)
@@ -793,6 +908,10 @@ export function stopCity() {
   pending = null
   shot = null
   roomPart = ''
+  race = null
+  setRacing(false)
+  document.querySelector('.tg-invite')?.remove()
+  document.querySelector('.tg-result')?.remove()
 }
 
 // Tests and screenshots (read-mostly).

@@ -1105,6 +1105,33 @@ body > .chat-panel[hidden] { display: none; }
 .pc-report { display: flex; flex-direction: column; gap: 8px; }
 .pc-report p { margin: 0; }
 .pc-report .ghost { background: transparent; border-color: #ffffff44; }
+.pc-mini-body { position: absolute; bottom: calc(10px + env(safe-area-inset-bottom)); background: #1d1236; border: 1.5px solid #ffffff22; border-radius: 18px; padding: 12px; color: #fff6e6; pointer-events: auto; box-shadow: 0 10px 30px #0008; transform: translateY(100%); transition: transform .22s ease-out; }
+.pc-sheet-wrap.on .pc-mini-body { transform: translateY(0); }
+.pc-mini { display: flex; flex-direction: column; gap: 10px; }
+.pc-mini-row { display: flex; align-items: flex-start; gap: 10px; }
+.pc-mini-face { width: 52px; height: 52px; flex: none; border-radius: 50%; overflow: hidden; border: 2px solid var(--h1, #f0c400); box-shadow: 0 0 0 2px var(--h2, #1c1915) inset; background: #2a1846; }
+.pc-mini-face svg, .pc-mini-face img { width: 100%; height: 100%; object-fit: cover; }
+.pc-mini-id { flex: 1; min-width: 0; }
+.pc-mini-name { margin: 0; font: 800 16px Figtree, system-ui, sans-serif; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.pc-mini-name small { font-weight: 600; opacity: .7; font-size: 13px; }
+.pc-mini-vibe { margin: 2px 0 0; font-size: 14px; color: #f0c400; }
+.pc-mini-vibe .empty { color: #ffffff88; font-weight: 400; }
+.pc-mini-grey { margin: 2px 0 0; font-size: 13px; color: #c9bfe0; }
+.pc-mini-x { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 0; background: #ffffff18; color: #fff; font-size: 14px; }
+.pc-mini-acts { display: flex; align-items: center; gap: 8px; }
+.pc-mini-acts button { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 2px solid #f0c400; background: #2a1846; color: #fff6e6; font: 800 14px Figtree, system-ui, sans-serif; white-space: nowrap; }
+.pc-mini-wave { background: #f0c400; color: #22143b; }
+.pc-mini-race { border-color: #3ddc84; }
+.pc-mini-more { position: relative; margin-left: auto; }
+.pc-mini-more > button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: #ffffff18; color: #fff; font-size: 18px; }
+.pc-mini-menu { position: absolute; right: 0; bottom: calc(100% + 8px); display: flex; flex-direction: column; gap: 4px; background: #2a1846; border: 1px solid #ffffff22; border-radius: 12px; padding: 6px; min-width: 170px; box-shadow: 0 10px 24px #000a; }
+.pc-mini-menu[hidden] { display: none; }
+.pc-mini-menu button { min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #fff6e6; text-align: left; font: 700 14px Figtree, system-ui, sans-serif; }
+.pc-mini-menu button:hover, .pc-mini-menu button:active { background: #ffffff14; }
+.pc-mini-menu button.bad { color: #ffb3b3; }
+.pc-mini-menu button:disabled { opacity: .6; }
+.g-toast-action { display: flex; align-items: center; gap: 10px; }
+.g-toast-action button { flex: none; min-height: 32px; padding: 0 12px; border-radius: 16px; border: 0; background: #f0c400; color: #1c1915; font: 800 13px Figtree, system-ui, sans-serif; }
 .nt-screen .pc-bar { color: inherit; }
 /* (the card screen is dark: its buttons carry their own colours; the floating home button sits top left) */
 .pc-bar { padding-left: 58px; }

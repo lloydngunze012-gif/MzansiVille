@@ -377,6 +377,16 @@
     }
   ],
   "fullName": "University of Mzansi",
+  "energy": {
+    "walkPerMinute": 2,
+    "taxiCost": 3,
+    "driveCost": 0,
+    "lowThreshold": 10,
+    "lowSpeedFactor": 0.65,
+    "realSecondsPerGameMinute": 1.5,
+    "raceDrainFactor": 0.5,
+    "lowHint": "Getting tired. Eat something soon."
+  },
   "smoothness": {
     "settingLabel": "Send smoothness reports",
     "settingHelp": "How smoothly the game runs, your phone type and where it slowed, never your name, messages or real location.",

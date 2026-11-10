@@ -73,7 +73,10 @@ import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
 import { watchStats, wireSfx } from './sfx.js'
 import { candidates, checkRules, claimHandle, handleStatus, nextChange, suggestFor, tidyHandle } from './handles.js'
-import { playerCardHtml } from './ui/card.js'
+import { miniCardHtml, playerCardHtml } from './ui/card.js'
+import { noteClosed } from './ui/minicard-state.js'
+import { drainDrive, drainTaxi } from './engine/energy.js'
+import { sendInvite } from './world/together.js'
 import { STUDENTS } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
 import { flush as flushScores, loadBadges, note as noteScore } from './scores.js'
@@ -612,8 +615,9 @@ function exitCity(kind = 'gate') {
   if (hasGL()) (worldPromise ||= import('./world/scene.js')).then((mod) => mod.arriveFromCity(kind)).catch(() => {})
   paint()
 }
-// A taxi or the car was paid for: the clock moves on for a taxi (never past the end of the slot), the top bar shows the money.
-function cityPaid({ minutes = 0 } = {}) {
+// A taxi or the car was paid for: the clock moves on for a taxi (never past the end of the slot), the top bar shows
+// the money. Meeting people, item 5: a taxi ride also costs a flat bit of energy; driving costs none.
+function cityPaid({ minutes = 0, kind = '' } = {}) {
   const run = save.run
   if (!run) return
   if (minutes && run.mode === 'play') {
@@ -622,6 +626,8 @@ function cityPaid({ minutes = 0 } = {}) {
     const limit = next ? toMinutes(next.start) - 1 : run.minutes + 60
     run.minutes = Math.max(run.minutes, Math.min(limit, run.minutes + minutes))
   }
+  if (kind === 'taxi') drainTaxi(run)
+  else if (kind === 'car') drainDrive(run)
   persist()
   paint()
 }
@@ -774,7 +780,18 @@ function paint() {
   armAuto()
 }
 
+// Meeting people (owner, 10 Nov), item 7: the menu's own links (Settings, Student
+// card, Notices...) open a screen inside #app, which the city hides while it runs. A
+// step out of the city (never clearing run.cityAt) does it without losing your spot:
+// back on '#/play' the usual cityAt check (syncWorld) walks straight back in.
+function stepOutOfCityForMenu() {
+  if (!cityLive) return
+  cityLive = false
+  cityPromise?.then((mod) => mod.stopCity())
+  delete document.body.dataset.city
+}
 function go(path) {
+  if (path !== 'play') stepOutOfCityForMenu()
   const next = `#/${path}`
   if (location.hash === next) paint()
   else location.hash = next
@@ -2460,12 +2477,17 @@ function saveCardForm() {
   paint()
 }
 
-// Someone else's card: tapped on campus, it slides up from the bottom; one tap on the
-// scrim, the grab bar or Close puts it away. Wave, Say hi, Add friend, Report.
+// Someone else's card: tapped on campus or in SunnyBay, it opens as a mini strip (about
+// a third of the screen, the world still visible and still walkable behind it; Meeting
+// people, item 1). One tap on Close, or walking away (src/ui/minicard-state.js), puts
+// it away. "View full card" (or your own profile) is the old full card, which still
+// pauses movement like any other dialog.
 let sheetFor = ''
 let sheetCard = null
 let sheetMessage = '' // opened from a line in the chat: that line goes with a report
 let sheetKeep = false // opened from the chat: closing it leaves the chat (and its camera) as it was
+let sheetMode = 'mini' // 'mini' | 'full'
+let sheetMore = false // the mini card's ⋯ menu
 const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 function sheetEl() {
   let el = document.querySelector('.pc-sheet-wrap')
@@ -2477,13 +2499,17 @@ function sheetEl() {
   }
   return el
 }
+const MINI_HTML = '<div class="pc-mini-body"><p class="fine">Loading…</p></div>'
+const FULL_HTML = '<div class="pc-scrim" data-pc="close"></div><aside class="pc-sheet" role="dialog" aria-label="Player card"><button type="button" class="pc-grab" data-pc="close" aria-label="Close"></button><div class="pc-sheet-body"><p class="fine">Loading their card…</p></div></aside>'
 function openPlayerCard(id, opts = {}) {
   sheetFor = id
   sheetCard = null
   sheetMessage = String(opts.message || '')
   sheetKeep = Boolean(opts.keep)
+  sheetMode = opts.full ? 'full' : 'mini'
+  sheetMore = false
   const el = sheetEl()
-  el.innerHTML = '<div class="pc-scrim" data-pc="close"></div><aside class="pc-sheet" role="dialog" aria-label="Player card"><button type="button" class="pc-grab" data-pc="close" aria-label="Close"></button><div class="pc-sheet-body"><p class="fine">Loading their card…</p></div></aside>'
+  el.innerHTML = sheetMode === 'full' ? FULL_HTML : MINI_HTML
   el.hidden = false
   el.dataset.opened = String(Date.now())
   requestAnimationFrame(() => el.classList.add('on'))
@@ -2496,11 +2522,25 @@ function closePlayerCard(keep = false) {
   const el = document.querySelector('.pc-sheet-wrap')
   if (!el) return
   if (!keep && !sheetKeep) window.dispatchEvent(new CustomEvent('mzansi-convo-end'))
+  noteClosed(sheetFor)
   sheetFor = ''
   el.classList.remove('on')
   setTimeout(() => { if (!sheetFor) { el.hidden = true; el.innerHTML = '' } }, 260)
 }
 function renderSheet(reporting = false) {
+  if (sheetMode === 'mini') {
+    const body = document.querySelector('.pc-mini-body')
+    if (!body || !sheetCard) return
+    const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
+    const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
+    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive, moreOpen: sheetMore }); return }
+    const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
+    const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
+    body.innerHTML = `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>
+      ${reasons.map((r) => `<button type="button" data-pc="report-${escHtml(r)}">${escHtml(r)}</button>`).join('')}
+      <button type="button" class="ghost" data-pc="report-cancel">Cancel</button></div>`
+    return
+  }
   const body = document.querySelector('.pc-sheet-body')
   if (!body || !sheetCard) return
   const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
@@ -2528,10 +2568,22 @@ function onSheetClick(event) {
   // (the tap that opened the card ends in a click on the same spot, now the scrim: not a close)
   if (k === 'close' && Date.now() - Number(event.currentTarget.dataset.opened || 0) < 500) return
   if (k === 'close') { closePlayerCard(); return }
+  if (k === 'more') { sheetMore = !sheetMore; renderSheet(); return }
+  if (k === 'full') { sheetMode = 'full'; sheetMore = false; document.querySelector('.pc-sheet-wrap').innerHTML = FULL_HTML; requestAnimationFrame(() => document.querySelector('.pc-sheet-wrap')?.classList.add('on')); renderSheet(); return }
   if (k === 'wave') {
+    if (!canWave(id)) { toast(`You’ve waved at ${name} enough for today.`); return }
+    noteWave(id)
+    persist()
     sendPoke(id, 'wave')
     window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { id } }))
     toast(`\u{1F44B} You waved at ${name}`)
+    closePlayerCard()
+    return
+  }
+  // Race to the pier (Meeting people, item 6; src/world/together.js): city only.
+  if (k === 'race') {
+    sendInvite('race', id, sheetCard?.name || name)
+    toast(`\u{1F3C1} Race invite sent to ${name}. Waiting…`)
     closePlayerCard()
     return
   }
@@ -2556,6 +2608,7 @@ function onSheetClick(event) {
     persist()
     sendPoke(id, 'friend')
     toast(`\u{1F91D} ${name} is on your friends list`)
+    sheetMore = false // (the ⋯ menu closes after an action, so it never covers the card)
     renderSheet()
     return
   }
@@ -2576,15 +2629,69 @@ function blockPlayer(id) {
   window.dispatchEvent(new CustomEvent('mzansi-block', { detail: { id } }))
 }
 window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id, event.detail))
+// Walking away closes the mini card (never the full one: movement is already paused
+// while that's open), src/ui/minicard-state.js.
+window.addEventListener('mzansi-player-card-close', (event) => { if (sheetMode === 'mini' && sheetFor === event.detail?.id) closePlayerCard() })
 // Said something to a player on campus (src/chat.js): counted for the weekly leaderboard.
 window.addEventListener('mzansi-said', () => { countDone('player_say', '', 'social'); persist() })
+// Meeting people, item 2: a daily limit of 3 waves per pair (per phone; what this
+// phone has sent to that player today), so it can't be spammed.
+function canWave(id) {
+  const run = save.run
+  if (!run) return true
+  const rec = run.waveCounts?.[id]
+  return !rec || rec.day !== run.day || rec.count < 3
+}
+function noteWave(id) {
+  const run = save.run
+  if (!run) return
+  const store = (run.waveCounts ||= {})
+  const rec = store[id]
+  if (!rec || rec.day !== run.day) store[id] = { day: run.day, count: 1 }
+  else rec.count += 1
+}
+// A toast with one button (Wave back), auto-dismissed; a plain toast() has none.
+let actionToastTimer = 0
+function actionToast(text, label, onClick, ms = 6000) {
+  let node = document.getElementById('toast-action')
+  if (!node) {
+    node = document.createElement('div')
+    node.id = 'toast-action'
+    node.className = 'g-toast g-toast-action'
+    node.setAttribute('role', 'status')
+    document.body.append(node)
+  }
+  node.innerHTML = `<span>${escHtml(text)}</span><button type="button">${escHtml(label)}</button>`
+  node.hidden = false
+  node.querySelector('button').onclick = () => { node.hidden = true; onClick?.() }
+  clearTimeout(actionToastTimer)
+  actionToastTimer = setTimeout(() => { node.hidden = true }, ms)
+}
 // Someone did something to you.
 onPoke(({ from, kind, name }) => {
   const who = String(name || 'Someone').split(' ')[0]
-  if (kind === 'wave') { toast(`\u{1F44B} ${who} waved at you`); window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from } })) }
-  if (kind === 'hi') { toast(`\u{1F4AC} ${who} says hi!`); window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from, gesture: 'interact-right' } })) }
+  if (kind === 'wave') {
+    window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from } }))
+    window.dispatchEvent(new CustomEvent('mzansi-face-peer', { detail: { id: from } }))
+    actionToast(`\u{1F44B} ${who} waved at you`, 'Wave back', () => {
+      if (!canWave(from)) { toast(`You’ve waved at ${who} enough for today.`); return }
+      noteWave(from)
+      persist()
+      sendPoke(from, 'wave')
+      window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { id: from } }))
+    })
+  }
+  if (kind === 'hi') {
+    toast(`\u{1F4AC} ${who} says hi!`)
+    window.dispatchEvent(new CustomEvent('mzansi-remote-gesture', { detail: { id: from, gesture: 'interact-right' } }))
+    window.dispatchEvent(new CustomEvent('mzansi-face-peer', { detail: { id: from } }))
+  }
   if (kind === 'friend') toast(`\u{1F91D} ${who} added you as a friend`)
 })
+// A scene (either one) says a toast is wanted, without needing to import main.js.
+window.addEventListener('mzansi-toast', (event) => { if (event.detail?.text) toast(event.detail.text) })
+// Meeting people, item 5: under 10 energy, a one-time friendly hint (src/engine/energy.js).
+window.addEventListener('mzansi-energy-low', (event) => toast(event.detail?.text || 'Getting tired. Eat something soon.'))
 for (const id of save.blocks || []) hidePlayer(id)
 
 // ---------- Launch job (owner, 9 Nov): quick start, the card prompt, the weekly boards, feedback, health ----------

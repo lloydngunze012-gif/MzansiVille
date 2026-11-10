@@ -37,3 +37,43 @@ export function playerCardHtml(card, house, opts = {}) {
     <div class="pc-badges">${badges}</div>
   </article>`
 }
+
+// Meeting people (owner, 10 Nov), item 1: the mini card. About a third of the screen,
+// the world visible behind it, never a dialog (main.js gives it no role so it never
+// pauses movement; src/ui/minicard-state.js closes it when you walk away). Face,
+// name, flag, @handle, the vibe line, one grey "House · Course · Year" line, then
+// Wave / Say hi / (Race, in the city) / a ⋯ menu for Add friend, View full card,
+// Block, Report.
+export function miniCardHtml(card, house, opts = {}) {
+  const vars = house ? `--h1:${house.main};--h2:${house.accent}` : ''
+  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 72)
+  const friend = Boolean(opts.friend)
+  const houseName = house?.name || canonicalHouse(card.house) || 'UMzansi'
+  const grey = [houseName, card.tags?.course, card.year ? `${esc(ORD[card.year] || `${card.year}th`)} year` : ''].filter(Boolean).join(' · ')
+  const flag = (card.from || card.country) ? flagOf(card.from || card.country) : ''
+  return `<article class="pc-mini" data-house="${esc(house?.id || '')}" style="${vars}">
+    <div class="pc-mini-row">
+      <div class="pc-mini-face">${photo}</div>
+      <div class="pc-mini-id">
+        <p class="pc-mini-name">${esc(card.name || 'Student')} ${flag}${card.handle ? `<small>@${esc(card.handle)}</small>` : ''}</p>
+        <p class="pc-mini-vibe">${card.tags?.vibe ? `✨ ${esc(card.tags.vibe)}` : '<span class="empty">No vibe set yet</span>'}</p>
+        <p class="pc-mini-grey">${esc(grey || 'UMzansi student')}</p>
+      </div>
+      <button type="button" class="pc-mini-x" data-pc="close" aria-label="Close">✕</button>
+    </div>
+    <div class="pc-mini-acts">
+      <button type="button" class="pc-mini-wave" data-pc="wave">\u{1F44B} Wave</button>
+      <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
+      ${opts.race ? '<button type="button" class="pc-mini-race" data-pc="race">\u{1F3C1} Race</button>' : ''}
+      <span class="pc-mini-more">
+        <button type="button" data-pc="more" aria-haspopup="true" aria-expanded="${opts.moreOpen ? 'true' : 'false'}" aria-label="More">⋯</button>
+        <span class="pc-mini-menu"${opts.moreOpen ? '' : ' hidden'}>
+          <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+          <button type="button" data-pc="full">\u{1F4C7} View full card</button>
+          <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
+          <button type="button" class="bad" data-pc="report">⚑ Report</button>
+        </span>
+      </span>
+    </div>
+  </article>`
+}

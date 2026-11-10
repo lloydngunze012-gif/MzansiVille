@@ -264,11 +264,13 @@ function cityStyle() {
 .cm-overlay{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:#efe4cff5;font-family:Figtree,system-ui,sans-serif;color:#1c1915}
 .cm-overlay[hidden]{display:none}
 .cm-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px}
+.cm-head .cm-title{display:flex;align-items:center;gap:8px}
 .cm-head h2{margin:0;font:800 22px Graduate,Figtree,system-ui,sans-serif}
 .cm-head p{margin:0;font-size:14px;color:#6b5d48}
 .cm-head button,.cm-ways button{min-height:44px;border:0;border-radius:22px;padding:0 16px;font:800 14px Figtree,system-ui,sans-serif;cursor:pointer}
 .cm-head button{background:#22143b;color:#fff}
 .cm-head .cm-campus{background:#f0c400;color:#1c1915;margin-right:6px}
+.cm-back{width:44px!important;padding:0!important;background:#fffaf0!important;color:#1c1915!important;border:1.5px solid #e2d4b8!important;font-size:18px!important}
 .cm-body{flex:0 1 auto;min-height:0;display:flex;align-items:flex-start;justify-content:center;padding:0 8px}
 .cm-stage{position:relative;width:100%;max-width:min(560px,calc((100vh - 330px) * 1.04));aspect-ratio:${CM.w} / ${CM.h};border-radius:16px;overflow:hidden;border:1.5px solid #d9c9a8;background:#7f9a58}
 .cm-stage svg{position:absolute;inset:0;width:100%;height:100%}
@@ -312,7 +314,7 @@ function buildCityMap(parent) {
   overlay.hidden = true
   overlay.setAttribute('role', 'dialog')
   overlay.setAttribute('aria-label', `${CITY.name} map`)
-  overlay.innerHTML = `<div class="cm-head"><div><h2>${CITY.name}</h2><p data-cm-here></p></div><span><button type="button" class="cm-campus" data-cm="campus" hidden>Campus map</button><button type="button" data-cm="close">Close</button></span></div>
+  overlay.innerHTML = `<div class="cm-head"><div class="cm-title"><button type="button" class="cm-back" data-cm="close" aria-label="Back">←</button><div><h2>${CITY.name}</h2><p data-cm-here></p></div></div><span><button type="button" class="cm-campus" data-cm="campus" hidden>Campus map</button><button type="button" data-cm="close">Close</button></span></div>
     <div class="cm-body"><div class="cm-stage"></div></div>
     <p class="cm-hint">Tap a pin to see how to get there.</p>
     <aside class="cm-detail" hidden></aside>`
@@ -459,10 +461,14 @@ function buildCityMap(parent) {
     counts()
     clearInterval(timer)
     timer = setInterval(() => { if (overlay.hidden) clearInterval(timer); else place() }, 500)
+    // The phone's own back gesture closes the map too, same as Close (owner, 10 Nov).
+    try { history.pushState({ ...history.state, cmMapOpen: true }, '') } catch { /* private mode, or no history api */ }
   }
   function close() {
     overlay.hidden = true
     clearInterval(timer)
+    if (history.state?.cmMapOpen) { try { history.back() } catch { /* ignore */ } }
   }
+  window.addEventListener('popstate', () => { if (!overlay.hidden && !history.state?.cmMapOpen) { overlay.hidden = true; clearInterval(timer) } })
   return { open, close, isOpen: () => !overlay.hidden, select }
 }

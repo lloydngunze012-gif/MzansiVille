@@ -13,6 +13,9 @@ export const FENCE_R = 103 // the campus fence (src/world/surroundings.js)
 export const RING_OUT = 113 // the outer edge of the campus ring road
 export const GATE = { x: 0, z: 106, half: 4.5 } // the gap in the fence: the way in and out of campus
 export const SPAWN = { x: 0, z: 112.5 } // where you stand when you walk out of the gate
+// Meeting people (owner, 10 Nov), item 6: the pier, out past the Beach lot's open sand
+// (east of it, toward the sea edge of the plan, nowhere near the river or the fence).
+export const PIER = { x: 290, z: 0 }
 const BRIDGE_HALF = 5
 
 const inRect = (r, x, z, pad = 0) => x >= r[0] - pad && x <= r[2] + pad && z >= r[1] - pad && z <= r[3] + pad

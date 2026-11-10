@@ -140,11 +140,11 @@ test('T2 tap a player within 4 m: two-shot (Eye view too), back out when the car
   const before = await B.evaluate(() => window.mzansiShot())
   await page.screenshot({ path: `${OUT}/T2-before.png` })
   await record(B)
-  for (let i = 0; i < 5 && !(await B.locator('.pc-sheet .pcard').isVisible().catch(() => false)); i++) {
+  for (let i = 0; i < 5 && !(await B.locator('.pc-mini-body .pc-mini-name').isVisible().catch(() => false)); i++) {
     await tapOther(page, B, BX)
     await page.waitForTimeout(900)
   }
-  await expect(B.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await expect(B.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
   await page.waitForTimeout(900)
   const into = await stopRecord(B)
   const shot = await B.evaluate(() => window.mzansiShot())
@@ -153,7 +153,7 @@ test('T2 tap a player within 4 m: two-shot (Eye view too), back out when the car
   await page.screenshot({ path: `${OUT}/T2-card.png` })
   // Close: one tap on Close; the camera eases back to B's Eye view.
   await record(B)
-  await tapIn(page, B.locator('.pc-sheet .pc-close'))
+  await tapIn(page, B.locator('.pc-mini-x'))
   await page.waitForTimeout(1200)
   const back = await stopRecord(B)
   const after = await B.evaluate(() => window.mzansiShot())
@@ -214,7 +214,7 @@ test('T3 player chat: Say hi, bubbles within 15 m for 8 s, log, quick phrases, f
   const bubbleOn = (frame, speaker) => frame.evaluate((s) => window.mzansiBubbles().find((b) => b.speaker === s) || null, speaker)
 
   // 1. B taps A; Say hi opens the text box (the card goes, the two-shot stays).
-  for (let i = 0; i < 5 && !(await B.locator('.pc-sheet .pcard').isVisible().catch(() => false)); i++) {
+  for (let i = 0; i < 5 && !(await B.locator('.pc-mini-body .pc-mini-name').isVisible().catch(() => false)); i++) {
     await tapOther(page, B, BX)
     await page.waitForTimeout(900)
   }
@@ -262,7 +262,8 @@ test('T3 player chat: Say hi, bubbles within 15 m for 8 s, log, quick phrases, f
   out.answer.logStill = await lineOn(B, 'Sharp sharp')
   // 7. B blocks A (from the line in B's log): A's body, bubbles and lines are gone for B.
   await tapIn(page, B.locator(`.chat-log .chat-who[data-id="${aId}"]`).first())
-  await expect(B.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await expect(B.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
+  await tapIn(page, B.locator('[data-pc="more"]'))
   await tapIn(page, B.locator('[data-pc="block"]'))
   await page.waitForTimeout(1500)
   await tapIn(page, A.locator('.chat-quick [data-say="Lekker vibes 🔥"]'))
@@ -304,7 +305,8 @@ test('T3 player chat: Say hi, bubbles within 15 m for 8 s, log, quick phrases, f
   // 9. A reports B from the log (B's line goes with it): it reaches Supabase.
   await tapIn(page, A.locator('.chat-btn'))
   await tapIn(page, A.locator(`.chat-log .chat-who[data-id="${bId}"]`).last())
-  await expect(A.locator('.pc-sheet .pcard')).toBeVisible({ timeout: 5000 })
+  await expect(A.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
+  await tapIn(page, A.locator('[data-pc="more"]'))
   await tapIn(page, A.locator('[data-pc="report"]'))
   out.reportNote = await A.locator('.pc-report small').textContent().catch(() => '')
   await tapIn(page, A.locator('[data-pc="report-Rude or hateful"]'))
