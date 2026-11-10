@@ -32,7 +32,7 @@ Home country: enrolment (src/ui/enrol.js ENROL_STEPS look, roommate, who, vibe, 
 ---
 
 # PUSH AND DEPLOY RULE (owner, 8 Nov). Replaces every "push, don't deploy" and "owner's go" below.
-Every job ends with a push to main and a production deploy (`npx vercel deploy --prod --yes`; the website: `npm run build`, `npm run prebuilt`, `npx vercel deploy --prebuilt --prod` from site/), with no asking. Still ask first, always: anything that moves real money (purchases, the Organt shop, payments, trades), deleting data (Supabase rows or tables, saves, files outside the repo, force-push, rewriting history), and anything with secrets (keys, tokens, .env: never commit, print or paste them). Running SQL in the Supabase editor stays the owner's job. If something breaks, the owner uses Instant Rollback in Vercel.
+Every job ends with a push to main and a production deploy (`npx vercel deploy --prod --yes -b BUILD_COMMIT=$(git rev-parse --short HEAD)`, so #/health and the error reports name the commit; the website: `npm run build`, `npm run prebuilt`, `npx vercel deploy --prebuilt --prod` from site/), with no asking. Still ask first, always: anything that moves real money (purchases, the Organt shop, payments, trades), deleting data (Supabase rows or tables, saves, files outside the repo, force-push, rewriting history), and anything with secrets (keys, tokens, .env: never commit, print or paste them). Running SQL in the Supabase editor stays the owner's job. If something breaks, the owner uses Instant Rollback in Vercel.
 
 ---
 
