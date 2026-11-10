@@ -22,7 +22,7 @@ Tick these on the first sit-down.
 - [ ] Take a minibus taxi somewhere in SunnyBay
 - [ ] Wave at someone who waves back
 - [ ] Queue at the Caf and eat
-- [ ] Open Things to do at two different places
+- [ ] Open Things to do at two different places (campus places count)
 - [ ] Work one paid gig
 - [ ] Sit and study at the library
 - [ ] Run the race to the pier, win or lose
@@ -39,17 +39,18 @@ Tick these on the first sit-down.
 
 ## Weekly challenges
 
-Playable from the first weeks. Steps use only gigs, taxis, the Caf, the library, the gym, waving, the race to the pier, and saving money. Rewards are a badge plus game rand.
+Playable from the first weeks. Steps use only gigs, taxis, the Caf, the library, the gym, waving, the race to the pier, and saving money. Rags to Riches also uses the driving school. Rewards are a badge plus game rand.
 
 ### 1. Rags to Riches
 
 Start from R0 and buy the first car. This one can run across the first weeks.
 
-1. Empty the pocket: Caf meals and taxis until the HUD reads R0.
+1. Accept the challenge: your wallet resets to R0.
 2. Work a gig every day. Do not skip a shift.
 3. Eat at the Caf, the cheap plate, nothing extra.
-4. Save until the number can cover the first car (R4,500).
-5. Buy the first car.
+4. Save R5,350 (licence plus first car).
+5. Get your licence at the driving school (R850).
+6. Buy the first car.
 
 **Reward:** Empty Pockets badge + R300
 
@@ -74,8 +75,8 @@ Start from R0 and buy the first car. This one can run across the first weeks.
 
 ### 4. Quiet Money
 
-1. Study at the library twice.
-2. Taxi to the library once only. The second sit starts from campus.
+1. Study at the campus library twice.
+2. Taxi once to the SunnyBay Public Library.
 3. Eat once at the Caf, not twice in a day.
 4. End the week with more money than you started it.
 
@@ -93,7 +94,7 @@ Start from R0 and buy the first car. This one can run across the first weeks.
 ### 6. Rank Map
 
 1. Take three taxis to three different places.
-2. Wave from a seat, not from the pavement.
+2. Wave at someone at a taxi stop.
 3. One of the trips must end near the pier.
 4. Do not race. Just arrive, then taxi back.
 5. Save the fare you did not spend on a fourth trip.
@@ -127,7 +128,7 @@ Screen recordings of the game, voiceover on top. 15 to 25 seconds. No face neede
 
 ### 1. Rags to Riches
 
-**Hook (0–2s):** "I started this week on R0."
+**Hook (0–2s):** "Accepted the challenge. Wallet: R0."
 
 **Beats:**
 
@@ -168,8 +169,8 @@ Screen recordings of the game, voiceover on top. 15 to 25 seconds. No face neede
 **Beats:**
 
 1. Rank, a caller, the van filling. Voice: "Fare goes forward. Story starts behind you."
-2. Window, SunnyBay sliding past. Voice: "Campus, then town, then the water."
-3. Hop out, wave, another taxi. Voice: "You live here now."
+2. The fare card, then hopping out in a new district. Voice: "Short card. New street. That's the ride."
+3. Wave, then another taxi. Voice: "You live here now."
 
 **End:** "Ride SunnyBay in Soft Life. Tap play."
 
