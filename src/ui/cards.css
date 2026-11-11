@@ -35,6 +35,7 @@
 :root .cht-sheet,
 :root .cht-ping,
 :root .cht-wake,
+:root .cht-ask,
 :root .jt-toast,
 :root .wk-card,
 /* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */

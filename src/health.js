@@ -41,14 +41,18 @@ export async function checkHealth() {
   const auth = await ping('/auth/v1/health')
   result.supabase = { ok: auth.status > 0 && auth.status < 500, ms: auth.ms, status: auth.status }
   // The launch block (supabase/launch.sql): present if its tables answer (an empty list or rows; 404 means missing).
-  const [rules, feedback, handles, chat] = await Promise.all([
+  const [rules, feedback, handles, chat, socialA, socialB, socialF] = await Promise.all([
     ping('/rest/v1/score_rules?select=activity_id&limit=1'),
     ping('/rest/v1/feedback?select=id&limit=1'),
     ping('/rest/v1/player_cards?select=id&limit=1'),
     // (Chat sprint: supabase/chat.sql; its tables answer with an empty list, since nobody may read them directly)
     ping('/rest/v1/chat_threads?select=id&limit=1'),
+    // (Social A, Social B and the follow-ups: the newest table of each block of supabase/chat.sql)
+    ping('/rest/v1/chat_friends?select=player&limit=1'),
+    ping('/rest/v1/chat_follows?select=follower&limit=1'),
+    ping('/rest/v1/chat_group_asks?select=id&limit=1'),
   ])
-  result.sql = { leaderboard: rules.status === 200, feedback: feedback.status === 200, cards: handles.status === 200, chat: chat.status === 200 }
+  result.sql = { leaderboard: rules.status === 200, feedback: feedback.status === 200, cards: handles.status === 200, chat: chat.status === 200, social: [socialA.status === 200, socialB.status === 200, socialF.status === 200] }
   if (result.supabase.ok) {
     try {
       const client = await getClient()

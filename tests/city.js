@@ -47,11 +47,21 @@ export async function intoCity(page) {
   await expect.poll(async () => (await page.evaluate(() => window.mzansiPlayerPos())).z, { timeout: 60000 }).toBeGreaterThan(98.5)
   // (standing still, the camera settled: the tap lands where it is aimed)
   await expect.poll(() => page.evaluate(() => window.mzansiWalkPace().now), { timeout: 20000 }).toBe(0)
-  // (the road at the gate line: a tap there or past it walks you out. Wait until that spot has stopped moving on
-  // screen, however long the camera takes on a busy machine: a fixed 0.9 s once let the tap land beside it)
-  const spot = () => page.evaluate(() => window.mzansiScreenOf(0.4, 102.8))
-  let p = await spot()
-  await expect.poll(async () => { const was = p; await page.waitForTimeout(350); p = await spot(); return Math.hypot(p.x - was.x, p.y - was.y) }, { timeout: 20000 }).toBeLessThan(1)
+  // A tap on the road at or past the gate line walks you out. Like a player, tap a piece of that road that can be
+  // seen: where the camera ended up decides which pieces are on screen and which sit under a button (the Talk and
+  // Stop buttons, the minimap, the bottom bar), so the spot is chosen from a few, on the picture itself, once it
+  // has stopped moving on screen (a fixed spot after a fixed 0.9 s once landed beside the road, once under a bar).
+  const spots = [[0.4, 102.8], [0.4, 104.5], [-1.6, 103.5], [1.8, 103.5], [0.4, 106], [0.4, 101.6]]
+  const pick = () => page.evaluate((list) => {
+    for (const [x, z] of list) {
+      const p = window.mzansiScreenOf(x, z)
+      if (!p || !(p.x > 8 && p.y > 8 && p.x < innerWidth - 8 && p.y < innerHeight - 8)) continue
+      if (document.elementFromPoint(p.x, p.y)?.tagName === 'CANVAS') return { x: p.x, y: p.y }
+    }
+    return null
+  }, spots)
+  let p = await pick()
+  await expect.poll(async () => { const was = p; await page.waitForTimeout(350); p = await pick(); return was && p ? Math.hypot(p.x - was.x, p.y - was.y) : 99 }, { timeout: 20000, message: 'a piece of the road past the gate is on screen, clear of the buttons, and still' }).toBeLessThan(1)
   await page.touchscreen.tap(p.x, p.y)
   await expect(city(page)).toHaveAttribute('data-ready', '1', { timeout: 90000 })
   await page.waitForTimeout(700)

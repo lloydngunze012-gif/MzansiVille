@@ -1,7 +1,15 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (Social B).
+Last updated: 11 Nov, Claude Code (Social A follow-ups).
+
+## Social A follow-ups (owner, 11 Nov): built; RUN supabase/chat.sql ONCE MORE
+- **Lloyd: run the whole of `supabase/chat.sql` again** (it changed after your run: Social B and these follow-ups). `#/health` then shows "Social SQL: Yes". Until then the live game talks to the older functions: chat, groups and friends work as they did after your run; asks, remove, rename, the Board, the Feed and interests are off.
+- **What changed.** Adding someone who is not a friend both ways sends a card (Join / No thanks; 24 hours; counts as an invite; never past a block); friends both ways go straight in; the link is agreeing. Online dots only for friends both ways, decided on the server. The creator can rename the group and remove a member, who cannot come back by the link. A "Social SQL" row on #/health.
+- **Report, with the Realtime budget for a Quad per room:** docs/sprints/social-a/report.md. Short version: free plan about 30 players lively or 17 flat out, in one room, as before; Pro about 160 lively or 80 flat out, and the cost now grows with players, not with their square.
+- **Test health.** The three-phone test found one GAME fault: a removed member's phone stayed on the group's thread until the next sync; it now drops the group as soon as the server says so. One TEST fault: it "reopened" the link with the same address, which the browser treats as no navigation; it reloads now.
+- **More test health (quick gate).** First run 74 of 75: social-quick A3 had Bonga add a non-friend straight in, which the new rule turns into an ask; the TEST now makes them friends both ways first. A partial re-run then showed two timing faults in TESTS, both fixed at the cause: (1) the gate helper's "close any card that is up" step tapped the interest picker's first chip when the picker came early (social-b B2 now sets the flag after the helper is done); (2) `intoCity` tapped a fixed spot on the road that can sit under a button depending on where the camera ended up: it now picks a piece of the road that is on the picture and still. This second one is the real cause of the Q2 failure recorded under Social A (the settle-wait there was not it).
+- **Tests.** 29 SQL checks; social-quick A1, A5; tests/presence/social.spec.js on three phones.
 
 ## Social B (owner, 11 Nov): built; needs the same re-run of supabase/chat.sql as Social A
 - **Lloyd: one run of the whole `supabase/chat.sql` turns on Social A and Social B together.**

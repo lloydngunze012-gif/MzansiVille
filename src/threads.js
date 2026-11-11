@@ -47,6 +47,7 @@ let syncAgain = false
 // the server has none of it: social is false, chat works as before and the new buttons say "opens soon".
 let friends = [] // [{ id, name, handle, house, look, online }]
 let social = false
+let asks = [] // (follow-ups: groups someone wants to add you to, waiting for Join or No thanks)
 let socialB = false // (Social B: the Board, follow, the Feed, interests)
 let interests = []
 let followers = 0
@@ -70,6 +71,7 @@ export const groupUnread = () => threads.reduce((n, t) => n + (t.kind === 'group
 export const friendList = () => friends
 export const isFriend = (id) => friends.some((f) => f.id === id)
 export const socialReady = () => social
+export const groupAsks = () => asks
 export const socialBReady = () => socialB
 export const myInterests = () => interests
 export const myFollowers = () => followers
@@ -147,6 +149,9 @@ export function sync() {
     status = 'ready'
     social = Array.isArray(data.friends)
     socialB = Array.isArray(data.interests)
+    asks = (data.asks || []).filter((a) => !blocked.has(a.from_id)).map((a) => ({ ...a, group: filterText(String(a.group || 'a group')).text || 'a group', from: filterText(String(a.from || 'Someone')).text || 'Someone' }))
+    // (what became of the asks you sent: "added" or "can't right now", told once)
+    if (data.answers?.length) emit('answers', data.answers.map((a) => ({ name: filterText(String(a.name || 'They')).text || 'They', group: filterText(String(a.group || 'the group')).text || 'the group', added: Boolean(a.added) })))
     interests = socialB ? data.interests : []
     followers = Number(data.followers) || 0
     roomSent = room
@@ -234,7 +239,17 @@ export function fetchLines(id, all = false) {
     const had = all ? null : cache.get(id)
     const after = had?.lines.length ? had.lines[had.lines.length - 1].id : 0
     const { data, error } = await rpc('chat_fetch', { p_thread: id, p_after: after, p_mark: openId === id })
-    if (error || !data?.ok) { emit('lines', id); return false }
+    if (error || !data?.ok) {
+      // (no longer a member: the creator removed you, or the group closed. It leaves this phone at once.)
+      if (data?.reason === 'not_member' && threads.some((t) => t.id === id)) {
+        threads = threads.filter((t) => t.id !== id)
+        cache.delete(id)
+        emit('list', { gone: [id] })
+        return false
+      }
+      emit('lines', id)
+      return false
+    }
     const fresh = (data.lines || []).map(tidyLine).filter((l) => l && !blocked.has(l.sender))
     const lines = (had ? had.lines : []).concat(fresh.filter((l) => !had || !had.lines.some((x) => x.id === l.id))).slice(-200)
     const people = { ...(had?.people || {}) }
@@ -335,6 +350,7 @@ const GROUP_WHY = {
   word: 'That name isn’t allowed. Pick another.', name: 'Pick another name for the group.', today: 'You’ve made 3 groups today. Try again tomorrow.',
   too_many: 'That’s the limit for now. Try again tomorrow.', full: 'This group is full (40 members).', unknown: 'They haven’t opened their chat yet.',
   blocked: 'You can’t add this player.', already: 'They’re already in the group.', not_member: 'You’re not in this group.', not_creator: 'Only the person who made the group can change the topic.',
+  cant: 'They can’t right now.', removed: 'You can’t join this group.', gone: 'That invite has gone.',
   soon: 'Groups open soon.', offline: 'Couldn’t reach the chat. Check your connection.',
 }
 const why = (error, data) => GROUP_WHY[error || data?.reason] || GROUP_WHY.offline
@@ -354,10 +370,33 @@ export async function createGroup(name, topic = '') {
   await sync()
   return { ok: true, thread: res.data.thread }
 }
-// Add someone (a friend, or the player whose card is open) to a group you are in.
+// Add someone to a group you are in. A friend both ways goes straight in ({ ok, added: true }); anyone else gets a
+// card to answer ({ ok, added: false }): nobody lands in a group they did not agree to. What became of an ask comes
+// back on a later sync as 'answers' ("added" or "can't right now", nothing more).
 export async function addToGroup(threadId, otherId) {
   const res = await act('chat_group_add', { p_thread: threadId, p_other: otherId })
   if (res.ok) { nudge(threadId, res.data.to || []); sync() }
+  return res.ok ? { ok: true, added: Boolean(res.data.added) } : res
+}
+// Answer an ask: Join (true) or No thanks. { ok, thread } when you joined.
+export async function answerAsk(askId, yes) {
+  asks = asks.filter((a) => a.id !== askId)
+  emit('list')
+  const res = await act('chat_group_answer', { p_ask: askId, p_yes: Boolean(yes) })
+  nudge(res.data?.thread || '', res.data?.to || []) // (the asker's phone hears at once)
+  if (res.ok && res.data.thread) await sync()
+  return res.ok ? { ok: true, thread: res.data.thread || '' } : res
+}
+// The creator: take a member out (the link will not let them back), rename the group.
+export async function removeMember(threadId, otherId) {
+  const res = await act('chat_group_remove', { p_thread: threadId, p_other: otherId })
+  if (res.ok) { nudge(threadId, res.data.to || []); sync() }
+  return res
+}
+export async function renameGroup(threadId, name) {
+  if (!groupNameOk(name)) return { ok: false, note: GROUP_WHY.name }
+  const res = await act('chat_group_rename', { p_thread: threadId, p_name: String(name).trim() })
+  if (res.ok) { const t = threadOf(threadId); if (t) t.name = filterText(res.data.name).text || t.name; emit('list'); nudge(threadId) }
   return res
 }
 export async function groupMembers(threadId) {
@@ -422,7 +461,7 @@ export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
 // Tests (read only): what this phone's chat holds.
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
-  social, socialB, interests, followers, room: roomSent, friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online })),
+  social, socialB, interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
   threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '' })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

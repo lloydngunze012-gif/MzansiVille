@@ -288,10 +288,15 @@ await check('social: make a group, add a friend, join by the invite code; 40 mem
   const mine = (await rpc('chat_sync', CD)).threads.find((t) => t.id === crew)
   assert.match(mine.code, /^[0-9a-f]{8}$/, 'a group has a code for its link')
   assert.equal((await rpc('chat_group_add', CC, crew, CA.id)).reason, 'not_member', 'only a member adds people')
-  assert.equal((await rpc('chat_group_add', CD, crew, 'never-seen-player-01')).reason, 'unknown')
+  assert.equal((await rpc('chat_group_add', CD, crew, 'never-seen-player-01')).reason, 'cant')
+  // (friends both ways go straight in: the follow-ups' check below covers everyone else)
+  await rpc('chat_friend', CD, CA.id)
+  await rpc('chat_friend', CA, CD.id)
   const added = await rpc('chat_group_add', CD, crew, CA.id)
-  assert.equal(added.ok, true)
+  assert.equal(added.added, true)
   assert.deepEqual(added.to, [CA.id])
+  await rpc('chat_friend', CD, CA.id, false)
+  await rpc('chat_friend', CA, CD.id, false)
   assert.equal((await rpc('chat_group_add', CD, crew, CA.id)).reason, 'already')
   assert.ok((await rpc('chat_sync', CA)).threads.some((t) => t.id === crew), 'the group is in their list')
   assert.equal((await rpc('chat_group_join', CC, 'nope0000')).reason, 'unknown')
@@ -347,11 +352,18 @@ await check('social: friends (add, remove, who is online); a Quad per room with 
   assert.equal((await rpc('chat_friend', CA, CA.id)).reason, 'self')
   await db.query("update chat_players set seen_at = now() - interval '10 minutes' where id = $1", [CC.id])
   let pals = (await rpc('chat_sync', CA)).friends
-  assert.deepEqual(pals.map((f) => [f.id, f.online]), [[CC.id, false]])
-  await rpc('chat_sync', CC)
-  pals = (await rpc('chat_sync', CA)).friends
-  assert.equal(pals[0].online, true)
+  // a one-way friend: the name, and nothing about being online in the reply at all
+  assert.deepEqual(pals.map((f) => [f.id, f.mutual, 'online' in f]), [[CC.id, false, false]])
   assert.equal((await rpc('chat_sync', CC)).friends.length, 0, 'a friends list is your own')
+  // friends both ways: now each is told when the other is online
+  await rpc('chat_friend', CC, CA.id)
+  await db.query("update chat_players set seen_at = now() - interval '10 minutes' where id = $1", [CC.id])
+  pals = (await rpc('chat_sync', CA)).friends
+  assert.deepEqual([pals[0].mutual, pals[0].online], [true, false])
+  await rpc('chat_sync', CC)
+  assert.equal((await rpc('chat_sync', CA)).friends[0].online, true)
+  await rpc('chat_friend', CC, CA.id, false)
+  assert.equal('online' in (await rpc('chat_sync', CA)).friends[0], false, 'and not once it is one way again')
   await rpc('chat_friend', CA, CC.id, false)
   assert.equal((await rpc('chat_sync', CA)).friends.length, 0)
   // rooms: room 2 has its own Quad, with the pinned topic; moving room moves you
@@ -496,6 +508,97 @@ await check('social: follow and unfollow, counts by id and by @handle, "+N while
   assert.ok(daily.joined >= 5 && daily.names.length === 3 && !daily.names.includes('Kabelo'))
   await db.exec('set role anon')
   for (const table of ['chat_posts', 'chat_stamps', 'chat_follows', 'chat_post_reports']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  await db.exec('reset role')
+})
+
+// ---- Social A follow-ups (11 Nov): asks, online for friends both ways only, remove and rename ----
+await check('follow-ups: adding someone who is not a friend both ways sends an ask; Join or No thanks; 24 hours; never past a block', async () => {
+  const g = (await rpc('chat_group_create', CA, 'Greenway Run Club', '')).thread
+  const code = (await rpc('chat_sync', CA)).threads.find((t) => t.id === g).code
+  // CB is not CA's friend both ways: nobody lands in the group; an ask waits for them
+  const r = await rpc('chat_group_add', CA, g, CB.id)
+  assert.deepEqual([r.ok, r.asked, r.added, r.to], [true, true, undefined, [CB.id]])
+  assert.ok(!(await rpc('chat_sync', CB)).threads.some((t) => t.id === g), 'not in the group')
+  assert.equal((await rpc('chat_send', CB, g, 'hello?')).reason, 'not_member')
+  const asks = (await rpc('chat_sync', CB)).asks
+  assert.deepEqual(asks.map((a) => [a.thread, a.group, a.from]), [[g, 'Greenway Run Club', 'Thandeka']])
+  assert.equal((await rpc('chat_group_answer', CC, asks[0].id, true)).reason, 'gone', 'only the one who was asked answers')
+  assert.deepEqual((await rpc('chat_sync', CA)).answers, [], 'nothing to tell the asker yet')
+  // Join
+  const yes = await rpc('chat_group_answer', CB, asks[0].id, true)
+  assert.deepEqual([yes.ok, yes.thread, yes.to], [true, g, [CA.id]])
+  assert.ok((await rpc('chat_sync', CB)).threads.some((t) => t.id === g))
+  assert.deepEqual((await rpc('chat_sync', CB)).asks, [])
+  assert.deepEqual((await rpc('chat_sync', CA)).answers, [{ name: 'Kabelo', group: 'Greenway Run Club', added: true }])
+  assert.deepEqual((await rpc('chat_sync', CA)).answers, [], 'told once')
+  // No thanks: the asker hears "can't right now" and nothing more
+  await rpc('chat_group_add', CA, g, CC.id)
+  const ask2 = (await rpc('chat_sync', CC)).asks[0]
+  assert.equal((await rpc('chat_group_answer', CC, ask2.id, false)).ok, true)
+  assert.ok(!(await rpc('chat_sync', CC)).threads.some((t) => t.id === g))
+  assert.deepEqual((await rpc('chat_sync', CA)).answers, [{ name: 'Megan', group: 'Greenway Run Club', added: false }])
+  assert.equal((await rpc('chat_group_answer', CC, ask2.id, true)).reason, 'gone')
+  // 24 hours: the ask is gone for them, and the asker hears the same "can't right now"
+  await rpc('chat_group_add', CA, g, CC.id)
+  await db.query("update chat_group_asks set at = at - interval '25 hours' where player = $1", [CC.id])
+  assert.deepEqual((await rpc('chat_sync', CC)).asks, [])
+  assert.deepEqual((await rpc('chat_sync', CA)).answers, [{ name: 'Megan', group: 'Greenway Run Club', added: false }])
+  // a block either way: nothing is sent, and the reply is the same as an ask that was
+  await rpc('chat_block', CD, CA.id)
+  const blocked = await rpc('chat_group_add', CA, g, CD.id)
+  assert.deepEqual([blocked.ok, blocked.asked, blocked.to], [true, true, []])
+  assert.equal((await one('select count(*)::int as n from chat_group_asks where player = $1', [CD.id])).n, 0)
+  assert.deepEqual((await rpc('chat_sync', CD)).asks, [])
+  await rpc('chat_block', CD, CA.id, false)
+  // an ask that was waiting is never shown once either has blocked the other, and cannot be accepted
+  await rpc('chat_group_add', CA, g, CD.id)
+  const ask3 = (await one('select id from chat_group_asks where player = $1', [CD.id])).id
+  await rpc('chat_block', CA, CD.id)
+  assert.deepEqual((await rpc('chat_sync', CD)).asks, [])
+  assert.equal((await rpc('chat_group_answer', CD, ask3, true)).thread, undefined)
+  assert.ok(!(await rpc('chat_sync', CD)).threads.some((t) => t.id === g))
+  await rpc('chat_block', CA, CD.id, false)
+  // every ask counted against the 40 invites a day (5 so far: CB, CC twice, CD twice)
+  assert.equal((await one("select count(*)::int as n from chat_events where player = $1 and kind = 'invite' and at > now() - interval '1 hour'", [CA.id])).n, 5)
+  await db.query("insert into chat_events (player, kind) select $1, 'invite' from generate_series(1, 35)", [CA.id])
+  assert.equal((await rpc('chat_group_add', CA, g, CE.id)).reason, 'too_many')
+  await db.query("delete from chat_events where player = $1 and kind = 'invite'", [CA.id])
+  // the WhatsApp link, tapped by the person themselves, is agreeing: straight in, and a waiting ask goes
+  await rpc('chat_group_add', CA, g, CE.id)
+  assert.equal((await rpc('chat_group_join', CE, code)).thread, g)
+  assert.deepEqual((await rpc('chat_sync', CE)).asks, [])
+  crew = g
+})
+
+await check('follow-ups: the creator removes a member (the link will not let them back) and renames the group; nobody else can', async () => {
+  const code = (await rpc('chat_sync', CA)).threads.find((t) => t.id === crew).code
+  assert.equal((await rpc('chat_group_remove', CB, crew, CE.id)).reason, 'not_creator')
+  assert.equal((await rpc('chat_group_remove', CA, crew, CA.id)).reason, 'cant')
+  assert.equal((await rpc('chat_group_remove', CA, crew, CD.id)).reason, 'cant', 'not a member')
+  const out = await rpc('chat_group_remove', CA, crew, CE.id)
+  assert.deepEqual([out.ok, out.to], [true, [CE.id]])
+  assert.ok(!(await rpc('chat_sync', CE)).threads.some((t) => t.id === crew))
+  assert.equal((await rpc('chat_fetch', CE, crew)).reason, 'not_member')
+  assert.equal((await rpc('chat_group_join', CE, code)).reason, 'removed', 'the link is no way back in')
+  assert.equal((await rpc('chat_group_members', CA, crew)).members.length, 2)
+  // (a member may still ask them back; if they say yes they are in again)
+  const again = await rpc('chat_group_add', CA, crew, CE.id)
+  assert.equal(again.asked, true)
+  assert.equal((await rpc('chat_group_answer', CE, (await rpc('chat_sync', CE)).asks[0].id, true)).thread, crew)
+  await rpc('chat_sync', CA)
+  // rename: the creator only, the same word filter as a new group
+  assert.equal((await rpc('chat_group_rename', CB, crew, 'Mine now')).reason, 'not_creator')
+  assert.equal((await rpc('chat_group_rename', CA, crew, 'slurword club')).reason, 'word')
+  assert.equal((await rpc('chat_group_rename', CA, crew, 'ab')).reason, 'name')
+  assert.equal((await rpc('chat_group_rename', CA, crew, 'a *** b')).reason, 'name', 'a name the filter has starred out is refused')
+  assert.equal((await rpc('chat_group_rename', CA, crew, 'Pier or Nowhere')).name, 'Pier or Nowhere')
+  assert.equal((await rpc('chat_sync', CB)).threads.find((t) => t.id === crew).name, 'Pier or Nowhere')
+  // who is online in a group: yourself and friends both ways only
+  const seen = (await rpc('chat_group_members', CA, crew)).members
+  assert.equal('online' in seen.find((m) => m.id === CA.id), true)
+  assert.equal('online' in seen.find((m) => m.id === CB.id), false)
+  await db.exec('set role anon')
+  for (const table of ['chat_group_asks', 'chat_group_bans']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
   await db.exec('reset role')
 })
 

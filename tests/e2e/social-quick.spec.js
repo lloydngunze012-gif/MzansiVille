@@ -5,6 +5,7 @@
 //      mute (no ping, no badge), leave. Your room's Quad is in the list.
 //   A2 A newcomer who opens an invite link lands in the group straight after the quick start.
 //   A3 Wake-up: on the first open of the day, unread group messages show "Your groups said N things" once.
+//   A5 #/health: the "Social SQL" row.
 //   A4 The region dropdown: the right word per country (State, County, Province), optional, saved; none outside Africa.
 // Screenshots at 390 px (not committed): docs/sprints/social-a/.
 import { test, expect } from '@playwright/test'
@@ -52,7 +53,13 @@ test('A1 friends and groups: make one, add a friend, pin a topic, invite by What
   await page.locator('.cht-tabs [data-tab="friends"]').tap()
   const friend = page.locator(`.cht-friend[data-friend="${BONGA.p_id}"]`)
   await expect(friend).toBeVisible({ timeout: 40000 }) // (the next sync brings the list)
-  await expect(friend.locator('.cht-dot.on')).toBeVisible()
+  // (follow-ups) a one-way friend: the name, no dot, and the server said nothing about being online
+  await expect(friend.locator('.cht-dot')).toHaveCount(0)
+  await expect(page.locator('.cht-tabs [data-tab="friends"]')).not.toContainText('online')
+  expect((await chat(page)).friends[0]).toEqual({ id: BONGA.p_id, name: 'Bonga Dube', mutual: false })
+  // he adds me back: friends both ways now, and the dot shows
+  await server.call('chat_friend', { ...BONGA, p_other: mine.p_id })
+  await expect(friend.locator('.cht-dot.on')).toBeVisible({ timeout: 40000 })
   await expect(page.locator('.cht-tabs [data-tab="friends"]')).toContainText('1 online')
   await shot(page, 'friends-390')
 
@@ -73,9 +80,14 @@ test('A1 friends and groups: make one, add a friend, pin a topic, invite by What
   expect((await server.rows('select count(*)::int as n from chat_members where thread = $1', [group.id]))[0].n).toBe(2)
   await page.locator('.cht-rowbtns [data-ct="info"]').tap()
   await expect(page.locator('.cht-info .cht-friend')).toHaveCount(2)
+  // (follow-ups) the creator renames the group; a reserved name is refused
+  await page.locator('.cht-renameform input').fill('Official staff')
+  await page.locator('.cht-renameform button[type="submit"]').tap()
+  await expect(page.locator('.cht-note')).toContainText('Pick another name')
+  await page.locator('.cht-renameform input').fill('Biryani Council')
   // the creator pins a topic
-  await page.locator('.cht-topicform input').fill('Biryani on Friday?')
-  await page.locator('.cht-topicform button[type="submit"]').tap()
+  await page.locator('.cht-topicform:not(.cht-renameform) input').fill('Biryani on Friday?')
+  await page.locator('.cht-topicform:not(.cht-renameform) button[type="submit"]').tap()
   await expect(page.locator('.cht-note')).toHaveText('Pinned.')
   // invite by WhatsApp: a wa.me link with a short message and the game link carrying the code
   await page.locator('[data-ct="invite"]').tap()
@@ -140,7 +152,10 @@ test('A3 wake-up: "Your groups said N things" on the first open of the day, once
   await expect(page.locator('.cht-wake')).toHaveCount(0) // (nothing unread: no card)
   const mine = await me(page)
   const g = await server.call('chat_group_create', { ...BONGA, p_name: 'Library Ghosts', p_topic: '' })
-  await server.call('chat_group_add', { ...BONGA, p_thread: g.body.thread, p_other: mine.p_id })
+  // (friends both ways, so Bonga can add me straight in: anyone else would get a card to answer first)
+  await server.call('chat_friend', { ...BONGA, p_other: mine.p_id })
+  await server.call('chat_friend', { ...mine, p_other: BONGA.p_id })
+  expect((await server.call('chat_group_add', { ...BONGA, p_thread: g.body.thread, p_other: mine.p_id })).body.added).toBe(true)
   for (const line of ['Table by the window is free', 'Bring the notes', 'And a charger']) await bongaSays(g.body.thread, line)
   await page.evaluate(() => localStorage.removeItem('mzansiville.wake'))
   await page.reload()
@@ -184,4 +199,21 @@ test('A4 the region dropdown: State for Nigeria, County for Kenya, Province for 
   const c = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.character)
   expect(c.country).toBe('Nigeria')
   expect(c.region).toBe('Lagos')
+})
+
+test('A5 #/health has a "Social SQL" row: Yes only when the newest block of chat.sql is in, else what is missing', async ({ page }) => {
+  const answer = (status) => (route) => route.fulfill({ status, contentType: 'application/json', body: status === 200 ? '[]' : '{"message":"relation does not exist"}' })
+  await page.route('**/rest/v1/chat_friends*', answer(200))
+  await page.route('**/rest/v1/chat_follows*', answer(200))
+  await page.route('**/rest/v1/chat_group_asks*', answer(404))
+  await page.goto('/?fast=1#/health')
+  const row = page.locator('[data-hl="sql-social"]')
+  await expect(row.locator('[data-ok]')).toHaveAttribute('data-ok', 'no', { timeout: 30000 })
+  await expect(row.locator('[data-missing]')).toHaveText('run supabase/chat.sql again (missing: follow-ups)')
+  await page.unroute('**/rest/v1/chat_group_asks*')
+  await page.route('**/rest/v1/chat_group_asks*', answer(200))
+  await page.reload()
+  await expect(row.locator('[data-ok]')).toHaveAttribute('data-ok', 'yes', { timeout: 30000 })
+  await expect(row.locator('[data-missing]')).toHaveCount(0)
+  await shot(page, 'health-social-390')
 })

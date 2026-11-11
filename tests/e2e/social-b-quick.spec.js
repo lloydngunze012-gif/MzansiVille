@@ -130,8 +130,12 @@ test('B1 the Feed, a stamp, a Board with Follow, replies, your own posts and the
 test('B2 interests (pick 3, their groups) and the SunnyBay Daily (topic, Join the conversation, post, special, top 3, who joined)', async ({ page }) => {
   await server.routeChat(page)
   await mockBoards(page)
-  await atGate(page, { query: `&chat=1&scores=1&room=${ROOM}-b`, name: 'Thando', patch: { interestsAsk: true } })
+  await atGate(page, { query: `&chat=1&scores=1&room=${ROOM}-b`, name: 'Thando' })
   await expect.poll(async () => (await chat(page)).socialB, { timeout: 30000 }).toBe(true)
+  // The end of the student-card flow leaves this in the save. (Set after the helper has the student on campus: its
+  // "close any card that is up" step once tapped the picker's first chip when the picker came early.)
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('mzansiville.v1')); s.run.interestsAsk = true; localStorage.setItem('mzansiville.v1', JSON.stringify(s)) })
+  await page.reload()
 
   // The picker comes by itself at a calm moment (the end of the student-card flow sets it).
   const pop = page.locator('.sl-pop')

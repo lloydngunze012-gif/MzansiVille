@@ -16,7 +16,7 @@ import { newFollowers } from '../board.js'
 import { boardClick, boardHtml, boardInput, boardOpen, boardSubmit, closeBoard, feedHtml, openBoardOf, refreshFeed } from './board.js'
 import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
-import { addFriend, addToGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
+import { addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
@@ -58,6 +58,7 @@ let panel = '' // in a thread: '' | 'info' | 'add'
 let members = null // the open group's members (null: loading)
 let invite = null // { wa, url, text } once the server has given the link
 let leaving = false
+let kickFor = '' // (the creator tapped Remove on this member: a second tap does it)
 let pickFor = null // { id, who }: choose one of your groups to add this player to
 
 export function mountThreads() {
@@ -98,12 +99,15 @@ export function mountThreads() {
 
   onThreads((kind, detail) => {
     if (kind === 'ping') { ping(detail); return }
+    // (follow-ups) what became of an ask you sent: "added" or "can't right now", nothing more
+    if (kind === 'answers') { for (const a of detail) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: a.added ? `${first(a.name)} was added to ${a.group}.` : `${first(a.name)} can’t right now.` } })); return }
+    if (kind === 'list') paintAsk()
     if (kind === 'first') {
       // (came in through an invite link: straight into the group, now that the quick start is behind them)
       // (Social B: "+N followers while you were away")
       newFollowers().then((n) => { if (n > 0) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `+${n} follower${n === 1 ? '' : 's'} while you were away` } })) })
       const code = waitingInvite()
-      if (code && socialReady()) { joinByCode(code).then((r) => { if (r.ok || ['unknown', 'full', 'blocked'].includes(r.reason)) clearInvite(); if (r.ok) openChat(r.thread); else if (r.reason === 'full') { openChat(); tell('That group is full (40 members).', true) } }); return }
+      if (code && socialReady()) { joinByCode(code).then((r) => { if (r.ok || ['unknown', 'full', 'blocked', 'removed'].includes(r.reason)) clearInvite(); if (r.ok) openChat(r.thread); else if (r.reason === 'full') { openChat(); tell('That group is full (40 members).', true) } else if (r.reason === 'removed') { openChat(); tell('You can’t join this group.', true) } }); return }
       wakeUp()
       return
     }
@@ -209,7 +213,7 @@ function paintList() {
   const all = threadList()
   const here = peerList().filter((p) => !isBlocked(p.id)).slice(0, 12)
   const pals = friendList()
-  const online = pals.filter((f) => f.online).length
+  const online = pals.filter((f) => f.mutual && f.online).length
   const row = (t) => {
     const last = t.last
     const who = !last ? '' : last.sender === myId() ? 'You: ' : t.kind === 'group' ? `${first(last.name)}: ` : ''
@@ -236,7 +240,7 @@ function paintList() {
     const strangers = here.filter((p) => !isFriend(p.id))
     body = `${pals.length ? `<ol class="cht-list cht-friends">${pals.map((f) => `<li class="cht-friend" data-friend="${esc(f.id)}">
         <span class="cht-av cht-sm">${face(f.look, 36)}</span>
-        <span class="cht-mid"><b>${esc(f.name)} ${dot(f.online)}</b><span class="cht-last">${f.online ? 'Online now' : f.handle ? `@${esc(f.handle)}` : 'Not on right now'}</span></span>
+        <span class="cht-mid"><b>${esc(f.name)} ${f.mutual && f.online !== undefined ? dot(f.online) : ''}</b><span class="cht-last">${f.mutual && f.online ? 'Online now' : f.handle ? `@${esc(f.handle)}` : f.mutual ? 'Not on right now' : 'On your list'}</span></span>
         <button type="button" class="cht-btn sm" data-dm="${esc(f.id)}">Message</button>
         <button type="button" class="cht-btn sm ghost" data-unfriend="${esc(f.id)}" aria-label="Remove ${esc(f.name)} from your friends">✕</button>
       </li>`).join('')}</ol>` : `<p class="cht-empty">${socialReady() ? 'No friends yet. Add someone who is here now, or from their card.' : 'Friends open soon.'}</p>`}
@@ -290,14 +294,15 @@ function paintInfo() {
     ? `<p class="cht-sub">Add people to ${esc(t.name)} (${t.members || 1} of 40)</p>
       ${can.length ? `<ol class="cht-list cht-friends">${can.map((p) => person(p, `<button type="button" class="cht-btn sm" data-add="${esc(p.id)}">Add</button>`)).join('')}</ol>` : '<p class="cht-empty">Nobody to add yet: your friends and the people here now show up in this list.</p>'}
       <p class="cht-rowbtns"><button type="button" class="cht-btn ghost" data-ct="info">Done</button></p>`
-    : `<form class="cht-topicform" autocomplete="off"><label><small>Pinned topic</small>${mine ? `<input type="text" name="topic" maxlength="120" value="${esc(t.topic || '')}" placeholder="What is this group talking about?" enterkeyhint="done">` : `<span class="cht-topicro">${esc(t.topic || 'Nothing pinned yet.')}</span>`}</label>${mine ? '<button type="submit" class="cht-btn sm">Pin</button>' : ''}</form>
+    : `${mine ? `<form class="cht-topicform cht-renameform" autocomplete="off"><label><small>Group name</small><input type="text" name="gname" maxlength="40" value="${esc(t.name)}" enterkeyhint="done"></label><button type="submit" class="cht-btn sm">Rename</button></form>` : ''}
+      <form class="cht-topicform" autocomplete="off"><label><small>Pinned topic</small>${mine ? `<input type="text" name="topic" maxlength="120" value="${esc(t.topic || '')}" placeholder="What is this group talking about?" enterkeyhint="done">` : `<span class="cht-topicro">${esc(t.topic || 'Nothing pinned yet.')}</span>`}</label>${mine ? '<button type="submit" class="cht-btn sm">Pin</button>' : ''}</form>
       <p class="cht-rowbtns">
         <button type="button" class="cht-btn" data-ct="add">＋ Add people</button>
         ${invite ? `<a class="cht-btn wa" href="${esc(invite.wa)}" target="_blank" rel="noopener" data-wa>Open WhatsApp ›</a>` : '<button type="button" class="cht-btn wa" data-ct="invite">Invite by WhatsApp</button>'}
       </p>
       ${invite ? `<p class="cht-link"><span>${esc(invite.url)}</span><button type="button" class="cht-btn sm ghost" data-ct="copy">Copy link</button></p>` : ''}
       <p class="cht-sub">${members ? `${members.length} of 40 members` : 'Loading members…'}</p>
-      <ol class="cht-list cht-friends">${(members || []).map((m) => person(m, m.id === myId() ? '<small class="cht-you">You</small>' : `<button type="button" class="cht-btn sm ghost" data-dm="${esc(m.id)}">Message</button>`)).join('')}</ol>
+      <ol class="cht-list cht-friends">${(members || []).map((m) => person(m, m.id === myId() ? '<small class="cht-you">You</small>' : `<button type="button" class="cht-btn sm ghost" data-dm="${esc(m.id)}">Message</button>${mine ? `<button type="button" class="cht-btn sm ghost bad" data-kick="${esc(m.id)}">${kickFor === m.id ? 'Tap again' : 'Remove'}</button>` : ''}`)).join('')}</ol>
       <p class="cht-rowbtns">
         <button type="button" class="cht-btn ghost" data-ct="mute" aria-pressed="${Boolean(t.muted)}">${t.muted ? '\u{1F514} Unmute' : '\u{1F515} Mute'}</button>
         <button type="button" class="cht-btn ghost bad" data-ct="leave">${leaving ? 'Tap again to leave' : 'Leave group'}</button>
@@ -312,6 +317,7 @@ function paintInfo() {
 function openInfo(next = 'info') {
   panel = next
   leaving = false
+  kickFor = ''
   paintInfo()
   const id = view
   groupMembers(id).then((list) => { if (view === id && panel) { members = list; if (!sheet.querySelector('.cht-info input:focus')) paintInfo() } })
@@ -420,18 +426,26 @@ function onClick(event) {
     return
   }
   if (ct === 'copy' && invite) { navigator.clipboard?.writeText(invite.url).then(() => tell('Link copied.'), () => tell(invite.url)); return }
+  const kick = event.target.closest('[data-kick]')
+  if (kick) {
+    const id = kick.dataset.kick
+    if (kickFor !== id) { kickFor = id; paintInfo(); return }
+    kickFor = ''
+    removeMember(view, id).then((r) => { tell(r.ok ? 'Removed. The link won’t let them back in.' : r.note, !r.ok); if (r.ok) openInfo('info') })
+    return
+  }
   const adder = event.target.closest('[data-add]')
   if (adder) {
     const id = adder.dataset.add
     adder.disabled = true
-    addToGroup(view, id).then((r) => { tell(r.ok ? 'Added.' : r.note, !r.ok); if (r.ok) openInfo('add') })
+    addToGroup(view, id).then((r) => { tell(r.ok ? (r.added ? 'Added.' : 'Asked. They get a card to join.') : r.note, !r.ok); if (r.ok && r.added) openInfo('add') })
     return
   }
   const pick = event.target.closest('[data-pick]')
   if (pick && pickFor) {
     const { id, who } = pickFor
     const thread = pick.dataset.pick
-    addToGroup(thread, id).then((r) => { if (r.ok) { pickFor = null; show(thread); tell(`${first(who.name)} is in the group.`) } else tell(r.note, true) })
+    addToGroup(thread, id).then((r) => { if (r.ok) { pickFor = null; show(thread); tell(r.added ? `${first(who.name)} is in the group.` : `Asked ${first(who.name)}. They get a card to join.`) } else tell(r.note, true) })
     return
   }
   const befriend = event.target.closest('[data-befriend]')
@@ -487,9 +501,15 @@ async function onSubmit(event) {
     making = false
     const adding = pickFor
     pickFor = null
-    if (adding) { const r = await addToGroup(res.thread, adding.id); show(res.thread); tell(r.ok ? `${first(adding.who.name)} is in the group.` : r.note, !r.ok); return }
+    if (adding) { const r = await addToGroup(res.thread, adding.id); show(res.thread); tell(r.ok ? (r.added ? `${first(adding.who.name)} is in the group.` : `Asked ${first(adding.who.name)}. They get a card to join.`) : r.note, !r.ok); return }
     show(res.thread)
     openInfo('add')
+    return
+  }
+  if (event.target.matches('.cht-renameform')) {
+    const res = await renameGroup(view, event.target.elements.gname?.value || '')
+    tell(res.ok ? 'Renamed.' : res.note, !res.ok)
+    if (res.ok) paintInfo()
     return
   }
   if (event.target.matches('.cht-topicform')) {
@@ -538,6 +558,32 @@ function hidePing() {
   clearTimeout(pingTimer)
   pingFor = ''
   if (banner) banner.hidden = true
+}
+
+// An ask (follow-ups): "[Name] wants to add you to [Group]. Join / No thanks." One card at a time; the next ask
+// shows once this one is answered. Nobody is in a group until they tap Join.
+function paintAsk() {
+  const a = groupAsks()[0]
+  const shown = document.querySelector('.cht-ask')
+  if (!a) { shown?.remove(); return }
+  if (shown) { if (Number(shown.dataset.ask) === a.id) return; shown.remove() }
+  const el = document.createElement('div')
+  el.className = 'cht-ask'
+  el.dataset.ask = String(a.id)
+  el.setAttribute('role', 'status')
+  el.innerHTML = `<p><b>${esc(first(a.from))}</b> wants to add you to <b>${esc(a.group)}</b>.</p><div class="cht-ask-row"><button type="button" class="cht-btn" data-ask="join">Join</button><button type="button" class="cht-btn ghost" data-ask="no">No thanks</button></div>`
+  for (const type of ['pointerdown', 'touchstart', 'mousedown']) el.addEventListener(type, (event) => event.stopPropagation(), { passive: true })
+  el.addEventListener('click', (event) => {
+    const k = event.target.closest('[data-ask]')?.dataset.ask
+    if (!k) return
+    el.remove()
+    answerAsk(a.id, k === 'join').then((r) => {
+      if (k !== 'join') return
+      if (r.ok && r.thread) openChat(r.thread)
+      else window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: r.reason === 'full' ? 'That group is full (40 members).' : 'That invite has gone.' } }))
+    })
+  })
+  document.body.append(el)
 }
 
 // Wake-up (Social A): on the first open of the day, if your groups have unread messages, one small card:

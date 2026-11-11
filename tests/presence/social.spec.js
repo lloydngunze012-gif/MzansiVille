@@ -3,8 +3,10 @@
 // chat's server is supabase/chat.sql on a real Postgres in this process (tests/chat-server.js).
 //   1 Join toasts: when Bonga arrives, Ayanda sees "Bonga from South Africa just joined" with Say hi; a second
 //     arrival inside the viewer's gap shows her nothing new; Say hi opens a DM with the newcomer.
-//   2 A created group: Ayanda makes it and adds Bonga from the people here; Chloe joins through the invite link;
-//     all three talk and see the same lines in the same order.
+//   2 A created group: Ayanda makes it and asks Bonga (not a friend both ways: he gets a card and taps Join) and
+//     Chloe (No thanks: Ayanda sees "can't right now"); Chloe then joins through the invite link; all three talk
+//     and see the same lines in the same order. The creator renames the group and removes Chloe, who cannot
+//     rejoin by the link.
 //   3 Walk together: Ayanda asks Bonga to walk to the Library from their DM; he accepts; she leads, he walks at her
 //     side, the chat sheet stays open, and both end up at the Library.
 // Screenshots at 390 px (not committed): docs/sprints/social-a/.
@@ -89,10 +91,28 @@ test('join toasts with Say hi; three phones in a created group; walk together to
   // "Add people": the people here now are in the list; Bonga is added
   await expect(a.page.locator(`.cht-info [data-add="${b.id}"]`)).toBeVisible()
   await a.page.locator(`.cht-info [data-add="${b.id}"]`).tap()
-  await expect(a.page.locator('.cht-note')).toHaveText('Added.')
+  // (follow-ups) they are not friends both ways: nobody lands in the group; Bonga gets a card to answer
+  await expect(a.page.locator('.cht-note')).toHaveText('Asked. They get a card to join.')
   const group = (await chat(a.page)).threads.find((t) => t.name === 'Corridor DJs')
-  // Bonga's phone hears of it (a nudge on his own channel) without doing anything
-  await expect.poll(async () => (await chat(b.page)).threads.some((t) => t.id === group.id), { timeout: 40000 }).toBe(true)
+  const askB = b.page.locator('.cht-ask')
+  await expect(askB).toBeVisible({ timeout: 40000 }) // (a nudge on his own channel, without doing anything)
+  await expect(askB).toHaveText(/Ayanda wants to add you to Corridor DJs\./)
+  expect((await askB.boundingBox()).width).toBeLessThanOrEqual(420)
+  expect((await chat(b.page)).threads.some((t) => t.id === group.id), 'not in the group until he says so').toBe(false)
+  await shot(b.page, 'ask-card-390')
+  await askB.locator('[data-ask="join"]').tap()
+  await expect.poll(async () => (await chat(b.page)).open, { timeout: 30000 }).toBe(group.id)
+  await b.page.locator('.cht-x').first().tap()
+  // the asker sees "added", nothing more
+  await expect(a.page.locator('.g-toast', { hasText: 'Bonga was added to Corridor DJs.' })).toBeVisible({ timeout: 40000 })
+  // Chloe is asked too and says No thanks: Ayanda sees "can't right now", nothing more
+  await a.page.locator(`.cht-info [data-add="${c.id}"]`).tap()
+  const askC = c.page.locator('.cht-ask')
+  await expect(askC).toBeVisible({ timeout: 40000 })
+  await askC.locator('[data-ask="no"]').tap()
+  await expect(askC).toHaveCount(0)
+  await expect(a.page.locator('.g-toast', { hasText: 'Chloe can’t right now.' })).toBeVisible({ timeout: 40000 })
+  expect((await server.rows('select count(*)::int as n from chat_members where thread = $1', [group.id]))[0].n).toBe(2)
   // Chloe opens the invite link: she lands in the group
   await c.page.goto(`/?fast=1&morning=0&spawn=gate${Q}&g=${group.code}#/play`)
   await expect(sheet(c.page)).toHaveAttribute('data-view', 'thread', { timeout: 90000 })
@@ -114,7 +134,34 @@ test('join toasts with Say hi; three phones in a created group; walk together to
   await expect(a.page.locator('.cht-title small')).toContainText('3 members')
   await shot(a.page, 'group-three-phones-a-390')
   await shot(c.page, 'group-three-phones-c-390')
+
+  // ---------- 2b (follow-ups) the creator renames the group and removes a member ----------
+  await a.page.locator('.cht-open[data-ct="info"]').tap()
+  await a.page.locator('.cht-renameform input').fill('Quiet After Ten')
+  await a.page.locator('.cht-renameform button[type="submit"]').tap()
+  await expect(a.page.locator('.cht-note')).toHaveText('Renamed.')
+  for (const p of [b, c]) await expect(p.page.locator('.cht-title b')).toContainText('Quiet After Ten', { timeout: 40000 })
+  // Bonga is not the creator: his page of the group has no rename and no Remove
+  await b.page.locator('.cht-open[data-ct="info"]').tap()
+  await expect(b.page.locator('.cht-info .cht-friend')).toHaveCount(3)
+  await expect(b.page.locator('.cht-renameform, [data-kick]')).toHaveCount(0)
+  await b.page.locator('.cht-back[data-ct="thread"]').tap()
+  // Ayanda removes Chloe: two taps; Chloe is out at once, and the link will not let her back in
+  const kick = a.page.locator(`[data-kick="${c.id}"]`)
+  await kick.tap()
+  await expect(kick).toHaveText('Tap again')
+  await shot(a.page, 'group-creator-page-390')
+  await kick.tap()
+  await expect(a.page.locator('.cht-note')).toContainText('Removed')
+  await expect(a.page.locator('.cht-info .cht-friend')).toHaveCount(2)
+  await expect(sheet(c.page)).toHaveAttribute('data-view', 'list', { timeout: 40000 })
+  expect((await chat(c.page)).threads.some((t) => t.id === group.id)).toBe(false)
+  // (her address still carries the group's code: opening the link again is a reload of the same page)
+  await c.page.reload()
+  await expect(c.page.locator('.cht-note')).toHaveText('You can’t join this group.', { timeout: 90000 })
+  expect((await server.rows('select count(*)::int as n from chat_members where thread = $1', [group.id]))[0].n).toBe(2)
   await c.page.locator('.cht-x').first().tap()
+  await a.page.locator('.cht-back[data-ct="thread"]').tap()
 
   // ---------- 3 walk together ----------
   // from their DM: Walk with me, where to, ask
