@@ -11,6 +11,7 @@
 // run.car (instant, R8 petrol, parked outside where you drove). Spec: docs/world-designer/sunnybay.md.
 // Tests and screenshots (read-mostly): window.mzansiCity.
 import * as THREE from 'three'
+import { guardRenderer } from './guard.js'
 import { loop as soundLoop } from '../audio.js'
 import { SPEED as FAST } from '../speed.js'
 import { formatMoney } from '../engine/format.js'
@@ -1137,6 +1138,7 @@ function build() {
   document.body.prepend(host)
   ui()
   renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth >= 700, powerPreference: 'high-performance' })
+  guardRenderer(renderer, 'city')
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.15 : 1.25))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace

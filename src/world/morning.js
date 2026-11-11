@@ -2,6 +2,7 @@
 // house room with your roommate, noodles at the kettle, the shower, out of your door.
 // Loaded lazily (own chunk) from main.js.
 import * as THREE from 'three'
+import { guardRenderer, releaseScene } from './guard.js'
 import { loop as soundLoop, sfx, water } from '../audio.js'
 import { genderOf } from '../avatar.js'
 import { roommateFor, roommateLook } from '../roommates.js'
@@ -579,6 +580,7 @@ function build() {
   document.body.prepend(host)
   ui()
   renderer = new THREE.WebGLRenderer({ antialias: true })
+  guardRenderer(renderer, 'morning')
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -1021,6 +1023,7 @@ async function eat() {
 export function startMorning(options) {
   opts = options
   if (!renderer) build()
+  else renderer.setSize(window.innerWidth, window.innerHeight) // (released at the last stop)
   host.hidden = false
   uiRoot.hidden = false
   host.dataset.on = '1'
@@ -1081,4 +1084,5 @@ export function stopMorning() {
   if (frame) cancelAnimationFrame(frame)
   frame = 0
   if (host) { host.hidden = true; host.dataset.on = '0'; uiRoot.hidden = true }
+  releaseScene(renderer, scene)
 }

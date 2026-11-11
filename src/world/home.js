@@ -5,6 +5,7 @@
 // student's "From" answer (data/campusville/homes.json). Its own chunk, and its models
 // (public/models/home/, Draco) load only here, so only day 1 pays for them.
 import * as THREE from 'three'
+import { guardRenderer, releaseScene } from './guard.js'
 import HOMES from '../../data/campusville/homes.json'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { genderOf } from '../avatar.js'
@@ -788,6 +789,8 @@ function build() {
   document.body.prepend(host)
   ui()
   renderer = new THREE.WebGLRenderer({ antialias: true })
+  // (the drop-off drive is the car ride: a lost graphics context there ends the home scene and hands on to the gate)
+  guardRenderer(renderer, 'home', { onLost: () => { if (!running || !opts?.onDone) return false; opts.onDone({ style: styleId }); return true } })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.15 : 1.25))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -1186,6 +1189,7 @@ export async function startHome(options) {
   styleId = homeStyleId(opts.run.character)
   style = HOMES.styles[styleId]
   if (!renderer) build()
+  else renderer.setSize(window.innerWidth, window.innerHeight) // (released at the last stop)
   host.hidden = false
   uiRoot.hidden = false
   host.dataset.on = '1'
@@ -1232,6 +1236,7 @@ export function stopHome() {
   if (frame) cancelAnimationFrame(frame)
   frame = 0
   if (host) { host.hidden = true; host.dataset.on = '0'; uiRoot.hidden = true }
+  releaseScene(renderer, scene) // (the campus builds next: this scene's graphics memory goes back first)
   player = null
 }
 

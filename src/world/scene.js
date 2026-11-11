@@ -36,6 +36,7 @@ import { createCampusMap, createCityMap } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
+import { guardRenderer } from './guard.js'
 import * as curtain from '../curtain.js'
 import { createWalks } from './walks.js'
 import { smooth } from '../smooth.js'
@@ -254,6 +255,8 @@ function ensureRenderer() {
   if (renderer) return
   ensureHud()
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+  // (a lost context during the day-1 drop-off: skip to arrival at the gate, nothing blank)
+  guardRenderer(renderer, 'campus', { onLost: () => { if (!dropOff) return false; window.dispatchEvent(new CustomEvent('mzansi-dropoff-skip', { detail: { reload: true } })); return true } })
   renderer.setPixelRatio(pixelRatio())
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace

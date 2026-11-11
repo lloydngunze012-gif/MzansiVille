@@ -1,3 +1,4 @@
+import HOMES from '../data/campusville/homes.json'
 import { DEFAULT_COUNTRY, countryOf, fromForCountry, fromPlace, hasCountry } from './from.js'
 import { roommateFor } from './roommates.js'
 import { migrateCast } from './cast-ids.js'
@@ -1127,10 +1128,23 @@ window.addEventListener('mzansi-talk-leave', () => {
 // over; at your house door your roommate meets you and the day proper starts (goals, the route
 // to your lecture).
 window.addEventListener('mzansi-dropoff-update', () => { persist(); paint() })
-window.addEventListener('mzansi-dropoff-done', () => {
+// The graphics died during the drop-off (iPhone Safari killed the 3D view): it is over, as if it
+// had been played: the pocket money lands once, you are at your house door, and the page reloads onto
+// the campus.
+window.addEventListener('mzansi-dropoff-skip', (event) => {
+  const run = save.run
+  if (!run?.dropOff) return
+  const pocket = run.home?.pocket ?? (HOMES.styles[run.dropOff.style] || HOMES.styles[HOMES.default]).pocket
+  if (!run.dropOffPaid && Number.isFinite(pocket)) run.stats.money = (run.stats.money || 0) + pocket
+  finishDropOff()
+  if (event.detail?.reload) location.reload()
+})
+window.addEventListener('mzansi-dropoff-done', () => finishDropOff())
+function finishDropOff() {
   const run = save.run
   if (!run) return
   delete run.dropOff
+  delete run.dropOffPaid
   // (a roommate swapped at the door: applied now, so the campus is not rebuilt in the middle of the drop-off)
   if (run.pendingRoommate) {
     run.character.roommate = run.pendingRoommate
@@ -1144,7 +1158,7 @@ window.addEventListener('mzansi-dropoff-done', () => {
   run.queue = [goalsCard(run), ...run.queue.filter((card) => card.kind !== 'goals')]
   persist()
   paint()
-})
+}
 window.addEventListener('mzansi-lecture-arrive', () => {
   if (save.run) delete save.run.lectureCard
   persist()

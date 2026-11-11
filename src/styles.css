@@ -1144,3 +1144,5 @@ body > .chat-panel[hidden] { display: none; }
 .pc-acts .btn { background: #2a1846; color: #fff6e6; border: 2px solid #f0c400; }
 .pc-acts .btn.primary { background: #f0c400; color: #22143b; }
 .pc-acts .btn.ghost { background: transparent; color: #d8c8ff; border-color: #ffffff44; }
+
+body > .world-fail { position: fixed; z-index: 9999; }

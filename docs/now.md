@@ -3,6 +3,13 @@
 Short and always current. Whoever finishes a step updates this (docs/team.md).
 Last updated: 11 Nov, Claude Code (City job B: the places open).
 
+## iPhone blank screen at the drop-off (owner, 11 Nov): guarded, fallback built; cause not yet proven
+- Report: an iPhone went blank during the drop-off (mum driving). Treated as an iOS Safari graphics problem, not multiplayer (there is no shared vehicle in the game).
+- Likely cause: the home scene (shadow map, whole street and cast) stayed on the graphics card after it stopped, while the campus built its own, on top of the creator's preview renderers. Nothing was released. Not measured on a phone.
+- src/world/guard.js: `guardRenderer(renderer, label, { onLost })` on the home, morning, lecture, city, Caf and campus renderers: a lost/restored context and a render that throws are logged (client_errors kind `gl`: OS e.g. "iOS 17.4", GPU, geometries, textures, programs, triangles, canvases alive, canvas size, shadows); if the context is not back in 2.5 s `onLost` runs, else the "Tap to reload" card. `releaseScene()` runs on stopHome/stopMorning/stopLecture (geometry, materials, textures, shadow map, drawing buffer to 1x1; each start sets the size again).
+- Drop-off fallback: a lost context on the campus during the drop-off fires `mzansi-dropoff-skip` (main.js): pocket money paid once (`run.dropOffPaid`), the drop-off finished as if played (house door, goals), page reloads onto the campus. A lost context in the home scene hands on to the campus drop-off.
+- Test: launch.spec.js L6 (quick). Open: read the `gl` rows from the next iPhone report; the creator's preview3d/thumbs3d renderers are still never released.
+
 ## Repeat limit (owner, 10 Nov)
 - A plain city row done again on the same game day gives its gains in full, then half, then it is greyed "Come back tomorrow" (costs always apply in full; the greyed third try costs nothing). Numbers: `data/campusville/meta.json` `cityRepeat.factors` [1, 0.5]. Gigs, show-offs, the licence and cars keep their own limits and are not counted. Code: `repeatFactor`, `rowState` (why: `repeat`), `runRow` in src/city/places.js; counts in `run.city.reps`, cleared each new day. Test: the back pew in `tests/e2e/city-places-quick.spec.js` (8, 4, then greyed). This supersedes the "ordinary rows can be repeated" assumption below.
 

@@ -11,6 +11,7 @@
 // Debug: ?caflight=day|evening|load picks the light; ?cafdebug=1 shows a light switch and the
 // frame stats; window.mzansiCaf (read-mostly) is for tests: info(), zones, teleport(), light().
 import * as THREE from 'three'
+import { guardRenderer } from './guard.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { loop as soundLoop } from '../audio.js'
 import { SPEED as FAST } from '../speed.js'
@@ -563,6 +564,7 @@ function build() {
   document.body.prepend(host)
   ui()
   renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth >= 700 })
+  guardRenderer(renderer, 'caf')
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.15 : 1.25))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace

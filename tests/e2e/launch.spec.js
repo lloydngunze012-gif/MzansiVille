@@ -471,3 +471,36 @@ test('L5c feedback: the menu button, and one "How is it going?" on the third ses
   await page.waitForTimeout(3500)
   await expect(pop(page).locator('#lp-fb')).toHaveCount(0)
 })
+
+// L6 (owner, 11 Nov): an iPhone's 3D view dies in the middle of the drop-off (a lost WebGL context). The
+// page must not stay blank: it skips to arrival at your house door (the pocket money kept, once), reloads
+// onto the campus, and the loss is on record (client_errors kind 'gl', with the OS and GPU facts).
+test('L6 a lost graphics context during the drop-off skips to arrival at the gate, never a blank screen', async ({ page }) => {
+  const errors = []
+  page.on('pageerror', (e) => errors.push(String(e)))
+  await brandNew(page, '&morning=0')
+  await page.locator('[data-preset="q-thabo"]').tap()
+  await page.locator('#name').fill('Sipho')
+  await page.locator('[data-act="qs-play"]').tap()
+  await page.waitForURL(/#\/play/, { timeout: 30000 })
+  await patchRun(page, { day: 1, phase: 'leisure', minutes: 8 * 60 + 15, morningDone: true, lectureResolved: false, lectureRoute: false, at: 'gate', dropOff: { style: 'suburban', day: 1 }, queue: [] })
+  const before = (await save(page)).run.stats.money
+  await page.goto('/?fast=1&morning=0&talk=auto#/play')
+  await expect(page.locator('#world')).toHaveAttribute('data-dropoff', /.+/, { timeout: 120000 })
+  await page.evaluate(() => {
+    window.__glLogged = []
+    const c = document.querySelector('#world canvas, canvas')
+    c.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext() || c.getContext('webgl')?.getExtension('WEBGL_lose_context')?.loseContext()
+  })
+  // the page reloads itself onto the campus with the drop-off finished
+  await expect.poll(async () => { try { return (await save(page)).run?.dropOff } catch { return 'reloading' } }, { timeout: 30000 }).toBeUndefined()
+  await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 60000 })
+  await expect(page.locator('#world')).not.toHaveAttribute('data-dropoff', /.+/)
+  const run = (await save(page)).run
+  expect(run.stats.money).toBeGreaterThan(before) // the pocket money, once
+  expect(run.dropOffPaid).toBeUndefined()
+  expect(await page.locator('.world-fail').count()).toBe(0)
+  const log = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.errors') || '[]'))
+  expect(log.some((e) => e.kind === 'gl' && /context lost/.test(e.message))).toBe(true)
+  expect(errors).toEqual([])
+})

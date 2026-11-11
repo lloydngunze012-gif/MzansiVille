@@ -2,6 +2,7 @@
 // a result, the bell. Lines come from data/campusville/day1_lecture.json.
 // Loaded lazily (own chunk) from main.js, like the morning.
 import * as THREE from 'three'
+import { guardRenderer, releaseScene } from './guard.js'
 import LINES from '../../data/campusville/day1_lecture.json'
 import { genderOf } from '../avatar.js'
 import { roommateFor, roommateLook } from '../roommates.js'
@@ -270,6 +271,7 @@ function build() {
   document.body.prepend(host)
   ui()
   renderer = new THREE.WebGLRenderer({ antialias: true })
+  guardRenderer(renderer, 'lecture')
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -636,6 +638,7 @@ export function startLecture(options) {
   opts = options
   venue = venueFor(opts.run)
   if (!renderer) build()
+  else renderer.setSize(window.innerWidth, window.innerHeight) // (released at the last stop)
   host.dataset.venue = venue.id
   host.dataset.lecturer = venue.lecturerName
   host.hidden = false
@@ -663,4 +666,5 @@ export function stopLecture() {
   if (frame) cancelAnimationFrame(frame)
   frame = 0
   if (host) { host.hidden = true; uiRoot.hidden = true }
+  releaseScene(renderer, scene)
 }

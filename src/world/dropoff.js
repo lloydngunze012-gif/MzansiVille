@@ -221,6 +221,7 @@ export function startDropOff(ctx) {
     // the money
     await line(call, style.lines.money.replace('{amount}', pocket), [`\u{1F4B5} Thanks, ${call}`])
     run.stats.money = (run.stats.money || 0) + pocket
+    run.dropOffPaid = true
     host.dataset.money = String(pocket)
     ctx.onMoney?.(pocket)
     ctx.onUpdate()
