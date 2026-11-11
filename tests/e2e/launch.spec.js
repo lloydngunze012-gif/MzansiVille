@@ -403,6 +403,8 @@ test('L3 the card prompt: after the first meal, R200 once, at most once a day', 
   await pop(page).locator('[data-lp="card-now"]').tap()
   await page.locator('.en[data-step="look"]').waitFor()
   for (const step of ['roommate', 'who', 'vibe', 'card']) {
+    // (Tester fixes 2, 11 Nov: no course is picked for you, so the vibe step asks for one before Next)
+    if (step === 'card') await page.locator('[data-pick="course"]').first().tap()
     await page.locator('[data-act="enrol-next"]').tap()
     await page.locator(`.en[data-step="${step}"]`).waitFor()
   }

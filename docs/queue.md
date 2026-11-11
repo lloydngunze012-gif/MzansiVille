@@ -4,31 +4,7 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running.
 
-Order (owner, 11 Nov): Sims view (done), A, B, C, D, then Sound, then Movement. Sound was already built and in its quick gate when this order arrived, so it was pushed then (see docs/now.md); what is left, in order: A, B, C, E, D, Movement (E, Notifications, was added later the same day: after C, before D).
-
----
-
-## A. Tester fixes 2 (Sonnet, medium · Small)
-
-```
-TESTER FIXES 2 (owner, 11 Nov, from the owner's own test). Before testers
-tomorrow evening.
-1. NPC pile-up. While the owner and another player (Emma) talked on
-   campus, about eight NPCs crowded round them and stayed stuck there.
-   The 5-minute guided tour may have been running. Reproduce it (two
-   players talking, with and without the tour), find the cause and fix
-   it there. Rule from now on: never more than 3 NPCs within 4 m of a
-   player, and no NPC stands still longer than its activity says. Test
-   both.
-2. The Home button is hidden under the round map (owner's screenshot:
-   "T... House" peeking out from behind it). Home is always visible and
-   tappable. Test: no fixed button overlaps another at 360, 390, 414 px.
-3. Nothing is pre-picked on the student card: course (it showed
-   Computer Science) and any other choice start empty until the player
-   picks.
-4. "+ Group" is purple with dark text. Fix it now; Job B sets the full
-   palette.
-```
+Order (owner, 11 Nov): Sims view (done), A, B, C, D, then Sound, then Movement. Sound was already built and in its quick gate when this order arrived, so it was pushed then (see docs/now.md); A (tester fixes 2) is done too. What is left, in order: B, C, E, D, Movement (E, Notifications, was added later the same day: after C, before D).
 
 ---
 

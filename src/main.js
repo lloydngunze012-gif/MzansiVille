@@ -172,6 +172,10 @@ if (save.run?.character) {
 }
 // The cast was renamed (9 Nov, docs/cast.md): an old save's people, contacts, crush and bestie move to the new ids.
 if (save.run && migrateCast(save.run)) { try { localStorage.setItem(KEY, JSON.stringify(save)) } catch { /* kept in memory */ } }
+// Tester fixes 2 (owner, 11 Nov): nothing is pre-picked on the student card. The quick start draws a course so the
+// game has a lecture venue for you; until you pick one yourself it is "auto": not shown on your card, and not
+// shown as chosen in the card's editor. (A quick-start save from before this rule, card not finished: the same.)
+if (save.run?.quick && !save.run.cardDone && save.run.character && save.run.character.courseAuto === undefined) save.run.character.courseAuto = true
 let edits = []
 let draft = emptyDraft()
 let chat = { messages: [], names: {}, offline: false, source: 'loading', error: '', notice: '', menuId: '', reportId: '', prompt: false, draft: '' }
@@ -1509,7 +1513,7 @@ async function quickPlay() {
   const course = district.courses[Math.floor(Math.random() * district.courses.length)]
   const country = draft.country || DEFAULT_COUNTRY
   const character = {
-    name, handle, residence: house?.name || district.residences[0]?.name || '', course, avatar: { ...draft.avatar },
+    name, handle, residence: house?.name || district.residences[0]?.name || '', course, courseAuto: true, avatar: { ...draft.avatar },
     country, from: fromForCountry(country, draft.from || ''), region: draft.region || '', roommate: '', handleChangedAt: new Date().toISOString(),
   }
   save.rulesAccepted = true
@@ -1528,7 +1532,7 @@ function openCardEditor() {
   if (!run?.character) return
   const c = run.character
   const locked = nextChange(c)
-  draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), region: c.region || '', roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
+  draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.courseAuto ? '' : c.course, courseWas: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), region: c.region || '', roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
   ui.gear = false
   go('new')
 }
@@ -2003,7 +2007,8 @@ app.addEventListener('click', async (event) => {
       if (!draft.residence) { draft.error = 'Tap the house you live in.'; paint(); return }
     }
     if (draft.step === 'vibe') {
-      if (!draft.course) draft.course = district.courses[0]
+      // (nothing is picked for you: Next asks for a course; Skip leaves it open, off your card until you choose)
+      if (!draft.course && !skip) { draft.notice = 'Pick your course.'; paint(); return }
       const res = cleanBio(draft.bio || '')
       if (res.blocked) { draft.notice = 'That line can’t go on your card. Try another.'; paint(); return }
       draft.notice = res.removed.join(' ')
@@ -2055,7 +2060,8 @@ app.addEventListener('click', async (event) => {
       name: card.name,
       handle: card.handle,
       residence: draft.residence,
-      course: draft.course || district.courses[0],
+      course: draft.course || draft.courseWas || district.courses[0],
+      courseAuto: !draft.course,
       avatar: { ...draft.avatar },
       bio: card.bio,
       vibe: draft.vibe,

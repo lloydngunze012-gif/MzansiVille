@@ -123,10 +123,14 @@ body:has(.cht-ping:not([hidden])) .tb-chat .cht-unread { visibility: hidden; }
 /* Social A (owner, 11 Nov): tabs, friends, a group's page, the wake-up card. */
 .cht-tabs { flex: none; display: flex; gap: 6px; padding: 8px 12px 6px; }
 .cht-tabs button { all: unset; box-sizing: border-box; flex: 1; min-height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--cr-bg-2, #f4ecdc); font: 800 14px/1 Figtree, system-ui, sans-serif; cursor: pointer; }
-.cht-tabs button[aria-selected="true"] { background: #5b23c9; color: #fff; }
+/* (Tester fixes 2, 11 Nov: ink on yellow. The tabs and buttons were purple, and "+ Group" took a dark text colour
+   from cream.css's global .sm on top of it. Job B sets the whole chat palette.) */
+.cht-tabs button[aria-selected="true"] { background: #f0c400; color: #1c1915; }
 .cht-tabs small { font: 700 11px/1 Figtree, system-ui, sans-serif; opacity: .85; margin-top: 2px; }
-.cht-btn { all: unset; box-sizing: border-box; flex: none; min-height: 44px; padding: 0 14px; border-radius: 12px; display: inline-grid; place-items: center; background: #5b23c9; color: #fff; font: 800 14px/1 Figtree, system-ui, sans-serif; cursor: pointer; text-decoration: none; white-space: nowrap; }
-.cht-btn.sm { min-height: 36px; padding: 0 10px; font-size: 13px; }
+.cht-btn { all: unset; box-sizing: border-box; flex: none; min-height: 44px; padding: 0 14px; border-radius: 12px; display: inline-grid; place-items: center; background: #f0c400; color: #1c1915; font: 800 14px/1 Figtree, system-ui, sans-serif; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.cht-btn.sm { min-height: 36px; padding: 0 10px; font-size: 13px; background: #f0c400; color: #1c1915; margin: 0; max-width: none; }
+.cht-btn.sm.ghost { background: transparent; }
+.cht-btn.sm.ghost.bad { color: #9b1f1f; }
 .cht-btn.ghost { background: transparent; color: var(--cr-ink, #1c1915); border: 1.5px solid var(--cr-line, #e3d8c4); }
 .cht-btn.bad { color: #9b1f1f; }
 .cht-btn.wa { background: #128c4a; color: #fff; }

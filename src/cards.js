@@ -29,7 +29,8 @@ export function cardOf(run, num = myIdentity().num) {
     num,
     house: c.residence || '',
     bio: cleanBio(c.bio || '').text,
-    tags: { course: c.course || '', vibe: VIBES.includes(c.vibe) ? c.vibe : '', looking: LOOKING.includes(c.looking) ? c.looking : '' },
+    // (a course the quick start drew for you is not on your card until you pick one yourself: courseAuto)
+    tags: { course: c.courseAuto ? '' : c.course || '', vibe: VIBES.includes(c.vibe) ? c.vibe : '', looking: LOOKING.includes(c.looking) ? c.looking : '' },
     // (where you're from: optional, on the card under your name and handle)
     from: cleanBio(c.from || '').text.slice(0, 30),
     // (home country, 9 Nov: a flag on your name tag and card; only a country from countries.json)

@@ -2593,6 +2593,39 @@ function promptDoor() {
   node.hidden = false
   node.textContent = `Tap to enter ${near.building.name}`
   { const f = frontPoint(near.building, 0.4); pin(node, f.x, 2.6, f.z, 28) }
+  clearOfButtons(node)
+}
+// The way into a place (and home: "Tap to enter Thekwini House") is always in plain view and takes a tap: never
+// under the round map, the Talk or Stop button or the view buttons (owner, 11 Nov: it sat under the map, where the
+// prompt is clamped on a phone). It is lifted above whatever fixed button it would overlap, and kept on screen.
+let fixedRects = []
+let fixedAt = -1
+function clearOfButtons(node) {
+  // (the buttons' boxes are read a few times a second, not every frame)
+  if (frames - fixedAt > 20 || fixedAt < 0) {
+    fixedAt = frames
+    fixedRects = [...host.querySelectorAll('.minimap, .chat-btn, .stop-btn, .ps-leave'), ...document.querySelectorAll('#app .g-views, #app .tb, #app .g-cta, #app .g-bar')]
+      .filter((el) => !el.hidden && el.offsetParent !== null)
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.width > 0 && r.height > 0)
+  }
+  const w = node.offsetWidth
+  const h = node.offsetHeight
+  if (!w || !h) return
+  const W = host.clientWidth
+  let cx = Math.min(W - w / 2 - 8, Math.max(w / 2 + 8, parseFloat(node.style.left) || W / 2))
+  let top = parseFloat(node.style.top) || 0
+  // (its box: centred on left, its bottom 30% of its height above top: translate(-50%, -130%))
+  for (let pass = 0; pass < 4; pass++) {
+    const x0 = cx - w / 2
+    const y0 = top - h * 1.3
+    const hit = fixedRects.find((r) => x0 < r.right + 6 && x0 + w > r.left - 6 && y0 < r.bottom + 6 && y0 + h > r.top - 6)
+    if (!hit) break
+    if (hit.top - 8 - h > 90) top = hit.top - 8 + h * 0.3 // (above it)
+    else top = hit.bottom + 8 + h * 1.3 // (a bar at the top of the screen: below it)
+  }
+  node.style.left = `${cx}px`
+  node.style.top = `${top}px`
 }
 
 // Walking with the stick: up to the real outline of buildings, tables and stalls
@@ -2622,6 +2655,8 @@ function campusBodies() {
 window.mzansiOpen = (x, z) => Boolean(campus) && !pointBlocked(campus.grid, x, z) && !hitsSolid(x, z)
 // Tests (read only): the real students drawn on this phone.
 window.mzansiOthers = () => others?.report(camera) || []
+// Tests (read only): the crowd's NPCs, how long each has stood still, and how many each real player has within 4 m.
+window.mzansiCrowd = () => crowd?.report() || null
 window.mzansiCollisions = () => bodyReport(campusBodies(), boxesNear)
 window.mzansiNear = () => { const p = player.position; return { at: [+p.x.toFixed(2), +p.z.toFixed(2)], nc: player.userData.noCollide || null, pose: player.userData.pose, boxes: (boxesNear(p.x, p.z) || []).map((b) => ({ kind: b.kind || 'aabb', depth: +depthIn(p.x, p.z, b, 0.25).toFixed(3), b: b.rot === undefined ? [b.minX, b.maxX, b.minZ, b.maxZ].map((v) => +v.toFixed(2)) : [b.cx, b.cz, b.hx, b.hz, b.rot].map((v) => +v.toFixed(2)) })).filter((b) => b.depth > 0 || /step|stage|tree/.test(b.kind)) } }
 // Tests: every collider (kind, middle, half-size, turn) and how many of each kind.
@@ -2928,7 +2963,7 @@ function frameBody(now) {
     quadSound()
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
-    crowd?.update(dt, player.position)
+    crowd?.update(dt, player.position, [player.position, ...(others?.nearbyPositions(player.position.x, player.position.z, 400) || [])])
     for (const a of inHouse?.folk || []) poseAvatar(a, false, clock)
     // Presence: tell everyone where you are; draw where they are. (Not in a room built
     // off the map: there you're "away" and see nobody from campus.)

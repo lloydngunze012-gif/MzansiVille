@@ -2,6 +2,16 @@
 
 ---
 
+# TESTER FIXES 2 (owner, 11 Nov). Push and deploy. Status: built. No SQL.
+- **NPC rule (src/world/crowd.js):** never more than NEAR_MAX (3) NPCs within NEAR_R (4 m) of a real player; no walker stands on one spot longer than STILL_MAX (8 s). `update(dt, playerPos, players)`: scene.js passes you and every other real player drawn (others.nearbyPositions). `keepRoom` (every 0.3 s): seated, queueing, talking people count and stay; walkers past the count are sent away (`sendAway`: `leaving`, no giving way, the door furthest from the player), one walking into a full circle turns first. `nextTrip` never picks a door a player stands at and routes with the ground round players closed (`aroundPlayers`: 1.5 m, or the whole circle of a player who has their three). Giving way (`yields`) for 1.5 s in a row = go round. The cause of the 11 Nov pile-up was giving way for ever to a player standing still. `crowd.report()` behind `window.mzansiCrowd()` (people with `still`, `near` per player).
+- **Door prompt:** scene.js `clearOfButtons(node)` after `pin` in promptDoor: lifted above (or below a top bar) any fixed button it would overlap (.minimap, .chat-btn, .stop-btn, .ps-leave, #app .g-views, .tb, .g-cta), kept on screen; the buttons' boxes are re-read every 20 frames.
+- **Course not pre-picked:** `character.courseAuto` (true from the quick start, and for older quick saves whose card is not done; false once picked in the editor). cards.js cardOf leaves an auto course off the card; main.js openCardEditor opens with course '' (`draft.courseWas` keeps the drawn one); the vibe step's Next needs a course ("Pick your course."), Skip keeps it auto.
+- **Chat buttons:** threads.css `.cht-btn` and the selected tab are ink #1c1915 on yellow #f0c400. Never rely on a bare `.sm` (cream.css has a global one): `.cht-btn.sm` sets its own background and colour.
+- **Toasts for tests:** `window.mzansiToasts` (the last 30 toast texts): assert on what was said, not on a 1.8 s toast being on screen.
+- **Tests:** tests/e2e/npc-crowd.spec.js N1-N2, tests/e2e/tester-fixes2.spec.js F2-F4 (quick project), tests/presence/crowd.spec.js (two phones; `npx playwright test tests/presence/crowd.spec.js --config playwright.gpu.config.js --workers=1`).
+
+---
+
 # SOUND (owner, 11 Nov). Push and deploy. Status: built. No SQL.
 - **Zones:** data/campusville/sound.json (`zones`: campus, morning, caf, inside, city.<part id>; `layers` waves | street | wind | murmur | crowd, 0 to 1.5; `music` by meta.json phase id, else `default`). src/soundscape.js `setSound({ scene, part, inside, phase })` (safe every frame): main.js syncWorld sets scene (campus | morning | caf | city | null) and phase; city.js tick sets part and inside; scene.js sets inside for a house's common room. `body[data-zone]`; `window.mzansiSound.state()` for tests (zone, level, layers built, master, musicBus, track, trackPlaying, loaded).
 - **Ambience is live Web Audio, no files:** waves (two noise bands on a 0.1 Hz swell, gulls now and then), street (rumble, a hooter and a passing engine = bus_engine low and slow), wind (band-passed noise, drifting), murmur (crowd.ogg low-passed) and crowd. Each layer has one gain that glides (0.5 s time constant) to the zone's level; a layer at 0 for 4 s is taken down.
