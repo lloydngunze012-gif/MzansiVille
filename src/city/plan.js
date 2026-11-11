@@ -120,7 +120,9 @@ export function waysTo(run, from, dest) {
   const board = from.campus ? { stop: stopOf('gate'), dist: Math.hypot(from.x - 0, from.z - 100) + 14 } : nearestStop(from.x, from.z)
   const toPart = dest.part
   const fromPart = board.stop.part
-  const taxi = fromPart === toPart ? null : { stop: board.stop, dist: Math.round(board.dist), fare: taxiFare(fromPart, toPart), minutes: TAXI.minutes, short: Math.max(0, taxiFare(fromPart, toPart) - moneyOf(run)) }
+  // (a pin that is more than a short step from any stop: the taxi stops at the nearest one and you walk on)
+  const land = dest.lot ? nearestStop(dest.x, dest.z) : null
+  const taxi = fromPart === toPart ? null : { alight: land && land.dist >= 9 ? land.stop : null, stop: board.stop, dist: Math.round(board.dist), fare: taxiFare(fromPart, toPart), minutes: TAXI.minutes, short: Math.max(0, taxiFare(fromPart, toPart) - moneyOf(run)) }
   let car = null
   if (canDrive(run)) {
     const parked = carAt(run)

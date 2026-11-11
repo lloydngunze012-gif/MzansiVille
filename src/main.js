@@ -670,6 +670,8 @@ function cityPaid({ minutes = 0, kind = '' } = {}) {
 function cityRow({ place, row, result }) {
   if (!save.run) return
   countDone(row.id, place.id)
+  // (a paid gig or a meal brings the student-card prompt, as in the Caf: launch.js listens)
+  if (row.gig || row.fullness > 0) window.dispatchEvent(new CustomEvent('mzansi-city-note', { detail: { kind: row.gig ? 'gig' : 'meal' } }))
   if (result.showoff || result.granted) { saveMyCard(save.run); joinPresence(save.run.character, compactCard(save.run)) }
   persist()
   paint()

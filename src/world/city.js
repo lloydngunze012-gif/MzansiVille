@@ -705,20 +705,25 @@ async function ride(fromId, dest) {
   if (!res.ok) { refuse(res, dest); return false }
   closeCard()
   opts.onPay?.({ minutes: res.minutes, fare: res.fare, kind: 'taxi' })
+  // A lot with no stop of its own: the van stops at the nearest stop and you walk on to the door (the fare is paid once, above).
+  const near = dest.lot ? nearestStop(dest.x, dest.z) : null
+  const stopTo = near && near.dist >= 9 ? near.stop : null
   const veil = uiRoot.querySelector('.city-ride')
-  veil.innerHTML = `<div><span class="cr-van">🚐</span><b>${esc(fill(CITY.travel.lines.ride, { from: from.name, to: dest.name }))}</b><small>R${res.fare} · ${res.minutes} min</small></div>`
+  veil.innerHTML = `<div><span class="cr-van">🚐</span><b>${esc(fill(CITY.travel.lines.ride, { from: from.name, to: stopTo ? stopTo.name : dest.name }))}</b><small>R${res.fare} · ${res.minutes} min</small></div>`
   veil.hidden = false
   host.dataset.riding = '1'
   await new Promise((r) => setTimeout(r, Math.max(250, 1500 / FAST)))
   if (!running) return false
-  place(dest.x, dest.z)
+  place(stopTo ? stopTo.x : dest.x, stopTo ? stopTo.z : dest.z)
   await new Promise((r) => setTimeout(r, Math.max(150, 500 / FAST)))
   veil.hidden = true
   host.dataset.riding = '0'
   rides += 1
   host.dataset.rides = String(rides)
   host.dataset.fare = String(res.fare)
-  if (dest.lot) openLot(dest.lot)
+  host.dataset.rideStop = stopTo ? stopTo.id : ''
+  if (stopTo) { const spot = arrivalSpot(dest.x, dest.z); walkTo(spot.x, spot.z, { lot: dest.lot }) }
+  else if (dest.lot) openLot(dest.lot)
   save()
   return true
 }
@@ -1193,7 +1198,7 @@ function tick(now) {
   if (!inside) npcTick(dt)
   if (folk) for (const f of folk.list) poseAvatar(f.avatar, false, clock + f.i * 1.7)
   others?.update(dt, camera, player.position, true, rig.mode === 'eye')
-  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, inside ? roomView() : player.position, dt, null)
+  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, inside ? roomView() : player.position, dt, inside ? null : built?.group)
   for (const p of player.userData.headParts || []) p.visible = rig.mode !== 'eye'
   notePart(false)
   reportLocal({ a: 'campus', x: player.position.x, z: player.position.z, y: 0, h: player.rotation.y, p: player.userData.pose || 'stand' })
@@ -1348,6 +1353,9 @@ if (typeof window !== 'undefined') {
       return { ready, part: part.id, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, total: built?.tris, cells: built?.cells, player: [player.position.x, player.position.z], cam: rig.mode, npcs: npcs.filter((n) => n.avatar.visible).length, money: moneyOf(opts.run), car: host.dataset.car || '' }
     },
     teleport: (x, z, facing) => { if (!player) return false; place(x, z, facing); return true },
+    // (tests: drag the view like a finger would; the tilt in degrees)
+    tilt: (dy) => { rig.drag(0, dy); return rig.pitchDeg },
+    camera: () => ({ pitch: rig.pitchDeg, y: camera.position.y, mode: rig.mode }),
     walkTo: (x, z) => walkTo(x, z),
     goLot: (id) => { const l = lotOf(id); if (l) goLot(l) },
     travel: (way, target) => travel(way, target),

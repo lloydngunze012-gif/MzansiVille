@@ -2,6 +2,8 @@ import * as THREE from 'three'
 
 const KEY = 'mzansiville.camera'
 const MODES = ['top', 'sims', 'eye']
+// Sims tilt in degrees: 18 comes down almost level; 60 is the top. The camera height is 1.2 m + sin(pitch) x distance, so it never goes below eye height or under the ground.
+const MIN_PITCH = 18
 
 function loadMode() {
   try {
@@ -74,7 +76,30 @@ export function createCameraRig() {
     }
   }
 
+  // A low Sims tilt looks along the street: a wall between you and the camera pulls it in (checked every third frame, and eased).
+  let lowTick = 0
+  let lowKeep = 1
+  function pullInLow(pos, target, buildings) {
+    const origin = new THREE.Vector3(target.x, 1.5, target.z)
+    if (lowTick++ % 3 === 0) {
+      const delta = pos.clone().sub(origin)
+      const dist = delta.length()
+      let keep = 1
+      if (dist > 0.5) {
+        raycaster.set(origin, delta.normalize())
+        raycaster.far = dist
+        const hit = raycaster.intersectObject(buildings, true).find((item) => item.object.name !== 'beacon' && item.object.name !== 'badge' && item.face && item.face.normal.y < 0.7)
+        if (hit && hit.distance < dist) keep = Math.max(2.5, hit.distance - 0.6) / dist
+      }
+      lowKeep = keep
+    }
+    const goal = origin.clone().lerp(pos, lowKeep)
+    goal.y = Math.max(goal.y, 1.2)
+    return goal
+  }
+
   function pullIn(pos, target, buildings) {
+    if (rig.mode === 'sims' && buildings && rig.pitch < 36 * Math.PI / 180) return pullInLow(pos, target, buildings)
     if (rig.mode !== 'eye' || !buildings) return pos
     const origin = new THREE.Vector3(target.x, 1.45, target.z)
     const delta = pos.clone().sub(origin)
@@ -91,6 +116,7 @@ export function createCameraRig() {
     get mode() { return rig.mode },
     get yaw() { return rig.yaw },
     set yaw(v) { rig.yaw = v },
+    get pitchDeg() { return rig.pitch * 180 / Math.PI },
     get facing() { return rig.facing },
     set facing(v) { rig.facing = v },
     // Swing the camera round behind the player, smoothly.
@@ -131,13 +157,13 @@ export function createCameraRig() {
       }
       rig.yaw -= dx * (rig.mode === 'top' ? 0.004 : 0.008)
       if (rig.mode === 'sims') {
-        rig.pitch = Math.min(60 * Math.PI / 180, Math.max(45 * Math.PI / 180, rig.pitch + dy * 0.004))
+        rig.pitch = Math.min(60 * Math.PI / 180, Math.max(MIN_PITCH * Math.PI / 180, rig.pitch + dy * 0.004))
       }
     },
     // A scene's own starting distance for a mode (the day-1 home is smaller than campus).
     setDistance(mode, d) { if (rig.distance[mode] !== undefined) rig.distance[mode] = d },
     // A scene's own starting tilt in Sims view, within what a drag allows (45 to 60 degrees; the city looks further down the street).
-    setPitch(deg) { rig.pitch = Math.min(60, Math.max(45, deg)) * Math.PI / 180 },
+    setPitch(deg) { rig.pitch = Math.min(60, Math.max(MIN_PITCH, deg)) * Math.PI / 180 },
     zoom(delta) {
       if (rig.mode === 'top') rig.distance.top = Math.min(110, Math.max(28, rig.distance.top + delta * 1.4))
       else if (rig.mode === 'eye') rig.distance.eye = Math.min(5.2, Math.max(1.8, rig.distance.eye + delta * 0.15))

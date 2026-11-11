@@ -62,7 +62,17 @@ export function calmWhy() {
   if (dlg) return `a card is open (${dlg.className || dlg.tagName})`
   if (api.busy?.()) return 'talking or menu'
   if (document.body.dataset.caf) return 'in the Caf'
-  if (document.body.dataset.city) return 'in the city'
+  if (document.body.dataset.city) {
+    // (SunnyBay: calm once its scene is up and no door card, list, result, ride or map is open and you stand still)
+    const c = document.getElementById('city3d')
+    if (!c || c.dataset.ready !== '1') return 'city not ready'
+    if (c.dataset.card) return `city card (${c.dataset.card})`
+    if (c.dataset.riding === '1') return 'riding'
+    if (document.querySelector('.cm-overlay:not([hidden])')) return 'map open'
+    const stop = c.parentElement?.querySelector('.city-stop') || document.querySelector('.city-stop')
+    if (stop && !stop.hidden) return 'moving'
+    return ''
+  }
   const world = document.getElementById('world')
   if (world) {
     if (world.dataset.on !== '1' || world.dataset.ready !== '1') return 'campus not ready'
@@ -245,6 +255,8 @@ export function initLaunch(handles) {
   onNote(({ cat }) => {
     if (cat === 'food' || cat === 'work') wantCard(cat === 'work' ? 'gig' : 'meal')
   })
+  // The same for a city row (a gig or a meal in a SunnyBay place).
+  window.addEventListener('mzansi-city-note', (event) => wantCard(event.detail?.kind === 'gig' ? 'gig' : 'meal'))
   // Another player tapped you (their card opened on yours: a 'look'), or waved, said hi, added you.
   onPoke(() => wantCard('tapped'))
   // A new day, the card still not done and they have started to play: ask once more at a calm moment.

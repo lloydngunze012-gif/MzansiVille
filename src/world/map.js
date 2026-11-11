@@ -409,7 +409,7 @@ function buildCityMap(parent) {
     const w = api.where()
     const run = api.run()
     const lot = id === 'campus' ? null : lotOf(id)
-    const dest = lot ? { x: lot.door.x, z: lot.door.z, part: lot.part } : { x: SPAWN.x, z: SPAWN.z, part: 'campus' }
+    const dest = lot ? { x: lot.door.x, z: lot.door.z, part: lot.part, lot: lot.id } : { x: SPAWN.x, z: SPAWN.z, part: 'campus' }
     selected = id
     for (const b of stage.querySelectorAll('.cm-pin')) b.classList.toggle('on', b.dataset.pin === id)
     const ways = waysTo(run, w, dest)
@@ -422,7 +422,7 @@ function buildCityMap(parent) {
         const t = ways.taxi
         rows += t.short
           ? `<button type="button" disabled data-way="taxi"><span>🚐 Minibus taxi<small>You are R${t.short} short for this one. Walking is free.</small></span><b>R${t.fare}</b></button>`
-          : `<button type="button" data-way="taxi"><span>🚐 Minibus taxi<small>From ${t.stop.name}${t.dist > 9 ? ` (${t.dist} m from you)` : ''}</small></span><b>R${t.fare} · ${t.minutes} min</b></button>`
+          : `<button type="button" data-way="taxi"><span>🚐 Minibus taxi<small>${t.alight ? `Taxi to ${t.alight.name}, then a short walk` : `From ${t.stop.name}${t.dist > 9 ? ` (${t.dist} m from you)` : ''}`}</small></span><b>R${t.fare} · ${t.minutes} min</b></button>`
       }
       if (!ways.car) rows += `<button type="button" disabled data-way="drive"><span>🚗 Drive<small>${CITY.travel.lines.noCar}</small></span><b>R${CITY.travel.car.petrol}</b></button>`
       else if (!ways.car.here) rows += `<button type="button" disabled data-way="drive"><span>🚗 Drive<small>${CITY.travel.lines.carAway.replace('{place}', ways.car.parkedName)}</small></span><b>R${ways.car.fare}</b></button>`

@@ -1,7 +1,13 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (two small fixes: R2,100 start money, two-row top bar).
+Last updated: 11 Nov, Claude Code (tester fixes 1: low camera, card prompt from city rows, taxi walk-on).
+
+## Tester fixes 1 (owner, 11 Nov): built; push and deploy at the end of the job
+- **A. Camera.** The Sims tilt now goes from 18 degrees (was 45) to 60 (src/world/camera.js `MIN_PITCH`); zoom limits and the Eye view unchanged. The camera stands at 1.2 m + sin(pitch) x distance, so it is never under eye height or the ground. A low tilt pulls the camera in when a wall is between you and it (`pullInLow`, checked every third frame); the city now passes its buildings to the rig for this (it passed none before), campus already did.
+- **B. Student card from city rows.** A city row with `gig` or a meal (`fullness` above 0) sends `mzansi-city-note` from main.js `cityRow`; launch.js turns it into the same `wantCard('gig' | 'meal')` as the Caf. Found on the way: `calm()` said "in the city" for the whole visit, so the prompt could never show in SunnyBay. It is calm there now when the scene is ready, no door card, list or result is open, no ride or map, and you stand still (a list on screen is not calm: the prompt comes when you leave the place).
+- **C. Taxi to a pin without its own stop.** The map's travel sheet says "Taxi to [stop], then a short walk" when the nearest stop is 9 m or more from the pin's door; the ride lands at that stop (`ride` in city.js) and walks you on to the door, opening the place's list on arrival. Fare paid once (R15 or R25 as before). A pin within 9 m of a stop is as before (you land at the door).
+- **Tests.** tests/e2e/tester-fixes1.spec.js A-C in the quick project. Screenshots at 390 px (not committed): docs/sprints/tester-fixes1/ (lowest-lounge, card-prompt-lifecup, travel-driving-school). The old city-quick taxi-to-the-Mall test still passes (it now walks the last bit).
 
 ## Two small fixes (owner, 11 Nov): built, pushed, deployed
 - **LIVE at https://softlifeza.vercel.app from 79cdf0f** (deployed 11 Nov).
