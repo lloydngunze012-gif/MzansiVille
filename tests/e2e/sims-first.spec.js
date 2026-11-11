@@ -67,7 +67,7 @@ test('S2 SunnyBay: in through the gate road, off a taxi, out of a place, back on
   }
   // out of a place
   await page.evaluate(() => window.mzansiCity.goLot('lifecup'))
-  await expect(city(page)).toHaveAttribute('data-place', 'lifecup', { timeout: 60000 })
+  await expect(city(page)).toHaveAttribute('data-card', 'todo:lifecup', { timeout: 60000 }) // (its list is up: the helper closes it, then leaves)
   await leavePlace(page)
   await clearStart(page, cityView, 45, 'city-out-of-lifecup')
   // back in through the gate: a start on campus

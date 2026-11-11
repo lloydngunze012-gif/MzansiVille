@@ -44,7 +44,8 @@ import {
 } from './net.js'
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
-import { loop as soundLoop, setGrooveLevel, setMuted, unlock as unlockSound } from './audio.js'
+import { musicOn, setGrooveLevel, setMuted, setMusicOn, unlock as unlockSound } from './audio.js'
+import { setSound } from './soundscape.js'
 import { outfitsFor } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
@@ -239,6 +240,7 @@ function state() {
     cardMini,
     ui,
     sound: soundOn(),
+    music: musicOn(),
     health: healthState,
   }
 }
@@ -584,7 +586,7 @@ window.addEventListener('mzansi-enter-caf', async () => {
   if (cafLive || !save.run || !hasGL()) return
   cafLive = true
   document.body.dataset.caf = '1'
-  soundLoop('crowd', false)
+  setSound({ scene: 'caf', inside: false })
   try {
     await curtain.cover('Into the Caf…')
     worldPromise?.then((mod) => mod.setVisible(false))
@@ -617,7 +619,7 @@ async function enterCity(spawn = { kind: 'gate' }, intent = null) {
   cityLive = true
   document.body.dataset.city = '1'
   refreshOnline() // (the top bar's players chip reads "N in SunnyBay")
-  soundLoop('crowd', false)
+  setSound({ scene: 'city', inside: false })
   try {
     await curtain.cover('Into SunnyBay…')
     worldPromise?.then((mod) => mod.setVisible(false))
@@ -713,7 +715,8 @@ window.addEventListener('mzansi-city-go', (event) => {
 })
 
 function syncWorld(viewState) {
-  if (cafLive || cityLive) return
+  // (the soundscape: which scene is up and the part of the day pick the ambience and the music)
+  if (cafLive || cityLive) { setSound({ scene: cafLive ? 'caf' : 'city', phase: viewState?.run?.phase || null }); return }
   const morningOn = syncMorning(viewState) || syncLecture(viewState)
   // (a save that was left in the city goes straight back there, not to the campus first)
   if (!morningOn && viewState?.run?.cityAt && viewState.run === save.run && WORLD_SCREENS.has(viewState.screen) && viewState.screen === 'play' && hasGL() && !new URLSearchParams(location.search).get('shot')) {
@@ -724,9 +727,8 @@ function syncWorld(viewState) {
   const on = worldWanted(viewState) && !morningOn
   const ticket = ++worldTicket
   document.body.dataset.world = on || morningOn ? '1' : '0'
-  // Music plays in the morning and on campus; the crowd only on campus.
-  soundLoop('music_campus', on || morningOn)
-  soundLoop('crowd', on)
+  // Music plays in the morning and on campus; the crowd only on campus (data/campusville/sound.json).
+  setSound({ scene: on ? 'campus' : morningOn ? 'morning' : null, phase: viewState?.run?.phase || null })
   // The character creator dances to its own house groove.
   if (viewState?.screen === 'create') { setGrooveLevel(1); startGroove('creator'); warmScenes(viewState.run) } else stopGroove('creator')
   if (!on) {
@@ -1177,7 +1179,8 @@ window.addEventListener('mzansi-lecture-arrive', () => {
 })
 window.addEventListener('pointerup', prewarmAudio, { once: true, passive: true })
 // Every tap re-unlocks: iOS suspends the audio context when the tab is hidden.
-window.addEventListener('pointerdown', unlockSound, { passive: true })
+// (iPhone: only some events count as a tap that may start sound, so every kind of first touch tries)
+for (const kind of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) window.addEventListener(kind, unlockSound, { passive: true, capture: true })
 
 function blipNow(freq) {
   try {
@@ -1233,6 +1236,10 @@ function toast(text) {
   }
   node.textContent = text
   node.hidden = false
+  // (what has been said, newest last: a toast is on screen for 1.8 s, so tests read this instead of racing it)
+  const said = (window.mzansiToasts ||= [])
+  said.push(String(text))
+  if (said.length > 30) said.shift()
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => { node.hidden = true }, 1800)
 }
@@ -1376,6 +1383,12 @@ function gameAct(act, button) {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
     setMuted(!soundOn())
     blip(880)
+    paint()
+    return true
+  }
+  if (act === 'music') {
+    try { localStorage.setItem('mzansiville.music', musicOn() ? 'off' : 'on') } catch { /* private mode */ }
+    setMusicOn(musicOn())
     paint()
     return true
   }
@@ -1744,7 +1757,7 @@ app.addEventListener('click', async (event) => {
   // still answer the tap, so no tap ever does nothing.
   const link = event.target.closest('a[href^="#/"]')
   if (link && link.getAttribute('href') === location.hash) { pulse(link, 'You\u2019re already here'); return }
-  if (button && button.dataset.act !== 'sound' && button.dataset.act !== 'smooth-switch' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
+  if (button && button.dataset.act !== 'sound' && button.dataset.act !== 'music' && button.dataset.act !== 'smooth-switch' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
     if (button.dataset.act === 'qs-pick') notePick() // (a tap on the portrait that is already picked counts too)
     pulse(button, button.dataset.act === 'view' ? 'Already in this view' : button.hasAttribute('aria-current') ? 'You\u2019re already here' : 'Already selected \u2713')
     if (button.hasAttribute('aria-current')) window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1842,6 +1855,12 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'errors-clear') {
     clearErrors()
+    paint()
+    return
+  }
+  if (act === 'music' && route().name === 'settings') {
+    try { localStorage.setItem('mzansiville.music', musicOn() ? 'off' : 'on') } catch { /* private mode */ }
+    setMusicOn(musicOn())
     paint()
     return
   }
@@ -2801,17 +2820,18 @@ function giveBadges(ids) {
   if (!got.length) return
   persist()
   saveMyCard(run)
-  badgeNews.push(...got)
+  badgeNews.push(...got.map((b) => `\u{1F3C5} ${b.name}: ${b.description}`))
 }
 // A badge's toast waits its turn: it never replaces a toast that is on screen (a hint about your energy, a fare),
-// and two badges are told one after the other.
+// and two badges are told one after the other. The streak's line waits in the same queue, after the badge it came
+// with: it used to fire on its own clock 1.4 s later, and on a phone that had stalled for a moment both came due
+// together and the badge was replaced before anyone saw it.
 const badgeNews = []
 setInterval(() => {
   if (!badgeNews.length) return
   const node = document.getElementById('toast')
   if (node && !node.hidden) return
-  const b = badgeNews.shift()
-  toast(`\u{1F3C5} ${b.name}: ${b.description}`)
+  toast(badgeNews.shift())
 }, 700)
 // What a save had already earned before badges existed (the first morning in res, five waves, six districts) goes
 // on the card quietly when the game opens: a toast is for something that has just happened.
@@ -2828,8 +2848,8 @@ onNote((note) => {
   if (!run) return
   const s = noteActive(run)
   if (s.grew) setTimeout(persist, 0) // (the day is counted in the save, once whatever finished the activity has had its say)
-  if (s.grew && s.n > 1) setTimeout(() => toast(s.froze ? `\u{1F9CA} Freeze used: your streak lives. \u{1F525} ${s.n} days` : `\u{1F525} ${s.n}-day streak`), 1400)
   giveBadges([...badgesFor(run, note), ...standingBadges(run, { followers: myFollowers() })])
+  if (s.grew && s.n > 1) badgeNews.push(s.froze ? `\u{1F9CA} Freeze used: your streak lives. \u{1F525} ${s.n} days` : `\u{1F525} ${s.n}-day streak`)
 })
 window.addEventListener('mzansi-race-done', () => giveBadges(['pier_starter']))
 window.addEventListener('mzansi-city-part', (event) => {

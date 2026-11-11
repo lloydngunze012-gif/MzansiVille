@@ -3,7 +3,8 @@ import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId, houseOf } from '../engine/model.js'
 import { FENCE_R, canDrive, carAt } from '../city/plan.js'
-import { loop as soundLoop } from '../audio.js'
+import { loop as soundLoop, sfx } from '../audio.js'
+import { setSound } from '../soundscape.js'
 import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf } from '../avatar.js'
@@ -734,6 +735,7 @@ function nearestDoor() {
 const cafScene = () => new URLSearchParams(location.search).get('caf') !== 'sheet'
 function enterCaf() {
   mover.stop()
+  sfx('door')
   window.dispatchEvent(new CustomEvent('mzansi-enter-caf'))
 }
 function enterNearest() {
@@ -775,6 +777,8 @@ function enterHouse(building, opts = {}) {
     folk.push(a)
   })
   inHouse = { building, house, folk }
+  if (!opts.spawn) sfx('door')
+  setSound({ inside: true })
   const at = opts.spawn ? room.anchors.spawn : room.anchors.door
   player.position.set(at.x, 0, at.z)
   player.userData.lastPos?.set(at.x, 0, at.z)
@@ -791,6 +795,8 @@ function leaveHouse(opts = {}) {
   if (!inHouse) return
   const { building } = inHouse
   inHouse = null
+  setSound({ inside: false })
+  if (!opts.stay) sfx('door')
   clearRoom()
   mover.stop()
   delete host.dataset.house
@@ -2911,6 +2917,7 @@ function frameBody(now) {
     clock += dt
     dropOff?.update(dt)
     soundLoop('footsteps', walking)
+    setSound({ inside: Boolean(inHouse) }) // (a house's common room: the murmur, not the Quad's crowd)
     poseAvatar(player, walking, clock)
     // (only while you cover ground: turning on the spot never swings the view)
     if (rig.mode === 'eye' && walking && mover.speed > 0.5 && player.userData.yaw !== undefined) {

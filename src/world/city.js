@@ -14,7 +14,8 @@ import { followerCounts, followersText } from '../board.js'
 import { waButton } from '../sharewa.js'
 import * as THREE from 'three'
 import { guardRenderer } from './guard.js'
-import { loop as soundLoop } from '../audio.js'
+import { loop as soundLoop, sfx } from '../audio.js'
+import { setSound } from '../soundscape.js'
 import { SPEED as FAST } from '../speed.js'
 import { formatMoney } from '../engine/format.js'
 import { smooth } from '../smooth.js'
@@ -609,6 +610,8 @@ async function goInside(place) {
     clearFolk()
     scene.add(room.group)
     inside = { place, room, lot: place.lot }
+    sfx('door')
+    setSound({ inside: true })
     grid = roomGrid(room)
     indoorLight()
     rig.setDistance('sims', room.cam)
@@ -645,6 +648,7 @@ function exitRoom() {
   room.dispose()
   clearFolk()
   inside = null
+  setSound({ inside: false })
   grid = cityGrid
   if (built) built.group.visible = true
   delete document.body.dataset.cityPlace
@@ -662,6 +666,7 @@ async function leavePlace() {
   veil(`<div><span class="cr-van still">\u{1F6AA}</span><b>${esc(partOf(inside.lot.part).name)}</b></div>`)
   await wait(Math.max(120, 300 / FAST))
   const lot = exitRoom()
+  if (running) sfx('door')
   if (running && lot) {
     nightNow = -1
     applyTime()
@@ -720,12 +725,15 @@ async function ride(fromId, dest) {
   veil.innerHTML = `<div><span class="cr-van">🚐</span><b>${esc(fill(CITY.travel.lines.ride, { from: from.name, to: stopTo ? stopTo.name : dest.name }))}</b><small>R${res.fare} · ${res.minutes} min</small></div>`
   veil.hidden = false
   host.dataset.riding = '1'
+  soundLoop('bus_engine', true) // (the taxi pulls up)
   await new Promise((r) => setTimeout(r, Math.max(250, 1500 / FAST)))
   if (!running) return false
   place(stopTo ? stopTo.x : dest.x, stopTo ? stopTo.z : dest.z)
   await new Promise((r) => setTimeout(r, Math.max(150, 500 / FAST)))
   veil.hidden = true
   host.dataset.riding = '0'
+  soundLoop('bus_engine', false)
+  sfx('door', 0.4)
   rides += 1
   host.dataset.rides = String(rides)
   host.dataset.fare = String(res.fare)
@@ -1220,6 +1228,7 @@ function tick(now) {
   if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, inside ? roomView() : player.position, dt, inside ? null : built?.group)
   for (const p of player.userData.headParts || []) p.visible = rig.mode !== 'eye'
   notePart(false)
+  setSound({ part: part.id, inside: Boolean(inside) }) // (the ambience and the music fade to the new district's as you cross the border)
   reportLocal({ a: 'campus', x: player.position.x, z: player.position.z, y: 0, h: player.rotation.y, p: player.userData.pose || 'stand' })
   uiRoot.querySelector('.city-stop').hidden = !stepping
   if (card && card.kind !== 'short' && stepping && frameCount % 20 === 0) {
@@ -1330,6 +1339,7 @@ export function stopCity() {
   running = false
   ready = false
   soundLoop('footsteps', false)
+  soundLoop('bus_engine', false)
   if (frame) cancelAnimationFrame(frame)
   frame = 0
   mover?.stop()

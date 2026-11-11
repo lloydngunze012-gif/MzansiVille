@@ -3,36 +3,70 @@
 // so nothing loads until unlock() runs from the first pointer event.
 // Loops are "wanted" on or off; they start as soon as their file has loaded.
 
-const NAMES = ['kettle', 'door', 'footsteps', 'bus_engine', 'crowd', 'music_campus']
-const VOLUME = { kettle: 0.5, door: 0.7, footsteps: 0.55, bus_engine: 0.35, crowd: 0.18, music_campus: 0.22 }
+// Small sounds load at the first tap; the crowd and the music tracks only when a zone asks for them
+// (Sound job, 11 Nov), so a phone never downloads a track it does not play.
+const EAGER = ['kettle', 'door', 'footsteps', 'bus_engine']
+const MUSIC = ['music_campus', 'alt_slow_tar', 'alt_sunday_braai', 'alt_kasi_morning', 'alt_golden_hour']
+const VOLUME = {
+  kettle: 0.5, door: 0.7, footsteps: 0.55, bus_engine: 0.35, crowd: 0.18,
+  // (music sits quietly under the ambience)
+  music_campus: 0.16, alt_slow_tar: 0.13, alt_sunday_braai: 0.13, alt_kasi_morning: 0.13, alt_golden_hour: 0.13,
+}
 const FADE = 0.25
+const MUSIC_FADE = 1.6
 
 let ctx = null
 let master = null
+let musicBus = null
 let grooveOut = null
 const buffers = {}
+const loading = {}
 const wanted = {}
 const playing = {}
+const onReady = []
+let track = null // the music wanted now
+let trackLive = null // { name, source, gain }
 
 function soundOn() {
   try { return localStorage.getItem('mzansiville.sound') !== 'off' } catch { return true }
 }
+export function musicOn() {
+  try { return localStorage.getItem('mzansiville.music') !== 'off' } catch { return true }
+}
 
+let ext = null
 function extension() {
+  if (ext) return ext
   const probe = document.createElement('audio')
-  // Safari on older iPhones cannot decode Ogg Vorbis, so it gets the AAC copies.
-  return probe.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'm4a'
+  // Safari on older iPhones cannot decode Ogg Vorbis (and none decode Ogg Opus, which the four alt
+  // tracks are), so it gets the AAC copies.
+  ext = probe.canPlayType('audio/ogg; codecs="vorbis"') && probe.canPlayType('audio/ogg; codecs="opus"') ? 'ogg' : 'm4a'
+  return ext
 }
 
-async function load(name, ext) {
-  try {
-    const response = await fetch(`/audio/${name}.${ext}`)
-    const data = await response.arrayBuffer()
-    buffers[name] = await new Promise((resolve, reject) => ctx.decodeAudioData(data, resolve, reject))
-    if (wanted[name]) apply(name)
-  } catch { /* a missing sound never breaks the game */ }
+// Fetch and decode one file, once. Resolves to the buffer, or null (a missing sound never breaks the game).
+export function ensure(name) {
+  if (!ctx) return Promise.resolve(null)
+  if (buffers[name]) return Promise.resolve(buffers[name])
+  loading[name] ||= (async () => {
+    try {
+      const response = await fetch(`/audio/${name}.${extension()}`)
+      if (!response.ok) return null
+      const data = await response.arrayBuffer()
+      buffers[name] = await new Promise((resolve, reject) => ctx.decodeAudioData(data, resolve, reject))
+      loaded.push(name)
+      if (wanted[name]) apply(name)
+      if (track === name) applyMusic()
+      return buffers[name]
+    } catch { return null }
+  })()
+  return loading[name]
 }
+const loaded = []
 
+// iPhone: sound is only allowed from inside a tap. The context is made and resumed there, a silent
+// buffer is played (older iOS needs a sound started in the gesture itself), and the audio session is
+// set to "playback" so the ringer switch on silent does not mute the game (Safari 16.4 and later).
 export function unlock() {
   try {
     if (!ctx) {
@@ -40,11 +74,31 @@ export function unlock() {
       master = ctx.createGain()
       master.gain.value = soundOn() ? 1 : 0
       master.connect(ctx.destination)
-      const ext = extension()
-      for (const name of NAMES) load(name, ext)
+      musicBus = ctx.createGain()
+      musicBus.gain.value = musicOn() ? 1 : 0
+      musicBus.connect(master)
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback' } catch { /* not Safari */ }
+      const blank = ctx.createBufferSource()
+      blank.buffer = ctx.createBuffer(1, 1, 22050)
+      blank.connect(ctx.destination)
+      blank.start(0)
+      for (const name of EAGER) ensure(name)
+      for (const name of Object.keys(wanted)) if (wanted[name]) ensure(name)
+      if (track) ensure(track)
     }
-    if (ctx.state !== 'running') ctx.resume().catch(() => {}) // iOS also says 'interrupted' after a lock
+    if (ctx.state !== 'running') ctx.resume().then(ready).catch(() => {}) // iOS also says 'interrupted' after a lock
+    else ready()
   } catch { /* no audio */ }
+}
+function ready() {
+  for (const fn of onReady) { try { fn() } catch { /* a missing sound never breaks the game */ } }
+}
+// The ambience (src/ambience.js) builds its nodes once the context runs; fn is called on every unlock.
+export function whenReady(fn) { onReady.push(fn); if (ctx && ctx.state === 'running') fn() }
+export function graph() { return ctx && master && ctx.state === 'running' ? { ctx, master } : null }
+
+function mark() {
+  document.body.dataset.sounds = [...Object.keys(playing), ...(trackLive ? [trackLive.name] : [])].sort().join(' ')
 }
 
 function apply(name) {
@@ -68,7 +122,54 @@ function apply(name) {
     live.source.stop(now + FADE + 0.05)
     delete playing[name]
   }
-  document.body.dataset.sounds = Object.keys(playing).sort().join(' ')
+  mark()
+}
+
+// Music: one track at a time through its own bus (the Music switch), crossfaded. A track that is
+// still downloading starts when it lands; until then the old one plays on.
+export function music(name) {
+  if (name && !MUSIC.includes(name)) name = null
+  if (track === name) return
+  track = name || null
+  if (track && ctx && !buffers[track]) ensure(track)
+  applyMusic()
+}
+function applyMusic() {
+  if (!ctx) return
+  if (trackLive && trackLive.name === track) return
+  if (track && !buffers[track]) return
+  const now = ctx.currentTime
+  if (trackLive) {
+    const old = trackLive
+    old.gain.gain.cancelScheduledValues(now)
+    old.gain.gain.setValueAtTime(old.gain.gain.value, now)
+    old.gain.gain.linearRampToValueAtTime(0, now + MUSIC_FADE)
+    old.source.stop(now + MUSIC_FADE + 0.05)
+    trackLive = null
+  }
+  if (track) {
+    const source = ctx.createBufferSource()
+    const gain = ctx.createGain()
+    source.buffer = buffers[track]
+    source.loop = true
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(VOLUME[track] ?? 0.13, now + MUSIC_FADE)
+    source.connect(gain).connect(musicBus)
+    source.start()
+    trackLive = { name: track, source, gain }
+  }
+  mark()
+}
+export function setMusicOn(on) {
+  if (musicBus && ctx) musicBus.gain.setTargetAtTime(on ? 1 : 0, ctx.currentTime, 0.08)
+}
+// For tests and #/health: what is wanted, what is loaded, and whether anything can be heard.
+export function soundState() {
+  return {
+    unlocked: Boolean(ctx), running: ctx?.state === 'running',
+    master: master ? master.gain.value : 0, musicBus: musicBus ? musicBus.gain.value : 0,
+    track, trackPlaying: trackLive?.name || null, loops: Object.keys(playing), loaded: [...loaded],
+  }
 }
 
 // The live groove (src/groove.js) plays through the same master, so mute covers it.
@@ -94,15 +195,16 @@ export function loop(name, on) {
   on = Boolean(on)
   if (Boolean(wanted[name]) === on) return
   wanted[name] = on
+  if (on && ctx && !buffers[name]) ensure(name)
   apply(name)
 }
 
-export function sfx(name) {
+export function sfx(name, volume) {
   if (!ctx || !buffers[name]) return
   const source = ctx.createBufferSource()
   const gain = ctx.createGain()
   source.buffer = buffers[name]
-  gain.gain.value = VOLUME[name] ?? 0.6
+  gain.gain.value = volume ?? VOLUME[name] ?? 0.6
   source.connect(gain).connect(master)
   source.start()
 }

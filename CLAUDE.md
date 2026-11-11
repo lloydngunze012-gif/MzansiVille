@@ -2,6 +2,16 @@
 
 ---
 
+# SOUND (owner, 11 Nov). Push and deploy. Status: built. No SQL.
+- **Zones:** data/campusville/sound.json (`zones`: campus, morning, caf, inside, city.<part id>; `layers` waves | street | wind | murmur | crowd, 0 to 1.5; `music` by meta.json phase id, else `default`). src/soundscape.js `setSound({ scene, part, inside, phase })` (safe every frame): main.js syncWorld sets scene (campus | morning | caf | city | null) and phase; city.js tick sets part and inside; scene.js sets inside for a house's common room. `body[data-zone]`; `window.mzansiSound.state()` for tests (zone, level, layers built, master, musicBus, track, trackPlaying, loaded).
+- **Ambience is live Web Audio, no files:** waves (two noise bands on a 0.1 Hz swell, gulls now and then), street (rumble, a hooter and a passing engine = bus_engine low and slow), wind (band-passed noise, drifting), murmur (crowd.ogg low-passed) and crowd. Each layer has one gain that glides (0.5 s time constant) to the zone's level; a layer at 0 for 4 s is taken down.
+- **audio.js:** `ensure(name)` fetches and decodes once, on demand (EAGER at the first tap: kettle, door, footsteps, bus_engine; crowd and music lazily). `music(name)` one track at a time through `musicBus`, 1.6 s crossfade, the old one plays on until the new has loaded. `setMusicOn`, `musicOn` (localStorage mzansiville.music), `soundState`, `graph`, `whenReady`. `sfx(name, volume)`. Ogg only if the browser plays both Vorbis and Opus, else m4a. unlock(): any first touch (main.js listens to pointerdown, pointerup, touchend, click, keydown), a silent buffer, `navigator.audioSession.type = 'playback'`.
+- **Switches:** menu and Settings: Sound (master, everything) and Music (`data-act="music"`, the music bus only). A toggle button that uses aria-pressed must be exempt from main.js's "Already selected" rule (sound, music, smooth-switch are).
+- **Spot sounds:** city.js ride (bus_engine loop while the taxi takes you, a door on arrival), goInside / leavePlace (door), scene.js enterCaf, enterHouse, leaveHouse (door); footsteps and the chat ping as before.
+- **Tests:** tests/e2e/sound-quick.spec.js (quick project); sim-check "sound".
+
+---
+
 # SIMS VIEW FIRST (owner, 11 Nov). Push and deploy. Status: built.
 - **The view lasts one visit:** src/cammode.js (getCam/setCam: top | sims | eye; getView/setView: 3d | map; in memory only, starts sims + 3d; `?view=map` for tests; the old localStorage keys mzansiville.camera and mzansiville.view are removed at load). camera.js reads and writes it; game.js viewPref/viewBar, render.js camMode and main.js's `view` act use it. The Caf, the city and the home keep their rig between starts, so each start calls `rig.setMode(getCam())`.
 - **A clear start:** camera.js `rig.startClear(target, obstacles, tiltDeg)`: Sims at the scene's tilt, a ray from the head (1.5 m) to where the camera will stand; blocked: try the planned yaw +-22.5 degrees, +-45... (16 directions), take the first clear, else the one with the most room. Called from scene.js showWorld's `enter()` when it is a start (`fresh`: hidden before, a respawn, or back from the city; never in a house's common room; tilt 52) and from city.js `place()` (spawn, taxi, teleport, out of a place; tilt 45). The result is on `#world[data-start]` / `#city3d[data-start]`.

@@ -732,6 +732,7 @@ function settings(state) {
     <h1 style="margin-top:44px">Settings</h1>
     <div class="stack set-list">
       <button class="btn block" type="button" data-act="sound">Sound: <b>${state.sound ? 'On' : 'Off'}</b></button>
+      <button class="btn block" type="button" data-act="music">Music: <b>${state.music === false ? 'Off' : 'On'}</b></button>
       ${themePicker()}
       ${run ? '<button class="btn block" type="button" data-act="edit-char">Edit character</button>' : ''}
       <a class="btn ghost block" href="#/errors">Error log</a>

@@ -30,6 +30,9 @@ const patchRun = (page, patch) => page.evaluate((p) => { const s = JSON.parse(lo
 const chat = (page) => page.evaluate(() => window.mzansiThreads())
 const me = (page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('mzansiville.presence')); return { p_id: p.id, p_secret: p.secret } })
 const pop = (page) => page.locator('.sl-pop')
+// A toast is on screen for 1.8 s and a busy test machine can stall a page for longer than that, so "it was said" is
+// read from the game's own list of what it has said (window.mzansiToasts), not caught on the screen.
+const said = (page, text, timeout = 15000) => expect.poll(() => page.evaluate((t) => (window.mzansiToasts || []).some((x) => x.includes(t)), text), { timeout, message: `the game said "${text}"` }).toBe(true)
 const shot = async (page, name) => { await page.waitForTimeout(400); await page.screenshot({ path: `${OUT}/${name}.png` }) }
 const sastDate = (offsetDays = 0) => new Date(Date.now() + 2 * 3600000 + offsetDays * 86400000).toISOString().slice(0, 10)
 const again = async (page, q = '') => { await page.goto(`/?fast=1&morning=0&spawn=gate${q}#/play`); await page.reload(); await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 90000 }) }
@@ -96,15 +99,17 @@ test('P2 the streak (a day, a freeze, the seventh day), the badges, follower mil
   await patchRun(page, { streak: { n: 6, last: sastDate(-1), best: 6, freezeWeek: -1 } })
   await again(page, `&chat=1&room=${ROOM}-s`)
   await act()
+  await said(page, 'Seven Strong')
+  await said(page, '7-day streak') // (after the badge, never on top of it)
+  expect(await page.evaluate(() => { const t = window.mzansiToasts; return t.findIndex((x) => x.includes('Seven Strong')) < t.findIndex((x) => x.includes('7-day streak')) })).toBe(true)
   await expect.poll(async () => (await save(page)).run.streak?.n).toBe(7)
-  await expect(page.locator('.g-toast', { hasText: 'Seven Strong' })).toBeVisible({ timeout: 15000 })
   expect((await save(page)).run.badges).toContain('seven_strong')
   // a missed day is covered by the week's free freeze, once; a second missed day that week starts again at 1
   await patchRun(page, { streak: { n: 3, last: sastDate(-2), best: 7, freezeWeek: -1 } })
   await again(page, `&chat=1&room=${ROOM}-s`)
   await act()
   await expect.poll(async () => (await save(page)).run.streak?.n).toBe(4)
-  await expect(page.locator('.g-toast', { hasText: 'Freeze used' })).toBeVisible({ timeout: 15000 })
+  await said(page, 'Freeze used')
   const used = (await save(page)).run.streak.freezeWeek
   await patchRun(page, { streak: { n: 4, last: sastDate(-2), best: 7, freezeWeek: used } })
   await again(page, `&chat=1&room=${ROOM}-s`)

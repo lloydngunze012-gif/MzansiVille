@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { migrateCast } from '../src/cast-ids.js'
 import { filterText, cleanBio, canSend } from '../src/engine/filter.js'
 import { rankRows, sampleBoard } from '../src/engine/social-data.js'
@@ -1453,6 +1453,25 @@ check('loops and people: 18 named staff with both lines, billboard lines of 7 wo
   const specials = JSON.parse(read('specials.json')).specials
   assert.equal(specials.length, 21)
   for (const s of specials.filter((x) => x.day === 'Friday')) assert.match(s.dish, /^Friday special: /)
+})
+
+// Sound job (11 Nov): every zone the game can ask for is in sound.json, with known layers and tracks that exist
+// in both formats; no new audio over 1.5 MB (the ambience is made live, the tracks were already there).
+check('sound: a zone for the campus, the Caf, inside and every district; tracks exist as ogg and m4a', () => {
+  const sound = JSON.parse(read('sound.json'))
+  const parts = JSON.parse(read('sunnybay.json')).parts.map((p) => `city.${p.id}`)
+  const phases = JSON.parse(read('meta.json')).phases.map((p) => p.id)
+  for (const id of ['campus', 'caf', 'morning', 'inside', ...parts]) assert.ok(sound.zones[id], `no sound zone ${id}`)
+  for (const [id, z] of Object.entries(sound.zones)) {
+    for (const [layer, v] of Object.entries(z.layers || {})) assert.ok(['waves', 'street', 'wind', 'murmur', 'crowd'].includes(layer) && v >= 0 && v <= 1.5, `${id}.${layer}`)
+    for (const [when, track] of Object.entries(z.music || {})) {
+      assert.ok(when === 'default' || phases.includes(when), `${id}: ${when} is not a part of the day`)
+      for (const ext of ['ogg', 'm4a']) assert.ok(existsSync(new URL(`../public/audio/${track}.${ext}`, import.meta.url)), `${track}.${ext}`)
+    }
+    // (campus and SunnyBay are never silent: something plays in every zone you can stand in)
+    if (id !== 'morning') assert.ok(Object.values(z.layers || {}).some((v) => v > 0), `${id} is silent`)
+  }
+  assert.ok(sound.zones['city.beachfront'].layers.waves > 0 && sound.zones['city.town'].layers.street > 0 && sound.zones['city.suburbs'].layers.wind > 0 && sound.zones.inside.layers.murmur > 0 && sound.zones.caf.layers.crowd > 0)
 })
 
 console.log(`${passed} checks passed`)

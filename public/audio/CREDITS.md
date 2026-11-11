@@ -22,7 +22,7 @@ Notes for wiring:
 - `music_campus.ogg` is a chill loop of about 35 seconds, not a song recorded for this game.
 - `door.ogg` is a one-shot. Do not loop it.
 
-## Listening page tracks (#/sounds, 8 Nov): candidates, not in the game yet
+## The four original tracks (8 Nov; in the game since the Sound job, 11 Nov)
 
 These four were written for Soft Life by Claude Code. They are synthesised offline from scratch (sine, FM and noise voices in a Python script, no samples and no outside recordings), so they are original work released as CC0 1.0. Each is a gapless loop under 1 MB, as `.ogg` (Opus, 88 kbps) and `.m4a` (AAC 96 kbps).
 
@@ -32,5 +32,11 @@ These four were written for Soft Life by Claude Code. They are synthesised offli
 | `alt_sunday_braai` | Sunday Braai | warm afro-house, 120 BPM, congas, pluck arpeggio, 48 s | CC0 (original) |
 | `alt_kasi_morning` | Kasi Morning | gentle, 98 BPM, keys and a marimba tune, 39 s | CC0 (original) |
 | `alt_golden_hour` | Golden Hour | deep house with amapiano log drum, 112 BPM, 43 s | CC0 (original) |
+
+Since 11 Nov these four play in the game, by zone and time of day (`data/campusville/sound.json`), with `music_campus`.
+
+## Ambience (Sound job, 11 Nov): no files
+
+The ambience is made live in the browser by `src/soundscape.js` (Web Audio: filtered noise and oscillators), so it is ours and adds no download: sea waves and gulls, street hum, a hooter, wind. A passing vehicle is `bus_engine` played low and slow; the murmur inside places and the crowd are `crowd` (low-passed for the murmur). New audio files added by the Sound job: none (0 KB of the 1.5 MB allowed).
 
 The creator groove variations ("mellow" and "bright") are the same live Web Audio synth as `src/groove.js`, with a different tempo and chords. Nothing recorded.

@@ -1,0 +1,44 @@
+{
+  "note": "Sound by zone (Sound job, 11 Nov; made by Claude Code, Cursor's to tune). layers: how loud each ambience layer is in the zone (0 to 1.5): waves (sea and gulls), street (hum, a hooter, a passing engine), wind, murmur (voices through a wall), crowd (the crowd recording). music: the track by part of the day (meta.json phase ids), else default. Tracks: music_campus, alt_slow_tar, alt_sunday_braai, alt_kasi_morning, alt_golden_hour (public/audio). 'inside' is any place you walk into in SunnyBay or a house on campus: its layers replace the zone's, the music carries on.",
+  "zones": {
+    "campus": {
+      "layers": { "crowd": 1, "wind": 0.3 },
+      "music": { "default": "music_campus", "wake": "alt_kasi_morning", "transit": "alt_kasi_morning", "night": "alt_golden_hour" }
+    },
+    "morning": {
+      "layers": {},
+      "music": { "default": "music_campus" }
+    },
+    "caf": {
+      "layers": { "crowd": 1.3 },
+      "music": { "default": "alt_sunday_braai", "night": "alt_golden_hour" }
+    },
+    "inside": {
+      "layers": { "murmur": 1 }
+    },
+    "city.campus": {
+      "layers": { "street": 0.5, "wind": 0.35 },
+      "music": { "default": "music_campus", "wake": "alt_kasi_morning", "transit": "alt_kasi_morning", "night": "alt_golden_hour" }
+    },
+    "city.town": {
+      "layers": { "street": 1, "murmur": 0.3 },
+      "music": { "default": "alt_slow_tar", "night": "alt_golden_hour" }
+    },
+    "city.suburbs": {
+      "layers": { "wind": 1 },
+      "music": { "default": "alt_kasi_morning", "leisure": "alt_golden_hour", "night": "alt_golden_hour" }
+    },
+    "city.beachfront": {
+      "layers": { "waves": 1, "wind": 0.25 },
+      "music": { "default": "alt_sunday_braai", "night": "alt_golden_hour" }
+    },
+    "city.township": {
+      "layers": { "street": 0.45, "murmur": 0.7 },
+      "music": { "default": "alt_kasi_morning", "social": "alt_sunday_braai", "leisure": "alt_sunday_braai", "night": "alt_slow_tar" }
+    },
+    "city.industrial": {
+      "layers": { "street": 0.9, "wind": 0.4 },
+      "music": { "default": "alt_slow_tar", "night": "alt_golden_hour" }
+    }
+  }
+}

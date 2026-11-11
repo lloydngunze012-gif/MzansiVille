@@ -305,6 +305,9 @@ export function fpsText() {
   return `${live}${world.fpsAvg} average, ${world.fpsLow} slowest (last 10 s)`
 }
 
+export function musicOn() {
+  try { return localStorage.getItem('mzansiville.music') !== 'off' } catch { return true }
+}
 export function soundOn() {
   try { return localStorage.getItem('mzansiville.sound') !== 'off' } catch { return true }
 }
@@ -321,6 +324,7 @@ function gearMenu(run) {
     <button type="button" data-act="invite-friend">\u{1F381} Invite a friend: R100 each</button>
     <button type="button" data-act="chat-open">\u{1F4AC} Chat <small class="cht-unread inline" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
+    <button type="button" data-act="music" aria-pressed="${musicOn() ? 'false' : 'true'}">\u{1F3B5} Music: <b>${musicOn() ? 'On' : 'Off'}</b></button>
     <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>
     <button type="button" data-act="nav" data-go="notices" class="${news ? 'news' : ''}">\u{1F4E2} Notices${news ? ' <i class="tb-dot" aria-label="new"></i>' : ''}</button>
     ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
