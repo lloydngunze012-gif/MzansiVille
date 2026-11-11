@@ -165,12 +165,15 @@ function lectureArrive() {
   return true
 }
 
+let doorRetry = 0
 function updateGuide() {
   if (!player || !campus) return
   if (dropOff?.wantsDoor) {
     const home = homeDoor()
     if (!home) return
     if (!paused() && Math.hypot(home.x - player.position.x, home.z - player.position.z) < 2.4) { clearGuide(); mover.stop(); dropOff.arrive(); return }
+    // ("Take my bags": a walk that gave up short of the door sets off again after a moment)
+    if (!paused() && !mover.target && clock - doorRetry > 1.5) { doorRetry = clock; dropOff.again() }
     if (!guide || Math.hypot(player.position.x - guideFrom.x, player.position.z - guideFrom.z) > 4) buildGuide(home)
     const mark = guide?.getObjectByName('lecture-marker')
     if (mark) { mark.scale.setScalar(1 + Math.sin(clock * 4) * 0.22); mark.material.opacity = 0.6 + Math.sin(clock * 4) * 0.3 }
@@ -1489,6 +1492,75 @@ window.mzansiLineup = (looks) => {
     return a
   })
   return Promise.all(lineup.map((a) => a.userData.ready)).then(() => lineup.length)
+}
+// The opening page's stills (scripts/opening-stills.mjs, a one-off asset job; the game never calls
+// this): one student standing on the campus, photographed in three passes the script puts together:
+// the campus without anybody (blurred there for depth of field), then the student alone over black
+// and over white (the difference is their outline). A sunset sky, warm haze, a key and a rim light.
+window.mzansiPortrait = async (look, o) => {
+  const av = createAvatar(look)
+  await av.userData.ready
+  av.position.set(o.at[0], campus.floor.at(o.at[0], o.at[1]), o.at[1])
+  av.rotation.y = o.rot
+  av.userData.pose = 'stand'
+  scene.add(av)
+  for (let t = 0; t <= (o.time || 2); t += 0.05) poseAvatar(av, false, t)
+  appearNow(av)
+  for (const [name, r] of Object.entries(o.bones || {})) { const b = av.getObjectByName(name); if (b) { b.rotation.x += r[0]; b.rotation.y += r[1]; b.rotation.z += r[2] } }
+  av.updateMatrixWorld(true)
+  const size = renderer.getSize(new THREE.Vector2())
+  const ratio = renderer.getPixelRatio()
+  renderer.setPixelRatio(1)
+  renderer.setSize(o.w, o.h, false)
+  const cam = new THREE.PerspectiveCamera(o.fov, o.w / o.h, 0.1, 1500)
+  cam.position.set(...o.cam)
+  cam.lookAt(...o.look)
+  const was = scene.children.map((c) => [c, c.visible])
+  const tags = []
+  scene.traverse((n) => { if ((n.isSprite || n.name === 'beacon' || n.name === 'badge') && n.visible) { tags.push(n); n.visible = false } }) // (place labels, markers)
+  const people = new Set([player, ...everyone(), ...lineup])
+  const fog = [scene.fog.near, scene.fog.far]
+  const grab = () => { renderer.render(scene, cam); return renderer.domElement.toDataURL('image/png') }
+  // 1. the place: nobody in it, a sunset sky from plum down to gold at the horizon, warm haze
+  const c = document.createElement('canvas'); c.width = 4; c.height = 1024
+  const g = c.getContext('2d'); const grad = g.createLinearGradient(0, 0, 0, 1024)
+  for (const [at, col] of o.sky) grad.addColorStop(at, col)
+  g.fillStyle = grad; g.fillRect(0, 0, 4, 1024)
+  const skyTex = new THREE.CanvasTexture(c); skyTex.colorSpace = THREE.SRGBColorSpace; skyTex.generateMipmaps = false; skyTex.minFilter = THREE.LinearFilter
+  scene.background = skyTex
+  scene.fog.color.set(o.haze); scene.fog.near = o.fog[0]; scene.fog.far = o.fog[1]
+  sun.color.set(o.sun[0]); sun.intensity = o.sun[1]; hemi.color.set(o.hemi[0]); hemi.groundColor.set(o.hemi[1]); hemi.intensity = o.hemi[2]
+  for (const p of people) if (p) p.visible = false
+  av.visible = false
+  const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 24), new THREE.MeshBasicMaterial({ color: 0x1a0d10, transparent: true, opacity: 0.45, depthWrite: false, fog: false }))
+  blob.rotation.x = -Math.PI / 2; blob.scale.set(1.1, 0.6, 1); blob.rotation.z = o.shadow || 0
+  blob.position.set(av.position.x, av.position.y + 0.1, av.position.z)
+  scene.add(blob)
+  // (the sea is 300 m east and flat: from chest height it would be a hair on the horizon, so for the
+  // photo it tilts up a touch, a band of water where the real sea is)
+  let sea = null
+  if (o.sea) { sea = new THREE.Mesh(new THREE.PlaneGeometry(1500, 3000), new THREE.MeshBasicMaterial({ color: o.sea[0] })); sea.rotation.set(-Math.PI / 2, o.sea[1], 0, 'YXZ'); sea.rotation.order = 'XYZ'; sea.rotation.set(-Math.PI / 2, -o.sea[1], 0); sea.position.set(296 + 750, 750 * Math.tan(o.sea[1]) - 0.3, 0); scene.add(sea) }
+  const back = grab()
+  scene.remove(blob)
+  if (sea) scene.remove(sea)
+  // 2. the student alone: the key light low and warm from the camera's side, the rim from behind
+  for (const ch of scene.children) ch.visible = Boolean(ch.isLight)
+  av.visible = true
+  scene.background = null; scene.fog.near = 1e5; scene.fog.far = 2e5
+  const lights = [o.key, o.rim, o.fill].filter(Boolean).map(([col, power, x, y, z]) => { const l = new THREE.DirectionalLight(col, power); l.position.set(av.position.x + x, y, av.position.z + z); l.target = av; scene.add(l); return l })
+  sun.intensity = 0
+  renderer.setClearColor(0x000000); const black = grab()
+  renderer.setClearColor(0xffffff); const white = grab()
+  const head = (av.getObjectByName('Head') || av).getWorldPosition(new THREE.Vector3()).project(cam)
+  // back as it was
+  for (const l of lights) scene.remove(l)
+  scene.remove(av); av.userData.disposed = true
+  for (const [ch, v] of was) ch.visible = v
+  for (const n of tags) n.visible = true
+  scene.fog.near = fog[0]; scene.fog.far = fog[1]
+  nightNow = -1; applyTime()
+  renderer.setPixelRatio(ratio); renderer.setSize(size.x, size.y)
+  return { back, black, white, head: [(head.x + 1) / 2, (1 - head.y) / 2] }
 }
 // Tests (collisions): hold the stick, and every box nobody may walk into.
 window.mzansiSteer = (x, z) => { forcedSteer = x || z ? { x, z } : null }

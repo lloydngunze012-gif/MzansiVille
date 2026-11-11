@@ -80,7 +80,7 @@ import { miniCardHtml, playerCardHtml } from './ui/card.js'
 import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
-import { STUDENTS } from './ui/quick.js'
+import { STUDENTS, stillOf } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
 import { addActivities as addScoreActivities, flush as flushScores, loadBadges, note as noteScore } from './scores.js'
 import { funnel, returning, startSession } from './events.js'
@@ -457,31 +457,17 @@ function syncPreview(viewState) {
 let thumbsPromise = null
 const lastThumb = new Map() // part|id -> the last picture that chip showed
 
-// The opening page (src/ui/quick.js): the eight round portraits (bust, kind 'hair') and the big
-// hero (full body, kind 'hero') are the real 3D models, swapped in once rendered; quickScreen()
-// only draws the instant flat-SVG placeholder so the screen is never empty while they render.
+// The opening page (src/ui/quick.js): the picked student's scene loads first; once it has landed the
+// other seven are fetched quietly, so swapping students is instant. Nothing waits on any of them.
+let quickWarmed = false
 function hydrateQuickThumbs() {
-  const qs = app.querySelector('.qs')
-  if (!qs) return
-  if (!thumbsPromise) thumbsPromise = import('./ui/thumbs3d.js')
-  thumbsPromise.then(({ thumbFor, thumbNow }) => {
-    app.querySelectorAll('.qs .qs-pic[data-i]').forEach((pic) => {
-      const i = Number(pic.dataset.i)
-      const s = STUDENTS[i]
-      if (!s) return
-      const put = (url) => { const node = app.querySelector(`.qs .qs-pic[data-i="${i}"]`); if (url && node) node.innerHTML = `<img src="${url}" alt="">` }
-      const ready = thumbNow(s.avatar, 'hair')
-      if (ready) put(ready)
-      else thumbFor(s.avatar, 'hair', () => Boolean(app.querySelector(`.qs .qs-pic[data-i="${i}"]`))).then(put)
-    })
-    const i = Number(app.querySelector('.qs .qs-heropic[data-hero]')?.dataset.i)
-    const s = STUDENTS[i]
-    if (!s) return
-    const put = (url) => { const node = app.querySelector('.qs .qs-heropic[data-hero]'); if (url && node && Number(node.dataset.i) === i) node.innerHTML = `<img class="whole" src="${url}" alt="">` }
-    const ready = thumbNow(s.avatar, 'hero')
-    if (ready) put(ready)
-    else thumbFor(s.avatar, 'hero', () => Number(app.querySelector('.qs .qs-heropic[data-hero]')?.dataset.i) === i).then(put)
-  }).catch((error) => { if (isStaleLoad(error) && reloadForUpdate(error?.message)) return; console.error(error) })
+  const scene = app.querySelector('.qs .qs-scene[data-still]')
+  if (!scene || quickWarmed) return
+  quickWarmed = true
+  const first = new Image()
+  first.onload = () => { for (const s of STUDENTS) { const im = new Image(); im.decoding = 'async'; im.src = stillOf(s) } }
+  first.onerror = () => { quickWarmed = false } // (blocked or offline: try again on a later repaint)
+  first.src = scene.dataset.still
 }
 
 function hydrateThumbs() {

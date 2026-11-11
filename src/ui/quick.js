@@ -1,4 +1,3 @@
-import { avatarSvg } from '../avatar.js'
 import DATA from '../../data/campusville/quickstart.json'
 import { tidyHandle } from '../handles.js'
 import { countryPick } from './enrol.js'
@@ -17,39 +16,41 @@ import { countryPick } from './enrol.js'
 // same mandatory-name rule holds for the full enrol flow's Skip on the "who" step (main.js, act ===
 // 'enrol-skip'): it fills in a house for you, never a name.
 //
-// OPENING PAGE (owner, 10 Nov): the hero is the picked student, large, over a golden-hour still of the real
-// SunnyBay; the eight students are round portraits in a swipeable row below; a frosted panel holds the name,
-// handle, country and Play. Every portrait and the hero are the real 3D models (src/ui/thumbs3d.js 'hero' and
-// 'hair' kinds), hydrated after paint (main.js hydrateThumbs); this function only draws the instant flat-SVG
-// placeholders so the screen is never empty while the renders are made.
+// OPENING PAGE V2 (owner, 11 Nov): one scene per student. Each of the eight was photographed INSIDE the
+// real campus (scripts/opening-stills.mjs, window.mzansiPortrait in scene.js): on the lawn by the Main Gate
+// at golden hour, the gate and the sea out of focus behind, a warm key and rim light. The picked student's
+// picture (public/opening/<id>.webp, under 60 KB) fills the top of the screen edge to edge, the real logo
+// over it; the round portraits (cut from the same pictures) overlap its bottom edge; then the plum glass
+// panel: name, country, Play. No live 3D on this page, and nothing waits for a picture: the scene has its
+// own plum-to-gold dusk behind it (quick.css), which is what shows if a picture is slow or blocked.
+// The selected picture loads first; main.js hydrateQuickThumbs fetches the other seven once it has landed.
+// Palette: brand plum (#1a0d33, #2b1650), gold, cream. No pink, no light blue.
 
 export const STUDENTS = DATA.students
+export const stillOf = (s) => `/opening/${s.id}.webp`
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
-// Only bounce the hero when the pick actually changed (not on every repaint, e.g. typing or the country select).
+// Only ease the new scene in when the pick actually changed (not on every repaint, e.g. typing or the country select).
 let lastHero = null
 
 export function quickScreen(state) {
-  const { draft, district } = state
-  const picked = STUDENTS.findIndex((s) => s.id === draft.preset)
-  const hero = STUDENTS[picked] || STUDENTS[0]
-  const bounce = lastHero !== null && lastHero !== picked
+  const { draft } = state
+  const picked = Math.max(0, STUDENTS.findIndex((s) => s.id === draft.preset))
+  const hero = STUDENTS[picked]
+  const swap = lastHero !== null && lastHero !== picked
   lastHero = picked
   const chip = (s, i) => `<button class="qs-card" type="button" data-act="qs-pick" data-i="${i}" data-preset="${esc(s.id)}" aria-pressed="${picked === i}" aria-label="${esc(s.name)}">
-      <span class="qs-pic" data-i="${i}">${avatarSvg(s.avatar, district.meta.dialCode, 64)}</span>
+      <img class="qs-pic" src="/opening/${esc(s.id)}-face.webp" alt="" width="64" height="64" decoding="async">
     </button>`
   const handle = tidyHandle(draft.handle)
   return `<main class="screen en qs qs2" data-screen="create" data-step="quick">
-    <div class="qs-backdrop" aria-hidden="true"></div>
-    <header class="qs-top"><span class="qs-logo">Soft Life</span></header>
-    <div class="qs-hero">
-      <div class="qs-heropic${bounce ? ' qs-bounce' : ''}" data-hero data-i="${picked}">${avatarSvg(hero.avatar, district.meta.dialCode, 200)}</div>
-    </div>
+    <div class="qs-scene${swap ? ' qs-swap' : ''}" data-scene data-i="${picked}" data-still="${esc(stillOf(hero))}" style="--still: url('${esc(stillOf(hero))}')" aria-hidden="true"></div>
+    <header class="qs-top"><img class="qs-logo" src="/opening/logo.webp" alt="Soft Life" width="242" height="220"><span class="qs-uni">University of Mzansi</span></header>
     <div class="qs-row" role="group" aria-label="Pick your student">
       ${STUDENTS.map((s, i) => chip(s, i)).join('')}
     </div>
     <div class="qs-panel">
-      <label class="en-field qs-name${draft.error === 'Type your name to play' ? ' qs-shake' : ''}"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Your name" enterkeyhint="go"></label>
+      <label class="en-field qs-name${draft.error === 'Type your name to play' ? ' qs-shake' : ''}"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Type your name" enterkeyhint="go"></label>
       <p class="qs-handle" data-qs-handle>${handle ? `Your @handle: <b>@${esc(handle)}</b>` : ''}</p>
       ${countryPick(state, { province: false })}
       ${draft.error ? `<p class="en-err" role="alert">${esc(draft.error)}</p>` : ''}

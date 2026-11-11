@@ -42,6 +42,7 @@ export function startDropOff(ctx) {
   const card = host.querySelector('.dp-card')
   const caption = host.querySelector('.dp-caption')
   const walkBtn = host.querySelector('.dp-walk')
+  let again = 0
   function line(name, text, buttons = []) {
     return new Promise((resolve) => {
       card.hidden = false
@@ -258,7 +259,9 @@ export function startDropOff(ctx) {
     // walk there yourself (the dots), or this walks you there
     walkBtn.textContent = `\u{1F9F3} Take my bags to ${ctx.house}`
     walkBtn.hidden = false
-    walkBtn.onclick = () => ctx.walkTo?.(ctx.door.x, ctx.door.z)
+    // (a promise: if that walk is held up for good, someone standing in the gateway, scene.js updateGuide
+    // sets off again a few times through api.again instead of leaving you at the gate with a button that did nothing)
+    walkBtn.onclick = () => { again = 6; ctx.walkTo?.(ctx.door.x, ctx.door.z) }
   }
 
   async function atDoor() {
@@ -302,6 +305,8 @@ export function startDropOff(ctx) {
     // (while the car comes and goes and while the card is up, you stay put)
     get holding() { return phase === 'arrive' || phase === 'goodbye' || phase === 'leave' || phase === 'door' },
     get wantsDoor() { return phase === 'walk' },
+    // You asked to be walked to the door and the walk has ended short of it: go again (true, at most 6 times).
+    again() { if (phase !== 'walk' || again <= 0) return false; again -= 1; ctx.walkTo?.(ctx.door.x, ctx.door.z); return true },
     update(dt) {
       for (let i = tasks.length - 1; i >= 0; i--) if (tasks[i].update(dt)) { tasks[i].resolve(); tasks.splice(i, 1) }
       for (const a of people) if (a.visible) poseAvatar(a, Boolean(a.userData.walking), performance.now() / 1000)

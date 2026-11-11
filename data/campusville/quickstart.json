@@ -3,7 +3,7 @@
   "students": [
     { "id": "q-naledi", "name": "Naledi", "avatar": { "gender": "female", "skin": "deep", "hair": "braids", "outfit": "shweshwe", "body": "regular" } },
     { "id": "q-emma", "name": "Emma", "avatar": { "gender": "female", "skin": "fair", "hair": "crop", "outfit": "jacket", "body": "regular", "hairColor": "#e0b85c" } },
-    { "id": "q-amy", "name": "Amy", "avatar": { "gender": "female", "skin": "brown", "hair": "curls", "outfit": "dress", "body": "curvy", "hairColor": "#3a2416" } },
+    { "id": "q-amy", "name": "Amy", "avatar": { "gender": "female", "skin": "brown", "hair": "curls", "outfit": "dress", "body": "curvy", "hairColor": "#3a2416", "topColor": "#f4efe4" } },
     { "id": "q-priya", "name": "Priya", "avatar": { "gender": "female", "skin": "amber", "hair": "crop", "outfit": "hoodie", "body": "regular" } },
     { "id": "q-thabo", "name": "Thabo", "avatar": { "gender": "male", "skin": "deep", "hair": "fade", "outfit": "hoodie", "body": "regular" } },
     { "id": "q-sam", "name": "Sam", "avatar": { "gender": "male", "skin": "fair", "hair": "curls", "outfit": "jacket", "body": "regular", "hairColor": "#6b4529" } },

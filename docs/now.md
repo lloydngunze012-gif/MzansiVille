@@ -1,7 +1,15 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (chat sprint: threads, The Quad, the ping).
+Last updated: 11 Nov, Claude Code (opening page V2).
+
+## Opening page V2 (owner, 11 Nov): built; push and deploy at the end of the job
+- **What changed.** The first screen is rebuilt: the real SL logo with "University of Mzansi" under it; one picture per student taken inside the real campus (the lawn by the Main Gate at golden hour, the gate, fence and sea out of focus behind, warm key and rim light, a relaxed stance); the picture fills the top of the screen edge to edge; the round portraits sit over its bottom edge; a plum glass panel with a thin gold border, gold cap labels, cream fields with plum text, gold Play. Plum, gold and cream only.
+- **How the pictures are made:** `node scripts/opening-stills.mjs` with the dev server up (details in CLAUDE.md). 12 to 15 KB each. No live 3D on the page any more.
+- **For Cursor:** one value in data/ changed by Claude Code: Amy's dress in `data/campusville/quickstart.json` is cream (`topColor`), because the owner ruled out pink on this page and the stock dress is pink. She wears the same in the game.
+- **Honest notes.** (1) The sea is tilted up 2 degrees for the photo only; from the lawn at chest height the real sea is too thin to see. (2) The gate in shot is its east pillar; the guardhouse with the "Main Gate" sign faces the other way from the sea, so both do not fit one frame. (3) Framed from the shins up, the feet and the ground under them are out of frame, so the contact shadow is drawn but mostly hidden. (4) The faces are the game's own low-poly faces: neutral, not smiling. (5) logo-transparent.png and lockup-for-dark.png sit untracked in the repo root (the owner's files); only the 19 KB logo.webp made from them is committed. (6) Not measured on throttled 3G; the weight before Play is tappable is about 267 KB gzipped.
+- **Test health.** The first quick run was 66 of 67: home.spec "day 1 home: suburban" stood at the gate for 90 s after "Take my bags" (player still at 0, 95.5, someone 1.5 m away); it passed alone. Not from this job's files. Likely cause, NOT proven (the run's screenshot was gone before it was looked at): someone standing in the gateway held the guided walk up until it gave up, leaving a button that had done nothing. The GAME is changed so that cannot strand a player: after "Take my bags", a walk that ends short of the door sets off again (dropoff.js `again`, scene.js updateGuide, up to 6 times, 1.5 s apart). If it shows again, keep the test-results folder.
+- **Tests.** launch.spec.js O1, O2 rewritten, O5 new (every student at 360, 390, 414). Screenshots (not committed): docs/sprints/opening-v2/.
 
 ## Chat sprint (owner, 11 Nov): built; WAITING FOR THE OWNER TO RUN supabase/chat.sql
 - **Lloyd, before the testers tonight: run the whole of `supabase/chat.sql` once in the Supabase SQL editor** (re-runnable). Until then the chat button opens a sheet that says "Chat opens soon". `#/health` shows "Chat SQL: Yes" when it is in; open phones pick it up within about 25 s.

@@ -4,9 +4,10 @@
 //   L3  the card prompt: after the first meal, never during a walk, R200 once, at most once a day, old saves never
 //   L4  the leaderboard: a returning player gets the card, a new one does not; three tabs, top 10, "You: #N"
 //   L5  launch safety: errors capped at 20 an hour, funnel steps in order, #/health, feedback (menu and third session)
-//   O1  the opening page: the picked student's hero is a real 3D render (not the flat placeholder), and tapping
+//   O1  the opening page: the scene is the picked student photographed in the campus (the real logo over it), and tapping
 //       another portrait swaps it for that student's own render
-//   O2  a blocked backdrop still looks good (the sunset gradient alone), and Play never waits for it
+//   O2  blocked pictures still look good (the dusk behind the scene alone), and Play never waits for them
+//   O5  every student at 360, 390 and 414 px: layout, palette, contrast (WCAG AA), picture budget; screenshots
 //   O3  an empty name shakes the field and says so; Play's gold button never greys out
 //   O4  the name and the handle both pass handle_blocklist.json before Play works
 // The score RPC's daily limit is tested against real Postgres in scripts/sql-check.mjs (npm run check).
@@ -133,51 +134,126 @@ test('L1b a name that is too short or not allowed stays on the screen; a returni
 })
 
 // ---------- O1/O2/O3/O4 the opening page ----------
-test('O1 the hero is the real 3D model, and swaps (with its own render) when another portrait is tapped', async ({ page }) => {
+test('O1 the scene is the picked student, photographed in the campus, and swaps when another portrait is tapped', async ({ page }) => {
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await brandNew(page)
-  const hero = page.locator('.qs-heropic')
-  // a known baseline pick, whatever the random preselect landed on (same pick is a no-op, a real
-  // change bounces once): either way it settles on Naledi with her own render
+  const scene = page.locator('.qs-scene')
+  const loaded = (id) => page.evaluate((src) => new Promise((done) => { const im = new Image(); im.onload = () => done(im.naturalWidth); im.onerror = () => done(0); im.src = src }), `/opening/${id}.webp`)
+  // a known baseline pick, whatever the random preselect landed on
   await page.locator('[data-preset="q-naledi"]').tap()
-  await expect(hero.locator('img')).toBeVisible({ timeout: 15000 })
-  const first = await hero.locator('img').getAttribute('src')
-  expect(first).toMatch(/^data:image\/png/)
-  await shot(page, 'opening-390')
-  // a different student: a bounce plays, and the hero becomes THEIR own render (a different picture)
+  await expect(scene).toHaveAttribute('data-still', '/opening/q-naledi.webp')
+  expect(await scene.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('/opening/q-naledi.webp')
+  expect(await loaded('q-naledi'), 'her picture is a real file').toBe(720)
+  // the real logo, never plain text, with the university under it
+  const logo = page.locator('.qs-logo')
+  await expect(logo).toBeVisible()
+  expect(await logo.evaluate((el) => el.complete && el.naturalWidth > 100)).toBe(true)
+  await expect(page.locator('.qs-uni')).toHaveText('University of Mzansi')
+  // a different student: the scene eases in once, and it is THEIR picture
   await page.locator('[data-preset="q-dev"]').tap()
-  await expect(hero).toHaveClass(/qs-bounce/)
-  await expect(hero.locator('img')).toBeVisible({ timeout: 15000 })
-  const second = await hero.locator('img').getAttribute('src')
-  expect(second).not.toBe(first)
-  // tapping the same, already-selected portrait again does nothing (the game's usual "already
-  // selected" tap, scene.js pulse): the pick and its render are undisturbed
+  await expect(scene).toHaveClass(/qs-swap/)
+  await expect(scene).toHaveAttribute('data-still', '/opening/q-dev.webp')
+  // tapping the same, already-selected portrait again changes nothing
   await page.locator('[data-preset="q-dev"]').tap()
   await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveAttribute('data-preset', 'q-dev')
-  await expect(hero.locator('img')).toHaveAttribute('src', second)
+  await expect(scene).toHaveAttribute('data-still', '/opening/q-dev.webp')
+  // once the first picture has landed, the other seven are fetched quietly
+  await expect.poll(() => page.evaluate(() => performance.getEntriesByType('resource').filter((r) => /\/opening\/q-[a-z]+\.webp/.test(r.name)).length), { timeout: 15000 }).toBeGreaterThanOrEqual(8)
   expect(errors).toEqual([])
 })
 
-test('O2 a blocked backdrop still looks good (the gradient alone), and Play works before it loads', async ({ page }) => {
+test('O2 blocked pictures still look good (the dusk behind the scene alone), and Play never waits for them', async ({ page }) => {
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
-  // the backdrop images never arrive (blocked, or just painfully slow): the page never waits on them,
+  // the pictures never arrive (blocked, or just painfully slow): the page never waits on them,
   // so this goes straight for DOM content, not the full (image-inclusive) load event
-  await page.route('**/opening-bg-*.webp', () => new Promise(() => {})) // (never resolves)
+  await page.route('**/opening/*.webp', () => new Promise(() => {})) // (never resolves)
   await page.goto('/?fast=1&enrol=quick#/new', { waitUntil: 'domcontentloaded' })
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() })
   await page.reload({ waitUntil: 'domcontentloaded' })
-  const backdrop = page.locator('.qs-backdrop')
-  await expect(backdrop).toBeVisible()
-  const bg = await backdrop.evaluate((el) => getComputedStyle(el).backgroundImage)
-  expect(bg).toContain('linear-gradient') // (the sunset gradient is always in the layer list, image or not)
+  const scene = page.locator('.qs-scene')
+  await expect(scene).toBeVisible()
+  const bg = await scene.evaluate((el) => getComputedStyle(el).backgroundImage)
+  expect(bg).toContain('linear-gradient') // (the dusk is always in the layer list, picture or not)
+  expect(bg).not.toMatch(/rgb\(2[0-9]{2}, 1?[0-9]{1,2}, (1[5-9][0-9]|2[0-9]{2})\)/) // (no pink in it)
   await shot(page, 'opening-blocked-390')
-  // Play still works: the screen never waited on the backdrop
+  // Play still works: the screen never waited on a picture
   await page.locator('#name').fill('Lerato')
   await page.locator('[data-act="qs-play"]').tap()
   await expect(page).toHaveURL(/#\/(play|morning)/, { timeout: 15000 })
   expect(errors).toEqual([])
+})
+
+// OPENING PAGE V2 (owner, 11 Nov): every student at 360, 390 and 414 px. The scene fills the top of the
+// screen edge to edge, the portraits sit over its bottom edge, the panel is plum glass with gold labels and
+// cream fields, every text passes WCAG AA (4.5:1) and nothing is pink or light blue.
+test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, picture budget', async ({ page, request }) => {
+  test.setTimeout(180000)
+  const out = 'docs/sprints/opening-v2'
+  fs.mkdirSync(out, { recursive: true })
+  await brandNew(page)
+  const ids = await page.locator('.qs-card').evaluateAll((els) => els.map((e) => e.dataset.preset))
+  expect(ids).toHaveLength(8)
+  let total = (await (await request.get('/opening/logo.webp')).body()).length
+  for (const id of ids) {
+    const still = (await (await request.get(`/opening/${id}.webp`)).body()).length
+    expect(still, `${id}.webp is under 60 KB`).toBeLessThan(60 * 1024)
+    total += still + (await (await request.get(`/opening/${id}-face.webp`)).body()).length
+  }
+  expect(total, 'all the page\'s pictures together are under 300 KB').toBeLessThan(300 * 1024)
+  for (const [w, h] of [[360, 740], [390, 844], [414, 896]]) {
+    await page.setViewportSize({ width: w, height: h })
+    for (const id of ids) {
+      await page.locator(`[data-preset="${id}"]`).scrollIntoViewIfNeeded()
+      await page.locator(`[data-preset="${id}"]`).tap()
+      await expect(page.locator('.qs-scene')).toHaveAttribute('data-still', `/opening/${id}.webp`)
+      await page.evaluate((src) => new Promise((done) => { const im = new Image(); im.onload = im.onerror = done; im.src = src }), `/opening/${id}.webp`)
+      if (id === ids[0]) {
+        const m = await page.evaluate(() => {
+          const box = (s) => document.querySelector(s).getBoundingClientRect()
+          const scene = box('.qs-scene'), row = box('.qs-card'), panel = box('.qs-panel'), play = box('[data-act="qs-play"]'), fine = box('.qs-fine')
+          // contrast of a text against the panel's plum (the glass over the page's plum) or its own field
+          const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
+          const rgb = (str) => str.match(/[\d.]+/g).map(Number)
+          const over = (fg, bg) => { const a = fg[3] ?? 1; return fg.slice(0, 3).map((v, i) => v * a + bg[i] * (1 - a)) }
+          const ratio = (fg, bg) => { const a = lum(over(fg, bg)), b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }
+          const plum = [26, 13, 51]
+          const css = (s, pseudo) => getComputedStyle(document.querySelector(s), pseudo)
+          const field = rgb(css('#name').backgroundColor)
+          const texts = {
+            label: [css('.qs-name > span').color, plum, css('.qs-name > span').fontSize],
+            from: [css('.qs2 .en-ctyrow h3').color, plum, css('.qs2 .en-ctyrow h3').fontSize],
+            name: [css('#name').color, field, css('#name').fontSize],
+            placeholder: [css('#name', '::placeholder').color, field, css('#name').fontSize],
+            country: [css('.qs2 .en-ctypick span').color, rgb(css('.qs2 .en-ctypick').backgroundColor), css('.qs2 .en-ctypick span').fontSize],
+            play: [css('.qs-play').color, [240, 180, 0], css('.qs-play').fontSize],
+            fine: [css('.qs-fine').color, plum, css('.qs-fine').fontSize],
+            link: [css('.qs-fine a').color, plum, css('.qs-fine a').fontSize],
+            uni: [css('.qs-uni').color, [43, 22, 80], css('.qs-uni').fontSize],
+          }
+          const out = {}
+          for (const [k, [fg, bg, size]] of Object.entries(texts)) out[k] = { ratio: +ratio(rgb(fg), bg).toFixed(2), size: parseFloat(size) }
+          return {
+            w: innerWidth, h: innerHeight, scene: [scene.left, scene.right, scene.top, scene.bottom], rowTop: row.top, rowBottom: row.bottom, panelTop: panel.top,
+            fits: play.bottom <= innerHeight && fine.bottom <= innerHeight && document.documentElement.scrollHeight <= innerHeight + 2 && document.documentElement.scrollWidth <= innerWidth,
+            texts: out, fieldBg: css('#name').backgroundColor, countryBg: css('.qs2 .en-ctypick').backgroundColor, fieldH: [box('#name').height, box('.qs2 .en-ctypick').height],
+            border: css('.qs-panel').borderTopColor, logoH: box('.qs-logo').height,
+          }
+        })
+        expect(m.fits, `the page fits one screen at ${w} px`).toBe(true)
+        expect(m.scene[0]).toBeLessThanOrEqual(0.5); expect(m.scene[1]).toBeGreaterThanOrEqual(w - 0.5); expect(m.scene[2]).toBeLessThanOrEqual(0.5) // edge to edge, from the very top
+        expect((m.scene[3] - m.scene[2]) / m.h, 'the scene is about the top half or more').toBeGreaterThan(0.5)
+        expect(m.rowTop, 'the portraits overlap the scene\'s bottom edge').toBeLessThan(m.scene[3]); expect(m.rowBottom).toBeGreaterThan(m.scene[3])
+        for (const [k, t] of Object.entries(m.texts)) expect(t.ratio, `${k} contrast at ${w} px`).toBeGreaterThanOrEqual(4.5)
+        expect(m.texts.name.size).toBeGreaterThanOrEqual(16); expect(m.texts.country.size).toBeGreaterThanOrEqual(16); expect(m.texts.fine.size).toBeGreaterThanOrEqual(12)
+        expect(m.countryBg, 'the name and the country are the same field').toBe(m.fieldBg); expect(m.fieldH[0]).toBe(m.fieldH[1])
+        expect(m.fieldBg).toBe('rgb(244, 239, 228)') // cream
+        expect(m.border).toMatch(/245, 196, 0/) // a thin gold border
+      }
+      if (w !== 414) { await page.waitForTimeout(450); await page.screenshot({ path: `${out}/${id}-${w}.png` }) }
+    }
+  }
 })
 
 test('O3 an empty name shakes the field and says so; Play never greys out', async ({ page }) => {
