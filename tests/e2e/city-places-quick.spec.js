@@ -45,3 +45,23 @@ test('SunnyBay places: into Lifecup, ten things to do, a muffin, back out at the
   expect((await placeNow(page)).inside).toBe('')
   expect(errors).toEqual([])
 })
+
+// Repeat limit (meta.cityRepeat): the back pew three times in one day gives full, half, then nothing.
+test('SunnyBay places: the back pew three times in a day pays full, half, then is greyed', async ({ page }) => {
+  const errors = await atGate(page, { patch: { cityAt: { x: 20, z: 210 }, phase: 'social', minutes: 13 * 60 + 5, slotsLeft: 5, stats: { money: 300, energy: 50, grades: 50, social: 30, hunger: 40 } } })
+  await expect(city(page)).toHaveAttribute('data-ready', '1', { timeout: 120000 })
+  await toDoor(page, 'church')
+  const id = 'church_sit_in_a_back_pew'
+  const gains = []
+  for (let i = 0; i < 2; i++) {
+    const b = await run(page)
+    await pickRow(page, id)
+    await closeResult(page)
+    gains.push(Math.round((await run(page)).stats.energy - b.stats.energy))
+  }
+  expect(gains).toEqual([8, 4])
+  const row = page.locator(`.ct-row[data-row="${id}"]`)
+  await expect(row).toHaveAttribute('data-why', 'repeat')
+  await expect(row.locator('.ct-why')).toHaveText('Come back tomorrow')
+  expect(errors).toEqual([])
+})

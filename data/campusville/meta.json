@@ -65,6 +65,10 @@
       "leisure"
     ]
   },
+  "cityRepeat": {
+    "factors": [1, 0.5],
+    "line": "Come back tomorrow"
+  },
   "slotMinutes": {
     "wake": 20,
     "transit": 40,

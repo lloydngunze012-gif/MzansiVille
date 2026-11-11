@@ -47,7 +47,8 @@ export const openLine = (place) => place.open.map((s) => SLOT_NAME[s]).join(', '
 // ---------- the save ----------
 export function cityOf(run) {
   const c = (run.city ||= { day: run.day, thirds: 0, gigDay: 0, yard: false, road: false, owned: [] })
-  if (c.day !== run.day) { c.day = run.day; c.thirds = 0 } // (a part-used slot does not carry over the night)
+  if (c.day !== run.day) { c.day = run.day; c.thirds = 0; c.reps = {} } // (a part-used slot does not carry over the night)
+  c.reps ||= {}
   c.owned ||= []
   return c
 }
@@ -60,6 +61,16 @@ export function slotsFor(meta, run, row) {
   if (row.quick) return cityOf(run).thirds > 0 ? 0 : 1
   const per = meta.slotMinutes?.[run.phase] || 60
   return Math.max(1, Math.min(3, Math.round(row.minutes / per)))
+}
+
+// Repeat limit (meta.cityRepeat): a plain row done again the same game day pays factors[n] of its gains
+// (full, then half), then is greyed. Gigs, show-offs and grants keep their own limits.
+const repeats = (row) => !(row.gig || row.showoff || row.grants)
+export function repeatFactor(meta, run, row) {
+  if (!repeats(row)) return 1
+  const f = meta.cityRepeat?.factors || [1, 0.5]
+  const n = cityOf(run).reps[row.id] || 0
+  return n < f.length ? f[n] : 0
 }
 
 // Can this row be picked now? { disabled, reason, why, slots, social }. ctx.friends: other players in this place.
@@ -85,6 +96,7 @@ export function rowState(district, run, place, row, ctx = {}) {
   if (row.need === 'yard' && !c.yard) return off('Do the yard lesson first', 'lesson')
   if (row.need === 'lessons' && !(c.yard && c.road)) return off(c.yard ? 'Do the road lesson first' : 'Do the yard lesson and the road lesson first', 'lesson')
   if (row.gig && c.gigDay === run.day) return off('One city gig a day. Back tomorrow.', 'gig')
+  if (repeatFactor(meta, run, row) === 0) return off(`${meta.cityRepeat?.line || 'Come back tomorrow'}`, 'repeat')
   if (row.cost > money) return off(`Needs ${formatMoney(row.cost)}. You have ${formatMoney(money)}.`, 'money')
   if (slots > run.slotsLeft) return off(run.slotsLeft <= 0 ? 'No time left today. Home to bed.' : `Needs ${slots} slots. ${run.slotsLeft} left today.`, 'time')
   return { disabled: false, reason: '', why: '', slots, social }
@@ -97,7 +109,10 @@ export function runRow(district, run, place, row, ctx = {}) {
   if (state.disabled) return { ok: false, error: state.reason, why: state.why }
   const c = cityOf(run)
   const before = { ...run.stats }
-  const deltas = { money: row.money, energy: row.energy, hunger: row.fullness, grades: row.grades, social: state.social }
+  const k = repeatFactor(district.meta, run, row)
+  const scale = (v) => (v > 0 ? Math.round(v * k) : v) // gains shrink; costs always apply in full
+  const deltas = { money: scale(row.money), energy: scale(row.energy), hunger: scale(row.fullness), grades: scale(row.grades), social: scale(state.social) }
+  if (repeats(row)) c.reps[row.id] = (c.reps[row.id] || 0) + 1
   applyStats(run, deltas)
   trackToday(run, { id: row.id, tags: [] }, deltas)
   // time: the slot budget, and the clock (never past the end of this part of the day)
