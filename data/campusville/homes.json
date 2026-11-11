@@ -109,7 +109,7 @@
       "neighbour": { "name": "Mrs Bennett", "look": { "model": "female-b", "skin": "brown", "outfit": "dress", "topColor": "#8a4fb0" } },
       "dog": { "name": "Tiger" },
       "breakfast": { "label": "Ma's vetkoek with eggs and sweet tea", "plate": ["#c8873e", "#f6e27a", "#b06a2c"], "fullness": 45, "energy": 10 },
-      "pocket": 400,
+      "pocket": 600,
       "lines": {
         "wake": "Last morning in my own bed. UMzansi today.",
         "window": "{neighbour} is watering her mielies again. {dog} is pacing the yard like he knows.",

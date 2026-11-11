@@ -173,6 +173,7 @@ export function setArea(next, label = '') {
   area = next
   areaLabel = next === 'campus' ? '' : label
   lastCount = -1
+  paintOnline()
   if (changed && started && ROOM) {
     leave()
     roomNo = 1
@@ -298,12 +299,21 @@ function pump() {
   if (changed) notify()
 }
 
+// Write the count into every place that shows it. The top bar's players chip reads "N in SunnyBay" anywhere in
+// the city; the menu's title names the district ("N in Town centre").
+function paintOnline(n = onlineCount()) {
+  const label = countLabel()
+  for (const el of document.querySelectorAll('[data-online]')) {
+    el.textContent = el.hasAttribute('data-chip') ? chipLabel() : label
+    el.title = `${n} student${n === 1 ? '' : 's'} ${areaLabel ? `in ${areaLabel}` : 'on campus'}`
+  }
+}
+
 function notify() {
   const n = onlineCount()
   if (n !== lastCount) {
     lastCount = n
-    const label = countLabel()
-    for (const el of document.querySelectorAll('[data-online]')) { el.textContent = label; el.title = `${n} student${n === 1 ? '' : 's'} ${areaLabel ? `in ${areaLabel}` : 'on campus'}` }
+    paintOnline(n)
     for (const el of document.querySelectorAll('[data-city-online]')) el.textContent = n > 1 ? `${n} here` : ''
   }
   for (const fn of listeners) fn()
@@ -319,6 +329,13 @@ export function countLabel() {
   const n = Math.max(1, onlineCount())
   return areaLabel ? `${n} in ${areaLabel}` : `${n} on campus`
 }
+// The top bar's players chip (owner, 11 Nov): "N on campus" on campus and in the Caf, "N in SunnyBay" anywhere in the city.
+export function chipLabel() {
+  const n = Math.max(1, onlineCount())
+  // (anywhere in the city, including the campus part by the gate; body[data-city] is set while the city scene runs)
+  return areaLabel || document.body.dataset.city === '1' ? `${n} in SunnyBay` : `${n} on campus`
+}
+export function refreshOnline() { paintOnline() }
 // Someone did something to you (Piece 1a: wave, hi, friend): { from, kind, name }.
 const pokeListeners = new Set()
 export function onPoke(fn) {

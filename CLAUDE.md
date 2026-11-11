@@ -1,5 +1,11 @@
 # MzansiVille: plan and rules
 
+---
+
+# TWO SMALL FIXES (owner, 11 Nov). Push and deploy. Status: done.
+A. Starting money is R2,100 for every home: `data/campusville/homes.json` township `pocket` 600 (was 400); meta.json start R1,500 + pocket R600 = R2,100 for both homes.
+B. TOP BAR, now two rows (replaces PART B's one row; the rest of PART B stands). Row 1: the time pill (day inside), the players chip (`.tb-online`, `data-online data-chip`: "N on campus" on campus and in the Caf, "N in SunnyBay" anywhere in the city; presence.js `chipLabel`, `refreshOnline`; the menu's title keeps the district name), the goal badge (`.g-goalsbtn`, `data-act="goal-peek"`, status chips beside it; game.js `goalBits`, passed to `hud(..., { goals })` by mapHome; the goal text still drops down under the bar), the menu button. Row 2: five `.tb-stat` boxes, each `<b>` name (10 px), `<i>` whole number (14 px bold), `<u><s>` 3 px bar (the money bar is full at R3 000, the others out of 100). Low = solid red box, white name/number/bar, the same shared 1.5 s pulse (none under reduced motion). The whole bar is 80 px: 9.5% at 390x844, 10.8% at 360x740, 8.9% at 414x896 (limit 11%). The timeline still opens from the time pill and closes after 4 s. Tests: tests/e2e/topbar.spec.js B1-B7 (B7 = 360 and 414 px). Screenshots at 390 px: docs/sprints/topbar/ (bar-normal, bar-low, city).
+
 This file is for Claude Code, the engineer. Cursor reads it too: Cursor is the content designer and owns data/ only. Read docs/team.md and docs/now.md first. Update docs/now.md before you finish.
 
 ---

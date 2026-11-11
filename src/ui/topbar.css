@@ -1,4 +1,6 @@
-/* Compact top bar (owner, 10 Nov). One slim row at 390 px, at most 8% of the screen height:
+/* Compact top bar (owner, 10 Nov; two rows 11 Nov, at most 11% of the screen height).
+   Row 1: the time pill with the day inside, the players chip, the goal badge, one menu button with a dot.
+   Row 2: the five stats as small labelled boxes with a thin bar. (First version, 10 Nov: one row at 8%:
    the time pill with the day inside, five stat icons with whole numbers (no labels, no boxes),
    one menu button with a dot for anything new. A low stat is a solid red pill with white text
    and a slow, gentle pulse (about every 1.5 s: a soft scale and glow, never a flash); two low
@@ -9,51 +11,66 @@
 
 .g-hud.tb {
   position: relative; z-index: 6; margin: 0; border-radius: 0;
-  padding: calc(5px + env(safe-area-inset-top, 0px)) 8px 5px;
+  padding: calc(3px + env(safe-area-inset-top, 0px)) 8px 4px;
   background: var(--cr-bg); color: var(--cr-ink);
   border-bottom: 1px solid var(--cr-line); box-shadow: 0 2px 10px #0000001f; backdrop-filter: none;
 }
 .screen > .g-hud.tb { margin: 0; position: sticky; top: 0; border-radius: 0; }
-.tb-row { display: flex; align-items: center; gap: 6px; height: 38px; }
+/* Row 1: the time pill, the players chip (fills the middle), the goal badge, the menu. */
+.tb-row { display: flex; align-items: center; gap: 6px; height: 34px; }
 
 /* The time pill: weekday over the clock, the day's progress as a gold line along the bottom. */
 .tb-time {
   all: unset; box-sizing: border-box; flex: none; position: relative; overflow: hidden; cursor: pointer;
   display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px;
-  height: 36px; min-width: 56px; padding: 0 9px 2px; border-radius: 999px;
+  height: 34px; min-width: 56px; padding: 0 9px 2px; border-radius: 999px;
   background: #2f1a5c; border: 1px solid #f5c400; color: #ffe08a; white-space: nowrap;
 }
 .tb-time i { display: none; } /* (the gold line along the bottom shows how far the day is) */
-.tb-time b { font: 800 11px/1 Figtree, system-ui, sans-serif; color: #fff; letter-spacing: .5px; text-transform: uppercase; opacity: .92; }
-.tb-time span { font: 800 15px/1 Figtree, system-ui, sans-serif; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
+.tb-time b { font: 800 10px/1 Figtree, system-ui, sans-serif; color: #fff; letter-spacing: .5px; text-transform: uppercase; opacity: .92; }
+.tb-time span { font: 800 14px/1 Figtree, system-ui, sans-serif; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
 .tb-time::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: var(--day, 0%); background: #f5c400; }
 .tb-time.on, .tb-time:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }
 
-/* The five stats: an icon and a whole number each, spread across the middle. */
-.g-hud.tb .tb-stats { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 1px; margin: 0; }
-.tb-stat {
-  all: unset; box-sizing: border-box; cursor: pointer; flex: none;
-  display: inline-flex; align-items: center; gap: 1px; height: 28px; padding: 0 3px; border-radius: 999px;
-  font: 800 14px/1 Figtree, system-ui, sans-serif; color: var(--cr-ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+/* The players chip: a live count ("4 on campus", "4 in SunnyBay"), always on show. */
+.tb-online {
+  flex: 1 1 0; min-width: 0; box-sizing: border-box; height: 28px; padding: 0 9px 0 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 800 12px/1 Figtree, system-ui, sans-serif; color: #0f5132; background: #e3f6ea; border: 1px solid #8fd6ab;
 }
-.tb-stat i { font-style: normal; }
+.tb-online::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: #2fb765; box-shadow: 0 0 5px #2fb765; }
+
+/* Row 2: the five stats, each a small rounded box: name (10 px), whole number (14 px bold), a thin bar (3 px). */
+.g-hud.tb .tb-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 2px 0 0; padding: 0; }
+.tb-stat {
+  all: unset; box-sizing: border-box; cursor: pointer; min-width: 0; position: relative;
+  display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 0; height: 36px; padding: 2px 6px 3px; border-radius: 12px;
+  background: var(--cr-bg-2); border: 1px solid var(--cr-line); color: var(--cr-ink); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.tb-stat b { font: 800 10px/12px Figtree, system-ui, sans-serif; margin-bottom: -2px; color: var(--cr-muted); letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; }
+.tb-stat i { font: 800 14px/14px Figtree, system-ui, sans-serif; font-style: normal; }
+.tb-stat u { display: block; flex: none; height: 3px; margin-top: 2px; border-radius: 2px; background: #00000014; overflow: hidden; text-decoration: none; }
+.tb-stat s { display: block; height: 100%; border-radius: 2px; background: #2fa866; text-decoration: none; }
 .tb-short { display: none; }
-.tb-ic { font-size: 12.5px; line-height: 1; }
 .tb-stat.mid i { color: #9a5800; }
+.tb-stat.mid s { background: #e39a1c; }
 .tb-stat.on, .tb-stat:focus-visible { outline: 2px solid #f0c400; outline-offset: 0; }
-.tb-stat.low { background: #d42f25; color: #fff; padding: 0 6px 0 5px; }
-.tb-stat.low i { color: #fff; }
+/* A low stat: a solid red pill, white text (the name stays readable), a white bar. */
+.tb-stat.low { background: #d42f25; border-color: #d42f25; color: #fff; }
+.tb-stat.low b, .tb-stat.low i { color: #fff; }
+.tb-stat.low u { background: #ffffff40; }
+.tb-stat.low s { background: #fff; }
 .tb-stat.pulse { animation: tb-pulse 1.5s ease-in-out infinite; }
 @keyframes tb-pulse {
   0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 #ff4a3d00; }
-  50% { transform: scale(1.07); box-shadow: 0 0 9px 2px #ff4a3d88; }
+  50% { transform: scale(1.05); box-shadow: 0 0 9px 2px #ff4a3d88; }
 }
 @media (prefers-reduced-motion: reduce) { .tb-stat.pulse { animation: none; } }
 
 /* The menu button: three bars, a red dot when something is new. */
 .tb-menu {
   all: unset; box-sizing: border-box; flex: none; position: relative; cursor: pointer;
-  width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
   background: var(--cr-bg-2); border: 1.5px solid var(--cr-line);
 }
 .tb-menu > span { width: 16px; height: 2px; border-radius: 2px; background: var(--cr-ink); box-shadow: 0 -5px 0 var(--cr-ink), 0 5px 0 var(--cr-ink); }
@@ -77,12 +94,11 @@
 .tb-timeline .g-phases li small { font-size: 11px; }
 .tb-timeline .g-slots small { font-size: 11px; }
 
-/* The goal badge under the bar, and the goal text it opens. */
-.g-nowrow.tb-nowrow { position: relative; z-index: 5; display: flex; justify-content: flex-end; gap: 6px; margin: 6px 10px 0; pointer-events: none; }
-.tb-nowrow .g-goalsbtn { min-height: 32px; padding: 0 11px; font: 800 14px system-ui, sans-serif; }
-.tb-nowrow .g-goalsbtn.urgent { box-shadow: 0 0 0 2px #e0352b, 0 3px 10px #0006; }
-.tb-nowrow .g-goalsbtn.on { outline: 2px solid #22143b; }
-.tb-chip { all: unset; box-sizing: border-box; pointer-events: auto; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 16px; background: var(--cr-bg); border: 1.5px solid #e0573c; box-shadow: 0 3px 10px #0004; }
+/* The goal badge in row 1, and the goal text it opens (under the bar). */
+.tb-row .g-goalsbtn { flex: none; pointer-events: auto; min-height: 28px; height: 28px; padding: 0 9px; font: 800 13px Figtree, system-ui, sans-serif; box-shadow: none; }
+.tb-row .g-goalsbtn.urgent { box-shadow: 0 0 0 2px #e0352b; }
+.tb-row .g-goalsbtn.on { outline: 2px solid #22143b; }
+.tb-chip { all: unset; box-sizing: border-box; flex: none; pointer-events: auto; cursor: pointer; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; background: var(--cr-bg); border: 1.5px solid #e0573c; }
 .tb-goal { position: absolute; left: 0; right: 0; top: calc(100% + 6px); pointer-events: auto; display: flex; flex-direction: column; gap: 6px; animation: gpop .18s ease-out; }
 .tb-goal[hidden] { display: none; }
 .tb-goal .g-now { flex: none; white-space: normal; font-size: 14px; }
@@ -96,10 +112,12 @@
 @media (max-width: 374px) {
   .tb-row { gap: 4px; }
   .tb-time { min-width: 52px; padding: 0 7px 2px; }
-  .tb-stat { font-size: 13.5px; padding: 0 2px; }
-  .tb-ic { font-size: 12px; }
-  .tb-stat.low { padding: 0 5px 0 4px; }
-  .tb-menu { width: 34px; }
+  .tb-online { padding: 0 6px; font-size: 11px; gap: 4px; }
+  .tb-row .g-goalsbtn { padding: 0 7px; font-size: 12px; }
+  .g-hud.tb .tb-stats { gap: 3px; }
+  .tb-stat { padding: 3px 4px 4px; }
+  .tb-stat b { font-size: 10px; letter-spacing: 0; }
+  .tb-menu { width: 32px; }
   .tb-short { display: inline; }
   .tb-full { display: none; }
 }

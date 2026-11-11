@@ -1,4 +1,4 @@
-import { countLabel, peersOnCampus } from '../presence.js'
+import { chipLabel, countLabel, peersOnCampus } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
@@ -209,7 +209,6 @@ export function statBand(key, value) {
 export function lowStats(stats) {
   return STATS.map(([key]) => key).filter((key) => statBand(key, stats[key]) === 'low')
 }
-const STAT_ICON = { money: '\u{1F4B0}', energy: '⚡', hunger: '\u{1F37D}️', grades: '\u{1F4D6}', social: '\u{1F465}' }
 const PULSE_MS = 1500
 // Always a whole number (energy drains in fractions while you walk); money past R10 000 as "R12k".
 export function statText(key, value) {
@@ -232,8 +231,11 @@ function stat(key, word, value, phase) {
   const exact = key === 'money' ? formatMoney(Math.round(Number(value) || 0)) : statText(key, value)
   // (the HUD is redrawn often: the pulse keeps its place in the shared cycle, never restarts)
   const delay = low ? ` style="animation-delay:-${phase}ms"` : ''
-  return `<button class="tb-stat ${band}${low ? ' pulse' : ''}${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" data-band="${band}" aria-label="${word} ${exact}${low ? ', low' : ''}"${delay}><span class="tb-ic" aria-hidden="true">${STAT_ICON[key]}</span><i>${moneyShort(key, value)}</i></button>`
+  const fill = Math.round(Math.max(0, Math.min(1, (Number(value) || 0) / (key === 'money' ? MONEY_FULL : 100))) * 100)
+  return `<button class="tb-stat ${band}${low ? ' pulse' : ''}${ui.tip === key ? ' on' : ''}" type="button" data-act="stat" data-k="${key}" data-band="${band}" aria-label="${word} ${exact}${low ? ', low' : ''}"${delay}><b>${word}</b><i>${moneyShort(key, value)}</i><u aria-hidden="true"><s style="width:${fill}%"></s></u></button>`
 }
+// The money bar is full at R3 000 (a new student starts on R2 100); the other four are out of 100.
+const MONEY_FULL = 3000
 // Something new behind the menu button: a notice or message you have not opened Notices
 // for yet (run.inboxSeen counts how many you have seen).
 export function menuNews(run) {
@@ -274,12 +276,16 @@ export function hud(district, run, opts = {}) {
   const phase = Date.now() % PULSE_MS
   const news = menuNews(run)
   const clock = formatClock(run.minutes)
+  const goals = opts.goals ? goalBits(run) : { badge: '', chips: '', peek: '' }
   return `<header class="g-hud tb">
     <div class="g-row tb-row">
       <button class="tb-time${ui.timeline ? ' on' : ''}" type="button" data-act="timeline" aria-expanded="${ui.timeline ? 'true' : 'false'}" aria-label="Day ${run.day}, ${day}, ${clock}. Today's timeline" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i><b>${day.slice(0, 3)}</b><span>${clock}</span></button>
-      <div class="g-stats tb-stats">${STATS.map(([k, w]) => stat(k, w, run.stats[k], phase)).join('')}</div>
+      <span class="tb-online" data-online data-chip title="Students here right now">${chipLabel()}</span>
+      ${goals.badge}${goals.chips}
       <button class="tb-menu${news ? ' news' : ''}" type="button" data-act="gear" aria-label="Menu${news ? ', something new' : ''}" aria-expanded="${ui.gear ? 'true' : 'false'}"><span aria-hidden="true"></span>${news ? '<i class="tb-dot" aria-hidden="true"></i>' : ''}</button>
     </div>
+    <div class="g-stats tb-stats">${STATS.map(([k, w]) => stat(k, w, run.stats[k], phase)).join('')}</div>
+    ${goals.peek}
     ${tip ? `<p class="g-tip tb-pop" role="status">${esc(tip)}</p>` : ''}
     ${ui.timeline ? `<div class="tb-pop tb-timeline" role="status"><p class="tb-pop-h"><b>Day ${run.day}</b> ${esc(day)}</p>${phaseStrip(district, run)}</div>` : ''}
   </header>
@@ -574,11 +580,11 @@ function goalsCardHtml(run) {
 // under it for a few seconds; tapping that opens the full goals card. An urgent line
 // (late for a lecture) keeps a red edge on the badge so it is never missed. The status
 // chips (exam week, falling behind...) sit beside it as icons; a tap explains them.
-function nowRow(run) {
+function goalBits(run) {
   const now = rightNow(run)
   const list = run.goals?.day === run.day ? run.goals.list : []
   const chips = statusChips(run)
-  if (!now && !list.length && !chips.length) return ''
+  if (!now && !list.length && !chips.length) return { badge: '', chips: '', peek: '' }
   const done = list.filter((g) => g.done).length
   const open = Boolean(ui.goalPeek)
   const badge = now || list.length
@@ -586,7 +592,7 @@ function nowRow(run) {
     : ''
   const peek = `<div class="tb-goal"${open ? '' : ' hidden'}>${now ? `<p class="g-now ${now.tone}" role="status" data-now>${now.icon} ${esc(now.text)}</p>` : ''}${list.length ? `<button type="button" class="tb-goal-list" data-act="goals"><ol>${list.map((g) => `<li class="${g.done ? 'done' : ''}"><b>${g.done ? '✓' : '•'}</b> ${esc(goalText(run, g))}</li>`).join('')}</ol><small>All goals ›</small></button>` : ''}</div>`
   const chipRow = chips.map(([k, ic, c]) => `<button type="button" class="g-chip tb-chip ${k}" data-act="stat" data-k="chip-${k}" aria-label="${esc(c)}">${ic}</button>`).join('')
-  return `<div class="g-nowrow tb-nowrow">${badge}${chipRow}${peek}</div>`
+  return { badge, chips: chipRow, peek }
 }
 
 function summaryCard(state) {
@@ -660,8 +666,7 @@ export function mapHome(state, openPlace = '') {
     layer = `<div class="g-scrim"></div><aside class="g-result"><p class="g-kind">Day ${run.day}</p><h2>Keep ${esc(run.character.name)}?</h2><p>Guests live on this phone only. Make a free account so this student survives a cleared browser.</p><div class="g-two"><button type="button" class="g-go ghost" data-act="snooze">Not now</button><button type="button" class="g-go" data-act="nav" data-go="save">Save progress</button></div></aside>`
   } else if (openPlace) layer = sheetHtml(district, run, openPlace)
   return `<main class="screen g-screen${world ? ' g-3d' : ''}" data-screen="${run.mode === 'summary' ? 'summary' : openPlace ? 'place' : 'play'}">
-    ${hud(district, run)}
-    ${run.mode === 'play' ? nowRow(run) : ''}
+    ${hud(district, run, { goals: run.mode === 'play' })}
     ${viewBar(world)}
     ${world ? '<section class="g-map g-world-gap" aria-label="3D campus"></section>' : `<section class="g-map g-campus" data-tod="${todOf(run)}" aria-label="Campus map">
       ${groundHtml()}

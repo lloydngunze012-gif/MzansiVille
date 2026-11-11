@@ -65,7 +65,7 @@ import { MENUS, itemOf } from './menus.js'
 import { LECTURERS } from './venues.js'
 import { addContact, applyFx, closer, markTogether } from './engine/talkactions.js'
 import { clearErrors, installErrorReporting, readErrors } from './errors.js'
-import { hidePlayer, joinPresence, onPoke, sendPoke, setArea } from './presence.js'
+import { hidePlayer, joinPresence, onPoke, refreshOnline, sendPoke, setArea } from './presence.js'
 import { payDrive } from './city/plan.js'
 import { adsFor } from './city/billboards.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
@@ -616,6 +616,7 @@ async function enterCity(spawn = { kind: 'gate' }, intent = null) {
   if (cityLive || cafLive || !save.run || !hasGL()) return
   cityLive = true
   document.body.dataset.city = '1'
+  refreshOnline() // (the top bar's players chip reads "N in SunnyBay")
   soundLoop('crowd', false)
   try {
     await curtain.cover('Into SunnyBay…')
@@ -637,6 +638,7 @@ function exitCity(kind = 'gate') {
   curtain.cover('Back to campus…', { instant: true }) // (the campus lifts it)
   delete document.body.dataset.city
   setArea('campus')
+  refreshOnline()
   if (save.run) {
     delete save.run.cityAt
     save.run.at = kind === 'res' ? homePlaceId(districtNow(), save.run.character?.residence) : 'gate'
