@@ -74,6 +74,8 @@ export function miniCardHtml(card, house, opts = {}) {
         <span class="pc-mini-menu"${opts.moreOpen ? '' : ' hidden'}>
           ${opts.race ? '<button type="button" data-pc="dm">\u{2709}\u{FE0F} Message</button>' : ''}
           <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+          <button type="button" data-pc="group">\u{1F465} Add to a group</button>
+          <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
           <button type="button" data-pc="full">\u{1F4C7} View full card</button>
           <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
           <button type="button" class="bad" data-pc="report">⚑ Report</button>

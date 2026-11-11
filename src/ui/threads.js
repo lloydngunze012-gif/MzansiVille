@@ -12,8 +12,9 @@ import './threads.css'
 import { avatarSvg } from '../avatar.js'
 import { MSG_MAX } from '../engine/filter.js'
 import { peerList } from '../presence.js'
+import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
-import { blockInChat, chatStatus, closeThread, dmWith, isBlocked, linesOf, myId, onThreads, openThread, openThreadId, reportLine, sendLine, sync, threadList, threadOf, unreadTotal } from '../threads.js'
+import { addFriend, addToGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
@@ -46,6 +47,16 @@ let pingTimer = 0
 let sending = false
 let mark = () => {}
 let guardUntil = 0
+// Social A (owner, 11 Nov): the list has two tabs (Chats, Friends) and a "New group" row; a group's header opens
+// its page (members, the pinned topic, add people, invite by WhatsApp, mute, leave); a player's card can ask to
+// add them to one of your groups (the picker).
+let tab = 'chats' // 'chats' | 'friends'
+let making = false // the "New group" row is open
+let panel = '' // in a thread: '' | 'info' | 'add'
+let members = null // the open group's members (null: loading)
+let invite = null // { wa, url, text } once the server has given the link
+let leaving = false
+let pickFor = null // { id, who }: choose one of your groups to add this player to
 
 export function mountThreads() {
   if (sheet) return
@@ -84,12 +95,20 @@ export function mountThreads() {
 
   onThreads((kind, detail) => {
     if (kind === 'ping') { ping(detail); return }
+    if (kind === 'first') {
+      // (came in through an invite link: straight into the group, now that the quick start is behind them)
+      const code = waitingInvite()
+      if (code && socialReady()) { joinByCode(code).then((r) => { if (r.ok || ['unknown', 'full', 'blocked'].includes(r.reason)) clearInvite(); if (r.ok) openChat(r.thread); else if (r.reason === 'full') { openChat(); tell('That group is full (40 members).', true) } }); return }
+      wakeUp()
+      return
+    }
     paintBadges()
     if (!view) return
     if (kind === 'list') {
       // (the thread on screen was closed for you: a block)
       if (view !== 'list' && detail?.gone?.includes(view)) { show('list'); return }
-      if (view === 'list') paintList()
+      if (view === 'list') { if (!sheet.querySelector('.cht-new input:focus')) paintList() }
+      else if (panel) { if (!sheet.querySelector('.cht-info input:focus')) paintInfo() }
       else paintHead()
     }
     if (kind === 'lines' && detail === view) paintLines()
@@ -98,6 +117,8 @@ export function mountThreads() {
   window.addEventListener('mzansi-open-threads', (event) => {
     const d = event.detail || {}
     if (d.dm) openDm(d.dm, d.who)
+    else if (d.addTo) { pickFor = { id: d.addTo, who: d.who || {} }; tab = 'chats'; openChat() }
+    else if (d.friends) { tab = 'friends'; openChat() }
     else openChat(d.thread || '')
   })
   paintBadges()
@@ -122,6 +143,7 @@ export function closeChat() {
   if (!view) return
   view = ''
   acts = null
+  pickFor = null
   closeThread()
   sheet.hidden = true
   sheet.querySelector('input')?.blur()
@@ -134,6 +156,12 @@ function show(next) {
   view = next
   acts = null
   note = ''
+  panel = ''
+  members = null
+  invite = null
+  leaving = false
+  making = false
+  if (next !== 'list') pickFor = null
   sheet.hidden = false
   sheet.dataset.view = next === 'list' ? 'list' : 'thread'
   document.body.dataset.chat = '1'
@@ -148,27 +176,52 @@ function tell(text, bad = false) {
 }
 
 // ---------- The list ----------
+const dot = (on) => `<i class="cht-dot${on ? ' on' : ''}" aria-label="${on ? 'online' : 'offline'}"></i>`
 function paintList() {
   const status = chatStatus()
-  const list = threadList()
+  const all = threadList()
   const here = peerList().filter((p) => !isBlocked(p.id)).slice(0, 12)
+  const pals = friendList()
+  const online = pals.filter((f) => f.online).length
   const row = (t) => {
     const last = t.last
     const who = !last ? '' : last.sender === myId() ? 'You: ' : t.kind === 'group' ? `${first(last.name)}: ` : ''
     const text = last ? `${who}${last.body}` : t.kind === 'group' && t.topic ? `\u{1F4CC} ${t.topic}` : 'Say howzit'
-    return `<li><button type="button" class="cht-row${t.unread ? ' unread' : ''}" data-thread="${esc(t.id)}">
+    return `<li><button type="button" class="cht-row${t.unread && !t.muted ? ' unread' : ''}" data-thread="${esc(t.id)}">
       <span class="cht-av">${t.kind === 'group' ? GROUP_FACE : face(t.peer?.look)}</span>
-      <span class="cht-mid"><b>${esc(t.name)}</b><span class="cht-last">${esc(text)}</span></span>
-      <span class="cht-side"><small>${esc(last ? clock(last.at) : '')}</small>${t.unread ? `<small class="cht-badge" aria-label="${t.unread} unread">${t.unread > 99 ? '99+' : t.unread}</small>` : ''}</span>
+      <span class="cht-mid"><b>${esc(t.name)}${t.muted ? ' <span class="cht-muted" aria-label="muted">\u{1F515}</span>' : ''}</b><span class="cht-last">${esc(text)}</span></span>
+      <span class="cht-side"><small>${esc(last ? clock(last.at) : '')}</small>${t.unread && !t.muted ? `<small class="cht-badge" aria-label="${t.unread} unread">${t.unread > 99 ? '99+' : t.unread}</small>` : ''}</span>
     </button></li>`
   }
   const empty = status === 'soon' ? 'Chat opens soon. Check back in a bit.'
     : status === 'offline' ? 'Can’t reach the chat right now. Check your connection.'
       : status === 'ready' ? 'No chats yet. Tap someone under “Here now” to message them.' : 'Loading your chats…'
-  sheet.innerHTML = `<header class="cht-head"><b class="cht-h">Chats</b><button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button></header>
-    ${here.length ? `<div class="cht-here"><small>Here now</small><div class="cht-here-row">${here.map((p) => `<button type="button" class="cht-person" data-dm="${esc(p.id)}" aria-label="Message ${esc(p.name)}"><span class="cht-av cht-sm">${face(p.look, 36)}</span><small>${esc(first(p.name))}</small></button>`).join('')}</div></div>` : ''}
-    ${list.length ? `<ol class="cht-list">${list.map(row).join('')}</ol>` : `<p class="cht-empty">${esc(empty)}</p>`}
+  let body
+  if (pickFor) {
+    // a player's card asked: which of your groups?
+    const mine = all.filter((t) => t.kind === 'group' && !t.quad)
+    body = `<p class="cht-sub">Add ${esc(first(pickFor.who.name))} to which group?</p>
+      ${mine.length ? `<ol class="cht-list">${mine.map((t) => `<li><button type="button" class="cht-row" data-pick="${esc(t.id)}"><span class="cht-av">${GROUP_FACE}</span><span class="cht-mid"><b>${esc(t.name)}</b><span class="cht-last">${t.members || 1} of 40 members</span></span><span class="cht-side"><small class="cht-add">Add</small></span></button></li>`).join('')}</ol>` : '<p class="cht-empty">You have no groups yet. Make one first: “New group”.</p>'}
+      <p class="cht-rowbtns"><button type="button" class="cht-btn" data-ct="new">＋ New group</button><button type="button" class="cht-btn ghost" data-ct="pick-x">Cancel</button></p>`
+  } else if (tab === 'friends') {
+    const strangers = here.filter((p) => !isFriend(p.id))
+    body = `${pals.length ? `<ol class="cht-list cht-friends">${pals.map((f) => `<li class="cht-friend" data-friend="${esc(f.id)}">
+        <span class="cht-av cht-sm">${face(f.look, 36)}</span>
+        <span class="cht-mid"><b>${esc(f.name)} ${dot(f.online)}</b><span class="cht-last">${f.online ? 'Online now' : f.handle ? `@${esc(f.handle)}` : 'Not on right now'}</span></span>
+        <button type="button" class="cht-btn sm" data-dm="${esc(f.id)}">Message</button>
+        <button type="button" class="cht-btn sm ghost" data-unfriend="${esc(f.id)}" aria-label="Remove ${esc(f.name)} from your friends">✕</button>
+      </li>`).join('')}</ol>` : `<p class="cht-empty">${socialReady() ? 'No friends yet. Add someone who is here now, or from their card.' : 'Friends open soon.'}</p>`}
+      ${strangers.length ? `<div class="cht-here"><small>Here now: add a friend</small><div class="cht-here-row">${strangers.map((p) => `<button type="button" class="cht-person" data-befriend="${esc(p.id)}" aria-label="Add ${esc(p.name)} as a friend"><span class="cht-av cht-sm">${face(p.look, 36)}</span><small>＋ ${esc(first(p.name))}</small></button>`).join('')}</div></div>` : ''}`
+  } else {
+    body = `${here.length ? `<div class="cht-here"><small>Here now</small><div class="cht-here-row">${here.map((p) => `<button type="button" class="cht-person" data-dm="${esc(p.id)}" aria-label="Message ${esc(p.name)}"><span class="cht-av cht-sm">${face(p.look, 36)}</span><small>${esc(first(p.name))}</small></button>`).join('')}</div></div>` : ''}
+    ${making ? `<form class="cht-new" autocomplete="off"><input type="text" name="group" maxlength="40" placeholder="Group name" aria-label="Group name" enterkeyhint="done"><button type="submit" class="cht-btn">Create</button><button type="button" class="cht-btn ghost" data-ct="new-x" aria-label="Cancel">✕</button></form>` : ''}
+    ${all.length ? `<ol class="cht-list">${all.map(row).join('')}</ol>` : `<p class="cht-empty">${esc(empty)}</p>`}`
+  }
+  sheet.innerHTML = `<header class="cht-head"><b class="cht-h">${pickFor ? 'Add to a group' : 'Chats'}</b>${pickFor || making ? '' : '<button type="button" class="cht-btn sm" data-ct="new">＋ Group</button>'}<button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button></header>
+    ${pickFor ? '' : `<div class="cht-tabs" role="tablist"><button type="button" role="tab" aria-selected="${tab === 'chats'}" data-tab="chats">Chats</button><button type="button" role="tab" aria-selected="${tab === 'friends'}" data-tab="friends">Friends${online ? ` <small>${online} online</small>` : ''}</button></div>`}
+    ${body}
     <p class="cht-note${noteBad ? ' bad' : ''}" role="status"${note ? '' : ' hidden'}>${esc(note)}</p>`
+  if (making) sheet.querySelector('.cht-new input')?.focus({ preventScroll: true })
   mark()
 }
 
@@ -177,7 +230,8 @@ function headHtml(t) {
   const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : t.peer?.handle ? `@${t.peer.handle}` : 'Direct message'
   return `<button type="button" class="cht-back" data-ct="back" aria-label="Back to chats">‹</button>
     <span class="cht-av cht-sm">${!t || t.kind === 'group' ? GROUP_FACE : face(t.peer?.look, 36)}</span>
-    <span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small>${esc(sub)}</small></span>
+    ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small>${esc(sub)}</small></span>`}
+    ${t?.kind === 'dm' && t.peer?.id ? `<button type="button" class="cht-btn sm" data-ct="walk" data-walk-id="${esc(t.peer.id)}" data-walk-name="${esc(t.peer.name || 'Student')}">\u{1F6B6} Walk with me</button>` : ''}
     <button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button>`
 }
 function paintThread() {
@@ -193,6 +247,45 @@ function paintThread() {
     </form>
     <p class="cht-note" role="status" hidden></p>`
   paintLines(true)
+}
+
+// A group's page: who is in it, the pinned topic (its creator changes it), add people, invite by WhatsApp, mute, leave.
+function paintInfo() {
+  const t = threadOf(view)
+  if (!t) { show('list'); return }
+  const mine = t.creator === myId()
+  const inIt = new Set((members || []).map((m) => m.id))
+  const can = [...friendList(), ...peerList().filter((p) => !isFriend(p.id) && !isBlocked(p.id))].filter((p) => !inIt.has(p.id))
+  const person = (m, extra = '') => `<li class="cht-friend"><span class="cht-av cht-sm">${face(m.look, 36)}</span><span class="cht-mid"><b>${esc(m.name)} ${m.online === undefined ? '' : dot(m.online)}</b><span class="cht-last">${m.creator ? 'Made the group' : m.handle ? `@${esc(m.handle)}` : ''}</span></span>${extra}</li>`
+  const main = panel === 'add'
+    ? `<p class="cht-sub">Add people to ${esc(t.name)} (${t.members || 1} of 40)</p>
+      ${can.length ? `<ol class="cht-list cht-friends">${can.map((p) => person(p, `<button type="button" class="cht-btn sm" data-add="${esc(p.id)}">Add</button>`)).join('')}</ol>` : '<p class="cht-empty">Nobody to add yet: your friends and the people here now show up in this list.</p>'}
+      <p class="cht-rowbtns"><button type="button" class="cht-btn ghost" data-ct="info">Done</button></p>`
+    : `<form class="cht-topicform" autocomplete="off"><label><small>Pinned topic</small>${mine ? `<input type="text" name="topic" maxlength="120" value="${esc(t.topic || '')}" placeholder="What is this group talking about?" enterkeyhint="done">` : `<span class="cht-topicro">${esc(t.topic || 'Nothing pinned yet.')}</span>`}</label>${mine ? '<button type="submit" class="cht-btn sm">Pin</button>' : ''}</form>
+      <p class="cht-rowbtns">
+        <button type="button" class="cht-btn" data-ct="add">＋ Add people</button>
+        ${invite ? `<a class="cht-btn wa" href="${esc(invite.wa)}" target="_blank" rel="noopener" data-wa>Open WhatsApp ›</a>` : '<button type="button" class="cht-btn wa" data-ct="invite">Invite by WhatsApp</button>'}
+      </p>
+      ${invite ? `<p class="cht-link"><span>${esc(invite.url)}</span><button type="button" class="cht-btn sm ghost" data-ct="copy">Copy link</button></p>` : ''}
+      <p class="cht-sub">${members ? `${members.length} of 40 members` : 'Loading members…'}</p>
+      <ol class="cht-list cht-friends">${(members || []).map((m) => person(m, m.id === myId() ? '<small class="cht-you">You</small>' : `<button type="button" class="cht-btn sm ghost" data-dm="${esc(m.id)}">Message</button>`)).join('')}</ol>
+      <p class="cht-rowbtns">
+        <button type="button" class="cht-btn ghost" data-ct="mute" aria-pressed="${Boolean(t.muted)}">${t.muted ? '\u{1F514} Unmute' : '\u{1F515} Mute'}</button>
+        <button type="button" class="cht-btn ghost bad" data-ct="leave">${leaving ? 'Tap again to leave' : 'Leave group'}</button>
+      </p>`
+  sheet.innerHTML = `<header class="cht-head"><button type="button" class="cht-back" data-ct="${panel === 'add' ? 'info' : 'thread'}" aria-label="Back">‹</button>
+      <span class="cht-av cht-sm">${GROUP_FACE}</span><span class="cht-title"><b>${esc(t.name)}</b><small>${t.members || 1} member${t.members === 1 ? '' : 's'}</small></span>
+      <button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button></header>
+    <div class="cht-info">${main}</div>
+    <p class="cht-note${noteBad ? ' bad' : ''}" role="status"${note ? '' : ' hidden'}>${esc(note)}</p>`
+  mark()
+}
+function openInfo(next = 'info') {
+  panel = next
+  leaving = false
+  paintInfo()
+  const id = view
+  groupMembers(id).then((list) => { if (view === id && panel) { members = list; if (!sheet.querySelector('.cht-info input:focus')) paintInfo() } })
 }
 function paintHead() {
   const t = threadOf(view)
@@ -271,6 +364,59 @@ function onClick(event) {
   const ct = event.target.closest('[data-ct]')?.dataset.ct
   if (ct === 'close') { closeChat(); return }
   if (ct === 'back') { show('list'); return }
+  const tabBtn = event.target.closest('[data-tab]')
+  if (tabBtn) { tab = tabBtn.dataset.tab; making = false; note = ''; paintList(); return }
+  if (ct === 'new') {
+    if (!socialReady()) { tell('Groups open soon.', true); return }
+    tab = 'chats'; making = true; const keep = pickFor; pickFor = null; paintList(); pickFor = keep; return
+  }
+  if (ct === 'new-x') { making = false; paintList(); return }
+  if (ct === 'pick-x') { pickFor = null; paintList(); return }
+  if (ct === 'thread') { const id = view; panel = ''; paintThread(); openThread(id); mark(); return }
+  if (ct === 'info') { openInfo('info'); return }
+  if (ct === 'add') { openInfo('add'); return }
+  if (ct === 'walk') { const b = event.target.closest('[data-walk-id]'); window.dispatchEvent(new CustomEvent('mzansi-walk-ask', { detail: { id: b.dataset.walkId, name: b.dataset.walkName } })); return }
+  if (ct === 'mute') { const t = threadOf(view); muteThread(view, !t?.muted).then((r) => { if (!r.ok) tell(r.note, true); else if (panel) paintInfo() }); return }
+  if (ct === 'leave') {
+    if (!leaving) { leaving = true; paintInfo(); return }
+    const id = view
+    leaveGroup(id).then((r) => { if (r.ok) { if (view === id) show('list'); tell('You left the group.') } else tell(r.note, true) })
+    return
+  }
+  if (ct === 'invite') {
+    inviteLink(view).then((r) => { if (!r.ok) { tell(r.note, true); return } invite = r; if (panel) paintInfo() })
+    return
+  }
+  if (ct === 'copy' && invite) { navigator.clipboard?.writeText(invite.url).then(() => tell('Link copied.'), () => tell(invite.url)); return }
+  const adder = event.target.closest('[data-add]')
+  if (adder) {
+    const id = adder.dataset.add
+    adder.disabled = true
+    addToGroup(view, id).then((r) => { tell(r.ok ? 'Added.' : r.note, !r.ok); if (r.ok) openInfo('add') })
+    return
+  }
+  const pick = event.target.closest('[data-pick]')
+  if (pick && pickFor) {
+    const { id, who } = pickFor
+    const thread = pick.dataset.pick
+    addToGroup(thread, id).then((r) => { if (r.ok) { pickFor = null; show(thread); tell(`${first(who.name)} is in the group.`) } else tell(r.note, true) })
+    return
+  }
+  const befriend = event.target.closest('[data-befriend]')
+  if (befriend) {
+    const id = befriend.dataset.befriend
+    const who = peerList().find((p) => p.id === id) || {}
+    window.dispatchEvent(new CustomEvent('mzansi-friend-add', { detail: { id, who } }))
+    addFriend(id, who).then((r) => { if (!r.ok && r.reason !== 'unknown') tell(r.note || 'Couldn’t add them.', true) })
+    return
+  }
+  const unfriend = event.target.closest('[data-unfriend]')
+  if (unfriend) {
+    const id = unfriend.dataset.unfriend
+    window.dispatchEvent(new CustomEvent('mzansi-friend-remove', { detail: { id } }))
+    removeFriend(id)
+    return
+  }
   if (event.target.closest('.cht-acts') && performance.now() < guardUntil) return
   if (ct === 'acts-x') { acts = null; paintActs(); return }
   if (ct === 'report' && acts) {
@@ -295,12 +441,29 @@ function onClick(event) {
   const dm = event.target.closest('[data-dm]')
   if (dm) {
     const id = dm.dataset.dm
-    const known = peerList().find((p) => p.id === id) || linesOf(view).people[id] || {}
+    const known = peerList().find((p) => p.id === id) || friendList().find((f) => f.id === id) || (members || []).find((m) => m.id === id) || linesOf(view).people[id] || {}
     openDm(id, known)
   }
 }
 async function onSubmit(event) {
   event.preventDefault()
+  if (event.target.matches('.cht-new')) {
+    const name = event.target.elements.group.value
+    const res = await createGroup(name)
+    if (!res.ok) { tell(res.note, true); return }
+    making = false
+    const adding = pickFor
+    pickFor = null
+    if (adding) { const r = await addToGroup(res.thread, adding.id); show(res.thread); tell(r.ok ? `${first(adding.who.name)} is in the group.` : r.note, !r.ok); return }
+    show(res.thread)
+    openInfo('add')
+    return
+  }
+  if (event.target.matches('.cht-topicform')) {
+    const res = await setTopic(view, event.target.elements.topic?.value || '')
+    tell(res.ok ? 'Pinned.' : res.note, !res.ok)
+    return
+  }
   const input = sheet.querySelector('.cht-form input')
   if (!input || sending || view === 'list' || !view) return
   const text = input.value
@@ -342,6 +505,28 @@ function hidePing() {
   clearTimeout(pingTimer)
   pingFor = ''
   if (banner) banner.hidden = true
+}
+
+// Wake-up (Social A): on the first open of the day, if your groups have unread messages, one small card:
+// "Your groups said N things". Tapping it opens the chat. Once a day per phone.
+function wakeUp(tries = 0) {
+  // (not over the loading curtain: once the place is on screen)
+  if (curtainUp() && tries < 60) { setTimeout(() => wakeUp(tries + 1), 500); return }
+  const n = groupUnread()
+  const day = new Date().toDateString()
+  let seen = ''
+  try { seen = localStorage.getItem('mzansiville.wake') || '' } catch { /* fine */ }
+  if (!n || seen === day || view) return
+  try { localStorage.setItem('mzansiville.wake', day) } catch { /* fine */ }
+  document.querySelector('.cht-wake')?.remove()
+  const el = document.createElement('div')
+  el.className = 'cht-wake'
+  el.setAttribute('role', 'status')
+  el.innerHTML = `<button type="button" class="cht-wake-go"><span aria-hidden="true">\u{1F4AC}</span><span><b>Your groups said ${n} thing${n === 1 ? '' : 's'}</b><small>Tap to catch up</small></span></button><button type="button" class="cht-wake-x" aria-label="Close">✕</button>`
+  for (const type of ['pointerdown', 'touchstart', 'mousedown']) el.addEventListener(type, (event) => event.stopPropagation(), { passive: true })
+  el.querySelector('.cht-wake-go').addEventListener('click', () => { el.remove(); tab = 'chats'; openChat() })
+  el.querySelector('.cht-wake-x').addEventListener('click', () => el.remove())
+  document.body.append(el)
 }
 
 // The unread count on the top bar's chat button and in the menu ([data-chat-unread]).

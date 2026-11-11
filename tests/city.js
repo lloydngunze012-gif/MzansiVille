@@ -47,8 +47,11 @@ export async function intoCity(page) {
   await expect.poll(async () => (await page.evaluate(() => window.mzansiPlayerPos())).z, { timeout: 60000 }).toBeGreaterThan(98.5)
   // (standing still, the camera settled: the tap lands where it is aimed)
   await expect.poll(() => page.evaluate(() => window.mzansiWalkPace().now), { timeout: 20000 }).toBe(0)
-  await page.waitForTimeout(900)
-  const p = await page.evaluate(() => window.mzansiScreenOf(0.4, 102.8)) // (the road at the gate line: a tap there or past it walks you out)
+  // (the road at the gate line: a tap there or past it walks you out. Wait until that spot has stopped moving on
+  // screen, however long the camera takes on a busy machine: a fixed 0.9 s once let the tap land beside it)
+  const spot = () => page.evaluate(() => window.mzansiScreenOf(0.4, 102.8))
+  let p = await spot()
+  await expect.poll(async () => { const was = p; await page.waitForTimeout(350); p = await spot(); return Math.hypot(p.x - was.x, p.y - was.y) }, { timeout: 20000 }).toBeLessThan(1)
   await page.touchscreen.tap(p.x, p.y)
   await expect(city(page)).toHaveAttribute('data-ready', '1', { timeout: 90000 })
   await page.waitForTimeout(700)

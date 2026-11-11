@@ -34,6 +34,9 @@
 /* Chat sprint (ui/threads.css): the Chat sheet (thread list and thread view) and the ping banner. */
 :root .cht-sheet,
 :root .cht-ping,
+:root .cht-wake,
+:root .jt-toast,
+:root .wk-card,
 /* The launch job's pop-ups (src/launch.js): swap roommate, finish your card, leaderboard, feedback. */
 :root .sl-pop,
 /* SunnyBay (src/world/city.js): a door's "Opening soon", a taxi stop, a billboard; the map's ways-there panel (map.js). */

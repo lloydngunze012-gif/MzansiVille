@@ -78,6 +78,14 @@ export function groupOf(from) {
 }
 
 // What to show (and keep pressed) for a saved answer.
+// Where a player says they are from, for "{name} from {province} just joined" (Social A): the region they picked
+// (a South African's province, another African country's state, county or region), else the country.
+export function homeLabel(character = {}) {
+  const country = countryOf(character)
+  if (character.region) return String(character.region)
+  const place = fromPlace(character.from)
+  return country === 'South Africa' && PROVINCES.includes(place) ? place : country
+}
 export function fromPlace(from) {
   return FROM_WAS[from] || from || ''
 }

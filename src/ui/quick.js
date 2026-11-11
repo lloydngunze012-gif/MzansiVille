@@ -52,7 +52,7 @@ export function quickScreen(state) {
     <div class="qs-panel">
       <label class="en-field qs-name${draft.error === 'Type your name to play' ? ' qs-shake' : ''}"><span>Your name</span><input id="name" maxlength="24" value="${esc(draft.name)}" autocomplete="given-name" placeholder="Type your name" enterkeyhint="go"></label>
       <p class="qs-handle" data-qs-handle>${handle ? `Your @handle: <b>@${esc(handle)}</b>` : ''}</p>
-      ${countryPick(state, { province: false })}
+      ${countryPick(state)}
       ${draft.error ? `<p class="en-err" role="alert">${esc(draft.error)}</p>` : ''}
       <button class="en-go qs-play" type="button" data-act="qs-play">Play ›</button>
       <p class="qs-fine">By tapping Play you agree to keep campus kind: <a href="#/rules">Community rules</a>.</p>

@@ -5,6 +5,7 @@ import { myNumber } from '../presence.js'
 import { playerCardHtml } from './card.js'
 import { themePicker } from '../theme.js'
 import { tidyHandle } from '../handles.js'
+import REGIONS from '../../data/campusville/regions.json'
 import { COUNTRY_GROUPS, countryEmoji, countryFlag, countryOf, flagOf, fromPlace, PROVINCES } from '../from.js'
 import { roommateFor, roommatesFor, roommateLook } from '../roommates.js'
 
@@ -131,10 +132,17 @@ function lookStep(state, still) {
 // drawn flag, the phone's own list opens on tap (each option has its flag emoji; African countries
 // first, then the rest of the world). South Africa is the default. No intro text.
 // South Africa: which province? (optional) It picks the day-1 home (a suburban house or a township street house).
+// Social A (owner, 11 Nov): every African country in the list gets the same optional second dropdown, under its own
+// word (province, state, county, region...: data/campusville/regions.json). Other countries get none.
 function provincePick(state) {
-  const now = PROVINCES.includes(fromPlace(state.draft.from)) ? fromPlace(state.draft.from) : ''
-  return `<label class="en-frompick en-ctypick en-provpick" data-province-pick aria-pressed="${Boolean(now)}"><span>${esc(now || 'Province')}</span><b aria-hidden="true">▾</b>
-        <select data-province aria-label="Which province?"><option value="">Province (optional)</option>${PROVINCES.map((p) => `<option value="${esc(p)}"${p === now ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></label>`
+  const mine = countryOf({ country: state.draft.country })
+  const info = REGIONS[mine]
+  if (!info) return ''
+  const sa = mine === 'South Africa'
+  const list = sa ? PROVINCES : info.list || []
+  const now = sa ? (PROVINCES.includes(fromPlace(state.draft.from)) ? fromPlace(state.draft.from) : '') : list.includes(state.draft.region) ? state.draft.region : ''
+  return `<label class="en-frompick en-ctypick en-provpick" data-province-pick aria-pressed="${Boolean(now)}"><span>${esc(now || info.label)}</span><b aria-hidden="true">▾</b>
+        <select ${sa ? 'data-province' : 'data-region'} aria-label="Which ${esc(info.label.toLowerCase())}?"><option value="">${esc(info.label)} (optional)</option>${list.map((p) => `<option value="${esc(p)}"${p === now ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select></label>`
 }
 
 export function countryPick(state, { province = true } = {}) {
@@ -142,7 +150,7 @@ export function countryPick(state, { province = true } = {}) {
   const opts = COUNTRY_GROUPS.map((g) => `<optgroup label="${esc(g.label)}">${g.countries.map((c) => `<option value="${esc(c.id)}"${c.id === mine ? ' selected' : ''}>${countryEmoji(c.id)} ${esc(c.id)}</option>`).join('')}</optgroup>`).join('')
   return `<section class="en-row en-ctyrow"><h3>Where are you from?</h3>
       <div class="en-ctypair"><label class="en-frompick en-ctypick" data-country-pick aria-pressed="true">${countryFlag(mine)}<span>${esc(mine)}</span><b aria-hidden="true">▾</b>
-        <select data-country aria-label="Where are you from?">${opts}</select></label>${province && mine === 'South Africa' ? provincePick(state) : ''}</div></section>`
+        <select data-country aria-label="Where are you from?">${opts}</select></label>${province ? provincePick(state) : ''}</div></section>`
 }
 
 // Your roommate: four students share your res; the default (your res, the skin closest to yours) is picked.

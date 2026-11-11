@@ -156,6 +156,7 @@ async function connect() {
     .on('broadcast', { event: 'bye' }, ({ payload }) => drop(payload?.i))
     .on('broadcast', { event: 'poke' }, ({ payload }) => { if (payload?.to === me.id && payload.from !== me.id && !hidden.has(payload.from)) for (const fn of pokeListeners) fn(payload) })
     .on('broadcast', { event: 'say' }, ({ payload }) => { if (payload?.i && payload.i !== me.id && !hidden.has(payload.i) && typeof payload.text === 'string') for (const fn of sayListeners) fn(payload) })
+    .on('broadcast', { event: 'joined' }, ({ payload }) => { if (payload?.i && payload.i !== me.id && !hidden.has(payload.i)) for (const fn of joinListeners) fn(payload) })
     .on('presence', { event: 'sync' }, probe)
     .on('presence', { event: 'leave' }, ({ key }) => drop(key))
     .subscribe((status) => {
@@ -362,6 +363,22 @@ export function sendSay(text) {
   channel.send({ type: 'broadcast', event: 'say', payload: { i: me.id, t: Date.now(), x: round(local.x), z: round(local.z), text: String(text).slice(0, 120), n: meta.n, s: meta.s, h: meta.c?.handle || '' } }).catch(() => {})
   return true
 }
+// "{name} just joined" (Social A, src/jointoast.js): one small broadcast to this room, which is one district.
+// { i, n: name, p: where from, h: handle, l: look }
+const joinListeners = new Set()
+export function onJoined(fn) { joinListeners.add(fn); return () => joinListeners.delete(fn) }
+export function sendJoined(label) {
+  if (!channel || !live || !meta) return false
+  channel.send({ type: 'broadcast', event: 'joined', payload: { i: me.id, n: meta.n, p: String(label || '').slice(0, 40), h: meta.c?.handle || '' } }).catch(() => {})
+  return true
+}
+// Where another player is right now, as this phone draws them (src/walk.js walks at their side), or null.
+export function peerAt(id) {
+  const peer = peers.get(id)
+  if (!peer?.snaps?.length || hidden.has(id)) return null
+  const step = rate()
+  return sample(peer.snaps, Date.now() - peer.off - step - 100, step)
+}
 // Where this phone's player is (what the scene last reported).
 export function whereAmI() { return local }
 export function isHidden(id) { return hidden.has(id) }
@@ -381,6 +398,8 @@ export function settled() {
 }
 export function connected() { return live }
 export function presenceRoom() { return roomName() }
+// Which room of 40 this phone is in (1, 2, 3...): it picks the player's Quad (src/threads.js).
+export function presenceRoomNo() { return roomNo }
 
 // The real students on the campus map, each placed where they were a moment ago (in
 // their own clock), between the two updates either side of that moment.

@@ -127,6 +127,7 @@ begin
 end $$;
 revoke all on function public.chat_thread_json(text, public.chat_threads) from public;
 
+drop function if exists public.chat_sync(text, text, text, text, text, jsonb, int); -- (Social A's version, below, replaces this one each run)
 -- Hello: who I am (the first call from a phone claims its id), join every open group, and my thread list.
 -- Returns { ok, threads: [...], blocked: [ids I blocked] }.
 create or replace function public.chat_sync(p_id text, p_secret text, p_name text default null, p_handle text default null, p_house text default null, p_look jsonb default null)
@@ -290,3 +291,258 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 grant execute on function public.chat_set_topic(text, text, text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- SOCIAL A (owner, 11 Nov): groups you make and invite people to, friends, a Quad per room, join toasts.
+-- Same rules as above: no table is readable, every function checks the phone's secret. Re-runnable.
+--   Limits (server clock): 3 groups made a day and 10 alive per player; 40 members a group; 40 invites a day
+--   (people added plus WhatsApp links made); 200 friends; one "just joined" announcement per player, ever.
+-- =====================================================================================================
+alter table public.chat_threads add column if not exists code text;
+create unique index if not exists chat_threads_code_idx on public.chat_threads (code) where code is not null;
+alter table public.chat_members add column if not exists muted boolean not null default false;
+alter table public.chat_players add column if not exists room int not null default 1;
+alter table public.chat_players add column if not exists joined_said boolean not null default false;
+
+create table if not exists public.chat_friends (
+  player text not null,
+  friend text not null,
+  at timestamptz not null default now(),
+  primary key (player, friend)
+);
+alter table public.chat_friends enable row level security;
+
+-- What the limits count: kind 'group' (one made), 'invite' (someone added, or a WhatsApp link made).
+create table if not exists public.chat_events (
+  id bigint generated always as identity primary key,
+  player text not null,
+  kind text not null,
+  at timestamptz not null default now()
+);
+create index if not exists chat_events_idx on public.chat_events (player, kind, at desc);
+alter table public.chat_events enable row level security;
+
+-- The Quad per room: room 1 talks in 'quad', room n in 'quad:n', each with the same pinned topic. Nobody is
+-- in every Quad any more, so 'quad' stops being an open group; chat_sync puts you in your room's.
+update public.chat_threads set open = false where id = 'quad';
+create or replace function public.chat_quad_id(n int) returns text language sql immutable as $$
+  select case when coalesce(n, 1) <= 1 then 'quad' else 'quad:' || n end
+$$;
+create or replace function public.chat_is_quad(t text) returns boolean language sql immutable as $$
+  select t = 'quad' or t like 'quad:%'
+$$;
+
+-- A thread as p_id sees it, now with: muted, code (a group you are in; never a Quad), quad.
+create or replace function public.chat_thread_json(p_id text, t public.chat_threads) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare peer chat_players%rowtype; last_line jsonb; n_unread int; n_members int; mine bigint; is_muted boolean;
+begin
+  select last_read, muted into mine, is_muted from chat_members where thread = t.id and player = p_id;
+  if t.kind = 'dm' then
+    select p.* into peer from chat_members m join chat_players p on p.id = m.player where m.thread = t.id and m.player <> p_id limit 1;
+  end if;
+  select jsonb_build_object('id', l.id, 'body', l.body, 'at', l.at, 'sender', l.sender, 'name', coalesce(p.name, 'Student'))
+    into last_line
+    from chat_lines l left join chat_players p on p.id = l.sender
+    where l.thread = t.id and not chat_blocked(p_id, l.sender) order by l.id desc limit 1;
+  select count(*) into n_unread from chat_lines l
+    where l.thread = t.id and l.id > coalesce(mine, 0) and l.sender <> p_id and not chat_blocked(p_id, l.sender);
+  select count(*) into n_members from chat_members where thread = t.id;
+  return jsonb_build_object('id', t.id, 'kind', t.kind, 'name', case when t.kind = 'dm' then coalesce(peer.name, 'Student') else t.name end,
+    'topic', t.topic, 'members', n_members, 'creator', t.creator,
+    'peer', case when t.kind = 'dm' and peer.id is not null then jsonb_build_object('id', peer.id, 'name', peer.name, 'handle', peer.handle, 'house', peer.house, 'look', peer.look) end,
+    'last', last_line, 'unread', n_unread, 'muted', coalesce(is_muted, false), 'quad', chat_is_quad(t.id),
+    'code', case when t.kind = 'group' and not chat_is_quad(t.id) and mine is not null then t.code end);
+end $$;
+revoke all on function public.chat_thread_json(text, public.chat_threads) from public;
+
+-- Hello, now with the room you are in (p_room: 1, 2, 3...; left out = where you were). Puts you in that room's
+-- Quad and out of the others. Returns { ok, threads, blocked, friends: [{ id, name, handle, house, look, online }], room }.
+drop function if exists public.chat_sync(text, text, text, text, text, jsonb);
+create or replace function public.chat_sync(p_id text, p_secret text, p_name text default null, p_handle text default null, p_house text default null, p_look jsonb default null, p_room int default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare nm text := left(coalesce(nullif(trim(p_name), ''), 'Student'), 24); list jsonb; mine jsonb; pals jsonb; rm int; qid text;
+begin
+  if p_id is null or length(p_id) not between 8 and 64 or p_secret is null or length(p_secret) < 16 then raise exception 'bad player'; end if;
+  begin nm := public.clean_chat_body(nm); exception when others then nm := 'Student'; end;
+  if nm is null or nm = '' then nm := 'Student'; end if;
+  insert into chat_players (id, secret_hash, name) values (p_id, md5(p_secret), nm) on conflict (id) do nothing;
+  perform chat_me(p_id, p_secret);
+  select greatest(1, least(coalesce(p_room, room, 1), 99)) into rm from chat_players where id = p_id;
+  update chat_players set seen_at = now(), room = rm,
+    name = case when p_name is null then name else nm end,
+    handle = case when p_handle is null then handle else left(regexp_replace(lower(p_handle), '[^a-z0-9_]', '', 'g'), 20) end,
+    house = case when p_house is null then house else left(p_house, 40) end,
+    look = case when p_look is null or length(p_look::text) > 2000 then look else p_look end
+    where id = p_id;
+  -- your room's Quad (made the first time anyone lands in that room), with the one pinned topic
+  qid := chat_quad_id(rm);
+  insert into chat_threads (id, kind, name, topic) select qid, 'group', 'The Quad', q.topic from chat_threads q where q.id = 'quad'
+    on conflict (id) do update set topic = excluded.topic, name = excluded.name;
+  delete from chat_members where player = p_id and chat_is_quad(thread) and thread <> qid;
+  insert into chat_members (thread, player, last_read) select t.id, p_id, t.last_id from chat_threads t where t.id = qid on conflict do nothing;
+  -- (a new member of an open group starts with nothing unread)
+  insert into chat_members (thread, player, last_read) select t.id, p_id, t.last_id from chat_threads t where t.open on conflict do nothing;
+  select coalesce(jsonb_agg(x.j order by x.at desc nulls last), '[]'::jsonb) into list from (
+    select chat_thread_json(p_id, t) as j, coalesce(t.last_at, case when t.kind = 'group' then t.created_at end) as at
+    from chat_members m join chat_threads t on t.id = m.thread
+    where m.player = p_id
+      and (t.kind = 'group' or (t.last_id > 0 and not exists (
+        select 1 from chat_members o where o.thread = t.id and o.player <> p_id and chat_blocked(p_id, o.player))))
+  ) x;
+  select coalesce(jsonb_agg(blocked), '[]'::jsonb) into mine from chat_blocks where blocker = p_id;
+  select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'handle', p.handle, 'house', p.house, 'look', p.look,
+      'online', p.seen_at > now() - interval '70 seconds') order by (p.seen_at > now() - interval '70 seconds') desc, p.name), '[]'::jsonb)
+    into pals from chat_friends f join chat_players p on p.id = f.friend where f.player = p_id and not chat_blocked(p_id, p.id);
+  return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm);
+end $$;
+grant execute on function public.chat_sync(text, text, text, text, text, jsonb, int) to anon, authenticated;
+
+-- Make a group: 3 a day, 10 alive; it gets a code for its invite link.
+create or replace function public.chat_group_create(p_id text, p_secret text, p_name text, p_topic text default '')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare nm text := left(trim(coalesce(p_name, '')), 40); tp text := left(trim(coalesce(p_topic, '')), 120); tid text;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chat:' || p_id));
+  begin nm := public.clean_chat_body(nm); tp := public.clean_chat_body(tp); exception when others then return jsonb_build_object('ok', false, 'reason', 'word'); end;
+  if char_length(nm) < 3 or nm ~ '\*\*\*' then return jsonb_build_object('ok', false, 'reason', 'name'); end if;
+  if (select count(*) from chat_threads where creator = p_id and kind = 'group') >= 10 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  if (select count(*) from chat_events where player = p_id and kind = 'group' and at > now() - interval '1 day') >= 3 then return jsonb_build_object('ok', false, 'reason', 'today'); end if;
+  tid := 'g:' || gen_random_uuid()::text;
+  insert into chat_threads (id, kind, name, topic, creator, code) values (tid, 'group', nm, tp, p_id, substr(md5(tid || random()::text), 1, 8));
+  insert into chat_members (thread, player) values (tid, p_id);
+  insert into chat_events (player, kind) values (p_id, 'group');
+  return jsonb_build_object('ok', true, 'thread', tid);
+end $$;
+grant execute on function public.chat_group_create(text, text, text, text) to anon, authenticated;
+
+-- A group p_id is in and may change (never a Quad, a DM or an open group). Null if not.
+create or replace function public.chat_my_group(p_id text, p_thread text) returns public.chat_threads
+language sql stable security definer set search_path = public as $$
+  select t.* from chat_threads t where t.id = p_thread and t.kind = 'group' and not t.open and not chat_is_quad(t.id)
+    and exists (select 1 from chat_members m where m.thread = t.id and m.player = p_id)
+$$;
+revoke all on function public.chat_my_group(text, text) from public;
+
+-- Add someone to a group you are in. Returns { ok, to: [them] } or { ok: false, reason }.
+--   reason: not_member | unknown | blocked | already | full | too_many
+create or replace function public.chat_group_add(p_id text, p_secret text, p_thread text, p_other text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chatg:' || coalesce(p_thread, '')));
+  t := chat_my_group(p_id, p_thread);
+  if t.id is null then return jsonb_build_object('ok', false, 'reason', 'not_member'); end if;
+  if p_other is null or not exists (select 1 from chat_players where id = p_other) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if chat_blocked(p_id, p_other) then return jsonb_build_object('ok', false, 'reason', 'blocked'); end if;
+  if exists (select 1 from chat_members where thread = t.id and player = p_other) then return jsonb_build_object('ok', false, 'reason', 'already'); end if;
+  if (select count(*) from chat_members where thread = t.id) >= 40 then return jsonb_build_object('ok', false, 'reason', 'full'); end if;
+  if (select count(*) from chat_events where player = p_id and kind = 'invite' and at > now() - interval '1 day') >= 40 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  insert into chat_members (thread, player, last_read) values (t.id, p_other, t.last_id);
+  insert into chat_events (player, kind) values (p_id, 'invite');
+  return jsonb_build_object('ok', true, 'to', jsonb_build_array(p_other));
+end $$;
+grant execute on function public.chat_group_add(text, text, text, text) to anon, authenticated;
+
+-- The invite link's code (WhatsApp): a member asks for it; counts as an invite sent. { ok, code }.
+create or replace function public.chat_group_invite(p_id text, p_secret text, p_thread text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype; c text;
+begin
+  perform chat_me(p_id, p_secret);
+  t := chat_my_group(p_id, p_thread);
+  if t.id is null then return jsonb_build_object('ok', false, 'reason', 'not_member'); end if;
+  if (select count(*) from chat_events where player = p_id and kind = 'invite' and at > now() - interval '1 day') >= 40 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  c := t.code;
+  if c is null then c := substr(md5(t.id || random()::text), 1, 8); update chat_threads set code = c where id = t.id; end if;
+  insert into chat_events (player, kind) values (p_id, 'invite');
+  return jsonb_build_object('ok', true, 'code', c);
+end $$;
+grant execute on function public.chat_group_invite(text, text, text) to anon, authenticated;
+
+-- Join by the code in an invite link. { ok, thread } or { ok: false, reason: unknown | full | blocked }.
+create or replace function public.chat_group_join(p_id text, p_secret text, p_code text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_threads where code = lower(left(coalesce(p_code, ''), 16)) and kind = 'group';
+  if not found then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  perform pg_advisory_xact_lock(hashtext('chatg:' || t.id));
+  if exists (select 1 from chat_members where thread = t.id and player = p_id) then return jsonb_build_object('ok', true, 'thread', t.id); end if;
+  if t.creator is not null and chat_blocked(p_id, t.creator) then return jsonb_build_object('ok', false, 'reason', 'blocked'); end if;
+  if (select count(*) from chat_members where thread = t.id) >= 40 then return jsonb_build_object('ok', false, 'reason', 'full'); end if;
+  insert into chat_members (thread, player, last_read) values (t.id, p_id, t.last_id);
+  return jsonb_build_object('ok', true, 'thread', t.id);
+end $$;
+grant execute on function public.chat_group_join(text, text, text) to anon, authenticated;
+
+-- Leave a group. The creator leaving hands it to whoever joined first; the last one out closes it.
+create or replace function public.chat_group_leave(p_id text, p_secret text, p_thread text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  t := chat_my_group(p_id, p_thread);
+  if t.id is null then return jsonb_build_object('ok', false, 'reason', 'not_member'); end if;
+  delete from chat_members where thread = t.id and player = p_id;
+  if not exists (select 1 from chat_members where thread = t.id) then delete from chat_threads where id = t.id;
+  elsif t.creator = p_id then update chat_threads set creator = (select player from chat_members where thread = t.id order by joined_at, player limit 1) where id = t.id;
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_group_leave(text, text, text) to anon, authenticated;
+
+-- Mute (or unmute) a thread you are in: it still fills up, it just never pings or counts on your badge.
+create or replace function public.chat_mute(p_id text, p_secret text, p_thread text, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_members set muted = coalesce(p_on, true) where thread = p_thread and player = p_id;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_member'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_mute(text, text, text, boolean) to anon, authenticated;
+
+-- Who is in a group you are in: { ok, members: [{ id, name, handle, house, look, online, creator }] }.
+create or replace function public.chat_group_members(p_id text, p_secret text, p_thread text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype; list jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_threads where id = p_thread and kind = 'group';
+  if not found or not exists (select 1 from chat_members where thread = p_thread and player = p_id) then return jsonb_build_object('ok', false, 'reason', 'not_member'); end if;
+  select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'handle', p.handle, 'house', p.house, 'look', p.look,
+      'online', p.seen_at > now() - interval '70 seconds', 'creator', p.id = t.creator) order by (p.id = t.creator) desc, m.joined_at), '[]'::jsonb)
+    into list from chat_members m join chat_players p on p.id = m.player where m.thread = p_thread and not chat_blocked(p_id, p.id);
+  return jsonb_build_object('ok', true, 'members', list);
+end $$;
+grant execute on function public.chat_group_members(text, text, text) to anon, authenticated;
+
+-- Friends: add or remove someone on your list (yours alone; they are not told here). 200 at most.
+create or replace function public.chat_friend(p_id text, p_secret text, p_other text, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  if p_other is null or p_other = p_id then return jsonb_build_object('ok', false, 'reason', 'self'); end if;
+  if not coalesce(p_on, true) then delete from chat_friends where player = p_id and friend = p_other; return jsonb_build_object('ok', true); end if;
+  if not exists (select 1 from chat_players where id = p_other) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if chat_blocked(p_id, p_other) then return jsonb_build_object('ok', false, 'reason', 'blocked'); end if;
+  if (select count(*) from chat_friends where player = p_id) >= 200 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  insert into chat_friends (player, friend) values (p_id, p_other) on conflict do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_friend(text, text, text, boolean) to anon, authenticated;
+
+-- "{name} just joined": a phone may announce its player once, ever. { ok } the first time, else { ok: false, reason: 'done' }.
+create or replace function public.chat_joined(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_players set joined_said = true where id = p_id and not joined_said;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'done'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_joined(text, text) to anon, authenticated;

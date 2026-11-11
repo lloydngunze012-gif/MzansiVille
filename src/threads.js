@@ -11,13 +11,20 @@
 import { cleanMessage, filterText } from './engine/filter.js'
 import { groupNameOk } from './engine/groupname.js'
 import { getClient } from './net.js'
-import { hidePlayer, myIdentity } from './presence.js'
+import { hidePlayer, myIdentity, presenceRoomNo } from './presence.js'
+import { PUBLIC_URL } from './config.js'
 
 const params = new URLSearchParams(location.search)
 const live = () => !navigator.webdriver || params.get('chat') === '1'
 // (tests chat on their own channels: ?room=<name>)
 const PREFIX = `chat:${params.get('room') || 'live'}:`
 const POLL = 25000
+// An invite link (?g=<code>, Social A): the code waits on this phone until the chat is up, which for a newcomer
+// is after the quick start; then they land in the group (ui/threads.js, on the first sync).
+const INVITE_KEY = 'mzansiville.groupInvite'
+try { const g = params.get('g'); if (g && /^[0-9a-f]{6,16}$/i.test(g)) localStorage.setItem(INVITE_KEY, g.toLowerCase()) } catch { /* storage blocked: no invite */ }
+export function waitingInvite() { try { return localStorage.getItem(INVITE_KEY) || '' } catch { return '' } }
+export function clearInvite() { try { localStorage.removeItem(INVITE_KEY) } catch { /* fine */ } }
 
 let status = 'idle' // idle | loading | ready | soon | offline
 let threads = [] // newest first: { id, kind, name, topic, members, peer, last, unread }
@@ -32,9 +39,18 @@ let profileSent = ''
 let openId = ''
 let started = false
 let firstSync = true
+let firstDone = false
 let syncing = null
 let syncTimer = 0
 let syncAgain = false
+// Social A (owner, 11 Nov): friends, groups you make, a Quad per room. Until the owner has re-run supabase/chat.sql
+// the server has none of it: social is false, chat works as before and the new buttons say "opens soon".
+let friends = [] // [{ id, name, handle, house, look, online }]
+let social = false
+let roomArg = true // (the older chat_sync takes no p_room)
+// The room of 40 you are in (presence.js: campus, campus-2, campus.town-3...): its number picks your Quad.
+const roomNumber = () => Math.max(1, Number(presenceRoomNo()) || 1)
+let roomSent = 0
 
 const emit = (kind, detail) => { for (const fn of listeners) fn(kind, detail) }
 // fn(kind, detail): 'list' (the thread list or a count changed), 'lines' (thread id), 'ping' ({ thread, line }).
@@ -43,7 +59,12 @@ export const chatStatus = () => status
 export const threadList = () => threads
 export const threadOf = (id) => threads.find((t) => t.id === id) || null
 export const linesOf = (id) => cache.get(id) || { lines: [], people: {} }
-export const unreadTotal = () => threads.reduce((n, t) => n + (t.unread || 0), 0)
+// (a muted thread still fills up; it never counts on the badge or pings)
+export const unreadTotal = () => threads.reduce((n, t) => n + (t.muted ? 0 : t.unread || 0), 0)
+export const groupUnread = () => threads.reduce((n, t) => n + (t.kind === 'group' && !t.quad && !t.muted ? t.unread || 0 : 0), 0)
+export const friendList = () => friends
+export const isFriend = (id) => friends.some((f) => f.id === id)
+export const socialReady = () => social
 export const openThreadId = () => openId
 export const isBlocked = (id) => blocked.has(id)
 export const myId = () => myIdentity().id
@@ -75,8 +96,9 @@ function tidyThread(t) {
 
 // ---------- Starting, and keeping the list fresh ----------
 // character: the save's student (name, handle, house and look go on their lines). blocks: players already blocked on this phone.
-export function startThreads(character, blocks = []) {
+export function startThreads(character, blocks = [], pals = []) {
   if (!character) return
+  localPals = pals
   profile = { p_name: String(character.name || 'Student').slice(0, 24), p_handle: String(character.handle || '').replace(/^@/, '').slice(0, 20), p_house: String(character.residence || '').slice(0, 40), p_look: character.avatar || {} }
   for (const id of blocks) blocked.add(id)
   if (!live()) return
@@ -86,12 +108,17 @@ export function startThreads(character, blocks = []) {
   sync().then(() => {
     // (blocks made before the chat existed, or on this phone while offline, are told to the server once)
     for (const id of blocks) if (!serverBlocked.has(id)) rpc('chat_block', { p_other: id, p_on: true })
+    // (friends made before the Friends list existed, or while they had no chat yet: told to the server now)
+    if (social) { const missing = localPals.filter((f) => f?.id && !isFriend(f.id) && !blocked.has(f.id)).slice(0, 50); if (missing.length) Promise.all(missing.map((f) => rpc('chat_friend', { p_other: f.id, p_on: true }))).then(() => sync()) }
   })
   // (before chat.sql has been run this keeps asking, so the chat comes alive on its own once it is)
   setInterval(() => { if (!document.hidden) sync() }, POLL)
+  // (moved to another room of 40: that room's Quad)
+  setInterval(() => { if (!document.hidden && roomArg && roomSent && roomNumber() !== roomSent) sync() }, 3000)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(); if (openId) fetchLines(openId) } })
 }
 const serverBlocked = new Set()
+let localPals = []
 
 export function sync() {
   if (!started || !profile) return Promise.resolve()
@@ -99,7 +126,10 @@ export function sync() {
   if (syncing) { syncAgain = true; return syncing }
   syncing = (async () => {
     const send = JSON.stringify(profile) !== profileSent ? profile : {}
-    const { data, error } = await rpc('chat_sync', send)
+    const room = roomNumber()
+    let { data, error } = await rpc('chat_sync', roomArg ? { ...send, p_room: room } : send)
+    // (chat.sql from before Social A: the same call without the room)
+    if (error === 'soon' && roomArg) { roomArg = false; status = 'loading'; ({ data, error } = await rpc('chat_sync', send)) }
     if (error || !data?.ok) {
       status = error === 'soon' ? 'soon' : threads.length ? 'ready' : 'offline'
       emit('list')
@@ -107,6 +137,9 @@ export function sync() {
     }
     if (send === profile) profileSent = JSON.stringify(profile)
     status = 'ready'
+    social = Array.isArray(data.friends)
+    roomSent = room
+    friends = (data.friends || []).map((f) => ({ ...f, name: filterText(String(f.name || 'Student')).text || 'Student' })).filter((f) => !blocked.has(f.id))
     for (const id of data.blocked || []) { serverBlocked.add(id); if (!blocked.has(id)) { blocked.add(id); hidePlayer(id) } }
     threads = (data.threads || []).map(tidyThread)
     // (the thread on screen is read as it arrives)
@@ -115,16 +148,18 @@ export function sync() {
     for (const t of threads) {
       const lastId = t.last?.id || 0
       const before = firstSync ? lastId : seen.get(t.id) || 0
-      if (lastId > before && t.last.sender !== myId() && t.id !== openId && t.unread > 0) pings.push(t)
+      if (lastId > before && t.last.sender !== myId() && t.id !== openId && t.unread > 0 && !t.muted) pings.push(t)
       seen.set(t.id, Math.max(lastId, seen.get(t.id) || 0))
       if (t.kind === 'group') listen(t.id)
     }
+    if (firstSync) firstDone = true
     firstSync = false
     // (the thread on screen is behind: a nudge was lost, or the sender has no Realtime)
     const shown = openId && threadOf(openId)
     if (shown?.last && shown.last.id > (cache.get(openId)?.lines.at(-1)?.id || 0)) fetchLines(openId)
     listen(`u:${myId()}`)
     emit('list')
+    if (firstDone) { firstDone = false; emit('first') }
     // (one banner at a time: the newest)
     if (pings.length) emit('ping', { thread: pings[0], line: pings[0].last })
   })().finally(() => { syncing = null; if (syncAgain) { syncAgain = false; sync() } })
@@ -283,19 +318,97 @@ export async function reportLine(lineId, reason = 'Reported from chat') {
   return !error && Boolean(data?.ok)
 }
 
-// Groups v1: The Quad is made by chat.sql. Making a group has no screen yet; the server side is ready
-// (chat_group_create, chat_set_topic) and a name must pass engine/groupname.js groupNameOk first.
-export async function createGroup(name, topic = '') {
-  if (!groupNameOk(name)) return { ok: false, note: 'Pick another name for the group.' }
-  const { data, error } = await rpc('chat_group_create', { p_name: String(name).trim(), p_topic: String(topic || '').trim() })
-  if (error || !data?.ok) return { ok: false, note: 'Couldn’t make the group.' }
-  await sync()
-  return { ok: true, thread: data.thread }
+// ---------- Groups (Social A) ----------
+const GROUP_WHY = {
+  word: 'That name isn’t allowed. Pick another.', name: 'Pick another name for the group.', today: 'You’ve made 3 groups today. Try again tomorrow.',
+  too_many: 'That’s the limit for now. Try again tomorrow.', full: 'This group is full (40 members).', unknown: 'They haven’t opened their chat yet.',
+  blocked: 'You can’t add this player.', already: 'They’re already in the group.', not_member: 'You’re not in this group.', not_creator: 'Only the person who made the group can change the topic.',
+  soon: 'Groups open soon.', offline: 'Couldn’t reach the chat. Check your connection.',
 }
+const why = (error, data) => GROUP_WHY[error || data?.reason] || GROUP_WHY.offline
+async function act(fn, args) {
+  if (!live()) return { ok: false, note: GROUP_WHY.offline }
+  const { data, error } = await rpc(fn, args)
+  if (error || !data?.ok) return { ok: false, reason: error || data?.reason, note: why(error, data) }
+  return { ok: true, data }
+}
+// Make a group (the name passes engine/groupname.js first: the filter and handle_blocklist.json).
+export async function createGroup(name, topic = '') {
+  if (!groupNameOk(name)) return { ok: false, note: GROUP_WHY.name }
+  const res = await act('chat_group_create', { p_name: String(name).trim(), p_topic: String(topic || '').trim() })
+  if (!res.ok) return res
+  await sync()
+  return { ok: true, thread: res.data.thread }
+}
+// Add someone (a friend, or the player whose card is open) to a group you are in.
+export async function addToGroup(threadId, otherId) {
+  const res = await act('chat_group_add', { p_thread: threadId, p_other: otherId })
+  if (res.ok) { nudge(threadId, res.data.to || []); sync() }
+  return res
+}
+export async function groupMembers(threadId) {
+  const res = await act('chat_group_members', { p_thread: threadId })
+  return res.ok ? res.data.members.map((m) => ({ ...m, name: filterText(String(m.name || 'Student')).text || 'Student' })).filter((m) => !blocked.has(m.id)) : []
+}
+export async function leaveGroup(threadId) {
+  const res = await act('chat_group_leave', { p_thread: threadId })
+  if (res.ok) { threads = threads.filter((t) => t.id !== threadId); cache.delete(threadId); emit('list', { gone: [threadId] }); nudge(threadId) }
+  return res
+}
+export async function muteThread(threadId, on) {
+  const res = await act('chat_mute', { p_thread: threadId, p_on: Boolean(on) })
+  if (res.ok) { const t = threadOf(threadId); if (t) t.muted = Boolean(on); emit('list') }
+  return res
+}
+export async function setTopic(threadId, topic) {
+  const clean = cleanMessage(String(topic || '').slice(0, 120))
+  if (clean.blocked) return { ok: false, note: WHY.word }
+  const res = await act('chat_set_topic', { p_thread: threadId, p_topic: clean.text })
+  if (res.ok) { const t = threadOf(threadId); if (t) t.topic = clean.text; emit('list'); nudge(threadId) }
+  return res
+}
+// The WhatsApp invite: a wa.me link with a short message and the game link carrying the group's code.
+export const groupLink = (code) => `https://${PUBLIC_URL}/?g=${encodeURIComponent(code)}`
+export async function inviteLink(threadId) {
+  const res = await act('chat_group_invite', { p_thread: threadId })
+  if (!res.ok) return res
+  const t = threadOf(threadId)
+  const url = groupLink(res.data.code)
+  const text = `Join “${t?.name || 'my group'}” on Soft Life. House chat is waiting: ${url}`
+  return { ok: true, url, text, wa: `https://wa.me/?text=${encodeURIComponent(text)}` }
+}
+// A newcomer (or anyone) who opened the game through an invite link: the code waits on the phone (main.js
+// keeps ?g= in mzansiville.groupInvite) and is used once the chat is up, after the quick start.
+export async function joinByCode(code) {
+  const res = await act('chat_group_join', { p_code: String(code || '').toLowerCase().slice(0, 16) })
+  if (!res.ok) return res
+  await sync()
+  nudge(res.data.thread)
+  return { ok: true, thread: res.data.thread }
+}
+
+// ---------- Friends (Social A) ----------
+// who: what this phone knows of them ({ name, handle, look, house }), shown until the server answers.
+export async function addFriend(id, who = {}) {
+  if (!id || blocked.has(id)) return { ok: false }
+  if (!isFriend(id)) { friends = friends.concat({ id, name: who.name || 'Student', handle: who.handle || '', house: who.house || '', look: who.look || {}, online: true }); emit('list') }
+  const res = await act('chat_friend', { p_other: id, p_on: true })
+  // (they have not opened their chat yet: they stay on this phone's list and are sent again later)
+  if (res.ok) sync()
+  return res
+}
+export async function removeFriend(id) {
+  friends = friends.filter((f) => f.id !== id)
+  emit('list')
+  return act('chat_friend', { p_other: id, p_on: false })
+}
+// "{name} just joined": the server lets a player announce themselves once, ever.
+export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
 
 // Tests (read only): what this phone's chat holds.
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
-  threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '' })),
+  social, room: roomSent, friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online })),
+  threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '' })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

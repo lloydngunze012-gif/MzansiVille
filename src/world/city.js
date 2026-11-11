@@ -802,6 +802,9 @@ function facePeer(id) {
   if (Math.hypot(avatar.position.x - player.position.x, avatar.position.z - player.position.z) > 8) return
   player.rotation.y = Math.atan2(avatar.position.x - player.position.x, avatar.position.z - player.position.z)
 }
+// Walk together (src/walk.js): a walk or a taxi to a place, and walking at someone's side.
+window.addEventListener('mzansi-city-travel', (event) => { const d = event.detail || {}; if (running && player && d.target) travel(d.way === 'taxi' ? 'taxi' : 'walk', d.target) })
+window.addEventListener('mzansi-city-walk', (event) => { const d = event.detail || {}; if (running && player && !inside && Number.isFinite(d.x) && Number.isFinite(d.z)) walkTo(d.x, d.z) })
 window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
 window.addEventListener('mzansi-face-peer', (event) => facePeer(event.detail.id))
 

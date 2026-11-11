@@ -163,7 +163,7 @@ await check('chat.sql runs, and runs again; The Quad carries the first topic of 
   await db.exec(chatSql)
   const quad = await one("select * from chat_threads where id = 'quad'")
   assert.equal(quad.name, 'The Quad')
-  assert.equal(quad.open, true)
+  assert.equal(quad.open, false) // (Social A: a Quad per room; chat_sync puts you in your room's, nobody is in all of them)
   assert.equal(quad.topic, topics[0], 'the QUAD TOPIC line in supabase/chat.sql must match data/campusville/topics.json')
 })
 
@@ -275,6 +275,103 @@ await check('chat: a member can report a line (a copy of the text is kept); grou
   assert.equal((await rpc('chat_set_topic', CA, g.thread, 'Test on Friday')).ok, true)
   assert.equal((await rpc('chat_sync', CA)).threads.find((t) => t.id === g.thread).topic, 'Test on Friday')
   assert.equal((await rpc('chat_fetch', CB, g.thread)).reason, 'not_member')
+})
+
+// ---- Social A (11 Nov): groups, friends, a Quad per room, join toasts (the end of supabase/chat.sql) ----
+const [CD, CE] = [P('d'), P('e')]
+let crew = ''
+await check('social: make a group, add a friend, join by the invite code; 40 members at most', async () => {
+  await rpc('chat_sync', CD, 'Dineo', 'dineo_1', 'Peak', '{}')
+  const g = await rpc('chat_group_create', CD, 'Biryani Council', '')
+  assert.equal(g.ok, true)
+  crew = g.thread
+  const mine = (await rpc('chat_sync', CD)).threads.find((t) => t.id === crew)
+  assert.match(mine.code, /^[0-9a-f]{8}$/, 'a group has a code for its link')
+  assert.equal((await rpc('chat_group_add', CC, crew, CA.id)).reason, 'not_member', 'only a member adds people')
+  assert.equal((await rpc('chat_group_add', CD, crew, 'never-seen-player-01')).reason, 'unknown')
+  const added = await rpc('chat_group_add', CD, crew, CA.id)
+  assert.equal(added.ok, true)
+  assert.deepEqual(added.to, [CA.id])
+  assert.equal((await rpc('chat_group_add', CD, crew, CA.id)).reason, 'already')
+  assert.ok((await rpc('chat_sync', CA)).threads.some((t) => t.id === crew), 'the group is in their list')
+  assert.equal((await rpc('chat_group_join', CC, 'nope0000')).reason, 'unknown')
+  assert.equal((await rpc('chat_group_join', CC, mine.code)).thread, crew)
+  assert.equal((await rpc('chat_group_join', CC, mine.code)).ok, true, 'joining twice is fine')
+  assert.equal((await rpc('chat_group_members', CD, crew)).members.length, 3)
+  assert.equal((await rpc('chat_group_members', CB, crew)).reason, 'not_member')
+  // fill it to 40: the 41st is refused, by code and by a member
+  await db.query("insert into chat_players (id, secret_hash, name) select 'filler-player-' || g, md5('x'), 'Filler ' || g from generate_series(1, 38) g")
+  await db.query("insert into chat_members (thread, player) select $1, 'filler-player-' || g from generate_series(1, 37) g", [crew])
+  assert.equal((await one('select count(*)::int as n from chat_members where thread = $1', [crew])).n, 40)
+  assert.equal((await rpc('chat_group_join', CB, mine.code)).reason, 'full')
+  assert.equal((await rpc('chat_group_add', CD, crew, CB.id)).reason, 'full')
+  await db.query("delete from chat_members where thread = $1 and player like 'filler-player-%'", [crew])
+  // the Quad is not a group anyone manages
+  assert.equal((await rpc('chat_group_add', CD, 'quad', CB.id)).reason, 'not_member')
+  assert.equal((await rpc('chat_group_leave', CD, 'quad')).reason, 'not_member')
+})
+
+await check('social: mute, leave (the creator hands over, the last one out closes it), the topic stays the creator\'s', async () => {
+  assert.equal((await rpc('chat_mute', CA, crew, true)).ok, true)
+  assert.equal((await rpc('chat_sync', CA)).threads.find((t) => t.id === crew).muted, true)
+  assert.equal((await rpc('chat_sync', CD)).threads.find((t) => t.id === crew).muted, false)
+  assert.equal((await rpc('chat_mute', CB, crew, true)).reason, 'not_member')
+  assert.equal((await rpc('chat_set_topic', CA, crew, 'mine')).reason, 'not_creator')
+  assert.equal((await rpc('chat_group_leave', CD, crew)).ok, true)
+  assert.ok(!(await rpc('chat_sync', CD)).threads.some((t) => t.id === crew))
+  assert.equal((await one('select creator from chat_threads where id = $1', [crew])).creator, CA.id, 'the next to have joined runs it now')
+  assert.equal((await rpc('chat_set_topic', CA, crew, 'Biryani on Friday?')).ok, true)
+  await rpc('chat_group_leave', CA, crew)
+  await rpc('chat_group_leave', CC, crew)
+  assert.equal(await one('select 1 as x from chat_threads where id = $1', [crew]), undefined, 'empty groups are closed')
+})
+
+await check('social: limits on groups made (3 a day, 10 alive) and invites sent (40 a day)', async () => {
+  await rpc('chat_sync', CE, 'Ethan', 'ethan_9', 'Braam', '{}')
+  for (const n of ['One crew', 'Two crew', 'Three crew']) assert.equal((await rpc('chat_group_create', CE, n, '')).ok, true)
+  assert.equal((await rpc('chat_group_create', CE, 'Four crew', '')).reason, 'today')
+  await db.query("update chat_events set at = at - interval '2 days' where player = $1", [CE.id])
+  for (let i = 4; i <= 10; i++) { assert.equal((await rpc('chat_group_create', CE, `Crew number ${i}`, '')).ok, true); await db.query("update chat_events set at = at - interval '2 days' where player = $1", [CE.id]) }
+  assert.equal((await rpc('chat_group_create', CE, 'Eleven crew', '')).reason, 'too_many')
+  const g = (await one("select id from chat_threads where creator = $1 and kind = 'group' limit 1", [CE.id])).id
+  for (let i = 0; i < 39; i++) assert.equal((await rpc('chat_group_invite', CE, g)).ok, true)
+  assert.equal((await rpc('chat_group_add', CE, g, CA.id)).ok, true, 'the 40th invite of the day')
+  assert.equal((await rpc('chat_group_invite', CE, g)).reason, 'too_many')
+  assert.equal((await rpc('chat_group_add', CE, g, CC.id)).reason, 'too_many')
+  assert.equal((await rpc('chat_group_invite', CB, g)).reason, 'not_member')
+})
+
+await check('social: friends (add, remove, who is online); a Quad per room with the same topic; one join toast per player', async () => {
+  assert.equal((await rpc('chat_friend', CA, CC.id)).ok, true)
+  assert.equal((await rpc('chat_friend', CA, 'never-seen-player-01')).reason, 'unknown')
+  assert.equal((await rpc('chat_friend', CA, CA.id)).reason, 'self')
+  await db.query("update chat_players set seen_at = now() - interval '10 minutes' where id = $1", [CC.id])
+  let pals = (await rpc('chat_sync', CA)).friends
+  assert.deepEqual(pals.map((f) => [f.id, f.online]), [[CC.id, false]])
+  await rpc('chat_sync', CC)
+  pals = (await rpc('chat_sync', CA)).friends
+  assert.equal(pals[0].online, true)
+  assert.equal((await rpc('chat_sync', CC)).friends.length, 0, 'a friends list is your own')
+  await rpc('chat_friend', CA, CC.id, false)
+  assert.equal((await rpc('chat_sync', CA)).friends.length, 0)
+  // rooms: room 2 has its own Quad, with the pinned topic; moving room moves you
+  const two = await rpc('chat_sync', CC, null, null, null, null, 2)
+  assert.equal(two.room, 2)
+  assert.ok(two.threads.some((t) => t.id === 'quad:2' && t.quad && t.topic === topics[0]))
+  assert.ok(!two.threads.some((t) => t.id === 'quad'))
+  assert.equal((await rpc('chat_send', CC, 'quad', 'still here?')).reason, 'not_member')
+  await age(CC, 400)
+  assert.equal((await say(CC, 'quad:2', 'room two says hi')).ok, true)
+  assert.ok(!(await rpc('chat_sync', CA)).threads.some((t) => t.id === 'quad:2'), 'room 1 never sees room 2\'s Quad')
+  assert.equal((await rpc('chat_sync', CC)).room, 2, 'no room given: where you were')
+  const back = await rpc('chat_sync', CC, null, null, null, null, 1)
+  assert.ok(back.threads.some((t) => t.id === 'quad') && !back.threads.some((t) => t.id === 'quad:2'))
+  // the join toast
+  assert.equal((await rpc('chat_joined', CE)).ok, true)
+  assert.equal((await rpc('chat_joined', CE)).reason, 'done')
+  await db.exec('set role anon')
+  for (const table of ['chat_friends', 'chat_events']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  await db.exec('reset role')
 })
 
 console.log(`${passed} sql checks passed`)

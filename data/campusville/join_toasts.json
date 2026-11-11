@@ -1,0 +1,12 @@
+{
+  "note": "Social A (owner, 11 Nov): the six 'just joined' lines from docs/world-designer/social.md. {name} is the newcomer's first name, {province} their region if they picked one, else their country. One is shown, at most one every 2 minutes per viewer (everyMinutes).",
+  "everyMinutes": 2,
+  "lines": [
+    "{name} from {province} just joined. Say hi 👋",
+    "Welcome {name} from {province}. Make space.",
+    "{name} ({province}) is on campus. Wave.",
+    "Fresh face: {name} from {province}. Be kind.",
+    "{name} from {province} just walked in. Hi.",
+    "{province} sent {name}. Don't scare them."
+  ]
+}

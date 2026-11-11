@@ -1,5 +1,5 @@
 import HOMES from '../data/campusville/homes.json'
-import { DEFAULT_COUNTRY, countryOf, fromForCountry, fromPlace, hasCountry } from './from.js'
+import { DEFAULT_COUNTRY, countryOf, fromForCountry, fromPlace, hasCountry, homeLabel } from './from.js'
 import { roommateFor } from './roommates.js'
 import { migrateCast } from './cast-ids.js'
 import { canonicalHouse } from './houses.js'
@@ -70,7 +70,7 @@ import { payDrive } from './city/plan.js'
 import { adsFor } from './city/billboards.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
-import { blockInChat, startThreads } from './threads.js'
+import { addFriend, blockInChat, removeFriend, startThreads } from './threads.js'
 import { mountThreads, openChat, openDm } from './ui/threads.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
@@ -80,6 +80,8 @@ import { miniCardHtml, playerCardHtml } from './ui/card.js'
 import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
+import { initWalk } from './walk.js'
+import { startJoinToasts } from './jointoast.js'
 import { STUDENTS, stillOf } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
 import { addActivities as addScoreActivities, flush as flushScores, loadBadges, note as noteScore } from './scores.js'
@@ -746,7 +748,7 @@ setInterval(() => {
 function paint() {
   watchStats(save.run?.stats)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
-  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || []) }
+  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) }
   const shot = new URLSearchParams(location.search).get('shot')
   // An old save was never asked where it is from (owner, 9 Nov): the "Where are you from?" step, once,
   // on the way into the game (South Africa pre-selected; a tap on Continue keeps it).
@@ -1477,7 +1479,7 @@ async function quickPlay() {
   const country = draft.country || DEFAULT_COUNTRY
   const character = {
     name, handle, residence: house?.name || district.residences[0]?.name || '', course, avatar: { ...draft.avatar },
-    country, from: fromForCountry(country, ''), roommate: '', handleChangedAt: new Date().toISOString(),
+    country, from: fromForCountry(country, draft.from || ''), region: draft.region || '', roommate: '', handleChangedAt: new Date().toISOString(),
   }
   save.rulesAccepted = true
   save.run = createRun(district, { ...character, ...storyWithDefaults({}) })
@@ -1495,7 +1497,7 @@ function openCardEditor() {
   if (!run?.character) return
   const c = run.character
   const locked = nextChange(c)
-  draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
+  draft = { ...emptyDraft(), quick: false, name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), region: c.region || '', roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true, fromPrompt: true }
   ui.gear = false
   go('new')
 }
@@ -1697,9 +1699,11 @@ app.addEventListener('change', (event) => {
   // (enrolment: where you're from, from one of the three pickers)
   // (enrolment: the country dropdown on the first page; it is also where you're from, for the home style)
   if (event.target.matches?.('.en select[data-province]')) { captureForm(); draft.from = event.target.value; const y = window.scrollY; paint(); window.scrollTo(0, y); return }
+  if (event.target.matches?.('.en select[data-region]')) { captureForm(); draft.region = event.target.value; const y = window.scrollY; paint(); window.scrollTo(0, y); return }
   if (event.target.matches?.('.en select[data-country]')) {
     captureForm()
     draft.country = event.target.value
+    draft.region = ''
     draft.from = fromForCountry(draft.country, draft.from)
     const y = window.scrollY
     paint()
@@ -1783,7 +1787,7 @@ app.addEventListener('click', async (event) => {
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
-    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
+    draft = { ...emptyDraft(), name: c.name, handle: c.handle || '', handleEdited: true, handleLocked: locked ? locked.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long' }) : '', residence: c.residence, course: c.course, handle: c.handle || '', avatar: { ...c.avatar }, bio: c.bio || '', vibe: c.vibe || '', looking: c.looking || '', from: fromPlace(c.from), country: countryOf(c), region: c.region || '', roommate: c.roommate || '', story: { funding: c.funding, path: c.path, dream: c.dream, interest: c.interest }, edit: true }
     ui.gear = false
     go('new')
     return
@@ -2017,6 +2021,7 @@ app.addEventListener('click', async (event) => {
       looking: draft.looking,
       from: draft.from,
       country: draft.country || DEFAULT_COUNTRY,
+      region: draft.region || '',
       roommate: roommateFor({ avatar: draft.avatar, roommate: draft.roommate }).id,
       handleChangedAt: tidyHandle(draft.handle) !== (save.run?.character?.handle || '') ? new Date().toISOString() : save.run?.character?.handleChangedAt,
     }
@@ -2641,6 +2646,8 @@ function renderSheet(reporting = false) {
       <button type="button" data-pc="wave">\u{1F44B} Wave</button>
       <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
       <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+      <button type="button" data-pc="group">\u{1F465} Add to a group</button>
+      <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
       <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
       <button type="button" class="bad wide" data-pc="report">⚑ Report</button>
     </div>
@@ -2695,7 +2702,21 @@ function onSheetClick(event) {
     closePlayerCard(sheetKeep)
     return
   }
+  // Add to a group (Social A): the chat sheet asks which of your groups.
+  if (k === 'group') {
+    const who = { name: sheetCard?.name || name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house }
+    closePlayerCard()
+    window.dispatchEvent(new CustomEvent('mzansi-open-threads', { detail: { addTo: id, who } }))
+    return
+  }
+  // Walk with me (Social A; src/walk.js): pick where to and how, then they are asked.
+  if (k === 'walk') {
+    closePlayerCard()
+    window.dispatchEvent(new CustomEvent('mzansi-walk-ask', { detail: { id, name: sheetCard?.name || name } }))
+    return
+  }
   if (k === 'friend' && save.run) {
+    addFriend(id, { name: sheetCard?.name || name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house })
     save.run.friends = (save.run.friends || []).filter((f) => f.id !== id).concat({ id, name: sheetCard?.name || 'Student', house: sheetCard?.house || '', num: sheetCard?.num || '', day: save.run.day })
     countDone('friend_add', '', 'social')
     persist()
@@ -2715,6 +2736,22 @@ function onSheetClick(event) {
     closePlayerCard(sheetKeep)
   }
 }
+// Friends added or removed from the chat's Friends tab (ui/threads.js) are kept in the save too.
+window.addEventListener('mzansi-friend-add', (event) => {
+  const { id, who } = event.detail || {}
+  if (!id || !save.run || (save.run.friends || []).some((f) => f.id === id)) return
+  save.run.friends = (save.run.friends || []).concat({ id, name: who?.name || 'Student', house: who?.house || '', num: '', day: save.run.day })
+  countDone('friend_add', '', 'social')
+  persist()
+  sendPoke(id, 'friend')
+})
+window.addEventListener('mzansi-friend-remove', (event) => {
+  const id = event.detail?.id
+  if (!id || !save.run) return
+  save.run.friends = (save.run.friends || []).filter((f) => f.id !== id)
+  persist()
+})
+initWalk({ places: () => (save.run ? districtNow().places.filter((p) => p.kind !== 'transit') : []), toast: (text) => toast(text) })
 function blockPlayer(id) {
   save.blocks = [...new Set([...(save.blocks || []), id])]
   persist()

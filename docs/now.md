@@ -1,7 +1,16 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (opening page V2).
+Last updated: 11 Nov, Claude Code (Social A).
+
+## Social A (owner, 11 Nov): built; WAITING FOR THE OWNER TO RE-RUN supabase/chat.sql
+- **Lloyd: run the whole of `supabase/chat.sql` again in the Supabase SQL editor** (re-runnable). Until then chat works as it did and the new parts (groups, friends, room Quads, join toasts) stay off.
+- **What is new.** Make a group, add friends or someone from their card, pin a topic, invite by WhatsApp (a link that drops a newcomer in the group right after the quick start), mute, leave. A Friends tab with who is online. A Quad per room of 40. "X from Y just joined" with Say hi. An optional region under the country for every African country. "Walk with me" to a place, on foot or by taxi. "Your groups said N things" on the first open of the day.
+- **For Cursor:** two new data files made by Claude Code: `data/campusville/join_toasts.json` (the six lines from social.md) and `data/campusville/regions.json` (regions for the 54 African countries, from general knowledge: please read it over).
+- **Decisions made, the owner's to change.** (1) "Soft Life FC" from social.md's group names is refused: `handle_blocklist.json` reserves "softlife". (2) The Quad follows the room number, not the district. (3) Morocco's list leaves out the two southern regions and Somalia's includes Somaliland, so nobody is left without their home; both are judgement calls. (4) Friends are one-way lists (you add them; they are told by the existing poke, not asked).
+- **Not tested / not done.** The fall-back to the old server (before chat.sql is re-run) is written but has no test. Walk together by taxi is written, the three-phone test covers walking only. Walk together needs both players in the same district room. No screen to remove a member or rename a group.
+- **Test health.** First quick run 71 of 72: chat-quick Q2 looked for the Quad row and found none. The GAME's fault: the room number was read off the end of the room's name, and the test's room name ended in "-2", so the phone asked for Quad 2. Fixed at the source (presence.js `presenceRoomNo`). In a partial re-run Q2 then failed once at the tap that walks out of the gate and passed alone; likely (not proven) the camera had not settled under load. The TEST helper (tests/city.js intoCity) now waits until the tap spot stops moving on screen instead of a fixed 0.9 s. Then 72 of 72. The quick set now takes 12.6 minutes (its budget is 10): four new social tests; worth trimming.
+- **Tests.** 23 SQL checks (4 new), `tests/e2e/social-quick.spec.js` A1-A4, `tests/presence/social.spec.js` (three phones, passed on the real GPU). Screenshots (not committed): docs/sprints/social-a/.
 
 ## Opening page V2 (owner, 11 Nov): built; push and deploy at the end of the job
 - **What changed.** The first screen is rebuilt: the real SL logo with "University of Mzansi" under it; one picture per student taken inside the real campus (the lawn by the Main Gate at golden hour, the gate, fence and sea out of focus behind, warm key and rim light, a relaxed stance); the picture fills the top of the screen edge to edge; the round portraits sit over its bottom edge; a plum glass panel with a thin gold border, gold cap labels, cream fields with plum text, gold Play. Plum, gold and cream only.

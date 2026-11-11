@@ -688,6 +688,8 @@ function endGoing() {
 }
 window.mzansiGoTo = (id) => goTo(id)
 window.addEventListener('mzansi-go-place', (event) => { if (visible) goTo(event.detail?.id) })
+// Walk together (src/walk.js): walk at someone's side, to where they are.
+window.addEventListener('mzansi-walk-xz', (event) => { const d = event.detail || {}; if (visible && player && !paused() && Number.isFinite(d.x) && Number.isFinite(d.z)) walkTo(d.x, d.z) })
 
 function approach(id, onArrive) {
   const building = campus?.layout.buildings.find((item) => item.id === id)
