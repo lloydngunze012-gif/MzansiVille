@@ -1,0 +1,157 @@
+{
+  "note": "The SunnyBay Daily (Social B, owner 11 Nov): one card on the first open of each day. Everything on it that is words lives here, so it can be changed without code. topics: 14 days from social.md (the day is counted from startDate in SAST and goes round); the topic is matched to the player's interests where it can be, and \"Join the conversation\" opens that interest's group. posts: the Post of the day, one a day, going round. The Caf special comes from specials.json (by game day), the top 3 of each board and who joined today from the server.",
+  "startDate": "2026-11-11",
+  "title": "The SunnyBay Daily",
+  "join": "Join the conversation",
+  "topics": [
+    {
+      "question": "R15 for a taxi to town: fair or robbery?",
+      "tags": [
+        "money",
+        "cars"
+      ],
+      "opener": "A marshal called R15 a gift. A first-year called it a joke. The rank is listening. Talk."
+    },
+    {
+      "question": "Kota or bunny: which Caf tray wins lunch?",
+      "tags": [
+        "food",
+        "money"
+      ],
+      "opener": "Mama Liz will not pick a side. Uncle Jaco already has. Your tray is the vote."
+    },
+    {
+      "question": "Gym at dawn, or never again this week?",
+      "tags": [
+        "gym",
+        "studying"
+      ],
+      "opener": "Luke says the 5am crew owns the campus. The rest of us own the snooze."
+    },
+    {
+      "question": "Library silence, or a table that actually talks?",
+      "tags": [
+        "studying",
+        "food"
+      ],
+      "opener": "Grace booked the quiet room. Naledi booked the loud one. Both think they are right."
+    },
+    {
+      "question": "Who has the best house playlist right now?",
+      "tags": [
+        "music",
+        "fashion"
+      ],
+      "opener": "Tendai says he has heard every corridor. He has not. Prove him wrong tonight."
+    },
+    {
+      "question": "Pier race: legs, or just a lucky taxi?",
+      "tags": [
+        "gym",
+        "cars"
+      ],
+      "opener": "Winners thank the wind. Losers thank the marshal. The gulls are not taking sides."
+    },
+    {
+      "question": "Friday special: is the queue actually worth it?",
+      "tags": [
+        "food",
+        "money"
+      ],
+      "opener": "The board says Friday. The line says otherwise. Report back with gravy on a sleeve."
+    },
+    {
+      "question": "Notes on paper, or a phone you will drop?",
+      "tags": [
+        "studying",
+        "gaming"
+      ],
+      "opener": "Noah swears three working keys beat a new notebook. Priya would like a word."
+    },
+    {
+      "question": "First car at R4,500: dent included, still yours?",
+      "tags": [
+        "cars",
+        "money"
+      ],
+      "opener": "The lot has an honest little one. The dent stays. Would you take the key?"
+    },
+    {
+      "question": "Mall cinema tonight, or the same lecture slides?",
+      "tags": [
+        "movies",
+        "studying"
+      ],
+      "opener": "Screen six is cheap. Chapter four is not. Pick a dark room and own it."
+    },
+    {
+      "question": "Quiet pew, or choir until the lights click?",
+      "tags": [
+        "faith",
+        "music"
+      ],
+      "opener": "The brick church does not ask your surname. It does ask if you can hum."
+    },
+    {
+      "question": "Res laundry hero, or one mall-window outfit?",
+      "tags": [
+        "fashion",
+        "money"
+      ],
+      "opener": "Aya says a seven is fixable. The washing machine says it is a lifestyle."
+    },
+    {
+      "question": "Woza split, or still collecting coins in a cup?",
+      "tags": [
+        "money",
+        "food"
+      ],
+      "opener": "The till takes Woza. Someone still owes three rand from last week's kota."
+    },
+    {
+      "question": "Quad football: boots, or the takkies you slept in?",
+      "tags": [
+        "football",
+        "gym"
+      ],
+      "opener": "Jackets for goalposts. No referee. If you show up in slides, the group will notice."
+    }
+  ],
+  "posts": [
+    {
+      "who": "Mama Liz",
+      "post": "If you skipped breakfast I know. Come. The gravy is still here and so am I.",
+      "why": "Day one. People are hungry and pretending not to be. She said the quiet part."
+    },
+    {
+      "who": "David Okafor",
+      "post": "Jollof at Mzansi House. I will be kind about the rice. For ten minutes. Then we talk.",
+      "why": "The house kitchen just became a diplomatic incident. We are here for it."
+    },
+    {
+      "who": "Grace Wanjiru",
+      "post": "Study group, campus library, six. Late and I start. Bring a charger, not a speech.",
+      "why": "Someone has to run the week. Grace volunteered and did not wait for applause."
+    },
+    {
+      "who": "Aya",
+      "post": "Outfit today is a seven. Fixable. Fitting Thursday if you want an eight.",
+      "why": "Kind, honest, and now half the Quad is looking down at their shoes."
+    },
+    {
+      "who": "Tendai Moyo",
+      "post": "Open mic list is full. I wrote your name anyway. Do not make me look foolish.",
+      "why": "Friday needs a stage. He already put you on it. That is friendship, and a threat."
+    },
+    {
+      "who": "Luke",
+      "post": "Pap and a gym. That is the whole personality. Third plate is a love language.",
+      "why": "Saturday energy. We did not ask for a thesis. We got one anyway."
+    },
+    {
+      "who": "Naledi",
+      "post": "The terrace seat is still mine. Bring an argument or bring rooibos. Both preferred.",
+      "why": "Sunday. Campus is quiet. The law student is not. Sit if you dare."
+    }
+  ]
+}

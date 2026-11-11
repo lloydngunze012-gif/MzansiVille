@@ -386,7 +386,7 @@ begin
   select coalesce(jsonb_agg(x.j order by x.at desc nulls last), '[]'::jsonb) into list from (
     select chat_thread_json(p_id, t) as j, coalesce(t.last_at, case when t.kind = 'group' then t.created_at end) as at
     from chat_members m join chat_threads t on t.id = m.thread
-    where m.player = p_id
+    where m.player = p_id and t.id not like 'p:%' -- (Social B: the replies to a post are opened from the post, not listed)
       and (t.kind = 'group' or (t.last_id > 0 and not exists (
         select 1 from chat_members o where o.thread = t.id and o.player <> p_id and chat_blocked(p_id, o.player))))
   ) x;
@@ -394,7 +394,10 @@ begin
   select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name, 'handle', p.handle, 'house', p.house, 'look', p.look,
       'online', p.seen_at > now() - interval '70 seconds') order by (p.seen_at > now() - interval '70 seconds') desc, p.name), '[]'::jsonb)
     into pals from chat_friends f join chat_players p on p.id = f.friend where f.player = p_id and not chat_blocked(p_id, p.id);
-  return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm);
+  return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm,
+    -- (Social B: your follower count and your interests; null until its block below has been run)
+    'followers', (select count(*) from chat_follows where followed = p_id),
+    'interests', (select to_jsonb(interests) from chat_players where id = p_id));
 end $$;
 grant execute on function public.chat_sync(text, text, text, text, text, jsonb, int) to anon, authenticated;
 
@@ -421,6 +424,7 @@ grant execute on function public.chat_group_create(text, text, text, text) to an
 create or replace function public.chat_my_group(p_id text, p_thread text) returns public.chat_threads
 language sql stable security definer set search_path = public as $$
   select t.* from chat_threads t where t.id = p_thread and t.kind = 'group' and not t.open and not chat_is_quad(t.id)
+    and t.id not like 'p:%' and t.id not like 'i:%' -- (Social B: a post's replies, an interest's standing group)
     and exists (select 1 from chat_members m where m.thread = t.id and m.player = p_id)
 $$;
 revoke all on function public.chat_my_group(text, text) from public;
@@ -546,3 +550,299 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 grant execute on function public.chat_joined(text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- SOCIAL B (owner, 11 Nov): the Board (posts, stamps, replies, reports), follow, the Feed, interests.
+-- Same rules: no table is readable, every function checks the phone's secret. Re-runnable.
+--   Limits (server clock, SAST days): 3 posts a day, 140 characters, no links but our own share links;
+--   one stamp per player per post; 3 reports hide a post until reviewed; 20 post reports an hour.
+-- =====================================================================================================
+alter table public.chat_players add column if not exists interests text[] not null default '{}';
+alter table public.chat_players add column if not exists followers_seen int not null default 0;
+
+-- author: a player's id, or 'npc:<slug>' for the seeded posts of named people (npc is then the slug, name their name).
+create table if not exists public.chat_posts (
+  id bigint generated always as identity primary key,
+  author text not null,
+  name text not null default '',
+  npc text unique,
+  body text not null check (char_length(body) between 1 and 140),
+  district text not null default 'campus',
+  at timestamptz not null default now(),
+  hidden boolean not null default false
+);
+create index if not exists chat_posts_author_idx on public.chat_posts (author, id desc);
+create index if not exists chat_posts_at_idx on public.chat_posts (at desc);
+alter table public.chat_posts enable row level security;
+drop policy if exists "admins read posts" on public.chat_posts;
+create policy "admins read posts" on public.chat_posts for select using (public.is_admin());
+
+create table if not exists public.chat_stamps (
+  post bigint not null references public.chat_posts (id) on delete cascade,
+  player text not null,
+  at timestamptz not null default now(),
+  primary key (post, player)
+);
+alter table public.chat_stamps enable row level security;
+
+create table if not exists public.chat_post_reports (
+  post bigint not null references public.chat_posts (id) on delete cascade,
+  reporter text not null,
+  reason text check (char_length(reason) <= 60),
+  at timestamptz not null default now(),
+  primary key (post, reporter)
+);
+alter table public.chat_post_reports enable row level security;
+drop policy if exists "admins read post reports" on public.chat_post_reports;
+create policy "admins read post reports" on public.chat_post_reports for select using (public.is_admin());
+
+create table if not exists public.chat_follows (
+  follower text not null,
+  followed text not null,
+  at timestamptz not null default now(),
+  primary key (follower, followed)
+);
+create index if not exists chat_follows_followed_idx on public.chat_follows (followed);
+alter table public.chat_follows enable row level security;
+
+-- The 12 interests' standing groups ('i:<id>'): data/campusville/interests.json (npm run check fails if they disagree).
+-- INTERESTS START
+insert into public.chat_threads (id, kind, name, topic) values
+  ('i:football', 'group', '⚽ Football', 'Scores, boots, who is actually coming to play on the Quad.'),
+  ('i:music', 'group', '🎵 Music', 'Playlists, open mic, what the lounge is playing tonight.'),
+  ('i:fashion', 'group', '👗 Fashion', 'Fits, laundry days, and whether the mall window is worth it.'),
+  ('i:gym', 'group', '💪 Gym', 'Sets, rest days, and who skipped leg day with a straight face.'),
+  ('i:faith', 'group', '🙏 Faith', 'Quiet pews, choir practice, and being kind on a hard week.'),
+  ('i:gaming', 'group', '🎮 Gaming', 'Arcade scores, Noah''s broken laptop, and whose turn it is.'),
+  ('i:food', 'group', '🍲 Food', 'Caf trays, kota debates, and who still owes a vetkoek.'),
+  ('i:studying', 'group', '📚 Studying', 'Tests, group tables, and the library chair that is legally yours.'),
+  ('i:cars', 'group', '🚗 Cars', 'Licences, first cars, and which taxi actually stops.'),
+  ('i:art', 'group', '🎨 Art', 'Quad poems, Aya''s fabric, and the gallery student wall.'),
+  ('i:money', 'group', '💰 Money', 'Gigs, Woza splits, and how far R2,100 really goes.'),
+  ('i:movies', 'group', '🎬 Movies', 'Mall cinema, lecture slides that feel like a film, spoilers banned.')
+on conflict (id) do update set name = excluded.name, topic = excluded.topic;
+-- INTERESTS END
+
+-- The 20 board posts of named people, so the Feed is never empty: data/campusville/npc_posts.json.
+-- NPC POSTS START
+insert into public.chat_posts (author, name, npc, body) values
+  ('npc:mama_liz', 'Mama Liz', 'mama_liz', 'If you skipped breakfast I know. Come. The gravy is still here and so am I.'),
+  ('npc:kyle', 'Kyle', 'kyle', 'New mix on the kiosk speaker. Hate it and I change it after this song. Maybe.'),
+  ('npc:david_okafor', 'David Okafor', 'david_okafor', 'Jollof at Mzansi House. I will be kind about the rice. For ten minutes. Then we talk.'),
+  ('npc:grace_wanjiru', 'Grace Wanjiru', 'grace_wanjiru', 'Study group, campus library, six. Late and I start. Bring a charger, not a speech.'),
+  ('npc:tendai_moyo', 'Tendai Moyo', 'tendai_moyo', 'Open mic list is full. I wrote your name anyway. Do not make me look foolish.'),
+  ('npc:lerato', 'Lerato', 'lerato', 'Headphones on. If you need the charger, ask. If you need a lecture, keep walking.'),
+  ('npc:aunty_premi', 'Aunty Premi', 'aunty_premi', 'Biryani is not a suggestion today. Sit first. Then we discuss that test you are avoiding.'),
+  ('npc:uncle_jaco', 'Uncle Jaco', 'uncle_jaco', 'Grill is honest. Your match opinions can wait until the roll has landed.'),
+  ('npc:mam_gugu', 'Mam'' Gugu', 'mam_gugu', 'Hello my child. Looking is free. Vetkoek is ten rand. Eating is the wise one.'),
+  ('npc:lethabo', 'Lethabo', 'lethabo', 'Wrote a line about the rank and the lights stayed on. Open mic. I will not beg.'),
+  ('npc:naledi', 'Naledi', 'naledi', 'The terrace seat is still mine. Bring an argument or bring rooibos. Both preferred.'),
+  ('npc:noah', 'Noah', 'noah', 'Laptop has three working keys. The board post has more. Come fix yours, not mine.'),
+  ('npc:aya', 'Aya', 'aya', 'Outfit today is a seven. Fixable. Fitting Thursday if you want an eight.'),
+  ('npc:luke', 'Luke', 'luke', 'Pap and a gym. That is the whole personality. Third plate is a love language.'),
+  ('npc:priya', 'Priya', 'priya', 'Twenty-seven bones in the hand. I counted again. Study angel, I still need you.'),
+  ('npc:amir', 'Amir', 'amir', 'Res kettle only sparks a little now. I work for vetkoek. Headphones welcome.'),
+  ('npc:jordan', 'Jordan', 'jordan', 'Audition: Romeo in a taxi. Experimental. Front row, clap like you mean the fare.'),
+  ('npc:kayla', 'Kayla', 'kayla', 'If your budget has feelings, sit down. I have a spreadsheet and a kind face.'),
+  ('npc:chloe', 'Chloe', 'chloe', 'Did you sleep. That was not a question. Study group still has a chair with your name.'),
+  ('npc:ethan', 'Ethan', 'ethan', 'Phone on 12%. If you have a charger you are my favourite person until supper.')
+on conflict (npc) do update set body = excluded.body, name = excluded.name;
+-- NPC POSTS END
+
+-- A post as p_id sees it: { id, author, name, handle, house, look, npc, body, at, stamps, mine, replies }.
+create or replace function public.chat_post_json(p_id text, p public.chat_posts) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('id', p.id, 'author', p.author, 'npc', p.npc is not null,
+    'name', case when p.npc is not null then p.name else coalesce(pl.name, 'Student') end,
+    'handle', coalesce(pl.handle, ''), 'house', coalesce(pl.house, ''), 'look', coalesce(pl.look, '{}'::jsonb),
+    'body', p.body, 'at', p.at,
+    'stamps', (select count(*) from chat_stamps s where s.post = p.id),
+    'mine', exists (select 1 from chat_stamps s where s.post = p.id and s.player = p_id),
+    'replies', (select count(*) from chat_lines l where l.thread = 'p:' || p.id))
+  from (select 1) one left join chat_players pl on pl.id = p.author
+$$;
+revoke all on function public.chat_post_json(text, public.chat_posts) from public;
+
+-- Post on your Board. { ok, post } or { ok: false, reason: empty | long | link | word | today }.
+create or replace function public.chat_post(p_id text, p_secret text, p_body text, p_district text default 'campus')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare body text := trim(regexp_replace(coalesce(p_body, ''), '\s+', ' ', 'g')); p chat_posts%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chat:' || p_id));
+  if body = '' then return jsonb_build_object('ok', false, 'reason', 'empty'); end if;
+  if char_length(body) > 140 then return jsonb_build_object('ok', false, 'reason', 'long'); end if;
+  -- (no links, except the game's own share links)
+  if regexp_replace(body, 'https://softlifeza\.vercel\.app[^\s]*', '', 'gi') ~* '(https?://|www\.|\.com\M|\.co\.za\M|wa\.me)' then
+    return jsonb_build_object('ok', false, 'reason', 'link');
+  end if;
+  begin body := public.clean_chat_body(body); exception when others then return jsonb_build_object('ok', false, 'reason', 'word'); end;
+  if body is null or body = '' then return jsonb_build_object('ok', false, 'reason', 'empty'); end if;
+  if (select count(*) from chat_posts where author = p_id
+      and (at at time zone 'Africa/Johannesburg')::date = (now() at time zone 'Africa/Johannesburg')::date) >= 3 then
+    return jsonb_build_object('ok', false, 'reason', 'today');
+  end if;
+  insert into chat_posts (author, body, district) values (p_id, left(body, 140), left(coalesce(nullif(p_district, ''), 'campus'), 30)) returning * into p;
+  return jsonb_build_object('ok', true, 'post', chat_post_json(p_id, p));
+end $$;
+grant execute on function public.chat_post(text, text, text, text) to anon, authenticated;
+
+-- How many follow this player.
+create or replace function public.chat_follower_count(p_who text) returns int
+language sql stable security definer set search_path = public as $$
+  select count(*)::int from chat_follows where followed = p_who
+$$;
+revoke all on function public.chat_follower_count(text) from public;
+
+-- Someone's Board: { ok, who, posts, followers, following }. A block either way shows nothing.
+create or replace function public.chat_board(p_id text, p_secret text, p_who text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare list jsonb; who jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  if p_who is null then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if chat_blocked(p_id, p_who) then return jsonb_build_object('ok', true, 'posts', '[]'::jsonb, 'followers', 0, 'following', false, 'blocked', true); end if;
+  select coalesce(jsonb_agg(chat_post_json(p_id, p) order by p.id desc), '[]'::jsonb) into list
+    from (select * from chat_posts where author = p_who and (not hidden or author = p_id) order by id desc limit 30) p;
+  select jsonb_build_object('id', pl.id, 'name', pl.name, 'handle', pl.handle, 'house', pl.house, 'look', pl.look) into who from chat_players pl where pl.id = p_who;
+  return jsonb_build_object('ok', true, 'who', who, 'posts', list, 'followers', chat_follower_count(p_who),
+    'following', exists (select 1 from chat_follows where follower = p_id and followed = p_who));
+end $$;
+grant execute on function public.chat_board(text, text, text) to anon, authenticated;
+
+-- A stamp (one per player per post), on or off. { ok, stamps }.
+create or replace function public.chat_stamp(p_id text, p_secret text, p_post bigint, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p chat_posts%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into p from chat_posts where id = p_post and not hidden;
+  if not found or chat_blocked(p_id, p.author) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if coalesce(p_on, true) then insert into chat_stamps (post, player) values (p_post, p_id) on conflict do nothing;
+  else delete from chat_stamps where post = p_post and player = p_id; end if;
+  return jsonb_build_object('ok', true, 'stamps', (select count(*) from chat_stamps where post = p_post));
+end $$;
+grant execute on function public.chat_stamp(text, text, bigint, boolean) to anon, authenticated;
+
+-- Report a post: once per player per post; the third report hides it until someone has looked (hidden = false again).
+create or replace function public.chat_post_report(p_id text, p_secret text, p_post bigint, p_reason text default '')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p chat_posts%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into p from chat_posts where id = p_post;
+  if not found or p.author = p_id then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if (select count(*) from chat_post_reports where reporter = p_id and at > now() - interval '1 hour') >= 20 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  insert into chat_post_reports (post, reporter, reason) values (p_post, p_id, left(coalesce(p_reason, ''), 60)) on conflict do nothing;
+  if p.npc is null and (select count(*) from chat_post_reports where post = p_post) >= 3 then update chat_posts set hidden = true where id = p_post; end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_post_report(text, text, bigint, text) to anon, authenticated;
+
+-- The replies to a post: a chat thread hanging off it ('p:<post id>'); opening it makes you a member. { ok, thread }.
+create or replace function public.chat_post_thread(p_id text, p_secret text, p_post bigint)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p chat_posts%rowtype; tid text;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into p from chat_posts where id = p_post and not hidden;
+  if not found or chat_blocked(p_id, p.author) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  tid := 'p:' || p.id;
+  insert into chat_threads (id, kind, name, topic) values (tid, 'group', 'Replies', left(p.body, 120)) on conflict (id) do nothing;
+  insert into chat_members (thread, player) values (tid, p_id) on conflict do nothing;
+  return jsonb_build_object('ok', true, 'thread', tid);
+end $$;
+grant execute on function public.chat_post_thread(text, text, bigint) to anon, authenticated;
+
+-- Follow or unfollow a player. { ok, followers: theirs now }.
+create or replace function public.chat_follow(p_id text, p_secret text, p_other text, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  if p_other is null or p_other = p_id then return jsonb_build_object('ok', false, 'reason', 'self'); end if;
+  if not coalesce(p_on, true) then delete from chat_follows where follower = p_id and followed = p_other;
+  else
+    if not exists (select 1 from chat_players where id = p_other) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+    if chat_blocked(p_id, p_other) then return jsonb_build_object('ok', false, 'reason', 'blocked'); end if;
+    insert into chat_follows (follower, followed) values (p_id, p_other) on conflict do nothing;
+  end if;
+  return jsonb_build_object('ok', true, 'followers', chat_follower_count(p_other));
+end $$;
+grant execute on function public.chat_follow(text, text, text, boolean) to anon, authenticated;
+
+-- Follower counts for the players on screen (cards, leaderboard rows by @handle, race results): { ids: {}, handles: {} }.
+create or replace function public.chat_followers(p_id text, p_secret text, p_ids text[] default '{}', p_handles text[] default '{}')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare a jsonb; b jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  select coalesce(jsonb_object_agg(x, chat_follower_count(x)), '{}'::jsonb) into a from unnest((coalesce(p_ids, '{}'::text[]))[1:60]) x;
+  select coalesce(jsonb_object_agg(pl.handle, chat_follower_count(pl.id)), '{}'::jsonb) into b
+    from chat_players pl where pl.handle <> '' and pl.handle = any ((coalesce(p_handles, '{}'::text[]))[1:60]);
+  return jsonb_build_object('ok', true, 'ids', a, 'handles', b);
+end $$;
+grant execute on function public.chat_followers(text, text, text[], text[]) to anon, authenticated;
+
+-- "+N followers while you were away": how many more than the last time you looked; looking resets it. { ok, new, followers }.
+create or replace function public.chat_followers_seen(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare n int; was int;
+begin
+  perform chat_me(p_id, p_secret);
+  n := chat_follower_count(p_id);
+  select followers_seen into was from chat_players where id = p_id;
+  update chat_players set followers_seen = n where id = p_id;
+  return jsonb_build_object('ok', true, 'new', greatest(n - coalesce(was, 0), 0), 'followers', n);
+end $$;
+grant execute on function public.chat_followers_seen(text, text) to anon, authenticated;
+
+-- The Feed: posts from the people you follow, then the day's hot posts in your district, and the named people's
+-- posts to fill it. { ok, following: [...], hot: [...], npc: [...] }.
+create or replace function public.chat_feed(p_id text, p_secret text, p_district text default 'campus')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare f jsonb; h jsonb; n jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  select coalesce(jsonb_agg(chat_post_json(p_id, p) order by p.id desc), '[]'::jsonb) into f from chat_posts p where p.id in (
+    select po.id from chat_posts po join chat_follows fo on fo.followed = po.author and fo.follower = p_id
+    where not po.hidden and not chat_blocked(p_id, po.author) order by po.id desc limit 30);
+  select coalesce(jsonb_agg(chat_post_json(p_id, p) order by x.n desc, p.id desc), '[]'::jsonb) into h from (
+    select po.id, (select count(*) from chat_stamps s where s.post = po.id) as n from chat_posts po
+    where po.npc is null and not po.hidden and po.at > now() - interval '1 day' and po.district = coalesce(nullif(p_district, ''), 'campus')
+      and po.author <> p_id and not chat_blocked(p_id, po.author)
+    order by n desc, po.id desc limit 10) x join chat_posts p on p.id = x.id;
+  select coalesce(jsonb_agg(chat_post_json(p_id, p) order by p.id), '[]'::jsonb) into n from chat_posts p where p.npc is not null;
+  return jsonb_build_object('ok', true, 'following', f, 'hot', h, 'npc', n);
+end $$;
+grant execute on function public.chat_feed(text, text, text) to anon, authenticated;
+
+-- Your three interests (ids of the standing groups above): you are put in their groups and taken out of the
+-- ones you dropped. { ok, interests }.
+create or replace function public.chat_interests(p_id text, p_secret text, p_list text[])
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare picks text[];
+begin
+  perform chat_me(p_id, p_secret);
+  select coalesce(array_agg(x order by ord), '{}') into picks from (
+    select x, min(ord) as ord from unnest(coalesce(p_list, '{}')) with ordinality as u(x, ord)
+    where exists (select 1 from chat_threads t where t.id = 'i:' || x) group by x order by min(ord) limit 3) q;
+  update chat_players set interests = picks where id = p_id;
+  delete from chat_members where player = p_id and thread like 'i:%' and thread <> all (select 'i:' || unnest(picks));
+  insert into chat_members (thread, player, last_read) select t.id, p_id, t.last_id from chat_threads t where t.id = any (select 'i:' || unnest(picks)) on conflict do nothing;
+  return jsonb_build_object('ok', true, 'interests', to_jsonb(picks));
+end $$;
+grant execute on function public.chat_interests(text, text, text[]) to anon, authenticated;
+
+-- The Daily's live part: who joined today (SAST). { ok, joined, names: [up to 3 first names] }.
+create or replace function public.chat_daily(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare n int; names jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  select count(*) into n from chat_players where (created_at at time zone 'Africa/Johannesburg')::date = (now() at time zone 'Africa/Johannesburg')::date;
+  select coalesce(jsonb_agg(split_part(x.name, ' ', 1)), '[]'::jsonb) into names from (
+    select name from chat_players where (created_at at time zone 'Africa/Johannesburg')::date = (now() at time zone 'Africa/Johannesburg')::date
+      and id <> p_id and not chat_blocked(p_id, id) order by created_at desc limit 3) x;
+  return jsonb_build_object('ok', true, 'joined', n, 'names', names);
+end $$;
+grant execute on function public.chat_daily(text, text) to anon, authenticated;

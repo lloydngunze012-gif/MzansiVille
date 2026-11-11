@@ -15,6 +15,7 @@ import { returning, sessionNo, funnel } from './events.js'
 import { myIdentity, onPoke } from './presence.js'
 import { logRow } from './errors.js'
 import { authEnabled, getClient } from './net.js'
+import { followerCounts, followersText } from './board.js'
 
 export const CARD_REWARD = 200
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -46,6 +47,9 @@ function open(kind, html) {
   return wrap.querySelector('.sl-pop')
 }
 export const isOpen = () => Boolean(wrap)
+// (src/daily.js: the Daily and the interest picker are pop-ups of the same kind, with their own clicks)
+export const popOpen = open
+export const popClose = close
 
 // ---------- Is it a calm moment? ----------
 // Never during a walk, an action, a chat, a card, the drop-off or a scene of its own.
@@ -136,7 +140,7 @@ function boardHtml(tab, data) {
   else if (data.error === 'offline') body = '<p class="lp-lede">Can’t reach the campus right now. Try again in a moment.</p>'
   else if (!data.top.length) body = '<p class="lp-lede">Nobody has scored yet this week. Be the first.</p>'
   else {
-    body = `<ol class="lp-list">${data.top.map((r) => `<li class="${r.you ? 'me' : ''}"><i>${r.rank}</i><span><b>${esc(r.name)}</b>${r.handle ? ` <small>@${esc(r.handle)}</small>` : ''}</span><em>${r.points}</em></li>`).join('')}</ol>`
+    body = `<ol class="lp-list">${data.top.map((r) => `<li class="${r.you ? 'me' : ''}"><i>${r.rank}</i><span><b>${esc(r.name)}</b>${r.handle ? ` <small>@${esc(r.handle)}</small>` : ''}<small class="lp-fol" data-fol-handle="${esc(r.handle || '')}"></small></span><em>${r.points}</em></li>`).join('')}</ol>`
   }
   const you = data?.you ? (data.you.rank ? `You: #${data.you.rank} · ${data.you.points} points` : `You: ${data.you.points} points`) : data && !data.error ? 'You: not on the board yet' : ''
   return `<p class="lp-kicker">Leaderboard · resets in ${esc(resetText())}</p><h2>This week</h2>
@@ -156,6 +160,9 @@ export async function openBoard(tab = boardTab) {
   if (current === 'board' && boardTab === tab) {
     const p = wrap.querySelector('.sl-pop')
     p.innerHTML = boardHtml(tab, data)
+    // (Social B: each row's follower count)
+    const handles = (data.top || []).map((r) => r.handle).filter(Boolean)
+    if (handles.length) followerCounts([], handles).then((c) => { for (const el of p.querySelectorAll('[data-fol-handle]')) { const n = c.handles[el.dataset.folHandle]; if (n) el.textContent = ` · ${followersText(Number(n))}` } })
   }
 }
 
@@ -230,11 +237,12 @@ function tick() {
   const run = api.save()?.run
   if (!run?.character) return
   if (!calm()) return
-  // 1. the leaderboard, once a day, for a returning player (their second session on)
+  // 1. the SunnyBay Daily, once a day, for a returning player (their second session on)
   if (!boardShown && returning() && store.get('mzansiville.boardday') !== today() && Date.now() - startedAt > 2500) {
     boardShown = true
     store.set('mzansiville.boardday', today())
-    openBoard(boardTab)
+    // (Social B: the SunnyBay Daily, which carries the top 3 of each board, replaces the leaderboard card here)
+    window.dispatchEvent(new CustomEvent('mzansi-daily-due'))
     return
   }
   // 2. the student card, if asked for, at most once a day

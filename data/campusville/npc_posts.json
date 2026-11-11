@@ -1,0 +1,105 @@
+{
+  "note": "Social B (owner, 11 Nov): the 20 board posts of named people from docs/world-designer/social.md, seeded by supabase/chat.sql (NPC POSTS START to END: npm run check fails if they disagree) so the Feed is never empty.",
+  "posts": [
+    {
+      "who": "Mama Liz",
+      "slug": "mama_liz",
+      "post": "If you skipped breakfast I know. Come. The gravy is still here and so am I."
+    },
+    {
+      "who": "Kyle",
+      "slug": "kyle",
+      "post": "New mix on the kiosk speaker. Hate it and I change it after this song. Maybe."
+    },
+    {
+      "who": "David Okafor",
+      "slug": "david_okafor",
+      "post": "Jollof at Mzansi House. I will be kind about the rice. For ten minutes. Then we talk."
+    },
+    {
+      "who": "Grace Wanjiru",
+      "slug": "grace_wanjiru",
+      "post": "Study group, campus library, six. Late and I start. Bring a charger, not a speech."
+    },
+    {
+      "who": "Tendai Moyo",
+      "slug": "tendai_moyo",
+      "post": "Open mic list is full. I wrote your name anyway. Do not make me look foolish."
+    },
+    {
+      "who": "Lerato",
+      "slug": "lerato",
+      "post": "Headphones on. If you need the charger, ask. If you need a lecture, keep walking."
+    },
+    {
+      "who": "Aunty Premi",
+      "slug": "aunty_premi",
+      "post": "Biryani is not a suggestion today. Sit first. Then we discuss that test you are avoiding."
+    },
+    {
+      "who": "Uncle Jaco",
+      "slug": "uncle_jaco",
+      "post": "Grill is honest. Your match opinions can wait until the roll has landed."
+    },
+    {
+      "who": "Mam' Gugu",
+      "slug": "mam_gugu",
+      "post": "Hello my child. Looking is free. Vetkoek is ten rand. Eating is the wise one."
+    },
+    {
+      "who": "Lethabo",
+      "slug": "lethabo",
+      "post": "Wrote a line about the rank and the lights stayed on. Open mic. I will not beg."
+    },
+    {
+      "who": "Naledi",
+      "slug": "naledi",
+      "post": "The terrace seat is still mine. Bring an argument or bring rooibos. Both preferred."
+    },
+    {
+      "who": "Noah",
+      "slug": "noah",
+      "post": "Laptop has three working keys. The board post has more. Come fix yours, not mine."
+    },
+    {
+      "who": "Aya",
+      "slug": "aya",
+      "post": "Outfit today is a seven. Fixable. Fitting Thursday if you want an eight."
+    },
+    {
+      "who": "Luke",
+      "slug": "luke",
+      "post": "Pap and a gym. That is the whole personality. Third plate is a love language."
+    },
+    {
+      "who": "Priya",
+      "slug": "priya",
+      "post": "Twenty-seven bones in the hand. I counted again. Study angel, I still need you."
+    },
+    {
+      "who": "Amir",
+      "slug": "amir",
+      "post": "Res kettle only sparks a little now. I work for vetkoek. Headphones welcome."
+    },
+    {
+      "who": "Jordan",
+      "slug": "jordan",
+      "post": "Audition: Romeo in a taxi. Experimental. Front row, clap like you mean the fare."
+    },
+    {
+      "who": "Kayla",
+      "slug": "kayla",
+      "post": "If your budget has feelings, sit down. I have a spreadsheet and a kind face."
+    },
+    {
+      "who": "Chloe",
+      "slug": "chloe",
+      "post": "Did you sleep. That was not a question. Study group still has a chair with your name."
+    },
+    {
+      "who": "Ethan",
+      "slug": "ethan",
+      "post": "Phone on 12%. If you have a charger you are my favourite person until supper."
+    }
+  ]
+}

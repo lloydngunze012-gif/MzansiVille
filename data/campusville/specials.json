@@ -1,0 +1,152 @@
+{
+  "note": "The Caf's daily specials from docs/world-designer/words.md: three weeks, going round by game day (day 1 is a Monday). Friday is always the Friday special. Prices are game rand.",
+  "specials": [
+    {
+      "week": 1,
+      "day": "Monday",
+      "dish": "Pap, wors and gravy",
+      "price": 35,
+      "says": "Mama Liz says: the gravy is the whole personality."
+    },
+    {
+      "week": 1,
+      "day": "Tuesday",
+      "dish": "Chicken biryani",
+      "price": 42,
+      "says": "Mama Liz says: Aunty Premi made extra. Don't walk past."
+    },
+    {
+      "week": 1,
+      "day": "Wednesday",
+      "dish": "Mac and cheese",
+      "price": 28,
+      "says": "Mama Liz says: the crust is the point. Sit down."
+    },
+    {
+      "week": 1,
+      "day": "Thursday",
+      "dish": "Kota",
+      "price": 40,
+      "says": "Mama Liz says: this one needs two hands and a plan."
+    },
+    {
+      "week": 1,
+      "day": "Friday",
+      "dish": "Friday special: half bunny",
+      "price": 50,
+      "says": "Mama Liz says: Friday. The bunny is not sharing itself."
+    },
+    {
+      "week": 1,
+      "day": "Saturday",
+      "dish": "Vetkoek and mince",
+      "price": 26,
+      "says": "Mama Liz says: still hot. Still cheap. Still yours."
+    },
+    {
+      "week": 1,
+      "day": "Sunday",
+      "dish": "Roast chicken and veg",
+      "price": 48,
+      "says": "Mama Liz says: eat like somebody at home packed this."
+    },
+    {
+      "week": 2,
+      "day": "Monday",
+      "dish": "Boerewors roll",
+      "price": 32,
+      "says": "Mama Liz says: Uncle Jaco is showing off. Let him."
+    },
+    {
+      "week": 2,
+      "day": "Tuesday",
+      "dish": "Vegetable biryani",
+      "price": 38,
+      "says": "Mama Liz says: no meat, still a full plate. Trust it."
+    },
+    {
+      "week": 2,
+      "day": "Wednesday",
+      "dish": "Samp, beans and gravy",
+      "price": 33,
+      "says": "Mama Liz says: slow food. Your afternoon will thank you."
+    },
+    {
+      "week": 2,
+      "day": "Thursday",
+      "dish": "Burger and chips",
+      "price": 44,
+      "says": "Mama Liz says: the bun is toasted. Don't ask for plain."
+    },
+    {
+      "week": 2,
+      "day": "Friday",
+      "dish": "Friday special: grill burgers",
+      "price": 52,
+      "says": "Mama Liz says: Friday queue is long. The burger is longer."
+    },
+    {
+      "week": 2,
+      "day": "Saturday",
+      "dish": "Cheese vetkoek",
+      "price": 25,
+      "says": "Mama Liz says: one is a snack. Two is breakfast."
+    },
+    {
+      "week": 2,
+      "day": "Sunday",
+      "dish": "Lamb curry and rice",
+      "price": 55,
+      "says": "Mama Liz says: Sunday curry. Bring a friend or regret it."
+    },
+    {
+      "week": 3,
+      "day": "Monday",
+      "dish": "Chakalaka and pap",
+      "price": 30,
+      "says": "Mama Liz says: it bites a little. That is the welcome."
+    },
+    {
+      "week": 3,
+      "day": "Tuesday",
+      "dish": "Butter chicken and roti",
+      "price": 48,
+      "says": "Mama Liz says: tear the roti, don't saw it."
+    },
+    {
+      "week": 3,
+      "day": "Wednesday",
+      "dish": "Fish and slap chips",
+      "price": 40,
+      "says": "Mama Liz says: vinegar on the chips. I will know if you skip."
+    },
+    {
+      "week": 3,
+      "day": "Thursday",
+      "dish": "Chicken pie and salad",
+      "price": 36,
+      "says": "Mama Liz says: the pie leaks. That means it is honest."
+    },
+    {
+      "week": 3,
+      "day": "Friday",
+      "dish": "Friday special: biryani bucket",
+      "price": 55,
+      "says": "Mama Liz says: Friday bucket. Feed your people, then yourself."
+    },
+    {
+      "week": 3,
+      "day": "Saturday",
+      "dish": "Mini samoosa plate",
+      "price": 27,
+      "says": "Mama Liz says: six of them. Do not count in public."
+    },
+    {
+      "week": 3,
+      "day": "Sunday",
+      "dish": "Beef stew and dumplings",
+      "price": 50,
+      "says": "Mama Liz says: the dumpling drinks the gravy. So should you."
+    }
+  ]
+}

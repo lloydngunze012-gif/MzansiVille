@@ -374,4 +374,129 @@ await check('social: friends (add, remove, who is online); a Quad per room with 
   await db.exec('reset role')
 })
 
+// ---- Social B (11 Nov): the Board, follow, the Feed, interests (the end of supabase/chat.sql) ----
+const dataOf = (name) => JSON.parse(readFileSync(join(root, 'data', 'campusville', name), 'utf8'))
+const agePosts = (who, hours = 30) => db.query('update chat_posts set at = at - make_interval(hours => $2) where author = $1', [who.id, hours])
+await check('social: the interests\' groups and the named people\'s posts in chat.sql match data/campusville', async () => {
+  const want = dataOf('interests.json').interests
+  const got = (await db.query("select id, name, topic from chat_threads where id like 'i:%'")).rows
+  assert.equal(got.length, 12)
+  for (const i of want) {
+    const row = got.find((g) => g.id === `i:${i.id}`)
+    assert.ok(row, `the group of ${i.id}`)
+    assert.equal(row.name, `${i.emoji} ${i.label}`)
+    assert.equal(row.topic, i.about)
+  }
+  const posts = dataOf('npc_posts.json').posts
+  const seeded = (await db.query('select npc, name, body from chat_posts where npc is not null')).rows
+  assert.equal(seeded.length, 20, 'the seed does not double on a second run')
+  for (const p of posts) assert.deepEqual(seeded.find((s) => s.npc === p.slug), { npc: p.slug, name: p.who, body: p.post })
+  assert.ok(posts.every((p) => p.post.length <= 140))
+})
+
+let post1 = 0
+await check('social: a Board post: 140 characters, the filter, no links but our own, 3 a day on the server\'s clock', async () => {
+  const a = await rpc('chat_post', CA, 'First day and the Caf queue already knows my name.', 'campus')
+  assert.equal(a.ok, true)
+  post1 = a.post.id
+  assert.equal(a.post.stamps, 0)
+  assert.equal((await rpc('chat_post', CA, 'x'.repeat(141), 'campus')).reason, 'long')
+  assert.equal((await rpc('chat_post', CA, '   ', 'campus')).reason, 'empty')
+  assert.equal((await rpc('chat_post', CA, 'you slurword', 'campus')).reason, 'word')
+  assert.equal((await rpc('chat_post', CA, 'cheap airtime at www.scam.example', 'campus')).reason, 'link')
+  assert.equal((await rpc('chat_post', CA, 'join my group http://bit.ly/x', 'campus')).reason, 'link')
+  assert.equal((await rpc('chat_post', CA, 'Race me: https://softlifeza.vercel.app/?g=abc12345', 'campus')).ok, true, 'our own share link is fine')
+  assert.equal((await rpc('chat_post', CA, 'Third one today', 'campus')).ok, true)
+  assert.equal((await rpc('chat_post', CA, 'A fourth', 'campus')).reason, 'today')
+  await agePosts(CA)
+  assert.equal((await rpc('chat_post', CA, 'A new day, a new post', 'campus')).ok, true)
+  assert.equal((await rpc('chat_board', CB, CA.id)).posts.length, 4)
+  await assert.rejects(rpc('chat_post', { id: CA.id, secret: 'another-secret-0123456789' }, 'not me', 'campus'), /not you/)
+})
+
+await check('social: one stamp per player per post; replies are a thread off the post; 3 reports hide it; a block hides both ways', async () => {
+  assert.equal((await rpc('chat_stamp', CB, post1)).stamps, 1)
+  assert.equal((await rpc('chat_stamp', CB, post1)).stamps, 1, 'a second tap adds nothing')
+  assert.equal((await rpc('chat_stamp', CC, post1)).stamps, 2)
+  assert.equal((await rpc('chat_stamp', CB, post1, false)).stamps, 1)
+  const seen = (await rpc('chat_board', CC, CA.id)).posts.find((p) => p.id === post1)
+  assert.deepEqual([seen.stamps, seen.mine], [1, true])
+  // replies
+  const th = await rpc('chat_post_thread', CB, post1)
+  assert.equal(th.thread, `p:${post1}`)
+  await age(CB, 400)
+  assert.equal((await say(CB, th.thread, 'Same. Mama Liz remembered my order.')).ok, true)
+  assert.equal((await rpc('chat_fetch', CC, th.thread)).reason, 'not_member', 'you read replies once you have opened them')
+  await rpc('chat_post_thread', CC, post1)
+  assert.equal((await rpc('chat_fetch', CC, th.thread)).lines.length, 1)
+  assert.equal((await rpc('chat_board', CC, CA.id)).posts.find((p) => p.id === post1).replies, 1)
+  assert.ok(!(await rpc('chat_sync', CB)).threads.some((t) => t.id === th.thread), 'replies never clutter the chat list')
+  assert.equal((await rpc('chat_group_leave', CB, th.thread)).reason, 'not_member')
+  // a block: the board is empty both ways, no stamp, no replies
+  await rpc('chat_block', CD, CA.id)
+  assert.deepEqual([(await rpc('chat_board', CD, CA.id)).posts.length, (await rpc('chat_board', CA, CD.id)).blocked], [0, true])
+  assert.equal((await rpc('chat_stamp', CD, post1)).reason, 'unknown')
+  await rpc('chat_block', CD, CA.id, false)
+  // reports: your own post cannot be reported, one report per player, the third hides it (its author still sees it)
+  assert.equal((await rpc('chat_post_report', CA, post1, 'mine')).reason, 'unknown')
+  for (const who of [CB, CB, CC]) assert.equal((await rpc('chat_post_report', who, post1, 'Rude or hateful')).ok, true)
+  assert.ok((await rpc('chat_board', CD, CA.id)).posts.some((p) => p.id === post1), 'two reports: still up')
+  await rpc('chat_post_report', CD, post1, 'Spam')
+  assert.ok(!(await rpc('chat_board', CD, CA.id)).posts.some((p) => p.id === post1), 'three reports: hidden until reviewed')
+  assert.ok((await rpc('chat_board', CA, CA.id)).posts.some((p) => p.id === post1))
+  assert.equal((await rpc('chat_stamp', CC, post1)).reason, 'unknown')
+  // a named person's post is never hidden by reports
+  const npc = (await one("select id from chat_posts where npc = 'mama_liz'")).id
+  for (const who of [CB, CC, CD]) await rpc('chat_post_report', who, npc, 'test')
+  assert.equal((await one('select hidden from chat_posts where id = $1', [npc])).hidden, false)
+})
+
+await check('social: follow and unfollow, counts by id and by @handle, "+N while you were away"; the Feed; interests and their groups', async () => {
+  assert.equal((await rpc('chat_follow', CB, CA.id)).followers, 1)
+  assert.equal((await rpc('chat_follow', CB, CA.id)).followers, 1, 'following twice counts once')
+  assert.equal((await rpc('chat_follow', CC, CA.id)).followers, 2)
+  assert.equal((await rpc('chat_follow', CA, CA.id)).reason, 'self')
+  assert.equal((await rpc('chat_follow', CB, 'never-seen-player-01')).reason, 'unknown', 'only accounts past the quick start exist to follow or be followed')
+  const counts = await rpc('chat_followers', CD, [CA.id, CB.id], ['thandeka_1'])
+  assert.deepEqual([counts.ids[CA.id], counts.ids[CB.id], counts.handles.thandeka_1], [2, 0, 2])
+  const board = await rpc('chat_board', CB, CA.id)
+  assert.deepEqual([board.followers, board.following], [2, true])
+  assert.equal((await rpc('chat_sync', CA)).followers, 2)
+  assert.deepEqual([(await rpc('chat_followers_seen', CA)).new, (await rpc('chat_followers_seen', CA)).new], [2, 0])
+  assert.equal((await rpc('chat_follow', CC, CA.id, false)).followers, 1)
+  // the Feed: who you follow first; the day's hot posts in your district (most stamps first); the named people's posts
+  await rpc('chat_post', CD, 'Pier at dusk. Who is in?', 'beachfront')
+  const d1 = (await rpc('chat_post', CD, 'Library table by the window is free.', 'campus')).post.id
+  const e1 = (await rpc('chat_post', CE, 'Vetkoek run. Orders now.', 'campus')).post.id
+  await rpc('chat_stamp', CA, e1)
+  await rpc('chat_stamp', CC, e1)
+  await rpc('chat_stamp', CA, d1)
+  const feed = await rpc('chat_feed', CB, 'campus')
+  assert.ok(feed.following.length >= 1 && feed.following.every((p) => p.author === CA.id), 'only the people you follow')
+  assert.ok(!feed.following.some((p) => p.id === post1), 'never a hidden post')
+  assert.deepEqual(feed.hot.slice(0, 2).map((p) => p.id), [e1, d1], 'hot: most stamps first')
+  assert.ok(!feed.hot.some((p) => p.body.startsWith('Pier at dusk')), 'only your district')
+  assert.equal(feed.npc.length, 20)
+  assert.equal((await rpc('chat_feed', CB, 'beachfront')).hot.length, 1)
+  // interests: three at most, only real ones; you are in their groups, and out of one you drop
+  const picks = await rpc('chat_interests', CB, ['food', 'nonsense', 'music', 'cars', 'gym'])
+  assert.deepEqual(picks.interests, ['food', 'music', 'cars'])
+  let mine = (await rpc('chat_sync', CB))
+  assert.deepEqual(mine.interests, ['food', 'music', 'cars'])
+  assert.deepEqual(mine.threads.filter((t) => t.id.startsWith('i:')).map((t) => t.id).sort(), ['i:cars', 'i:food', 'i:music'])
+  await age(CB, 400)
+  assert.equal((await say(CB, 'i:food', 'Kota or bunny?')).ok, true)
+  assert.equal((await rpc('chat_send', CA, 'i:food', 'not in it')).reason, 'not_member')
+  await rpc('chat_interests', CB, ['food', 'art', 'music'])
+  mine = await rpc('chat_sync', CB)
+  assert.deepEqual(mine.threads.filter((t) => t.id.startsWith('i:')).map((t) => t.id).sort(), ['i:art', 'i:food', 'i:music'])
+  assert.equal((await rpc('chat_group_leave', CB, 'i:food')).reason, 'not_member', 'you leave an interest by changing your picks')
+  // who joined today
+  const daily = await rpc('chat_daily', CB)
+  assert.ok(daily.joined >= 5 && daily.names.length === 3 && !daily.names.includes('Kabelo'))
+  await db.exec('set role anon')
+  for (const table of ['chat_posts', 'chat_stamps', 'chat_follows', 'chat_post_reports']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  await db.exec('reset role')
+})
+
 console.log(`${passed} sql checks passed`)

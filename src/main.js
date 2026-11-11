@@ -81,6 +81,9 @@ import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
 import { initWalk } from './walk.js'
+import { initDaily } from './daily.js'
+import { followPlayer } from './board.js'
+import { paintFollowers } from './ui/board.js'
 import { startJoinToasts } from './jointoast.js'
 import { STUDENTS, stillOf } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
@@ -2039,6 +2042,8 @@ app.addEventListener('click', async (event) => {
         funnel('card_finished')
       }
       const fromPrompt = Boolean(draft.fromPrompt)
+      // (Social B: the student-card flow ends with "pick 3 interests", at the next calm moment: src/daily.js)
+      if (!save.run.character.interests?.length) save.run.interestsAsk = true
       draft = emptyDraft()
       persist()
       saveMyCard(save.run)
@@ -2624,7 +2629,7 @@ function renderSheet(reporting = false) {
     if (!body || !sheetCard) return
     const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
     const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
-    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive && !document.body.dataset.cityPlace, moreOpen: sheetMore }); return }
+    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive && !document.body.dataset.cityPlace, moreOpen: sheetMore, id: sheetFor }); paintFollowers(body); return }
     const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
     const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
     body.innerHTML = `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>
@@ -2638,7 +2643,8 @@ function renderSheet(reporting = false) {
   const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
   const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
   const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
-  body.innerHTML = `${playerCardHtml(sheetCard, house)}
+  setTimeout(() => paintFollowers(body), 0)
+  body.innerHTML = `${playerCardHtml(sheetCard, house, { id: sheetFor })}
     ${reporting ? `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>
       ${reasons.map((r) => `<button type="button" data-pc="report-${escHtml(r)}">${escHtml(r)}</button>`).join('')}
       <button type="button" class="ghost" data-pc="report-cancel">Cancel</button></div>`
@@ -2646,6 +2652,8 @@ function renderSheet(reporting = false) {
       <button type="button" data-pc="wave">\u{1F44B} Wave</button>
       <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
       <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+      <button type="button" data-pc="board">\u{1F4CB} Board</button>
+      <button type="button" data-pc="follow">＋ Follow</button>
       <button type="button" data-pc="group">\u{1F465} Add to a group</button>
       <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
       <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
@@ -2702,6 +2710,17 @@ function onSheetClick(event) {
     closePlayerCard(sheetKeep)
     return
   }
+  // Their Board (Social B): the chat sheet opens on it. Follow: their posts land in your Feed.
+  if (k === 'board') {
+    const who = { name: sheetCard?.name || name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house }
+    closePlayerCard()
+    window.dispatchEvent(new CustomEvent('mzansi-open-threads', { detail: { board: id, who } }))
+    return
+  }
+  if (k === 'follow') {
+    followPlayer(id, true).then((r) => { toast(r.ok ? `You follow ${name} now. Their posts are in your Feed.` : r.note || 'Couldn’t follow them right now.'); if (r.ok) paintFollowers(document.querySelector('.pc-sheet-wrap') || document) })
+    return
+  }
   // Add to a group (Social A): the chat sheet asks which of your groups.
   if (k === 'group') {
     const who = { name: sheetCard?.name || name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house }
@@ -2751,6 +2770,8 @@ window.addEventListener('mzansi-friend-remove', (event) => {
   save.run.friends = (save.run.friends || []).filter((f) => f.id !== id)
   persist()
 })
+initDaily({ save: () => save, persist, toast: (text) => toast(text) })
+window.addEventListener('mzansi-posted', () => countDone('board_post', '', 'social'))
 initWalk({ places: () => (save.run ? districtNow().places.filter((p) => p.kind !== 'transit') : []), toast: (text) => toast(text) })
 function blockPlayer(id) {
   save.blocks = [...new Set([...(save.blocks || []), id])]

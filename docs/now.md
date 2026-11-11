@@ -1,7 +1,16 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (Social A).
+Last updated: 11 Nov, Claude Code (Social B).
+
+## Social B (owner, 11 Nov): built; needs the same re-run of supabase/chat.sql as Social A
+- **Lloyd: one run of the whole `supabase/chat.sql` turns on Social A and Social B together.**
+- **What is new.** Every player has a Board (posts of 140 characters, 3 a day, a 🔥 stamp, replies as a chat thread, report). Follow and unfollow, with the follower count on cards, leaderboard rows and the race result, and "+N followers while you were away". A Feed tab beside Chats and Friends: who you follow, today's hot posts in your district, then the 20 named people's posts so it is never empty. Pick 3 of 12 interests (each has a standing group). The SunnyBay Daily on the first open of the day, in place of the leaderboard card.
+- **For Cursor:** four new data files built from your social.md and words.md: `interests.json`, `npc_posts.json`, `daily.json`, `specials.json` (all in data/campusville). Change the Daily's words in daily.json freely. If you change an interest or a named person's post, the matching lines in supabase/chat.sql must change too (`npm run check` says so) and the owner re-runs the file.
+- **Decisions made, the owner's to change.** (1) The Daily shows to returning players (second session on), like the card it replaces, not in a brand-new player's first minutes. (2) "Join the conversation" on a topic outside your three interests adds it as a pick if you have room; with three picks already it opens The Quad. (3) The Board lives in the chat sheet and is opened from the card's Board button, not drawn on the card itself (the card is one screen that never scrolls). (4) A post that three players report is hidden from everyone but its author until an admin sets `hidden` back to false; there is no admin screen for that yet. (5) Named people's posts cannot be hidden by reports.
+- **Not done.** No admin review screen for hidden posts. No way to delete your own post. The follower count is not on your own profile page (it is on "Your Board"). Not tried on three phones (one phone plus the real server functions).
+- **Test health.** First quick run 72 of 74. (1) launch L3 found a pop-up after the student card was saved: that is the new interest picker; the TEST now expects it and closes it with Later. (2) topbar B5 ("the camera sees both heads") failed, and also failed 2 runs in 4 on the code already pushed: the TEST read the camera before the move to the two-shot had begun (its "not easing" was also true of the follow camera that had not set off). It now waits for the move to have started; 3 of 3 after. The quick set takes about 15 minutes now (budget 10).
+- **Tests.** 27 SQL checks (4 new), `tests/e2e/social-b-quick.spec.js` B1-B2. Screenshots (not committed): docs/sprints/social-b/.
 
 ## Social A (owner, 11 Nov): built; WAITING FOR THE OWNER TO RE-RUN supabase/chat.sql
 - **Lloyd: run the whole of `supabase/chat.sql` again in the Supabase SQL editor** (re-runnable). Until then chat works as it did and the new parts (groups, friends, room Quads, join toasts) stay off.

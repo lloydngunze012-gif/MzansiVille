@@ -219,7 +219,9 @@ test('B5 during a chat: the bar stays one row and the camera sees both heads (in
   await student(page, { money: 1500, energy: 26, hunger: 70, grades: 55, social: 64 })
   await tapPerson(page, 'x12')
   await expect(page.locator('.g-talk')).toBeVisible({ timeout: 90000 })
-  await expect.poll(async () => page.evaluate(() => { const s = window.mzansiShot(); return Boolean(s?.close && !s.easing) }), { timeout: 15000 }).toBe(true)
+  // (the move to the two-shot has begun, eases >= 1, and ended: read a moment earlier, "not easing" is also true of the
+  // follow camera that has not set off yet, which is what this test used to catch about half the time)
+  await expect.poll(async () => page.evaluate(() => { const s = window.mzansiShot(); return Boolean(s?.close && s.eases >= 1 && !s.easing) }), { timeout: 15000 }).toBe(true)
   const shot = await page.evaluate(() => window.mzansiShot())
   console.log(JSON.stringify(shot))
   expect(shot.clearView, 'nothing between the camera and either head').toBe(true)

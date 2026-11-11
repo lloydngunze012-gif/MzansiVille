@@ -158,3 +158,26 @@ button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; fl
 .cht-wake-go b { font: 800 15px/1.2 Figtree, system-ui, sans-serif; }
 .cht-wake-go small { font: 600 12px/1.1 Figtree, system-ui, sans-serif; color: #d9cdf5; }
 .cht-wake-x { all: unset; flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font: 700 16px/1 system-ui, sans-serif; cursor: pointer; }
+
+/* Social B (owner, 11 Nov): the Feed and a Board (ui/board.js). */
+.bd-mine { flex: none; display: flex; align-items: center; gap: 6px; padding: 6px 12px 8px; border-bottom: 1px solid var(--cr-line, #e3d8c4); font: 700 14px/1.25 Figtree, system-ui, sans-serif; }
+.bd-mine span { flex: 1; min-width: 0; }
+.bd-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.bd-list { margin: 0; padding: 0; list-style: none; }
+.bd-post { padding: 8px 12px 6px; border-bottom: 1px solid var(--cr-line, #e3d8c4); }
+.bd-who { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; min-height: 40px; width: 100%; cursor: pointer; }
+.bd-who b { font: 800 15px/1.2 Figtree, system-ui, sans-serif; }
+.bd-who small { font: 600 12px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
+.bd-who .bd-ago { margin-left: auto; }
+.bd-npc { display: grid; place-items: center; width: 100%; height: 100%; background: #22143b; color: #f0c400; font: 800 16px/1 Figtree, system-ui, sans-serif; }
+.bd-body { margin: 2px 0 6px; font: 500 16px/1.35 Figtree, system-ui, sans-serif; overflow-wrap: anywhere; }
+.bd-acts { display: flex; align-items: center; gap: 8px; }
+.bd-acts button { all: unset; box-sizing: border-box; min-height: 40px; min-width: 44px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 20px; border: 1.5px solid var(--cr-line, #e3d8c4); font: 800 14px/1 Figtree, system-ui, sans-serif; cursor: pointer; }
+.bd-stamp[aria-pressed="true"] { background: #ffe9c7; border-color: #f0a000; color: #8a3b00; }
+.bd-report { margin-left: auto; color: #9b1f1f; }
+.bd-report.on { background: #fde4e4; border-color: #9b1f1f; }
+.bd-hint { margin: 0; padding: 12px 14px; font-size: 14px; color: var(--cr-muted, #6b6359); }
+.bd-new { flex: none; display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--cr-line, #e3d8c4); }
+.bd-new input { flex: 1; min-width: 0; height: 44px; box-sizing: border-box; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--cr-line, #e3d8c4); background: #fff; color: #1c1915; font: 600 16px/1 Figtree, system-ui, sans-serif; }
+.bd-count { flex: none; min-width: 26px; text-align: right; font: 700 12px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); font-variant-numeric: tabular-nums; }
+.cht-tabs button { padding: 0 4px; }

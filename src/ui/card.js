@@ -28,7 +28,7 @@ export function playerCardHtml(card, house, opts = {}) {
       <div class="pc-photo">${photo}</div>
       <div class="pc-id">
         <h2 class="pc-name">${esc(card.name || 'Student')}</h2>
-        <p class="pc-handle">${card.handle ? `@${esc(card.handle)}` : opts.own ? '<span class="empty">no @handle yet</span>' : ''}</p>
+        <p class="pc-handle">${card.handle ? `@${esc(card.handle)}` : opts.own ? '<span class="empty">no @handle yet</span>' : ''} <small class="pc-fol" data-followers="${esc(opts.id || '')}" hidden></small></p>
         ${card.from || card.country ? `<p class="pc-from">${flagOf(card.from || card.country)} From ${esc(fromPlace(card.from || card.country))}</p>` : ''}
         <p class="pc-num"><small>Student no.</small> <b>${esc(num || '—')}</b>${opts.provisional ? ' <i title="Real numbers arrive with enrolment">provisional</i>' : ''}</p>
       </div>
@@ -58,7 +58,7 @@ export function miniCardHtml(card, house, opts = {}) {
     <div class="pc-mini-row">
       <div class="pc-mini-face">${photo}</div>
       <div class="pc-mini-id">
-        <p class="pc-mini-name">${esc(card.name || 'Student')} ${flag}${card.handle ? `<small>@${esc(card.handle)}</small>` : ''}</p>
+        <p class="pc-mini-name">${esc(card.name || 'Student')} ${flag}${card.handle ? `<small>@${esc(card.handle)}</small>` : ''} <small class="pc-fol" data-followers="${esc(opts.id || '')}" hidden></small></p>
         <p class="pc-mini-vibe">${card.tags?.vibe ? `✨ ${esc(card.tags.vibe)}` : '<span class="empty">No vibe set yet</span>'}</p>
         <p class="pc-mini-grey">${esc(grey || 'UMzansi student')}</p>
       </div>
@@ -74,6 +74,8 @@ export function miniCardHtml(card, house, opts = {}) {
         <span class="pc-mini-menu"${opts.moreOpen ? '' : ' hidden'}>
           ${opts.race ? '<button type="button" data-pc="dm">\u{2709}\u{FE0F} Message</button>' : ''}
           <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
+          <button type="button" data-pc="board">\u{1F4CB} Board</button>
+          <button type="button" data-pc="follow">＋ Follow</button>
           <button type="button" data-pc="group">\u{1F465} Add to a group</button>
           <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
           <button type="button" data-pc="full">\u{1F4C7} View full card</button>

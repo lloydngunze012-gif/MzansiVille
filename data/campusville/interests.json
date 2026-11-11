@@ -1,0 +1,78 @@
+{
+  "note": "Social B (owner, 11 Nov): the 12 interests from docs/world-designer/social.md. A player picks 3; each has a standing group (thread i:<id> in supabase/chat.sql, between INTERESTS START and END: npm run check fails if the two disagree).",
+  "pick": 3,
+  "interests": [
+    {
+      "id": "football",
+      "label": "Football",
+      "emoji": "⚽",
+      "about": "Scores, boots, who is actually coming to play on the Quad."
+    },
+    {
+      "id": "music",
+      "label": "Music",
+      "emoji": "🎵",
+      "about": "Playlists, open mic, what the lounge is playing tonight."
+    },
+    {
+      "id": "fashion",
+      "label": "Fashion",
+      "emoji": "👗",
+      "about": "Fits, laundry days, and whether the mall window is worth it."
+    },
+    {
+      "id": "gym",
+      "label": "Gym",
+      "emoji": "💪",
+      "about": "Sets, rest days, and who skipped leg day with a straight face."
+    },
+    {
+      "id": "faith",
+      "label": "Faith",
+      "emoji": "🙏",
+      "about": "Quiet pews, choir practice, and being kind on a hard week."
+    },
+    {
+      "id": "gaming",
+      "label": "Gaming",
+      "emoji": "🎮",
+      "about": "Arcade scores, Noah's broken laptop, and whose turn it is."
+    },
+    {
+      "id": "food",
+      "label": "Food",
+      "emoji": "🍲",
+      "about": "Caf trays, kota debates, and who still owes a vetkoek."
+    },
+    {
+      "id": "studying",
+      "label": "Studying",
+      "emoji": "📚",
+      "about": "Tests, group tables, and the library chair that is legally yours."
+    },
+    {
+      "id": "cars",
+      "label": "Cars",
+      "emoji": "🚗",
+      "about": "Licences, first cars, and which taxi actually stops."
+    },
+    {
+      "id": "art",
+      "label": "Art",
+      "emoji": "🎨",
+      "about": "Quad poems, Aya's fabric, and the gallery student wall."
+    },
+    {
+      "id": "money",
+      "label": "Money",
+      "emoji": "💰",
+      "about": "Gigs, Woza splits, and how far R2,100 really goes."
+    },
+    {
+      "id": "movies",
+      "label": "Movies",
+      "emoji": "🎬",
+      "about": "Mall cinema, lecture slides that feel like a film, spoilers banned."
+    }
+  ]
+}

@@ -12,7 +12,7 @@ const use = { ...base.use, channel: 'msedge' }
 // feedback, health; and (10 Nov) one short SunnyBay test (city-quick), plus Meeting people's one-phone checks
 // (city-meet: the map's back arrow, energy), and one short test of the places (city-places-quick: City job B). `npm run test:quick` (with npm run check). It repeats tests the other
 // two run: pick it with --project=quick, never together with them.
-const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions|launch|city-quick|city-meet|city-places-quick|topbar|tester-fixes1|chat-quick|social-quick)\.spec\.js$/]
+const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions|launch|city-quick|city-meet|city-places-quick|topbar|tester-fixes1|chat-quick|social-quick|social-b-quick)\.spec\.js$/]
 
 export default {
   ...base,

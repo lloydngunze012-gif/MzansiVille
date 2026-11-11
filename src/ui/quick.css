@@ -106,3 +106,21 @@ body:has(.qs2) { background: #1a0d33; }
 .hl-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #0001; font-size: 15px; }
 .hl-row dt { color: #5a4a78; } .hl-row dd { margin: 0; text-align: right; font-weight: 700; word-break: break-word; }
 .hl-yes { color: #126b3b; } .hl-no { color: #9b1f1f; }
+
+/* Social B (owner, 11 Nov): the SunnyBay Daily and the interest picker (src/daily.js), in the same pop-up. */
+.sl-pop .dy-q { font-size: 22px; }
+.sl-pop .dy-sec { margin: 12px 0 0; padding-top: 10px; border-top: 1.5px solid #2a184622; }
+.sl-pop .dy-post { margin: 4px 0 2px; font-size: 16px; }
+.sl-pop .dy-board { margin: 4px 0; font-size: 15px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.sl-pop .dy-board b { flex: 0 0 100%; font-size: 14px; color: #5b23c9; }
+.sl-pop .dy-board i { font-style: normal; font-weight: 800; color: #8a6300; }
+.sl-pop .dy-line { margin: 12px 0 4px; font-size: 15px; }
+.sl-pop .dy-more { display: block; width: 100%; margin-top: 8px; line-height: 40px; min-height: 44px; }
+.sl-pop > .lp-ghost, .sl-pop > .lp-go { display: block; width: 100%; margin-top: 10px; }
+.dy-picks { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 8px; }
+.dy-pick { all: unset; box-sizing: border-box; cursor: pointer; min-height: 48px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 14px; background: #fff; border: 2px solid #2a184633; font: 800 15px/1.2 system-ui, sans-serif; color: #2a1846; }
+.dy-pick[aria-pressed="true"] { border-color: #f0b400; background: #fff3c4; box-shadow: 0 0 0 3px #f0b40044; }
+.pc-fol { font: 700 12px/1 system-ui, sans-serif; color: #5b23c9; white-space: nowrap; }
+.pc-fol[hidden] { display: none; }
+.lp-fol { color: #5b23c9 !important; }
+.tg-fol { font-size: 13px !important; color: #5a4a78; }

@@ -12,6 +12,8 @@ import './threads.css'
 import { avatarSvg } from '../avatar.js'
 import { MSG_MAX } from '../engine/filter.js'
 import { peerList } from '../presence.js'
+import { newFollowers } from '../board.js'
+import { boardClick, boardHtml, boardInput, boardOpen, boardSubmit, closeBoard, feedHtml, openBoardOf, refreshFeed } from './board.js'
 import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
 import { addFriend, addToGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
@@ -50,7 +52,7 @@ let guardUntil = 0
 // Social A (owner, 11 Nov): the list has two tabs (Chats, Friends) and a "New group" row; a group's header opens
 // its page (members, the pinned topic, add people, invite by WhatsApp, mute, leave); a player's card can ask to
 // add them to one of your groups (the picker).
-let tab = 'chats' // 'chats' | 'friends'
+let tab = 'chats' // 'chats' | 'friends' | 'feed' (Social B: ui/board.js draws it; view 'board' is a player's Board)
 let making = false // the "New group" row is open
 let panel = '' // in a thread: '' | 'info' | 'add'
 let members = null // the open group's members (null: loading)
@@ -65,6 +67,7 @@ export function mountThreads() {
   banner = document.body.querySelector('.cht-ping')
   sheet.addEventListener('click', onClick)
   sheet.addEventListener('submit', onSubmit)
+  sheet.addEventListener('input', boardInput)
   sheet.addEventListener('input', (event) => { if (event.target.matches('.cht-form input')) { const c = sheet.querySelector('.cht-count'); if (c) c.textContent = event.target.value.length > MSG_MAX - 60 ? `${event.target.value.length}/${MSG_MAX}` : '' } })
   // (taps in the sheet never reach the world under it)
   for (const type of ['pointerdown', 'touchstart', 'mousedown']) sheet.addEventListener(type, (event) => event.stopPropagation(), { passive: true })
@@ -97,6 +100,8 @@ export function mountThreads() {
     if (kind === 'ping') { ping(detail); return }
     if (kind === 'first') {
       // (came in through an invite link: straight into the group, now that the quick start is behind them)
+      // (Social B: "+N followers while you were away")
+      newFollowers().then((n) => { if (n > 0) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `+${n} follower${n === 1 ? '' : 's'} while you were away` } })) })
       const code = waitingInvite()
       if (code && socialReady()) { joinByCode(code).then((r) => { if (r.ok || ['unknown', 'full', 'blocked'].includes(r.reason)) clearInvite(); if (r.ok) openChat(r.thread); else if (r.reason === 'full') { openChat(); tell('That group is full (40 members).', true) } }); return }
       wakeUp()
@@ -108,6 +113,7 @@ export function mountThreads() {
       // (the thread on screen was closed for you: a block)
       if (view !== 'list' && detail?.gone?.includes(view)) { show('list'); return }
       if (view === 'list') { if (!sheet.querySelector('.cht-new input:focus')) paintList() }
+      else if (view === 'board') { /* (a Board repaints itself) */ }
       else if (panel) { if (!sheet.querySelector('.cht-info input:focus')) paintInfo() }
       else paintHead()
     }
@@ -117,6 +123,8 @@ export function mountThreads() {
   window.addEventListener('mzansi-open-threads', (event) => {
     const d = event.detail || {}
     if (d.dm) openDm(d.dm, d.who)
+    else if (d.board) { mountThreads(); hidePing(); tab = 'feed'; openBoardOf(d.board, d.who || {}, repaintBoard); show('board') }
+    else if (d.feed) { tab = 'feed'; openChat() }
     else if (d.addTo) { pickFor = { id: d.addTo, who: d.who || {} }; tab = 'chats'; openChat() }
     else if (d.friends) { tab = 'friends'; openChat() }
     else openChat(d.thread || '')
@@ -163,9 +171,12 @@ function show(next) {
   making = false
   if (next !== 'list') pickFor = null
   sheet.hidden = false
-  sheet.dataset.view = next === 'list' ? 'list' : 'thread'
+  sheet.dataset.view = next === 'list' && tab !== 'feed' ? 'list' : 'thread'
   document.body.dataset.chat = '1'
-  if (next === 'list') { closeThread(); paintList() } else { paintThread(); openThread(next) }
+  if (next !== 'board') closeBoard()
+  if (next === 'list') { closeThread(); paintList(); if (tab === 'feed') refreshFeed(repaintBoard) }
+  else if (next === 'board') { closeThread(); paintBoard() }
+  else { paintThread(); openThread(next) }
   mark()
 }
 function tell(text, bad = false) {
@@ -173,6 +184,22 @@ function tell(text, bad = false) {
   noteBad = bad
   const el = sheet.querySelector('.cht-note')
   if (el) { el.textContent = note; el.classList.toggle('bad', bad); el.hidden = !note }
+}
+
+// ---------- The Feed and a Board (Social B) ----------
+function paintBoard() {
+  sheet.innerHTML = `${boardHtml()}<p class="cht-note${noteBad ? ' bad' : ''}" role="status"${note ? '' : ' hidden'}>${esc(note)}</p>`
+  mark()
+}
+// (after a stamp, a follow, a post, or when what was asked for has arrived)
+function repaintBoard() {
+  if (view === 'board') { if (!sheet.querySelector('.bd-new input:focus')) paintBoard() } else if (view === 'list' && tab === 'feed') paintList()
+}
+const boardCtx = {
+  repaint: repaintBoard,
+  tell: (text, bad) => tell(text, bad),
+  openThread: (id) => show(id),
+  showBoard: (id, who) => { openBoardOf(id, who, repaintBoard); show('board') },
 }
 
 // ---------- The list ----------
@@ -197,7 +224,9 @@ function paintList() {
     : status === 'offline' ? 'Can’t reach the chat right now. Check your connection.'
       : status === 'ready' ? 'No chats yet. Tap someone under “Here now” to message them.' : 'Loading your chats…'
   let body
-  if (pickFor) {
+  if (tab === 'feed' && !pickFor) {
+    body = feedHtml()
+  } else if (pickFor) {
     // a player's card asked: which of your groups?
     const mine = all.filter((t) => t.kind === 'group' && !t.quad)
     body = `<p class="cht-sub">Add ${esc(first(pickFor.who.name))} to which group?</p>
@@ -218,7 +247,7 @@ function paintList() {
     ${all.length ? `<ol class="cht-list">${all.map(row).join('')}</ol>` : `<p class="cht-empty">${esc(empty)}</p>`}`
   }
   sheet.innerHTML = `<header class="cht-head"><b class="cht-h">${pickFor ? 'Add to a group' : 'Chats'}</b>${pickFor || making ? '' : '<button type="button" class="cht-btn sm" data-ct="new">＋ Group</button>'}<button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button></header>
-    ${pickFor ? '' : `<div class="cht-tabs" role="tablist"><button type="button" role="tab" aria-selected="${tab === 'chats'}" data-tab="chats">Chats</button><button type="button" role="tab" aria-selected="${tab === 'friends'}" data-tab="friends">Friends${online ? ` <small>${online} online</small>` : ''}</button></div>`}
+    ${pickFor ? '' : `<div class="cht-tabs" role="tablist"><button type="button" role="tab" aria-selected="${tab === 'chats'}" data-tab="chats">Chats</button><button type="button" role="tab" aria-selected="${tab === 'friends'}" data-tab="friends">Friends${online ? ` <small>${online} online</small>` : ''}</button><button type="button" role="tab" aria-selected="${tab === 'feed'}" data-tab="feed">Feed</button></div>`}
     ${body}
     <p class="cht-note${noteBad ? ' bad' : ''}" role="status"${note ? '' : ' hidden'}>${esc(note)}</p>`
   if (making) sheet.querySelector('.cht-new input')?.focus({ preventScroll: true })
@@ -365,7 +394,10 @@ function onClick(event) {
   if (ct === 'close') { closeChat(); return }
   if (ct === 'back') { show('list'); return }
   const tabBtn = event.target.closest('[data-tab]')
-  if (tabBtn) { tab = tabBtn.dataset.tab; making = false; note = ''; paintList(); return }
+  if (tabBtn) { tab = tabBtn.dataset.tab; making = false; note = ''; show('list'); return }
+  if (ct === 'feed') { tab = 'feed'; show('list'); return }
+  if (ct === 'interests') { window.dispatchEvent(new CustomEvent('mzansi-interests')); return }
+  if ((view === 'board' || (view === 'list' && tab === 'feed')) && boardClick(event, boardCtx)) return
   if (ct === 'new') {
     if (!socialReady()) { tell('Groups open soon.', true); return }
     tab = 'chats'; making = true; const keep = pickFor; pickFor = null; paintList(); pickFor = keep; return
@@ -447,6 +479,7 @@ function onClick(event) {
 }
 async function onSubmit(event) {
   event.preventDefault()
+  if (boardSubmit(event, boardCtx)) return
   if (event.target.matches('.cht-new')) {
     const name = event.target.elements.group.value
     const res = await createGroup(name)

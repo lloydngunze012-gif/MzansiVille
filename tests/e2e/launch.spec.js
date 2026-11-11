@@ -2,7 +2,7 @@
 //   L1  a new player goes from the link to the home scene in under 30 s: one screen, eight students, Play
 //   L2  swap roommate at the house door at the drop-off: the roommate introduces themselves, four cards, the pick stays
 //   L3  the card prompt: after the first meal, never during a walk, R200 once, at most once a day, old saves never
-//   L4  the leaderboard: a returning player gets the card, a new one does not; three tabs, top 10, "You: #N"
+//   L4  the leaderboard: a returning player gets the Daily (top 3 of each board) and from it the boards, a new one does not; three tabs, top 10, "You: #N"
 //   L5  launch safety: errors capped at 20 an hour, funnel steps in order, #/health, feedback (menu and third session)
 //   O1  the opening page: the scene is the picked student photographed in the campus (the real logo over it), and tapping
 //       another portrait swaps it for that student's own render
@@ -387,6 +387,12 @@ test('L3 the card prompt: after the first meal, R200 once, at most once a day', 
   expect(s1.run.badges).toContain('card_made')
   expect(s1.run.cardPaid).toBe(true)
   const paid = s1.run.stats.money
+  // (Social B, 11 Nov) the card flow ends with "pick 3 interests", at the next calm moment; "Later" closes it for good
+  await expect(pop(page)).toHaveAttribute('aria-label', 'interests', { timeout: 30000 })
+  await expect(pop(page).locator('.dy-pick')).toHaveCount(12)
+  await pop(page).locator('[data-dy="later"]').tap()
+  await expect(pop(page)).toHaveCount(0)
+  expect((await save(page)).run.interestsAsk).toBeUndefined()
   // editing the card again pays nothing more, and it is never asked for again
   await page.evaluate(() => window.mzansiLaunch.want('meal'))
   await page.waitForTimeout(3000)
@@ -433,6 +439,11 @@ test('L4 the leaderboard: a returning player gets the card, a new one does not; 
   await visit(page, `/?fast=1&morning=0${q}#/play`, { hoursAgo: 3 })
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 60000 })
   await expect(pop(page)).toBeVisible({ timeout: 60000 })
+  // (Social B, 11 Nov: the card at sign-in is the SunnyBay Daily now; it carries the top 3 of each board and opens the boards)
+  await expect(pop(page)).toHaveAttribute('aria-label', 'daily')
+  await expect(pop(page).locator('.dy-board')).toHaveCount(3, { timeout: 20000 })
+  await expect(pop(page).locator('.dy-board').first().locator('span')).toHaveCount(3)
+  await pop(page).locator('[data-dy="boards"]').tap()
   await expect(pop(page).locator('.lp-tab')).toHaveText(['Academics', 'Social', 'Sport'])
   await expect(pop(page).locator('.lp-list li')).toHaveCount(10)
   await expect(pop(page).locator('[data-you]')).toHaveText('You: #12 · 30 points')

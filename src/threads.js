@@ -47,6 +47,9 @@ let syncAgain = false
 // the server has none of it: social is false, chat works as before and the new buttons say "opens soon".
 let friends = [] // [{ id, name, handle, house, look, online }]
 let social = false
+let socialB = false // (Social B: the Board, follow, the Feed, interests)
+let interests = []
+let followers = 0
 let roomArg = true // (the older chat_sync takes no p_room)
 // The room of 40 you are in (presence.js: campus, campus-2, campus.town-3...): its number picks your Quad.
 const roomNumber = () => Math.max(1, Number(presenceRoomNo()) || 1)
@@ -57,7 +60,9 @@ const emit = (kind, detail) => { for (const fn of listeners) fn(kind, detail) }
 export function onThreads(fn) { listeners.add(fn); return () => listeners.delete(fn) }
 export const chatStatus = () => status
 export const threadList = () => threads
-export const threadOf = (id) => threads.find((t) => t.id === id) || null
+// (side: threads that are open but never listed, such as the replies to a Board post, 'p:<post id>')
+const side = new Map()
+export const threadOf = (id) => threads.find((t) => t.id === id) || side.get(id) || null
 export const linesOf = (id) => cache.get(id) || { lines: [], people: {} }
 // (a muted thread still fills up; it never counts on the badge or pings)
 export const unreadTotal = () => threads.reduce((n, t) => n + (t.muted ? 0 : t.unread || 0), 0)
@@ -65,6 +70,9 @@ export const groupUnread = () => threads.reduce((n, t) => n + (t.kind === 'group
 export const friendList = () => friends
 export const isFriend = (id) => friends.some((f) => f.id === id)
 export const socialReady = () => social
+export const socialBReady = () => socialB
+export const myInterests = () => interests
+export const myFollowers = () => followers
 export const openThreadId = () => openId
 export const isBlocked = (id) => blocked.has(id)
 export const myId = () => myIdentity().id
@@ -138,6 +146,9 @@ export function sync() {
     if (send === profile) profileSent = JSON.stringify(profile)
     status = 'ready'
     social = Array.isArray(data.friends)
+    socialB = Array.isArray(data.interests)
+    interests = socialB ? data.interests : []
+    followers = Number(data.followers) || 0
     roomSent = room
     friends = (data.friends || []).map((f) => ({ ...f, name: filterText(String(f.name || 'Student')).text || 'Student' })).filter((f) => !blocked.has(f.id))
     for (const id of data.blocked || []) { serverBlocked.add(id); if (!blocked.has(id)) { blocked.add(id); hidePlayer(id) } }
@@ -234,6 +245,7 @@ export function fetchLines(id, all = false) {
     const fromServer = tidyThread(data.thread)
     const at = threads.findIndex((t) => t.id === id)
     if (at >= 0) threads[at] = { ...fromServer, unread: openId === id ? 0 : fromServer.unread }
+    else if (String(id).startsWith('p:')) side.set(id, { ...fromServer, unread: 0, quad: true }) // (quad: no group page for it)
     else threads.unshift({ ...fromServer, unread: 0 })
     if (fromServer.kind === 'group') listen(id)
     emit('lines', id)
@@ -332,6 +344,8 @@ async function act(fn, args) {
   if (error || !data?.ok) return { ok: false, reason: error || data?.reason, note: why(error, data) }
   return { ok: true, data }
 }
+// (src/board.js: the Board, follow, the Feed and interests go through the same door)
+export const chatCall = act
 // Make a group (the name passes engine/groupname.js first: the filter and handle_blocklist.json).
 export async function createGroup(name, topic = '') {
   if (!groupNameOk(name)) return { ok: false, note: GROUP_WHY.name }
@@ -408,7 +422,7 @@ export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
 // Tests (read only): what this phone's chat holds.
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
-  social, room: roomSent, friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online })),
+  social, socialB, interests, followers, room: roomSent, friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online })),
   threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '' })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

@@ -10,6 +10,7 @@
 // across the city, 25 game minutes, a moment of under 3 s); a car when the save has run.licence and
 // run.car (instant, R8 petrol, parked outside where you drove). Spec: docs/world-designer/sunnybay.md.
 // Tests and screenshots (read-mostly): window.mzansiCity.
+import { followerCounts, followersText } from '../board.js'
 import * as THREE from 'three'
 import { guardRenderer } from './guard.js'
 import { loop as soundLoop } from '../audio.js'
@@ -858,6 +859,8 @@ function maybeShowResult(force = false) {
     onRematch: () => { endRace(); sendInvite('race', withId, withName); window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `Race invite sent to ${withName}. Waiting…` } })) },
     onClose: endRace,
   })
+  // (Social B: the other racer's follower count on the result)
+  followerCounts([withId]).then((c) => { const n = c.ids[withId]; const row = document.querySelector('.tg-result .tg-row'); if (n !== undefined && row) row.insertAdjacentHTML('beforebegin', `<p class="tg-fol">${esc(withName)} · ${followersText(Number(n))}</p>`) })
 }
 onInvite('race', (from, name, data, { accept, decline }) => {
   if (inside) { decline(); return } // (the race only shows outdoors: City job B)
