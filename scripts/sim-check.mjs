@@ -23,6 +23,7 @@ import { buildingLayout, doorPoint } from '../src/world/layout.js'
 import { byDevice, byPlace, loadLine, median, p90, placeName, stallsOf, statusOf } from '../src/engine/smooth-stats.js'
 import { buildGrid, findPath, followStep, nearestOpen, pointBlocked } from '../src/world/nav.js'
 import { CITY, LOTS, PARTS, STOPS, WAVE2, canDrive, carAt, inCampus, offLimits, partAt, payDrive, payTaxi, taxiFare, waysTo } from '../src/city/plan.js'
+import { groupNameOk } from '../src/engine/groupname.js'
 import { adsFor } from '../src/city/billboards.js'
 import { ALL_PLACES, PLACES, TEMPLATES, balance, cityActivities, folkSeed, openNow, opensAt, placeOf, rowState, runRow, slotOf, slotsFor } from '../src/city/places.js'
 import { buildProps } from '../src/world/cityprops.js'
@@ -1168,6 +1169,14 @@ check('content rule: no alcohol, tavern, nightclub, casino, betting or lotto wor
   // the city has one place of worship, the church, and no lot that sells drink or takes bets
   assert.deepEqual(LOTS.filter((l) => /church|chapel|worship/i.test(l.name)).map((l) => l.id), ['church'])
   assert.ok(![...LOTS, ...WAVE2].some((l) => /\b(bar|tavern|club|casino|pub|bottle)\b/i.test(l.name)))
+})
+
+// Chat sprint (11 Nov): a group's name passes the word filter and the same list as an @handle.
+check('chat: a group name passes the handle blocklist and the word filter; topics.json has a first topic', () => {
+  for (const ok of ['The Quad', 'Study crew', 'Peak House 3rd floor']) assert.equal(groupNameOk(ok), true, ok)
+  for (const bad of ['', 'ab', 'x'.repeat(41), 'UMzansi Admin', 'Official support', 'Moderators', 'shit talkers', 'kaffir crew']) assert.equal(groupNameOk(bad), false, bad)
+  const topics = JSON.parse(readFileSync(join(root, 'data/campusville/topics.json'), 'utf8'))
+  assert.ok(Array.isArray(topics) && typeof topics[0] === 'string' && topics[0].length >= 10 && topics[0].length <= 120)
 })
 
 check('SunnyBay street people take their skins from skinmix.js (CAST RULE)', () => {

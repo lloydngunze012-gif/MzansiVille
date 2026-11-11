@@ -15,6 +15,7 @@ export function healthScreen(health, info) {
       ${row('Supabase reachable', h ? (h.connected ? `${yes(h.supabase?.ok)} <small>${h.supabase?.ms ?? ''} ms</small>` : '<b class="hl-no" data-ok="no">Not connected (no keys in this build)</b>') : '…', 'supabase')}
       ${row('Leaderboard SQL', h ? yes(h.sql.leaderboard) : '…', 'sql-board')}
       ${row('Feedback SQL', h ? yes(h.sql.feedback) : '…', 'sql-feedback')}
+      ${row('Chat SQL', h ? yes(h.sql.chat) : '…', 'sql-chat')}
       ${row('Rooms and players online', h ? `<b data-hl-players>${h.players}</b> in ${h.rooms.length || 0} room${h.rooms.length === 1 ? '' : 's'}` : '…', 'online')}
       ${row('Rooms', rooms, 'rooms')}
       ${row('Checked', h ? esc(new Date(h.at).toLocaleTimeString('en-ZA')) : 'checking…', 'at')}

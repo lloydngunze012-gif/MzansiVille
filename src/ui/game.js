@@ -3,6 +3,7 @@ import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { chatFor } from '../engine/people.js'
+import { unreadTotal } from '../threads.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml, inkOn, residence, routeSvg, todOf } from './campus.js'
 import { csvToWorld } from '../world/layout.js'
@@ -282,6 +283,7 @@ export function hud(district, run, opts = {}) {
       <button class="tb-time${ui.timeline ? ' on' : ''}" type="button" data-act="timeline" aria-expanded="${ui.timeline ? 'true' : 'false'}" aria-label="Day ${run.day}, ${day}, ${clock}. Today's timeline" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i><b>${day.slice(0, 3)}</b><span>${clock}</span></button>
       <span class="tb-online" data-online data-chip title="Students here right now">${chipLabel()}</span>
       ${goals.badge}${goals.chips}
+      <button class="tb-chat" type="button" data-act="chat-open" aria-label="Chat"><span aria-hidden="true">\u{1F4AC}</span><small class="cht-unread" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
       <button class="tb-menu${news ? ' news' : ''}" type="button" data-act="gear" aria-label="Menu${news ? ', something new' : ''}" aria-expanded="${ui.gear ? 'true' : 'false'}"><span aria-hidden="true"></span>${news ? '<i class="tb-dot" aria-hidden="true"></i>' : ''}</button>
     </div>
     <div class="g-stats tb-stats">${STATS.map(([k, w]) => stat(k, w, run.stats[k], phase)).join('')}</div>
@@ -313,7 +315,7 @@ function gearMenu(run) {
   <aside class="g-menu" role="dialog" aria-label="Menu">
     <h3>Menu <span class="g-online" data-online title="Students here right now">${countLabel()}</span></h3>
     <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
-    <button type="button" data-act="nav" data-go="chat">\u{1F4AC} Campus chat</button>
+    <button type="button" data-act="chat-open">\u{1F4AC} Chat <small class="cht-unread inline" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
     <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>
     <button type="button" data-act="nav" data-go="notices" class="${news ? 'news' : ''}">\u{1F4E2} Notices${news ? ' <i class="tb-dot" aria-label="new"></i>' : ''}</button>

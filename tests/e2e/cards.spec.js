@@ -18,7 +18,7 @@ test.describe.configure({ timeout: 240000 })
 // Runs in the page: every visible card, and what is wrong with it.
 const AUDIT = ({ maxW, minText, micro }) => {
   const CARDS = ['.mm-bar', '.mm-card', '.lc-caption', '.lc-say', '.dp-card', '.dp-caption', '.dp-walk', '.g-result', '.g-card-wrap', '.g-goal',
-    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.pc-mini-body', '.pc-mini-menu', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu', '.act-say', '.ps-leave', '.sl-pop', '.city-card', '.city-todo', '.city-doing', '.cm-detail', '.tg-result', '.tg-invite']
+    '.g-talk', '.g-sheet', '.g-cta', 'body > .chat-panel', '.pc-stats', '.pc-sheet', '.pc-mini-body', '.pc-mini-menu', '.g-full-in', '.g-notice', '.g-toast', '.mm-bubble', '.mm-sign', '.g-menu', '.act-say', '.ps-leave', '.sl-pop', '.city-card', '.city-todo', '.city-doing', '.cm-detail', '.tg-result', '.tg-invite', '.cht-sheet', '.cht-ping']
   const MICRO_SEL = '.lp-kicker, .g-kind, .mm-kind, .mm-name, .rc-eyebrow, small, .g-fx, .rc-cost, .rc-gain, .g-act-fx, .g-why, .g-left, .g-gk, .lc-name, .mm-tag, .dp-name'
   const shown = (el) => {
     const r = el.getBoundingClientRect(), s = getComputedStyle(el)

@@ -1,0 +1,121 @@
+/* Chat sprint (owner, 11 Nov): the Chat sheet (thread list and thread view), the ping banner, the top bar's chat
+   button. The sheet is a bottom sheet over the world, at most 70% of the screen; its width comes from the one
+   floating-card rule in cards.css. Text is 14 px or more; names, times and counts are small (11-12 px). */
+
+.cht-sheet {
+  position: fixed; z-index: 150; left: 0; right: 0; bottom: 0; box-sizing: border-box;
+  display: flex; flex-direction: column; min-height: 0;
+  max-height: min(70dvh, var(--cht-room, 70dvh));
+  padding: 0 0 env(safe-area-inset-bottom);
+  background: var(--cr-bg, #fffaf0); color: var(--cr-ink, #1c1915);
+  border: 1.5px solid var(--cr-line, #e3d8c4); border-bottom: 0; border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 28px #0006; pointer-events: auto; overflow: hidden;
+  font: 500 15px/1.3 Figtree, system-ui, sans-serif; animation: gup .18s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+.cht-sheet[hidden], .cht-ping[hidden] { display: none; }
+.cht-sheet[data-view="thread"] { height: min(62dvh, var(--cht-room, 62dvh)); }
+.cht-sheet button { font: inherit; color: inherit; cursor: pointer; }
+
+.cht-head { flex: none; display: flex; align-items: center; gap: 8px; min-height: 50px; padding: 4px 8px 4px 12px; border-bottom: 1px solid var(--cr-line, #e3d8c4); }
+.cht-h { flex: 1; font: 800 18px/1 Figtree, system-ui, sans-serif; }
+.cht-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.cht-title b { font: 800 16px/1.15 Figtree, system-ui, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cht-title small { font: 600 12px/1.1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
+.cht-x, .cht-back { all: unset; box-sizing: border-box; flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font: 700 18px/1 system-ui, sans-serif; cursor: pointer; }
+.cht-back { font-size: 28px; margin-left: -6px; padding-bottom: 3px; }
+.cht-x:active, .cht-back:active { background: var(--cr-bg-2, #f4ecdc); }
+
+/* An avatar: a round window on the drawn student (or the group mark). */
+.cht-av { flex: none; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #e9dcff; border: 1.5px solid var(--cr-line, #e3d8c4); }
+.cht-av.cht-sm { width: 36px; height: 36px; }
+.cht-av.cht-xs { width: 30px; height: 30px; }
+.cht-av svg { width: 150%; height: 150%; margin-top: 46%; }
+.cht-group { font-size: 20px; line-height: 1; }
+.cht-av.cht-sm .cht-group { font-size: 17px; }
+
+/* Here now: the players this phone can see, one tap to message. */
+.cht-here { flex: none; padding: 8px 12px 6px; border-bottom: 1px solid var(--cr-line, #e3d8c4); }
+.cht-here > small { display: block; margin-bottom: 5px; font: 800 11px/1 Figtree, system-ui, sans-serif; letter-spacing: .5px; text-transform: uppercase; color: var(--cr-muted, #6b6359); }
+.cht-here-row { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.cht-person { all: unset; flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 52px; cursor: pointer; }
+.cht-person small { font: 700 11px/1.1 Figtree, system-ui, sans-serif; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The list. */
+.cht-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0; padding: 2px 0 14px; list-style: none; overscroll-behavior: contain; }
+.cht-row { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 62px; padding: 7px 12px; cursor: pointer; }
+.cht-row:active { background: var(--cr-bg-2, #f4ecdc); }
+.cht-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cht-mid b { font: 800 15px/1.2 Figtree, system-ui, sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cht-last { font-size: 14px; line-height: 1.25; color: var(--cr-muted, #6b6359); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cht-row.unread .cht-last { color: var(--cr-ink, #1c1915); font-weight: 700; }
+.cht-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 36px; }
+.cht-side small { font: 600 11px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
+.cht-row.unread .cht-side small:first-child { color: #5b23c9; font-weight: 800; }
+.cht-side .cht-badge, .cht-unread { min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: #5b23c9; color: #fff; font: 800 11px/1 Figtree, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.cht-empty, .cht-none { margin: 0; padding: 22px 16px; text-align: center; color: var(--cr-muted, #6b6359); font-size: 14px; list-style: none; }
+
+/* A thread: the pinned topic, the lines, the input. */
+.cht-pin { flex: none; display: flex; align-items: flex-start; gap: 7px; margin: 0; padding: 8px 12px; background: #fff3c4; border-bottom: 1px solid #ecd27a; color: #3a2a00; font: 700 14px/1.3 Figtree, system-ui, sans-serif; }
+.cht-pin[hidden], .cht-acts[hidden], .cht-note[hidden] { display: none; }
+.cht-lines { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0; padding: 8px 10px 6px; list-style: none; display: flex; flex-direction: column; gap: 3px; overscroll-behavior: contain; }
+.cht-lines li { display: flex; align-items: flex-end; gap: 6px; max-width: 100%; }
+.cht-lines li.lead { margin-top: 7px; }
+.cht-lines li.me { justify-content: flex-end; }
+.cht-who { all: unset; flex: none; align-self: flex-start; margin-top: 15px; cursor: pointer; }
+.cht-gap { flex: none; width: 30px; }
+.cht-col { min-width: 0; max-width: 78%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.cht-name { font: 800 11px/1.1 Figtree, system-ui, sans-serif; color: #5b23c9; padding-left: 10px; }
+.cht-bub { box-sizing: border-box; max-width: 100%; padding: 6px 10px 5px; border-radius: 16px; background: var(--cr-bg-2, #f4ecdc); border: 1px solid var(--cr-line, #e3d8c4); overflow-wrap: anywhere; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.cht-lines li.them.lead .cht-bub { border-top-left-radius: 5px; }
+.cht-lines li.me .cht-bub { max-width: 78%; background: #5b23c9; border-color: #5b23c9; color: #fff; }
+.cht-lines li.me.lead .cht-bub { border-top-right-radius: 5px; }
+.cht-text { font-size: 15px; line-height: 1.3; }
+.cht-time { float: right; margin: 5px 0 0 9px; font: 600 11px/1 Figtree, system-ui, sans-serif; opacity: .65; font-variant-numeric: tabular-nums; }
+
+.cht-form { flex: none; display: flex; align-items: center; gap: 7px; margin: 0; padding: 7px 10px 8px; border-top: 1px solid var(--cr-line, #e3d8c4); }
+.cht-form input { flex: 1; min-width: 0; height: 42px; box-sizing: border-box; padding: 0 14px; border-radius: 21px; border: 1.5px solid var(--cr-line, #e3d8c4); background: #fff; color: #1c1915; font: 500 16px Figtree, system-ui, sans-serif; outline: none; }
+.cht-form input:focus { border-color: #5b23c9; }
+.cht-form button { flex: none; height: 42px; padding: 0 16px; border-radius: 21px; border: 0; background: var(--cr-gold, #f0c400); color: #1c1915; font: 800 15px Figtree, system-ui, sans-serif; }
+.cht-count { flex: none; font: 600 11px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
+.cht-count:empty { display: none; }
+.cht-note { flex: none; margin: 0; padding: 0 14px 8px; font-size: 14px; line-height: 1.25; color: var(--cr-muted, #6b6359); }
+.cht-note.bad { color: #b3261e; font-weight: 700; }
+
+/* Long-press on a message: Report, Block. */
+.cht-acts { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 8px 12px; background: var(--cr-bg-2, #f4ecdc); border-top: 1px solid var(--cr-line, #e3d8c4); }
+.cht-acts p { flex: 1 1 100%; margin: 0; font-size: 14px; line-height: 1.25; }
+.cht-acts p small { font: 700 11px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
+.cht-acts button { min-height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid var(--cr-line, #e3d8c4); background: #fff; font: 800 14px Figtree, system-ui, sans-serif; }
+.cht-acts button.bad { color: #b3261e; border-color: #e7b3ae; }
+
+/* The ping: a banner at the top, like a phone's notification. */
+.cht-ping {
+  all: unset; box-sizing: border-box; position: fixed; z-index: 1000; left: 0; right: 0; top: calc(8px + env(safe-area-inset-top, 0px));
+  display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 12px; border-radius: 18px;
+  background: #22143bf7; color: #fff6e6; border: 1.5px solid #f0c400; box-shadow: 0 10px 26px #0008;
+  font: 500 14px/1.25 Figtree, system-ui, sans-serif; cursor: pointer; pointer-events: auto;
+}
+.cht-ping.in { animation: cht-drop .22s ease-out; }
+@keyframes cht-drop { from { transform: translateY(-120%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cht-ping.in, .cht-sheet { animation: none; } }
+.cht-ping-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cht-ping-t b { font: 800 14px/1.15 Figtree, system-ui, sans-serif; color: #ffd94a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cht-ping-t span { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The top bar's chat button (beside the menu), with the unread count. */
+.tb-chat {
+  all: unset; box-sizing: border-box; flex: none; position: relative; cursor: pointer;
+  width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center;
+  background: var(--cr-bg-2, #f4ecdc); border: 1.5px solid var(--cr-line, #e3d8c4); font-size: 16px; line-height: 1;
+}
+.tb-chat:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }
+.tb-chat .cht-unread { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; background: #e0352b; box-shadow: 0 0 0 2px var(--cr-bg, #fffaf0); }
+.cht-unread[hidden] { display: none; }
+/* (the banner covers the top bar: the count waits under it) */
+body:has(.cht-ping:not([hidden])) .tb-chat .cht-unread { visibility: hidden; }
+.cht-unread.inline { vertical-align: 1px; margin-left: 4px; background: #e0352b; }
+@media (max-width: 374px) { .tb-chat { width: 32px; } }
+/* The mini player card's Message button: the envelope alone, so the row still fits a 360 px phone (in SunnyBay,
+   where Race takes its place in the row, Message is the first line of the card's menu). */
+.pc-mini-acts button.pc-mini-dm-ic { width: 40px; padding: 0; text-align: center; }

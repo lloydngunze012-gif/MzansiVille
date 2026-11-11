@@ -119,7 +119,7 @@ test('B1 two rows: time pill, players chip, goal badge, menu; then the five labe
   const energy = b.stats.find((s) => s.k === 'energy')
   expect(energy.fill / energy.inner, 'the energy bar is 87% full').toBeGreaterThan(0.8)
   expect(b.menu, 'one menu button').toBe(1)
-  expect(b.extras, 'leaderboard, chat, sound and the timeline are not in the bar').toBe(0)
+  expect(b.extras, 'leaderboard, the old lobby link, sound and the timeline are not in the bar (the chat button is: Chat sprint)').toBe(0)
   expect(b.dot, 'a dot for the unread notice').toBe(true)
   await page.screenshot({ path: `${OUT}/bar-normal.png`, clip: { x: 0, y: 0, width: W, height: 120 } })
   await page.screenshot({ path: `${OUT}/bar-normal-full.png` })
@@ -127,7 +127,7 @@ test('B1 two rows: time pill, players chip, goal badge, menu; then the five labe
   await page.locator('.tb-menu').tap()
   const menu = page.locator('.g-menu')
   await expect(menu).toBeVisible()
-  for (const want of ['Weekly leaderboard', 'Campus chat', 'Sound', 'Settings']) await expect(menu.locator('button', { hasText: want }).first()).toBeVisible()
+  for (const want of ['Weekly leaderboard', 'Chat', 'Sound', 'Settings']) await expect(menu.locator('button', { hasText: want }).first()).toBeVisible()
   await expect(menu.locator('[data-go="notices"] .tb-dot')).toHaveCount(1)
   await page.screenshot({ path: `${OUT}/menu.png` })
   // opening Notices clears the dot

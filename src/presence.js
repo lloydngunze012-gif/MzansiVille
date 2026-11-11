@@ -434,3 +434,8 @@ window.mzansiPresence = () => ({
   label: countLabel(),
   peers: [...peers.values()].map((p) => ({ id: p.id, name: p.meta?.name, num: p.meta?.num, area: p.area, heard: Date.now() - p.heard, snaps: p.snaps.length })),
 })
+
+// Everyone this phone can see right now (the chat's "Here now" strip): [{ id, name, look, house, handle }].
+export function peerList() {
+  return [...peers.values()].filter((p) => p.meta && !hidden.has(p.id)).map((p) => ({ id: p.id, name: p.meta.name, look: p.meta.look, house: p.meta.house, handle: p.meta.card?.handle || '' }))
+}

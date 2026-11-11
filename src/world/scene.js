@@ -384,10 +384,14 @@ function keepClearOfHud(dt) {
     const bottom = Math.max(0, ...[...document.querySelectorAll('.g-hud, .g-nowrow, .ps-leave')].filter((el) => el.getClientRects().length && !el.hidden).map((el) => el.getBoundingClientRect().bottom - rect.top))
     // (the player sits at the screen centre: it needs the centre to be a margin below the panel)
     want = Math.max(0, Math.min(h * 0.18, bottom + 60 - h * 0.5))
+    // Chat sprint: the Chat sheet covers the bottom of the screen: the picture moves up, so you stand in the
+    // middle of the strip between the top bar and the sheet and can see where you walk.
+    const chatTop = Number(document.body.dataset.chatTop) || 0
+    if (chatTop) want = -Math.round(h * 0.5 - (bottom + chatTop) * 0.5)
   }
   viewShift += (want - viewShift) * (1 - Math.exp(-dt * 6))
   if (Math.abs(viewShift - (camera.view?.offsetY ? -camera.view.offsetY : 0)) < 0.5) return
-  if (viewShift < 0.5 && want === 0) camera.clearViewOffset()
+  if (Math.abs(viewShift) < 0.5 && want === 0) camera.clearViewOffset()
   else camera.setViewOffset(window.innerWidth, h, 0, -viewShift, window.innerWidth, h)
 }
 

@@ -452,7 +452,9 @@ function frameCamera(dt) {
   rig.apply(camera, target, dt, null)
   // (Sims: pushed down a little more than the bars since the compact top bar, owner 10 Nov: with a 49 px bar the
   // back counters' signs stay clear of it; still far less push than the old two-row bar gave)
-  const want = mode === 'eye' ? 0 : Math.round(barsBottom * (mode === 'top' ? 0.5 : 1.3))
+  // (Chat sprint: with the Chat sheet open the Sims picture moves up, so you stand between the bar and the sheet)
+  const chatTop = Number(document.body.dataset.chatTop) || 0
+  const want = mode === 'eye' ? 0 : chatTop && mode === 'sims' ? -Math.round(window.innerHeight * 0.5 - (barsBottom + chatTop) * 0.5) : Math.round(barsBottom * (mode === 'top' ? 0.5 : 1.3))
   if (want !== shiftY) {
     shiftY = want
     const W = window.innerWidth, H = window.innerHeight

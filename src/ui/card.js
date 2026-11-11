@@ -67,10 +67,12 @@ export function miniCardHtml(card, house, opts = {}) {
     <div class="pc-mini-acts">
       <button type="button" class="pc-mini-wave" data-pc="wave">\u{1F44B} Wave</button>
       <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
+      ${opts.race ? '' : '<button type="button" class="pc-mini-dm-ic" data-pc="dm" aria-label="Message">\u{2709}\u{FE0F}</button>'}
       ${opts.race ? '<button type="button" class="pc-mini-race" data-pc="race">\u{1F3C1} Race</button>' : ''}
       <span class="pc-mini-more">
         <button type="button" data-pc="more" aria-haspopup="true" aria-expanded="${opts.moreOpen ? 'true' : 'false'}" aria-label="More">⋯</button>
         <span class="pc-mini-menu"${opts.moreOpen ? '' : ' hidden'}>
+          ${opts.race ? '<button type="button" data-pc="dm">\u{2709}\u{FE0F} Message</button>' : ''}
           <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
           <button type="button" data-pc="full">\u{1F4C7} View full card</button>
           <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>

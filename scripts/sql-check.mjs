@@ -148,4 +148,133 @@ await check('feedback: anyone can send, nobody but admins can read', async () =>
   assert.equal((await one('select count(*)::int as n from feedback')).n, 1)
 })
 
+// ---- Chat sprint (11 Nov): supabase/chat.sql ----
+const chatSql = readFileSync(join(root, 'supabase', 'chat.sql'), 'utf8')
+const topics = JSON.parse(readFileSync(join(root, 'data', 'campusville', 'topics.json'), 'utf8'))
+const P = (n) => ({ id: `chat-player-${n}-0001`, secret: `chat-secret-${n}-0123456789` })
+const [CA, CB, CC] = [P('a'), P('b'), P('c')]
+const rpc = async (fn, who, ...rest) => (await one(`select public.${fn}($1,$2${rest.map((_, i) => `,$${i + 3}`).join('')}) as r`, [who.id, who.secret, ...rest])).r
+// (the 2 s gap is on the server's clock: tests move the sender's earlier lines back instead of waiting)
+const age = (who, secs = 3) => db.query('update chat_lines set at = at - make_interval(secs => $2) where sender = $1', [who.id, secs])
+const say = async (who, thread, text) => { const r = await rpc('chat_send', who, thread, text); await age(who); return r }
+
+await check('chat.sql runs, and runs again; The Quad carries the first topic of topics.json', async () => {
+  await db.exec(chatSql)
+  await db.exec(chatSql)
+  const quad = await one("select * from chat_threads where id = 'quad'")
+  assert.equal(quad.name, 'The Quad')
+  assert.equal(quad.open, true)
+  assert.equal(quad.topic, topics[0], 'the QUAD TOPIC line in supabase/chat.sql must match data/campusville/topics.json')
+})
+
+await check('chat: a new player is in The Quad at once; only the phone with the secret is that player', async () => {
+  const a = await rpc('chat_sync', CA, 'Thandeka', 'thandeka_1', 'Peak', '{"skin":"deep"}')
+  assert.equal(a.ok, true)
+  assert.deepEqual(a.threads.map((t) => t.id), ['quad'])
+  assert.equal(a.threads[0].topic, topics[0])
+  await rpc('chat_sync', CB, 'Kabelo', 'kabelo_1', 'Braam', '{}')
+  await rpc('chat_sync', CC, 'Megan', 'megan_1', 'Peak', '{}')
+  await assert.rejects(rpc('chat_sync', { id: CA.id, secret: 'another-secret-0123456789' }, 'Fake'), /not you/)
+  await assert.rejects(rpc('chat_fetch', { id: CA.id, secret: 'another-secret-0123456789' }, 'quad'), /not you/)
+  await assert.rejects(rpc('chat_send', { id: 'nobody-here-0001', secret: 'another-secret-0123456789' }, 'quad', 'hi'), /not you/)
+})
+
+let dm = ''
+await check('chat: a DM reaches the other player with an unread count, in order, and reading clears it', async () => {
+  const made = await rpc('chat_dm', CA, CB.id)
+  assert.equal(made.ok, true)
+  dm = made.thread
+  assert.equal((await rpc('chat_dm', CB, CA.id)).thread, dm, 'one thread per pair, whoever starts it')
+  assert.equal((await rpc('chat_dm', CA, 'never-seen-player-01')).reason, 'unknown')
+  for (const text of ['Howzit', 'You at the Caf?', 'Come through']) assert.equal((await say(CA, dm, text)).ok, true)
+  const b = await rpc('chat_sync', CB)
+  const t = b.threads.find((x) => x.id === dm)
+  assert.equal(t.unread, 3)
+  assert.equal(t.name, 'Thandeka')
+  assert.equal(t.peer.handle, 'thandeka_1')
+  assert.equal(t.last.body, 'Come through')
+  assert.equal(b.threads[0].id, dm, 'newest first')
+  const got = await rpc('chat_fetch', CB, dm)
+  assert.deepEqual(got.lines.map((l) => l.body), ['Howzit', 'You at the Caf?', 'Come through'])
+  assert.equal(got.people[CA.id].name, 'Thandeka')
+  assert.equal((await rpc('chat_sync', CB)).threads.find((x) => x.id === dm).unread, 0)
+  const newer = await rpc('chat_fetch', CB, dm, got.lines[1].id)
+  assert.deepEqual(newer.lines.map((l) => l.body), ['Come through'])
+})
+
+await check('chat: only members read or write a thread; no table can be read or written directly', async () => {
+  assert.equal((await rpc('chat_fetch', CC, dm)).reason, 'not_member')
+  assert.equal((await rpc('chat_send', CC, dm, 'let me in')).reason, 'not_member')
+  await db.exec('set role anon')
+  for (const table of ['chat_lines', 'chat_threads', 'chat_members', 'chat_players', 'chat_blocks', 'chat_line_reports']) {
+    assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  }
+  await assert.rejects(db.query("insert into chat_lines (thread, sender, body) values ('quad', 'x', 'spam')"), /row-level security|permission denied/)
+  await assert.rejects(db.query("insert into chat_members (thread, player) values ($1, 'x')", [dm]), /row-level security|permission denied/)
+  assert.equal((await db.query("update chat_threads set topic = 'hacked'")).affectedRows, 0)
+  await assert.rejects(db.query("select public.chat_me('a', 'b')"), /permission denied/)
+  await db.exec('reset role')
+})
+
+await check('chat: one message per 2 s and 30 per 5 minutes, checked by the server; 300 characters; a slur is refused', async () => {
+  assert.equal((await rpc('chat_send', CC, 'quad', 'first')).ok, true)
+  const fast = await rpc('chat_send', CC, 'quad', 'second, at once')
+  assert.equal(fast.ok, false)
+  assert.equal(fast.reason, 'slow')
+  assert.ok(fast.wait > 0 && fast.wait <= 2000)
+  await age(CC)
+  for (let i = 0; i < 29; i++) assert.equal((await say(CC, 'quad', `line ${i}`)).ok, true)
+  const flood = await rpc('chat_send', CC, 'quad', 'one too many')
+  assert.equal(flood.reason, 'flood')
+  assert.equal((await one('select count(*)::int as n from chat_lines where sender = $1', [CC.id])).n, 30)
+  await age(CC, 400)
+  const long = await say(CC, 'quad', 'x'.repeat(400))
+  assert.equal(long.line.body.length, 300)
+  assert.equal((await rpc('chat_send', CC, 'quad', 'you slurword')).reason, 'word')
+  assert.equal((await rpc('chat_send', CC, 'quad', '   ')).reason, 'empty')
+})
+
+await check('chat: a thread keeps its last 200 lines', async () => {
+  await db.query("insert into chat_lines (thread, sender, body, at) select 'quad', $1, 'old ' || g, now() - interval '1 hour' from generate_series(1, 230) g", [CA.id])
+  await say(CA, 'quad', 'the newest')
+  assert.equal((await one("select count(*)::int as n from chat_lines where thread = 'quad'")).n, 200)
+  const got = await rpc('chat_fetch', CB, 'quad')
+  assert.equal(got.lines.length, 200)
+  assert.equal(got.lines[199].body, 'the newest')
+})
+
+await check('chat: a block hides both players from each other, in the group and the DM', async () => {
+  await say(CB, 'quad', 'B in the quad')
+  assert.ok((await rpc('chat_fetch', CA, 'quad')).lines.some((l) => l.sender === CB.id))
+  assert.equal((await rpc('chat_block', CB, CA.id)).ok, true)
+  const forB = await rpc('chat_fetch', CB, 'quad')
+  assert.ok(!forB.lines.some((l) => l.sender === CA.id), 'the blocker no longer sees them')
+  assert.ok(forB.lines.some((l) => l.sender === CB.id), 'their own lines are still there')
+  assert.ok(!(await rpc('chat_fetch', CA, 'quad')).lines.some((l) => l.sender === CB.id), 'and they no longer see the blocker')
+  assert.equal((await rpc('chat_send', CA, dm, 'hello?')).reason, 'blocked')
+  assert.equal((await rpc('chat_dm', CA, CB.id)).reason, 'blocked')
+  const b = await rpc('chat_sync', CB)
+  assert.ok(!b.threads.some((t) => t.id === dm), 'the DM leaves the list')
+  assert.deepEqual(b.blocked, [CA.id])
+  assert.notEqual(b.threads.find((t) => t.id === 'quad').last.sender, CA.id)
+  await rpc('chat_block', CB, CA.id, false)
+  assert.ok((await rpc('chat_sync', CB)).threads.some((t) => t.id === dm), 'and comes back when unblocked')
+})
+
+await check('chat: a member can report a line (a copy of the text is kept); groups: the creator sets the pinned topic', async () => {
+  const line = (await rpc('chat_fetch', CB, dm)).lines[0]
+  assert.equal((await rpc('chat_report', CB, line.id, 'Rude or hateful')).ok, true)
+  assert.equal((await rpc('chat_report', CC, line.id, 'not mine to see')).reason, 'not_member')
+  const rep = await one('select * from chat_line_reports')
+  assert.equal(rep.body, 'Howzit')
+  assert.equal(rep.sender, CA.id)
+  const g = await rpc('chat_group_create', CA, 'Study crew', 'Maths 101: who gets question 4?')
+  assert.equal(g.ok, true)
+  assert.equal((await rpc('chat_group_create', CA, 'slurword crew', '')).reason, 'word')
+  assert.equal((await rpc('chat_set_topic', CB, g.thread, 'mine now')).reason, 'not_creator')
+  assert.equal((await rpc('chat_set_topic', CA, g.thread, 'Test on Friday')).ok, true)
+  assert.equal((await rpc('chat_sync', CA)).threads.find((t) => t.id === g.thread).topic, 'Test on Friday')
+  assert.equal((await rpc('chat_fetch', CB, g.thread)).reason, 'not_member')
+})
+
 console.log(`${passed} sql checks passed`)

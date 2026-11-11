@@ -26,6 +26,8 @@ const SOUNDS = {
   up: (c, o) => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, o, { f0: f, t: i * 0.075, dur: 0.22, type: 'triangle', vol: 0.11 })) },
   down: (c, o) => { [440, 349.23, 261.63].forEach((f, i) => tone(c, o, { f0: f, f1: f * 0.97, t: i * 0.09, dur: 0.2, type: 'sine', vol: 0.11 })) },
   hover: (c, o) => tone(c, o, { f0: 1500, f1: 1900, dur: 0.04, vol: 0.035, type: 'triangle' }),
+  // (Chat sprint: a new message in a thread that is not open; two short bright notes, like a phone)
+  ping: (c, o) => { tone(c, o, { f0: 1174.66, dur: 0.09, vol: 0.13 }); tone(c, o, { f0: 1567.98, t: 0.08, dur: 0.16, vol: 0.13 }) },
   choose: (c, o) => { tone(c, o, { f0: 660, dur: 0.07, vol: 0.12, type: 'triangle' }); tone(c, o, { f0: 990, t: 0.06, dur: 0.12, vol: 0.12, type: 'triangle' }) },
 }
 const lastAt = {}

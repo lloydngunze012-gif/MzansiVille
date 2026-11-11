@@ -7,15 +7,15 @@ export const city = (page) => page.locator('#city3d')
 export const info = (page) => page.evaluate(() => window.mzansiCity.info())
 
 // A quick-start student standing just inside the Main Gate at a calm moment. patch: extra fields for the save's run.
-export async function atGate(page, { patch = {}, query = '' } = {}) {
+export async function atGate(page, { patch = {}, query = "", name = "Lerato", preset = "q-priya" } = {}) {
   const errors = []
   page.on('pageerror', (e) => { errors.push(String(e)); console.log('PAGEERROR', String(e).slice(0, 300)) })
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|supabase|realtime/i.test(m.text())) console.log('CONSOLE', m.text().slice(0, 300)) })
   await page.goto(`/?fast=1&enrol=quick&morning=0${query}#/new`)
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear() })
   await page.reload()
-  await page.locator('[data-preset="q-priya"]').tap()
-  await page.locator('#name').fill('Lerato')
+  await page.locator(`[data-preset="${preset}"]`).tap()
+  await page.locator('#name').fill(name)
   await page.locator('[data-act="qs-play"]').tap()
   await page.waitForURL(/#\/play/, { timeout: 30000 })
   await page.evaluate((p) => {

@@ -70,6 +70,8 @@ import { payDrive } from './city/plan.js'
 import { adsFor } from './city/billboards.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
+import { blockInChat, startThreads } from './threads.js'
+import { mountThreads, openChat, openDm } from './ui/threads.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
 import { watchStats, wireSfx } from './sfx.js'
@@ -758,7 +760,7 @@ setInterval(() => {
 function paint() {
   watchStats(save.run?.stats)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
-  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run) }
+  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || []) }
   const shot = new URLSearchParams(location.search).get('shot')
   // An old save was never asked where it is from (owner, 9 Nov): the "Where are you from?" step, once,
   // on the way into the game (South Africa pre-selected; a tap on Continue keeps it).
@@ -1768,6 +1770,8 @@ app.addEventListener('click', async (event) => {
   if (act === 'qs-play') { await quickPlay(); return }
   if (act === 'health-refresh') { loadHealthPage(); return }
   if (act === 'lp-board') { ui.gear = false; paint(); openBoard(); return }
+  // Chat sprint: the thread list (DMs and groups), from the top bar's button or the menu.
+  if (act === 'chat-open') { ui.gear = false; paint(); openChat(); return }
   // SunnyBay from the menu: the city view of the map on the 3D campus; from the 2D campus map, straight out of the gate.
   if (act === 'city-map') {
     ui.gear = false
@@ -2691,6 +2695,13 @@ function onSheetClick(event) {
     if (!keep) window.dispatchEvent(new CustomEvent('mzansi-open-chat', { detail: { id } }))
     return
   }
+  // Message (Chat sprint): the DM with them opens; the card goes, the world stays walkable.
+  if (k === 'dm') {
+    const who = { name: sheetCard?.name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house }
+    closePlayerCard()
+    openDm(id, who)
+    return
+  }
   // Block: their body, bubbles, lines in your chat and card are gone for you.
   if (k === 'block') {
     blockPlayer(id)
@@ -2722,8 +2733,13 @@ function blockPlayer(id) {
   save.blocks = [...new Set([...(save.blocks || []), id])]
   persist()
   hidePlayer(id)
+  blockInChat(id) // (Chat sprint: their messages go from every thread, both ways)
   window.dispatchEvent(new CustomEvent('mzansi-block', { detail: { id } }))
 }
+// Blocked from a message in a chat thread (ui/threads.js): the same block as from their card.
+window.addEventListener('mzansi-chat-block', (event) => { event.preventDefault(); blockPlayer(event.detail.id) })
+// (a report the chat's own function could not take, e.g. chat.sql not run yet: the player report path keeps it)
+window.addEventListener('mzansi-chat-report', (event) => { reportPlayer(event.detail.id, 'Reported from chat', null, event.detail.message) })
 window.addEventListener('mzansi-player-card', (event) => openPlayerCard(event.detail.id, event.detail))
 // Walking away closes the mini card (never the full one: movement is already paused
 // while that's open), src/ui/minicard-state.js.

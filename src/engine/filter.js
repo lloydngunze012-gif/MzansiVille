@@ -108,3 +108,9 @@ function cleanContacts(raw, max, handleWhy) {
   const f = filterText(text)
   return { text: f.text, removed, blocked: f.blocked, masked: f.masked }
 }
+
+// A message in a chat thread (Chat sprint, 11 Nov): 300 characters, the same rules as a nearby chat line.
+export const MSG_MAX = 300
+export function cleanMessage(raw) {
+  return cleanContacts(raw, MSG_MAX, 'Social handles are taken out.')
+}

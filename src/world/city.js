@@ -1127,7 +1127,9 @@ function measureBars() {
   const hud = document.querySelector('.g-hud')
   const hb = hud && hud.getClientRects().length ? hud.getBoundingClientRect().bottom : 0
   uiRoot.style.setProperty('--city-top', `${Math.round(hb || 56)}px`)
-  const want = rig.mode === 'eye' || shot ? 0 : Math.round(((hb || 56) + 52) * 0.5)
+  // (Chat sprint: with the Chat sheet open the picture moves up instead, so you stand between the bar and the sheet)
+  const chatTop = Number(document.body.dataset.chatTop) || 0
+  const want = rig.mode === 'eye' || shot ? 0 : chatTop ? -Math.round(window.innerHeight * 0.5 - ((hb || 56) + chatTop) * 0.5) : Math.round(((hb || 56) + 52) * 0.5)
   if (want !== shiftY) {
     shiftY = want
     const W = window.innerWidth
