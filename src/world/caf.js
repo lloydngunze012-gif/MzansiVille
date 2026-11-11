@@ -10,6 +10,7 @@
 //
 // Debug: ?caflight=day|evening|load picks the light; ?cafdebug=1 shows a light switch and the
 // frame stats; window.mzansiCaf (read-mostly) is for tests: info(), zones, teleport(), light().
+import { boardLine } from '../loops.js'
 import * as THREE from 'three'
 import { guardRenderer } from './guard.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
@@ -171,7 +172,13 @@ function boardTexture(label, sub) {
     const size = label.length > 8 ? 54 : 70
     g.font = `800 ${size}px Graduate, Figtree, system-ui, sans-serif`
     g.fillText(label, 256, subText ? 62 : 82)
-    if (subText) { g.fillStyle = C.cream; g.font = '700 30px Figtree, system-ui, sans-serif'; g.fillText(subText, 256, 122) }
+    if (subText) {
+      // (a long line, such as today's special, is set smaller until it fits the board)
+      let fs = 30
+      g.fillStyle = C.cream
+      do { g.font = `700 ${fs}px Figtree, system-ui, sans-serif`; fs -= 2 } while (g.measureText(subText).width > 468 && fs > 14)
+      g.fillText(subText, 256, 122)
+    }
     t.needsUpdate = true
   }
   t.userData.draw(sub)
@@ -329,7 +336,7 @@ async function buildRoom() {
     b.position.set(c.x, 3.05, Z0 + 0.02)
     b.name = `caf-board-${c.id}`
     group.add(b)
-    boards.push({ tex, mesh: b })
+    boards.push({ tex, mesh: b, id: c.id })
   }
 
   // windows on the left wall: bright panes, walnut frames
@@ -407,7 +414,9 @@ export function setLight(name) {
     rig3.bulbMat.color.set(L.bulbs ? '#ffd27a' : '#2a2230')
     rig3.stripMat.color.set(L.emer ? '#ff6a50' : '#3a2a2a')
     rig3.panes.color.set(L.window)
-    for (const b of rig3.boards) b.tex.userData.draw(L.sub)
+    // (Loops: today's special under HOT MEALS; in load-shedding every board says what the light says)
+    for (const b of rig3.boards) b.tex.userData.draw(L.sub || (b.id === 'hot' && opts?.run ? boardLine(opts.run.day) : ''))
+    if (host && opts?.run) host.dataset.special = boardLine(opts.run.day)
   }
   uiRoot?.querySelectorAll('[data-light]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.light === name)))
   if (host) host.dataset.light = name

@@ -1,3 +1,4 @@
+import { preorderOffer } from '../loops.js'
 import { chipLabel, countLabel, peersOnCampus } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
@@ -315,6 +316,8 @@ function gearMenu(run) {
   <aside class="g-menu" role="dialog" aria-label="Menu">
     <h3>Menu <span class="g-online" data-online title="Students here right now">${countLabel()}</span></h3>
     <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
+    ${preorderOffer(run) ? '<button type="button" class="news" data-act="preorder">\u{1F35B} Order tomorrow’s special <i class="tb-dot" aria-label="new"></i></button>' : ''}
+    <button type="button" data-act="invite-friend">\u{1F381} Invite a friend: R100 each</button>
     <button type="button" data-act="chat-open">\u{1F4AC} Chat <small class="cht-unread inline" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
     <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>

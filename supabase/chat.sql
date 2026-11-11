@@ -322,6 +322,25 @@ create table if not exists public.chat_events (
 create index if not exists chat_events_idx on public.chat_events (player, kind, at desc);
 alter table public.chat_events enable row level security;
 
+-- LOOPS (owner, 11 Nov): a group's flame, and "invite a friend".
+--   flame: how many days running at least 3 members of the group were active (opened the game: a sync); flame_day:
+--   the last such day (SAST). Shown as 0 once a day has been missed.
+alter table public.chat_threads add column if not exists flame int not null default 0;
+alter table public.chat_threads add column if not exists flame_day date;
+--   ref_code: a player's invite code (made the first time they ask for their link).
+alter table public.chat_players add column if not exists ref_code text;
+create unique index if not exists chat_players_ref_idx on public.chat_players (ref_code) where ref_code is not null;
+--   One row per friend who came in through someone's link: a friend is counted once, ever. paid: the inviter's
+--   phone has been told (and has added the reward).
+create table if not exists public.chat_refs (
+  friend text primary key,
+  inviter text not null,
+  at timestamptz not null default now(),
+  paid boolean not null default false
+);
+create index if not exists chat_refs_inviter_idx on public.chat_refs (inviter);
+alter table public.chat_refs enable row level security;
+
 -- SOCIAL A FOLLOW-UPS (owner, 11 Nov): nobody lands in a group they did not agree to.
 --   An ask: "[Name] wants to add you to [Group]. Join / No thanks." One per player per group, good for 24 hours.
 --   state: pending | yes | no. The asker is told "added" or "can't right now" on their next sync, then the row goes.
@@ -382,6 +401,8 @@ begin
     'topic', t.topic, 'members', n_members, 'creator', t.creator,
     'peer', case when t.kind = 'dm' and peer.id is not null then jsonb_build_object('id', peer.id, 'name', peer.name, 'handle', peer.handle, 'house', peer.house, 'look', peer.look) end,
     'last', last_line, 'unread', n_unread, 'muted', coalesce(is_muted, false), 'quad', chat_is_quad(t.id),
+    -- (Loops: the group's flame; 0 once a day has been missed)
+    'flame', case when t.flame_day >= (now() at time zone 'Africa/Johannesburg')::date - 1 then t.flame else 0 end,
     'code', case when t.kind = 'group' and not chat_is_quad(t.id) and mine is not null then t.code end);
 end $$;
 revoke all on function public.chat_thread_json(text, public.chat_threads) from public;
@@ -392,6 +413,7 @@ drop function if exists public.chat_sync(text, text, text, text, text, jsonb);
 create or replace function public.chat_sync(p_id text, p_secret text, p_name text default null, p_handle text default null, p_house text default null, p_look jsonb default null, p_room int default null)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare nm text := left(coalesce(nullif(trim(p_name), ''), 'Student'), 24); list jsonb; mine jsonb; pals jsonb; rm int; qid text; asks jsonb; answers jsonb;
+  today date := (now() at time zone 'Africa/Johannesburg')::date; refs jsonb;
 begin
   if p_id is null or length(p_id) not between 8 and 64 or p_secret is null or length(p_secret) < 16 then raise exception 'bad player'; end if;
   begin nm := public.clean_chat_body(nm); exception when others then nm := 'Student'; end;
@@ -413,6 +435,14 @@ begin
   insert into chat_members (thread, player, last_read) select t.id, p_id, t.last_id from chat_threads t where t.id = qid on conflict do nothing;
   -- (a new member of an open group starts with nothing unread)
   insert into chat_members (thread, player, last_read) select t.id, p_id, t.last_id from chat_threads t where t.open on conflict do nothing;
+  -- Loops: a group's flame grows on every day 3 or more of its members are active (this sync is you being active).
+  -- Counted once a day per group, by whichever member's sync makes it three.
+  update chat_threads t set flame = case when t.flame_day = today - 1 then t.flame + 1 else 1 end, flame_day = today
+    where t.kind = 'group' and not chat_is_quad(t.id) and t.id not like 'p:%'
+      and (t.flame_day is null or t.flame_day < today)
+      and exists (select 1 from chat_members m where m.thread = t.id and m.player = p_id)
+      and (select count(*) from chat_members m join chat_players pl on pl.id = m.player
+           where m.thread = t.id and (pl.seen_at at time zone 'Africa/Johannesburg')::date = today) >= 3;
   select coalesce(jsonb_agg(x.j order by x.at desc nulls last), '[]'::jsonb) into list from (
     select chat_thread_json(p_id, t) as j, coalesce(t.last_at, case when t.kind = 'group' then t.created_at end) as at
     from chat_members m join chat_threads t on t.id = m.thread
@@ -438,7 +468,10 @@ begin
     returning a.thread, a.player, a.state)
   select coalesce(jsonb_agg(jsonb_build_object('name', coalesce(p.name, 'Student'), 'group', coalesce(t.name, 'the group'), 'added', d.state = 'yes')), '[]'::jsonb)
     into answers from done d left join chat_players p on p.id = d.player left join chat_threads t on t.id = d.thread;
-  return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm, 'asks', asks, 'answers', answers,
+  -- Loops: friends who finished the quick start through your link since you were last told (told once: the phone adds the reward)
+  with told as (update chat_refs r set paid = true where r.inviter = p_id and not r.paid returning r.friend)
+  select coalesce(jsonb_agg(coalesce(pl.name, 'A friend')), '[]'::jsonb) into refs from told left join chat_players pl on pl.id = told.friend;
+  return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm, 'asks', asks, 'answers', answers, 'refs', refs,
     -- (Social B: your follower count and your interests; null until its block below has been run)
     'followers', (select count(*) from chat_follows where followed = p_id),
     'interests', (select to_jsonb(interests) from chat_players where id = p_id));
@@ -960,3 +993,43 @@ begin
   return jsonb_build_object('ok', true, 'joined', n, 'names', names);
 end $$;
 grant execute on function public.chat_daily(text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- LOOPS (owner, 11 Nov): "invite a friend". The link carries the inviter's code; when the friend finishes the
+-- quick start their phone claims it, once per friend, checked here: the friend's account must be new (made in
+-- the last day), not the inviter, and never claimed before. An inviter is rewarded for 10 friends a day at most.
+-- The reward itself (game rand) is added by each phone: the friend's when the claim says ok, the inviter's when
+-- chat_sync lists the friend under refs.
+-- =====================================================================================================
+-- Your invite code (made the first time). { ok, code }.
+create or replace function public.chat_ref_code(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare c text;
+begin
+  perform chat_me(p_id, p_secret);
+  select ref_code into c from chat_players where id = p_id;
+  if c is null then
+    c := substr(md5(p_id || random()::text || clock_timestamp()::text), 1, 8);
+    update chat_players set ref_code = c where id = p_id;
+  end if;
+  return jsonb_build_object('ok', true, 'code', c);
+end $$;
+grant execute on function public.chat_ref_code(text, text) to anon, authenticated;
+
+-- A new player claims the code they came in with. { ok, inviter: name } or { ok: false, reason: unknown | self | old | done | limit }.
+create or replace function public.chat_ref_claim(p_id text, p_secret text, p_code text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare inv chat_players%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chatref:' || p_id));
+  select * into inv from chat_players where ref_code = lower(left(coalesce(p_code, ''), 16));
+  if not found then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if inv.id = p_id then return jsonb_build_object('ok', false, 'reason', 'self'); end if;
+  if exists (select 1 from chat_refs where friend = p_id) then return jsonb_build_object('ok', false, 'reason', 'done'); end if;
+  if (select created_at from chat_players where id = p_id) < now() - interval '1 day' then return jsonb_build_object('ok', false, 'reason', 'old'); end if;
+  if (select count(*) from chat_refs where inviter = inv.id and at > now() - interval '1 day') >= 10 then return jsonb_build_object('ok', false, 'reason', 'limit'); end if;
+  insert into chat_refs (friend, inviter) values (p_id, inv.id);
+  return jsonb_build_object('ok', true, 'inviter', inv.name);
+end $$;
+grant execute on function public.chat_ref_claim(text, text, text) to anon, authenticated;

@@ -151,6 +151,8 @@ export function sync() {
     socialB = Array.isArray(data.interests)
     asks = (data.asks || []).filter((a) => !blocked.has(a.from_id)).map((a) => ({ ...a, group: filterText(String(a.group || 'a group')).text || 'a group', from: filterText(String(a.from || 'Someone')).text || 'Someone' }))
     // (what became of the asks you sent: "added" or "can't right now", told once)
+    // (Loops: friends who started playing through your invite link since you were last told)
+    if (data.refs?.length) emit('refs', data.refs.map((n) => filterText(String(n || 'A friend')).text || 'A friend'))
     if (data.answers?.length) emit('answers', data.answers.map((a) => ({ name: filterText(String(a.name || 'They')).text || 'They', group: filterText(String(a.group || 'the group')).text || 'the group', added: Boolean(a.added) })))
     interests = socialB ? data.interests : []
     followers = Number(data.followers) || 0
@@ -462,6 +464,6 @@ export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
   social, socialB, interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
-  threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '' })),
+  threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '', flame: Number(t.flame) || 0 })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

@@ -14,6 +14,8 @@ test('SunnyBay places: into Lifecup, ten things to do, a muffin, back out at the
   await expect(page.locator('body')).toHaveAttribute('data-city-place', 'lifecup')
   await expect(page.locator('.city-todo .ct-row')).toHaveCount(10)
   await expect(page.locator('.city-todo h3')).toContainText('Lifecup cafe')
+  // (Loops and People, 11 Nov) the place's own person, by name, with their greeting; and a word from them on a result
+  await expect(page.locator('.city-todo .ct-staff')).toHaveText('Lila Jacobs “Corner table is free. The flat white is not shy.”')
   expect((await page.locator('.city-todo').boundingBox()).height).toBeLessThanOrEqual(844 * 0.6 + 1)
   const now = await placeNow(page)
   expect(now.inside).toBe('lifecup')
@@ -24,6 +26,7 @@ test('SunnyBay places: into Lifecup, ten things to do, a muffin, back out at the
   const before = await run(page)
   await pickRow(page, 'lifecup_eat_a_muffin')
   await expect(page.locator('.city-result')).toContainText('It is gone before the lid is back on the tin.')
+  await expect(page.locator('.city-result .cr-note').first()).toHaveText('Lila Jacobs: “I already started yours. That is not a threat. It is a service.”')
   const after = await run(page)
   expect(Math.floor(after.stats.money)).toBe(Math.floor(before.stats.money) - 25)
   expect(after.stats.hunger).toBe(before.stats.hunger + 14)

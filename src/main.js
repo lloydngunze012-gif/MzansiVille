@@ -81,6 +81,12 @@ import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
 import { initWalk } from './walk.js'
+import { award, badgesFor, collectPreorder, dressMenu, noteActive, preorderNews, standingBadges } from './loops.js'
+import { openInvite, openPreorder, openReady } from './ui/loops.js'
+import { claimInvite, INVITE_REWARD } from './sharewa.js'
+import { myFollowers, onThreads } from './threads.js'
+import { calm } from './launch.js'
+import { onNote } from './scores.js'
 import { initDaily } from './daily.js'
 import { followPlayer } from './board.js'
 import { paintFollowers } from './ui/board.js'
@@ -646,6 +652,7 @@ function exitCity(kind = 'gate') {
 function cityPaid({ minutes = 0, kind = '' } = {}) {
   const run = save.run
   if (!run) return
+  if (kind === 'taxi') giveBadges(['rank_regular'])
   if (minutes && run.mode === 'play') {
     const phases = districtNow().meta.phases
     const next = phases[phases.findIndex((p) => p.id === run.phase) + 1]
@@ -750,6 +757,9 @@ setInterval(() => {
 
 function paint() {
   watchStats(save.run?.stats)
+  seedBadges()
+  // (Loops: Mama Liz's menu starts with today's special, and your paid plate when one is waiting)
+  if (save.run && ui.talk?.id === 'mama_liz') dressMenu(MENUS.mama_liz, save.run)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
   if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) }
   const shot = new URLSearchParams(location.search).get('shot')
@@ -980,9 +990,11 @@ function talkScene(actionId, placeId, sceneOpt, commit) {
 
 function buyFood(itemId, sizeId) {
   const id = ui.talk.id
+  if (id === 'mama_liz') dressMenu(MENUS.mama_liz, save.run)
   const got = itemOf(id, itemId, sizeId)
   if (!got || (save.run.stats.money || 0) < got.price) return
   save.run.stats.money -= got.price // the HUD money drops as you pay
+  if (itemId === 'collect') collectPreorder(save.run) // (ordered and paid last night)
   ui.talk = { id, bought: { item: itemId, size: sizeId, label: got.label, price: got.price, fx: got.fx } }
   window.dispatchEvent(new CustomEvent('mzansi-talk-react', { detail: { tone: 'good' } }))
   blip(990)
@@ -1768,6 +1780,8 @@ app.addEventListener('click', async (event) => {
   if (act === 'health-refresh') { loadHealthPage(); return }
   if (act === 'lp-board') { ui.gear = false; paint(); openBoard(); return }
   // Chat sprint: the thread list (DMs and groups), from the top bar's button or the menu.
+  if (act === 'preorder') { ui.gear = false; paint(); openPreorder({ save: () => save, persist, toast: (text) => toast(text), repaint: paint }); return }
+  if (act === 'invite-friend') { ui.gear = false; paint(); openInvite({ toast: (text) => toast(text) }); return }
   if (act === 'chat-open') { ui.gear = false; paint(); openChat(); return }
   // SunnyBay from the menu: the city view of the map on the 3D campus; from the 2D campus map, straight out of the gate.
   if (act === 'city-map') {
@@ -2052,7 +2066,7 @@ app.addEventListener('click', async (event) => {
       persist()
       saveMyCard(save.run)
       go(fromPrompt || first ? 'play' : 'title')
-      if (first) setTimeout(() => toast(`\u{1FAAA} Student card done: +R${CARD_REWARD} and the Card made badge`), 400)
+      if (first) setTimeout(() => toast(`\u{1FAAA} Student card done: +R${CARD_REWARD} and the Card Carried badge`), 400)
       return
     }
     save.run = createRun(district, { ...character, ...storyWithDefaults(draft.story) })
@@ -2147,6 +2161,7 @@ app.addEventListener('click', async (event) => {
     const res = buy(district, save.run, button.dataset.id)
     toast(res.ok ? res.text : `\u274C ${res.text}`)
     if (res.ok) {
+      giveBadges(['greenway_run'])
       window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { gesture: 'interact-right' } }))
       blip(500)
     }
@@ -2775,6 +2790,90 @@ window.addEventListener('mzansi-friend-remove', (event) => {
   persist()
 })
 initDaily({ save: () => save, persist, toast: (text) => toast(text) })
+
+// ---------- Loops (owner, 11 Nov; src/loops.js): streak, badges, pre-order, invite a friend ----------
+// A badge is told once, with its line, and goes on the card.
+function giveBadges(ids) {
+  const run = save.run
+  if (!run) return
+  const got = ids.map((id) => award(run, id)).filter(Boolean)
+  if (!got.length) return
+  persist()
+  saveMyCard(run)
+  badgeNews.push(...got)
+}
+// A badge's toast waits its turn: it never replaces a toast that is on screen (a hint about your energy, a fare),
+// and two badges are told one after the other.
+const badgeNews = []
+setInterval(() => {
+  if (!badgeNews.length) return
+  const node = document.getElementById('toast')
+  if (node && !node.hidden) return
+  const b = badgeNews.shift()
+  toast(`\u{1F3C5} ${b.name}: ${b.description}`)
+}, 700)
+// What a save had already earned before badges existed (the first morning in res, five waves, six districts) goes
+// on the card quietly when the game opens: a toast is for something that has just happened.
+// (the flag lives on the function: paint() runs once before the lines below it in this file have run)
+function seedBadges() {
+  if (seedBadges.done || !save.run) return
+  seedBadges.done = true
+  const got = standingBadges(save.run).map((id) => award(save.run, id)).filter(Boolean)
+  if (got.length) persist()
+}
+// Every finished activity (scores.js): the day counts for the streak, and the badges it earns.
+onNote((note) => {
+  const run = save.run
+  if (!run) return
+  const s = noteActive(run)
+  if (s.grew) setTimeout(persist, 0) // (the day is counted in the save, once whatever finished the activity has had its say)
+  if (s.grew && s.n > 1) setTimeout(() => toast(s.froze ? `\u{1F9CA} Freeze used: your streak lives. \u{1F525} ${s.n} days` : `\u{1F525} ${s.n}-day streak`), 1400)
+  giveBadges([...badgesFor(run, note), ...standingBadges(run, { followers: myFollowers() })])
+})
+window.addEventListener('mzansi-race-done', () => giveBadges(['pier_starter']))
+window.addEventListener('mzansi-city-part', (event) => {
+  const run = save.run
+  const id = event.detail?.id
+  if (!run || !id) return
+  const seen = new Set([...(run.partsSeen || []), 'campus', id]) // (the campus is one of the six)
+  if (seen.size === (run.partsSeen || []).length) return
+  run.partsSeen = [...seen]
+  persist()
+  giveBadges(standingBadges(run, { followers: myFollowers() }))
+})
+// Follower milestones, and the first morning in res: looked at as the chat's list comes in and now and then.
+onThreads((kind) => { if (kind === 'list' && save.run) giveBadges(standingBadges(save.run, { followers: myFollowers() })) })
+// "Your biryani is ready": once, at the first calm moment of the day it is for.
+setInterval(() => {
+  const run = save.run
+  if (!run || !run.preorder || !calm()) return
+  const text = preorderNews(run)
+  if (!text) return
+  persist()
+  openReady(text)
+}, 2500)
+// Invite a friend: the newcomer claims the code they came in with once the chat is up (after the quick start); both
+// get the reward once per friend (the server decides: supabase/chat.sql).
+onThreads((kind) => {
+  if (kind !== 'first' || !save.run?.quick || save.run.refClaimed) return
+  claimInvite().then((r) => {
+    if (!r.ok || !save.run || save.run.refClaimed) return
+    save.run.refClaimed = true
+    save.run.stats.money += INVITE_REWARD
+    persist()
+    paint()
+    toast(`\u{1F381} ${String(r.inviter).split(' ')[0]} invited you: +R${INVITE_REWARD} each`)
+  })
+})
+window.addEventListener('mzansi-invite-paid', (event) => {
+  const names = event.detail?.names || []
+  if (!save.run || !names.length) return
+  save.run.stats.money += INVITE_REWARD * names.length
+  save.run.invited = (save.run.invited || 0) + names.length
+  persist()
+  paint()
+  toast(`\u{1F381} ${names.map((n) => String(n).split(' ')[0]).join(', ')} joined with your link: +R${INVITE_REWARD * names.length}`)
+})
 window.addEventListener('mzansi-posted', () => countDone('board_post', '', 'social'))
 initWalk({ places: () => (save.run ? districtNow().places.filter((p) => p.kind !== 'transit') : []), toast: (text) => toast(text) })
 function blockPlayer(id) {

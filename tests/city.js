@@ -105,7 +105,8 @@ export const closeResult = async (page) => { await page.locator('.city-result [d
 // Out of a Room or a Hall: close the list, then Leave.
 export async function leavePlace(page) {
   if (await page.locator('.city-todo').isVisible().catch(() => false)) await page.locator('.city-todo [data-city="todo-close"]').tap()
-  await page.locator('.city-leave').tap()
+  // (a tap that cannot land says so in 20 s instead of waiting out the whole test)
+  await page.locator('.city-leave').tap({ timeout: 20000 })
   await expect(city(page)).toHaveAttribute('data-place', '', { timeout: 20000 })
 }
 

@@ -11,6 +11,7 @@
 // run.car (instant, R8 petrol, parked outside where you drove). Spec: docs/world-designer/sunnybay.md.
 // Tests and screenshots (read-mostly): window.mzansiCity.
 import { followerCounts, followersText } from '../board.js'
+import { waButton } from '../sharewa.js'
 import * as THREE from 'three'
 import { guardRenderer } from './guard.js'
 import { loop as soundLoop } from '../audio.js'
@@ -432,6 +433,7 @@ function todoHtml(place) {
   const lot = place.lot
   return `<header><div><p class="cc-kind">${esc(partOf(lot.part).name)} · Things to do</p><h3>${lot.icon ? `${lot.icon} ` : ''}${esc(place.name)}</h3></div><button type="button" class="ct-x" data-city="todo-close" aria-label="Close">✕</button></header>
     <p class="ct-feel">${esc(place.feel)}</p>
+    ${place.dress.staffName ? `<p class="ct-staff"><b>${esc(place.dress.staffName)}</b> <span>“${esc(place.dress.greet || '')}”</span></p>` : ''}
     <p class="ct-slots">${SLOT_NAME[slotOf(run)]} · ${run.slotsLeft} of ${run.slotsTotal} slots left${c.thirds ? ` · ${c.thirds} more quick one${c.thirds > 1 ? 's' : ''} fit in this slot` : ''}</p>
     <div class="ct-list">${rows}</div>`
 }
@@ -485,6 +487,8 @@ function showResult(place, row, res) {
   const type = row.gig ? 'work' : row.fullness >= 8 ? 'food' : row.grades >= 3 ? 'study' : ['gym', 'stadium'].includes(place.id) ? 'gym' : row.social >= 5 ? 'social' : row.cost >= 15 ? 'shop' : 'other'
   const body = resultBody({ cardId: `city-${row.id}-${Date.now()}`, title: row.name, delta: res.delta, esc, line: row.result, type })
   const notes = []
+  // (the place's own person has a word for you: docs/world-designer/social.md, in city_places.json)
+  if (place.dress.staffName && place.dress.during) notes.push(`${place.dress.staffName}: “${place.dress.during}”`)
   if (res.half) notes.push('\u{1F465} On your own this time, so half the Social. It pays in full with another player here.')
   if (res.granted === 'yard') notes.push('\u{1F6A6} Yard lesson done. The road lesson is next.')
   if (res.granted === 'road') notes.push('\u{1F6A6} Road lesson done. You can take the licence test now.')
@@ -855,10 +859,13 @@ function maybeShowResult(force = false) {
   resultCard({
     title: iWon ? '\u{1F3C6} You win!' : `\u{1F3C1} ${withName} wins!`,
     lines: solo ? [`Your time: ${race.mine.toFixed(1)}s`, `${withName} didn’t finish.`] : [`You: ${race.mine.toFixed(1)}s`, `${withName}: ${race.theirs.toFixed(1)}s`],
+    // (Loops: a WhatsApp share with words.md's line for a win or a loss)
+    share: waButton(iWon ? 'won' : 'lost'),
     rematch: true,
     onRematch: () => { endRace(); sendInvite('race', withId, withName); window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: `Race invite sent to ${withName}. Waiting…` } })) },
     onClose: endRace,
   })
+  window.dispatchEvent(new CustomEvent('mzansi-race-done', { detail: { won: iWon } })) // (main.js: the Pier Starter badge)
   // (Social B: the other racer's follower count on the result)
   followerCounts([withId]).then((c) => { const n = c.ids[withId]; const row = document.querySelector('.tg-result .tg-row'); if (n !== undefined && row) row.insertAdjacentHTML('beforebegin', `<p class="tg-fol">${esc(withName)} · ${followersText(Number(n))}</p>`) })
 }
@@ -964,6 +971,7 @@ function notePart(force) {
   if (roomPart !== part.id && (force || performance.now() - partSince > 1500)) {
     roomPart = part.id
     setArea(part.id, part.name)
+    window.dispatchEvent(new CustomEvent('mzansi-city-part', { detail: { id: part.id } })) // (main.js: District Hopper)
   }
 }
 function save() {

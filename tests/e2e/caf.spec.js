@@ -56,6 +56,10 @@ for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) 
     await expect(page.locator('#caf3d')).toHaveAttribute('data-ready', '1', { timeout: 90000 })
     await expect(page.locator('#world')).toHaveAttribute('data-on', '0')
     await page.waitForTimeout(1200)
+    // (Loops, 11 Nov) today's special is on the HOT MEALS board: the day's dish and price, from specials.json by game day
+    const special = await page.evaluate(async () => { const run = JSON.parse(localStorage.getItem('mzansiville.v1')).run; return (await import('/src/loops.js')).boardLine(run.day) })
+    expect(special).toMatch(/^TODAY: [A-Z ,]+ R\d+$/)
+    await expect(page.locator('#caf3d')).toHaveAttribute('data-special', special)
     await page.screenshot({ path: `${OUT}/${px}-entered.png` })
     // 2. every zone is on screen from the player's camera, with nothing in front of it
     for (const name of ZONES) {

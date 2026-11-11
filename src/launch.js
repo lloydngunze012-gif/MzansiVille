@@ -16,6 +16,7 @@ import { myIdentity, onPoke } from './presence.js'
 import { logRow } from './errors.js'
 import { authEnabled, getClient } from './net.js'
 import { followerCounts, followersText } from './board.js'
+import { waButton } from './sharewa.js'
 
 export const CARD_REWARD = 200
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -148,6 +149,7 @@ function boardHtml(tab, data) {
     <p class="lp-note">${esc(meta?.note || '')}</p>
     ${body}
     <p class="lp-you" data-you>${esc(you)}</p>
+    ${data?.you?.rank >= 1 && data.you.rank <= 10 ? `<p class="lp-share">${waButton('top10')}</p>` : ''}
     <button class="lp-go" type="button" data-lp="board-close">Close</button>`
 }
 export async function openBoard(tab = boardTab) {

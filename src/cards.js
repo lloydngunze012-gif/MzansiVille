@@ -1,3 +1,4 @@
+import { BADGE_LIST } from './loops.js'
 import { getClient } from './net.js'
 import { cleanBio } from './engine/filter.js'
 import { myIdentity, peerMeta } from './presence.js'
@@ -13,7 +14,9 @@ export const VIBES = ['Bookworm', 'Party starter', 'Gym rat', 'Creative', 'Gamer
 export const LOOKING = ['Study buddy', 'New friends', 'Someone to eat with', 'Gym partner', 'Crew for the hunts', 'Party people', 'A society to join', 'Just vibing']
 export const CLASS_OF = 2026
 
-const BADGES = { lectures: 'Lecture streak', graduated: 'Graduated first year', founder: 'Founder', card_made: 'Card made' }
+// (Loops, 11 Nov: the starter badges and follower milestones take their names from data/campusville/badges.json;
+// card_made is "Card Carried" now)
+const BADGES = { lectures: 'Lecture streak', graduated: 'Graduated first year', founder: 'Founder', ...Object.fromEntries(BADGE_LIST.map((b) => [b.id, b.name])) }
 
 // Your card, from your save (bio and tags live on run.character).
 export function cardOf(run, num = myIdentity().num) {

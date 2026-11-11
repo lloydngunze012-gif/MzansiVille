@@ -142,3 +142,33 @@ body:has(.qs2) { background: #f4efe4; }
 .pc-fol[hidden] { display: none; }
 .lp-fol { color: #5b23c9 !important; }
 .tg-fol { font-size: 13px !important; color: #5a4a78; }
+
+/* Loops (owner, 11 Nov): the streak and badges on the profile (ui/loops.js), the share and invite buttons. */
+.lo-card { margin: 10px auto 0; width: min(100% - 24px, 420px); box-sizing: border-box; padding: 12px 14px; border-radius: 16px; background: #fff8ea; color: #2a1846; border: 2px solid #2a184622; font: 500 15px/1.35 system-ui, sans-serif; }
+.lo-streak { margin: 0 0 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 17px; }
+.lo-dots { display: flex; gap: 4px; }
+.lo-dots i { width: 12px; height: 12px; border-radius: 50%; background: #2a184622; }
+.lo-dots i.on { background: #f0a000; }
+.lo-line, .lo-freeze { margin: 2px 0 0; font-size: 14px; }
+.lo-freeze { color: #5a4a78; }
+.lo-badges summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; min-height: 32px; font-size: 16px; }
+.lo-badges ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.lo-badges li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1.5px solid #2a184622; }
+.lo-badges li b { font-size: 15px; }
+.lo-badges li span { grid-column: 1 / -1; font-size: 14px; color: #5a4a78; }
+.lo-badges li small { grid-row: 1; grid-column: 2; font: 800 11px system-ui; letter-spacing: .06em; text-transform: uppercase; color: #8a6300; }
+.lo-badges li.earned { border-color: #f0b400; background: #fff3c4; }
+.lo-badges li.coming { opacity: .6; }
+.lo-url { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 14px; }
+.lo-url span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #5a4a78; }
+.lo-url .lp-ghost { flex: none; }
+.sl-pop s { color: #5a4a78; }
+.lp-share { margin: 0 0 10px; text-align: center; }
+.tg-share { margin: 0 0 12px !important; }
+.bd-acts .wa-btn { min-height: 40px; border-radius: 20px; padding: 0 12px; margin-left: auto; }
+.cht-flame { flex: none; padding: 0 8px; min-height: 28px; display: inline-grid; place-items: center; border-radius: 14px; background: #ffe9c7; color: #8a3b00; font: 800 13px/1 Figtree, system-ui, sans-serif; }
+.ct-staff { margin: 0 0 6px; font-size: 14px; line-height: 1.3; }
+.ct-staff b { font-weight: 800; }
+/* (WhatsApp buttons anywhere: a result, the leaderboard, a Board post, Invite a friend) */
+.wa-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; padding: 0 16px; border-radius: 22px; background: #128c4a; color: #fff !important; font: 800 14px Figtree, system-ui, sans-serif; text-decoration: none; }
+.wa-btn.block { display: flex; width: 100%; border-radius: 14px; min-height: 48px; font-size: 16px; }

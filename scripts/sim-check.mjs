@@ -1429,4 +1429,30 @@ check('meta.json smoothness words are all written (Cursor): settingLabel, settin
   assert.deepEqual(missing, [], `meta.json smoothness is missing: ${missing.join(', ')} (Cursor fills these in)`)
 })
 
+check('loops and people: 18 named staff with both lines, billboard lines of 7 words at most, 20 welcome lines, badges and share lines', () => {
+  const places = JSON.parse(read('city_places.json')).places
+  const staff = Object.values(places).filter((p) => p.staffName)
+  assert.equal(staff.length, 18)
+  assert.equal(new Set(staff.map((p) => p.staffName)).size, 18, 'eighteen different people')
+  for (const p of staff) assert.ok(p.greet && p.during && /^[A-Z][a-z]+ [A-Za-z ]+$/.test(p.staffName), p.staffName)
+  const cast = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'cast.md'), 'utf8')
+  for (const p of staff) assert.ok(cast.includes(p.staffName), `${p.staffName} is in docs/cast.md`)
+  const boards = JSON.parse(read('billboards.json'))
+  const lines = [...boards.ads.flatMap((a) => a.lines || []), ...(boards.house.lines || [])]
+  assert.equal(lines.length, 12)
+  for (const l of lines) assert.ok(l.split(/\s+/).length <= 7, l)
+  const countries = JSON.parse(read('countries.json')).countries
+  assert.equal(countries.filter((c) => c.welcome && !/^All the way from/.test(c.welcome)).length, 20)
+  const badges = JSON.parse(read('badges.json')).badges
+  assert.equal(badges.length, 19)
+  assert.equal(new Set(badges.map((b) => b.id)).size, 19)
+  assert.deepEqual(badges.filter((b) => b.status === 'coming').map((b) => b.id), ['stack_started', 'house_voice'])
+  for (const b of badges) assert.ok(b.name && b.description && b.how && (b.status === 'wired' || b.why), b.id)
+  const share = JSON.parse(read('share.json'))
+  for (const k of ['won', 'lost', 'invite', 'top10', 'post']) for (const l of share[k]) assert.ok(l.includes('[link]') && l.split(/\s+/).length <= 21, l)
+  const specials = JSON.parse(read('specials.json')).specials
+  assert.equal(specials.length, 21)
+  for (const s of specials.filter((x) => x.day === 'Friday')) assert.match(s.dish, /^Friday special: /)
+})
+
 console.log(`${passed} checks passed`)

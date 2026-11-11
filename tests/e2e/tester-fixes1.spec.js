@@ -40,8 +40,10 @@ test('B. a first meal at Lifecup brings the student card prompt at the next calm
   expect(await page.evaluate(() => window.mzansiLaunch.pending())).toBe('')
   await pickRow(page, 'lifecup_eat_a_muffin')
   await closeResult(page)
-  await leavePlace(page) // (a list on screen is not a calm moment)
   const prompt = page.locator('.sl-pop[data-reason="meal"]')
+  // (a list on screen is not a calm moment, so step out. Standing inside with the list closed is one, though: on a
+  // slow run the prompt has come up there, over the Leave button, which is the prompt doing its job, not a fault)
+  await leavePlace(page).catch(async (error) => { if (!(await prompt.isVisible())) throw error })
   await expect(prompt).toBeVisible({ timeout: 20000 })
   await expect(prompt).toContainText('Finish your student card')
   await page.screenshot({ path: `${SHOTS}/card-prompt-lifecup.png` })

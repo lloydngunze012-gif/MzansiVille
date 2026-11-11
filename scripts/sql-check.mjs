@@ -602,4 +602,58 @@ await check('follow-ups: the creator removes a member (the link will not let the
   await db.exec('reset role')
 })
 
+// ---- Loops (11 Nov): a group's flame, and "invite a friend" ----
+await check('loops: a group flame grows on a day 3 members are active, once a day, and is 0 after a missed day', async () => {
+  const flameOf = async (who) => (await rpc('chat_sync', who)).threads.find((t) => t.id === crew).flame
+  await db.query("update chat_players set seen_at = now() - interval '3 days'")
+  await db.query('update chat_threads set flame = 0, flame_day = null')
+  // the group has Thandeka (CA), Kabelo (CB) and Ethan (CE): one, then two, then three active today
+  assert.equal(await flameOf(CA), 0)
+  assert.equal(await flameOf(CB), 0)
+  assert.equal(await flameOf(CE), 1, 'the third member active today lights it')
+  assert.equal(await flameOf(CA), 1, 'once a day, however often they sync')
+  // tomorrow, all three again: 2
+  await db.query("update chat_threads set flame_day = flame_day - 1 where id = $1", [crew])
+  await db.query("update chat_players set seen_at = now() - interval '2 days'")
+  await rpc('chat_sync', CA); await rpc('chat_sync', CB)
+  assert.equal(await flameOf(CE), 2)
+  // a day with only two active, then a day with three: it starts again at 1; between, it shows 0
+  await db.query("update chat_threads set flame_day = flame_day - 2 where id = $1", [crew])
+  assert.equal((await one('select flame from chat_threads where id = $1', [crew])).flame, 2)
+  await db.query("update chat_players set seen_at = now() - interval '2 days'")
+  assert.equal(await flameOf(CA), 0, 'a missed day: no flame')
+  await rpc('chat_sync', CB)
+  assert.equal(await flameOf(CE), 1)
+  assert.equal((await rpc('chat_sync', CA)).threads.find((t) => t.id === 'quad').flame, 0, 'the Quad has no flame')
+})
+
+await check('loops: invite a friend: a new player claims the code once; the inviter is told once; old accounts, yourself and a second claim are refused', async () => {
+  const code = (await rpc('chat_ref_code', CA)).code
+  assert.match(code, /^[0-9a-f]{8}$/)
+  assert.equal((await rpc('chat_ref_code', CA)).code, code, 'the same code every time')
+  const NEW = P('new')
+  await rpc('chat_sync', NEW, 'Lindi', 'lindi_1', 'Peak', '{}')
+  assert.equal((await rpc('chat_ref_claim', NEW, 'ffffffff')).reason, 'unknown')
+  assert.equal((await rpc('chat_ref_claim', CA, code)).reason, 'self')
+  const ok = await rpc('chat_ref_claim', NEW, code)
+  assert.deepEqual([ok.ok, ok.inviter], [true, 'Thandeka'])
+  assert.equal((await rpc('chat_ref_claim', NEW, code)).reason, 'done', 'once per friend')
+  assert.equal((await rpc('chat_ref_claim', NEW, (await rpc('chat_ref_code', CB)).code)).reason, 'done', 'whoever invites them next')
+  // an account that is not new cannot claim (the quick start was long ago)
+  await db.query("update chat_players set created_at = now() - interval '3 days' where id = $1", [CC.id])
+  assert.equal((await rpc('chat_ref_claim', CC, code)).reason, 'old')
+  // the inviter hears of it on their next sync, once
+  assert.deepEqual((await rpc('chat_sync', CA)).refs, ['Lindi'])
+  assert.deepEqual((await rpc('chat_sync', CA)).refs, [])
+  assert.deepEqual((await rpc('chat_sync', NEW)).refs, [])
+  // 10 friends a day at most for one inviter
+  await db.query("insert into chat_refs (friend, inviter) select 'filler-friend-' || g, $1 from generate_series(1, 9) g", [CA.id])
+  const ELEVEN = P('eleven')
+  await rpc('chat_sync', ELEVEN, 'Zinhle', 'zinhle_1', 'Peak', '{}')
+  assert.equal((await rpc('chat_ref_claim', ELEVEN, code)).reason, 'limit')
+  await db.exec('set role anon')
+  assert.equal((await db.query('select * from chat_refs')).rows.length, 0, 'chat_refs is hidden')
+  await db.exec('reset role')
+})
+
 console.log(`${passed} sql checks passed`)

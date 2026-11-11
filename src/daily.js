@@ -8,7 +8,7 @@
 //   "Edit". Each has a standing group; your picks put you in theirs (supabase/chat.sql chat_interests).
 import DAILY from '../data/campusville/daily.json'
 import INTERESTS from '../data/campusville/interests.json'
-import SPECIALS from '../data/campusville/specials.json'
+import { specialFor } from './loops.js'
 import { joinedToday, setInterests } from './board.js'
 import { calm, openBoard, popClose, popOpen } from './launch.js'
 import { BOARDS, loadBoard } from './scores.js'
@@ -25,8 +25,7 @@ function dayIndex() {
   const start = sastDay(new Date(`${DAILY.startDate}T00:00:00+02:00`))
   return Math.max(0, sastDay() - start)
 }
-// The Caf's special for a game day (day 1 is a Monday; three weeks, going round).
-export function specialFor(day = 1) { return SPECIALS.specials[(Math.max(1, Number(day) || 1) - 1) % SPECIALS.specials.length] }
+export { specialFor }
 // Today's topic and the interest it is filed under for this player: one of their own if the topic has it.
 export function topicToday(mine = myInterests()) {
   const topic = DAILY.topics[dayIndex() % DAILY.topics.length]

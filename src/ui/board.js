@@ -8,6 +8,7 @@ import { avatarSvg } from '../avatar.js'
 import INTERESTS from '../../data/campusville/interests.json'
 import { followerCounts, followersText, followPlayer, loadBoardOf, loadFeed, POST_MAX, postToBoard, reportPost, repliesOf, stampPost, districtNow } from '../board.js'
 import { myId, myInterests, socialBReady } from '../threads.js'
+import { waButton } from '../sharewa.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const DISTRICT = { campus: 'Campus', town: 'Town centre', suburbs: 'the Suburbs', beachfront: 'the Beachfront', township: 'the Township', industrial: 'Industrial' }
@@ -39,6 +40,7 @@ function postHtml(p) {
     <div class="bd-acts">
       <button type="button" class="bd-stamp" data-stamp="${p.id}" aria-pressed="${p.mine}" aria-label="Stamp this post">\u{1F525} <span>${p.stamps}</span></button>
       <button type="button" class="bd-reply" data-replies="${p.id}">\u{1F4AC} ${p.replies ? `${p.replies} repl${p.replies === 1 ? 'y' : 'ies'}` : 'Reply'}</button>
+      ${mine ? waButton('post', { post: p.body }, 'Share') : ''}
       ${mine ? '' : reportFor === p.id ? `<button type="button" class="bd-report on" data-report-post="${p.id}">Tap again to report</button>` : `<button type="button" class="bd-report" data-report-post="${p.id}" aria-label="Report this post">⚑</button>`}
     </div></li>`
 }

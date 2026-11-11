@@ -11,11 +11,12 @@ export function adsFor(houses = [], today = new Date()) {
   const live = (DATA.ads || []).filter((a) => a.brand && (!a.start || a.start <= now) && (!a.end || now <= a.end))
   const brand = []
   // (turn by turn, so one brand's boards are not all in a row)
-  for (let i = 0; i < 12; i++) for (const a of live) if (i < Math.max(1, Number(a.boards) || 1)) brand.push({ id: a.id, brand: a.brand, line: a.line || '', image: a.image || '', link: a.link || '', bg: a.bg || '#22143b', fg: a.fg || '#ffffff' })
+  for (let i = 0; i < 12; i++) for (const a of live) if (i < Math.max(1, Number(a.boards) || 1)) brand.push({ id: a.id, brand: a.brand, line: (a.lines?.length ? a.lines[i % a.lines.length] : a.line) || '', image: a.image || '', link: a.link || '', bg: a.bg || '#22143b', fg: a.fg || '#ffffff' })
   const house = (i) => {
     const h = houses[i % Math.max(1, houses.length)]
-    if (!h) return { id: 'umzansi', brand: 'UMzansi', line: DATA.house?.line || 'University of Mzansi', bg: '#22143b', fg: '#f0c400', house: true }
-    return { id: `house-${h.id}`, brand: h.name, line: DATA.house?.line || 'University of Mzansi', bg: h.main, fg: inkOn(h.main, h.accent), house: true }
+    const said = DATA.house?.lines?.length ? DATA.house.lines[i % DATA.house.lines.length] : DATA.house?.line || 'University of Mzansi'
+    if (!h) return { id: 'umzansi', brand: 'UMzansi', line: said, bg: '#22143b', fg: '#f0c400', house: true }
+    return { id: `house-${h.id}`, brand: h.name, line: said, bg: h.main, fg: inkOn(h.main, h.accent), house: true }
   }
   // brand ads spread evenly over the boards, a house ad on every board between them
   const out = []

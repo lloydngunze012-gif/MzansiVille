@@ -10,6 +10,7 @@ import { boardScreen, lobbyScreen } from './social.js'
 import { fpsText, gameOverScreen, hud, lectureScreen, mapHome, milestonesScreen, morningScreen, ui, withHud } from './game.js'
 import { LOOKING, VIBES, cardOf } from '../cards.js'
 import { playerCardHtml } from './card.js'
+import { loopsProfileHtml } from './loops.js'
 import { themePicker } from '../theme.js'
 import { enrolScreen } from './enrol.js'
 import { quickScreen } from './quick.js'
@@ -529,6 +530,7 @@ function profile(state) {
   return `<main class="screen pc-screen has-nav" data-screen="profile">
     <div class="pc-bar"><a class="pc-back" href="#/play">\u2190 Campus</a><b>Your card</b><button type="button" class="pc-stats-btn${ui.cardStats ? ' on' : ''}" data-act="pc-stats">\u{1F4CA} Stats</button></div>
     ${playerCardHtml(card, house, { own: true, provisional: true, photo: stillOf(c.avatar) })}
+    ${loopsProfileHtml(run)}
     ${notice}
     ${form}
     ${stats}

@@ -84,6 +84,8 @@ function style() {
 .tg-result .tg-row{display:flex;gap:8px;justify-content:center}
 .tg-result button{min-height:44px;padding:0 18px;border-radius:22px;border:0;font:800 14px Figtree,system-ui,sans-serif;background:#22143b;color:#fff}
 .tg-result button.primary{background:#f0c400;color:#1c1915}
+.wa-btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:44px;padding:0 16px;border-radius:22px;background:#128c4a;color:#fff;font:800 14px Figtree,system-ui,sans-serif;text-decoration:none}
+.wa-btn.block{display:flex;width:100%;border-radius:14px;min-height:48px;font-size:16px}
 .tg-invite{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 70px);margin:0 auto;width:min(calc(100% - 24px),420px);box-sizing:border-box;z-index:95;background:#22143b;color:#fff;border:1.5px solid #f0c40055;border-radius:18px;padding:14px;box-shadow:0 10px 30px #0007;text-align:center}
 .tg-invite p{margin:0 0 10px;font-size:15px;font-weight:700}
 .tg-invite .tg-row{display:flex;gap:8px;justify-content:center}
@@ -129,13 +131,14 @@ export function countdown(onDone) {
   return () => el.remove()
 }
 // Worth a screenshot: the winner, the time, Rematch?
-export function resultCard({ title, lines = [], rematch, onRematch, onClose }) {
+// share: HTML for a WhatsApp button (src/sharewa.js waButton), drawn under the lines.
+export function resultCard({ title, lines = [], rematch, onRematch, onClose, share = '' }) {
   style()
   document.querySelector('.tg-result')?.remove()
   const el = document.createElement('div')
   el.className = 'tg-result'
   el.setAttribute('role', 'status')
-  el.innerHTML = `<h3>${title}</h3>${lines.map((l) => `<p>${l}</p>`).join('')}
+  el.innerHTML = `<h3>${title}</h3>${lines.map((l) => `<p>${l}</p>`).join('')}${share ? `<p class="tg-share">${share}</p>` : ''}
     <div class="tg-row">${rematch ? '<button type="button" class="primary" data-tg="rematch">Rematch?</button>' : ''}<button type="button" data-tg="close">Close</button></div>`
   document.body.append(el)
   el.addEventListener('click', (e) => {

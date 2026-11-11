@@ -108,7 +108,30 @@ The extra student who was called Kyle is now Brandon, so the barista is the only
 
 ## SunnyBay place staff and patrons (City job B, 10 Nov)
 
-The 18 open places each have one staff member and 2 to 4 patrons. They have **no names**: a role only (Barista, Teller, Nurse, Librarian, Stylist, Lounge host, Salesperson, Till worker, Rank marshal, Pump attendant, Stadium steward, Driving instructor, Ice-cream vendor, Park keeper...), in `data/campusville/city_places.json` (`staffRole`). Their skins come from `src/world/skinmix.js` through the city's `npcLook`, three or more tones in every place (`npm run check`). If a place's staff is ever given a name, it goes in this file first.
+The 18 open places each have one staff member and 2 to 4 patrons. **The staff are named since 11 Nov** (Loops and People; names and lines from docs/world-designer/social.md, in data/campusville/city_places.json as staffName, greet, during). English names, an even mix: 4 Black, 5 white, 4 Indian, 5 coloured South Africans. Patrons have no names; their skins come from skinmix.js as before.
+
+| Place | Name | Background | Role | Keep or rename? |
+| --- | --- | --- | --- | --- |
+| Mall | Tara Singh | Indian SA | staff | keep |
+| Bank | Michael Botha | white SA | staff | keep |
+| Clinic | Nina Davids | coloured SA | staff | keep |
+| City library | Helen Ndlovu | Black SA | staff | keep |
+| Barber and salon | Andre Williams | coloured SA | staff | keep |
+| Lifecup cafe | Lila Jacobs | coloured SA | staff | keep |
+| Lounge | Chris van der Merwe | white SA | staff | keep |
+| Gym | Brad Naidoo | Indian SA | staff | keep |
+| Church | James Petersen | coloured SA | staff | keep |
+| Car dealership | Pieter Venter | white SA | staff | keep |
+| Greenway supermarket | Nadia Reddy | Indian SA | staff | keep |
+| Beach | Zane Daniels | coloured SA | staff | keep |
+| Park | Lucy Dube | Black SA | staff | keep |
+| Arcade and bowling | Jay Patel | Indian SA | staff | keep |
+| Taxi rank | Oscar Dlamini | Black SA | staff | keep |
+| Petrol station | Johan du Toit | white SA | staff | keep |
+| Stadium | Faith Nkosi | Black SA | staff | keep |
+| Driving school | Carla Meyer | white SA | staff | keep |
+
+Before they were named, the paragraph here read: The 18 open places each have one staff member and 2 to 4 patrons. They have **no names**: a role only (Barista, Teller, Nurse, Librarian, Stylist, Lounge host, Salesperson, Till worker, Rank marshal, Pump attendant, Stadium steward, Driving instructor, Ice-cream vendor, Park keeper...), in `data/campusville/city_places.json` (`staffRole`). Their skins come from `src/world/skinmix.js` through the city's `npcLook`, three or more tones in every place (`npm run check`). If a place's staff is ever given a name, it goes in this file first.
 
 ## Extra students (people.json extra_names, ids x0..x19)
 

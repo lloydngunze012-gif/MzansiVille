@@ -101,6 +101,7 @@ export function mountThreads() {
     if (kind === 'ping') { ping(detail); return }
     // (follow-ups) what became of an ask you sent: "added" or "can't right now", nothing more
     if (kind === 'answers') { for (const a of detail) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: a.added ? `${first(a.name)} was added to ${a.group}.` : `${first(a.name)} can’t right now.` } })); return }
+    if (kind === 'refs') { window.dispatchEvent(new CustomEvent('mzansi-invite-paid', { detail: { names: detail } })); return }
     if (kind === 'list') paintAsk()
     if (kind === 'first') {
       // (came in through an invite link: straight into the group, now that the quick start is behind them)
@@ -259,11 +260,13 @@ function paintList() {
 }
 
 // ---------- A thread ----------
+// Loops: a group's flame (days running with 3 or more members active), in its header.
+const flameHtml = (t) => (Number(t?.flame) > 0 ? `<span class="cht-flame" title="Days running with 3 or more of you active" aria-label="${t.flame} day group streak">\u{1F525} ${t.flame}</span>` : '')
 function headHtml(t) {
   const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : t.peer?.handle ? `@${t.peer.handle}` : 'Direct message'
   return `<button type="button" class="cht-back" data-ct="back" aria-label="Back to chats">‹</button>
     <span class="cht-av cht-sm">${!t || t.kind === 'group' ? GROUP_FACE : face(t.peer?.look, 36)}</span>
-    ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small>${esc(sub)}</small></span>`}
+    ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>${flameHtml(t)}` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small>${esc(sub)}</small></span>`}
     ${t?.kind === 'dm' && t.peer?.id ? `<button type="button" class="cht-btn sm" data-ct="walk" data-walk-id="${esc(t.peer.id)}" data-walk-name="${esc(t.peer.name || 'Student')}">\u{1F6B6} Walk with me</button>` : ''}
     <button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button>`
 }

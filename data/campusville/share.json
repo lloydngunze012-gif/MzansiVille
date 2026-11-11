@@ -1,0 +1,25 @@
+{
+  "note": "Loops (owner, 11 Nov): the WhatsApp share lines of docs/world-designer/words.md. One is picked each time; [link] becomes the game link (an invite link carries the player's code: both get the reward when the friend finishes the quick start). post is for sharing a Board post: {post} is its words (written by Claude Code: words.md has no line for it).",
+  "reward": 100,
+  "won": [
+    "Just took the pier race. Come try me next time 🏃 [link]",
+    "Pier first, sea second, me grinning. Your move 😎 [link]",
+    "Won so clean the gulls are still clapping. Catch up [link]"
+  ],
+  "lost": [
+    "The pier beat me by a breath. Rematch. Bring water 😤 [link]",
+    "Lost to the wind, not to you. Same time tomorrow? [link]"
+  ],
+  "invite": [
+    "SunnyBay is better with you in it. Come play Soft Life [link]",
+    "Need a Caf partner and a race rival. You in? [link]",
+    "House chat is waiting. Come be my campus person [link]"
+  ],
+  "top10": [
+    "Weekly top 10 and I still do my own laundry 🏅 [link]",
+    "Made the board this week. Come knock me off [link]"
+  ],
+  "post": [
+    "On my Soft Life Board: “{post}” Come say something back [link]"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "note": "Loops (owner, 11 Nov): the 15 starter badges of docs/world-designer/words.md and the follower milestones. status: wired (the game gives it) or coming (the feature it needs does not exist yet: why says what is missing). card_made is the older id of Card Carried, kept so saves and cards keep their badge. src/loops.js gives them; src/cards.js shows the names.",
+  "badges": [
+    {"id": "gig_rookie", "name": "Gig Rookie", "description": "You got paid. The Energy bill arrives later.", "how": "Complete your first paid gig.", "status": "wired"},
+    {"id": "rank_regular", "name": "Rank Regular", "description": "You passed the fare forward and lived.", "how": "Take your first minibus taxi.", "status": "wired"},
+    {"id": "pier_starter", "name": "Pier Starter", "description": "First race. First taste of that wind.", "how": "Finish your first race to the pier.", "status": "wired"},
+    {"id": "card_made", "name": "Card Carried", "description": "Your face is on a card now. Official-ish.", "how": "Make your student card.", "status": "wired"},
+    {"id": "seven_strong", "name": "Seven Strong", "description": "A week of showing up. The flame stays.", "how": "Keep a 7-day streak.", "status": "wired"},
+    {"id": "district_hopper", "name": "District Hopper", "description": "SunnyBay, all six corners, on your shoes.", "how": "Visit all six districts.", "status": "wired"},
+    {"id": "plus_one", "name": "Plus One", "description": "You are not walking this campus alone.", "how": "Add your first friend.", "status": "wired"},
+    {"id": "five_waves", "name": "Five Waves", "description": "Five hellos. The Quad is smaller already.", "how": "Wave at 5 people.", "status": "wired"},
+    {"id": "stack_started", "name": "Stack Started", "description": "Four figures. The fridge notices.", "how": "Save your first R1,000.", "status": "coming", "why": "Everyone starts on R2,100, so \"your first R1,000\" is already true: it needs a savings goal first."},
+    {"id": "kettle_on", "name": "Kettle On", "description": "You made it through the first morning.", "how": "Finish your first morning in res.", "status": "wired"},
+    {"id": "caf_ticket", "name": "Caf Ticket", "description": "Queue, tray, seat. You belong here.", "how": "Eat at the Caf for the first time.", "status": "wired"},
+    {"id": "bench_mate", "name": "Bench Mate", "description": "Somebody sat down on purpose.", "how": "Sit with another student on the Quad.", "status": "wired"},
+    {"id": "library_quiet", "name": "Library Quiet", "description": "You put the phone down and the page moved.", "how": "Study at the library once.", "status": "wired"},
+    {"id": "greenway_run", "name": "Greenway Run", "description": "The house fridge has a future now.", "how": "Complete your first Greenway shop.", "status": "wired"},
+    {"id": "house_voice", "name": "House Voice", "description": "Your name showed up in the house chat.", "how": "Send a message in your house chat.", "status": "coming", "why": "There is no house chat yet (groups are made by players; houses have none of their own)."},
+    {"id": "followers_10", "name": "10 Followers", "description": "10 people want to hear what you say next.", "how": "Reach 10 followers.", "status": "wired", "by": "Claude Code (the owner asked for the milestones; these words are a first go for Cursor to redo)"},
+    {"id": "followers_50", "name": "50 Followers", "description": "50 people want to hear what you say next.", "how": "Reach 50 followers.", "status": "wired", "by": "Claude Code (the owner asked for the milestones; these words are a first go for Cursor to redo)"},
+    {"id": "followers_100", "name": "100 Followers", "description": "100 people want to hear what you say next.", "how": "Reach 100 followers.", "status": "wired", "by": "Claude Code (the owner asked for the milestones; these words are a first go for Cursor to redo)"},
+    {"id": "followers_500", "name": "500 Followers", "description": "500 people want to hear what you say next.", "how": "Reach 500 followers.", "status": "wired", "by": "Claude Code (the owner asked for the milestones; these words are a first go for Cursor to redo)"}
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "_about": "City job B (owner, 10 Nov): how each SunnyBay place is built and dressed. The Things to do rows are NOT here: they are in city.json, which scripts/city-build.mjs writes from docs/world-designer/city.md (npm run city-data). 'heading' is the place's heading in city.md. 'template': room (small interior), hall (big interior) or open (the lot itself, no interior). Interiors: 'size' [w, d] metres, the door in the middle of the south wall; props are in room metres (x east, z south, 0,0 the middle of the floor). Open ground: props and people are metres from the lot's entrance ('at' in sunnybay.json). 'grants' names the rows that give something (yard, road, licence, car:first, car:runabout). A wave 2 place has only its heading until it opens: see docs/world-designer/sunnybay.md, Places.",
+  "_about": "(Loops and People, 11 Nov: staffName, greet and during are the 18 staff of docs/world-designer/social.md: their name, the one line when you open the place, the one line on a result there. Names are in docs/cast.md.) City job B (owner, 10 Nov): how each SunnyBay place is built and dressed. The Things to do rows are NOT here: they are in city.json, which scripts/city-build.mjs writes from docs/world-designer/city.md (npm run city-data). 'heading' is the place's heading in city.md. 'template': room (small interior), hall (big interior) or open (the lot itself, no interior). Interiors: 'size' [w, d] metres, the door in the middle of the south wall; props are in room metres (x east, z south, 0,0 the middle of the floor). Open ground: props and people are metres from the lot's entrance ('at' in sunnybay.json). 'grants' names the rows that give something (yard, road, licence, car:first, car:runabout). A wave 2 place has only its heading until it opens: see docs/world-designer/sunnybay.md, Places.",
   "templates": {
     "room": {
       "size": [14, 11],
@@ -21,7 +21,7 @@
       "floor": "#e4ded0",
       "trim": "#c24a3a",
       "sign": "FOOD COURT · SHOPS · SCREENS",
-      "staffRole": "Food court server",
+      "staffRole": "Food court server", "staffName": "Tara Singh", "greet": "Windows first, wallet second. I will not rush you.", "during": "If that bag is wider than a res cupboard, I did my job.",
       "staff": [5, -6.5, 0],
       "people": [[4.2, -3.4, 180], [-6.4, -3.4, 180], [-2.2, 1.6, 90], [7.2, 0.7, 200]],
       "props": [
@@ -42,7 +42,7 @@
       "floor": "#6b7f95",
       "trim": "#2d4a6b",
       "sign": "TELLERS · STUDENT ACCOUNTS",
-      "staffRole": "Teller",
+      "staffRole": "Teller", "staffName": "Michael Botha", "greet": "Take a ticket. The carpet is the entertainment.", "during": "Balance looks fine. Do not stare at it like it might run.",
       "staff": [0, -4.7, 0],
       "people": [[0, -2.4, 180], [4.6, 1.2, 180], [-4.4, 1.6, 90]],
       "props": [
@@ -62,7 +62,7 @@
       "floor": "#d9e8e4",
       "trim": "#2f9e8f",
       "sign": "RECEPTION · TAKE A NUMBER",
-      "staffRole": "Nurse",
+      "staffRole": "Nurse", "staffName": "Nina Davids", "greet": "Number first, then the plastic chair. We have time.", "during": "Script is ready. Smaller packet than the wait, I know.",
       "staff": [-3, -4.7, 0],
       "people": [[2.4, 1.9, 0], [4.6, 1.9, 0], [-3, -2.4, 180]],
       "props": [
@@ -83,7 +83,7 @@
       "floor": "#b08a5e",
       "trim": "#7b4a2a",
       "sign": "SUNNYBAY PUBLIC LIBRARY · QUIET PLEASE",
-      "staffRole": "Librarian",
+      "staffRole": "Librarian", "staffName": "Helen Ndlovu", "greet": "Bags in the cubby. Voices down. Pages up.", "during": "That shelf you passed twice is the one. I will walk you.",
       "staff": [3.8, -6, 0],
       "people": [[0.9, -0.6, 90], [-5.8, -0.5, 180], [3.8, -3.6, 180], [7.6, 4.8, 200]],
       "props": [
@@ -104,7 +104,7 @@
       "floor": "#3a3340",
       "trim": "#22143b",
       "sign": "CLIPPERS THIS SIDE · DRYERS THAT SIDE",
-      "staffRole": "Stylist",
+      "staffRole": "Stylist", "staffName": "Andre Williams", "greet": "Sit. Magazine pile is three years old. Commentary is new.", "during": "Line is clean. Do not touch it until you reach the rank.",
       "staff": [-1.6, -3.1, 0],
       "people": [[-4, -3.6, 0], [4.6, 2, 270], [2.6, -1.4, 200]],
       "props": [
@@ -123,7 +123,7 @@
       "floor": "#b98a5e",
       "trim": "#c2562a",
       "sign": "LIFECUP · THE GOOD MILK",
-      "staffRole": "Barista",
+      "staffRole": "Barista", "staffName": "Lila Jacobs", "greet": "Corner table is free. The flat white is not shy.", "during": "I already started yours. That is not a threat. It is a service.",
       "staff": [0, -4.8, 0],
       "people": [[-4, -1.3, 150], [3.6, -0.6, 200], [-0.6, -2.6, 180]],
       "props": [
@@ -144,7 +144,7 @@
       "floor": "#2a2140",
       "trim": "#f0c400",
       "sign": "POOL · BOARD GAMES · KARAOKE · MILKSHAKES",
-      "staffRole": "Lounge host",
+      "staffRole": "Lounge host", "staffName": "Chris van der Merwe", "greet": "Milkshake or mocktail. The cue is behind you.", "during": "Last frame of the night. Lights click once. You still have time.",
       "staff": [4, 4.1, 180],
       "people": [[-3, -1.9, 180], [-4.6, -2.6, 0], [0.4, 1.9, 0]],
       "props": [
@@ -165,7 +165,7 @@
       "floor": "#4a4f58",
       "trim": "#e8552f",
       "sign": "SUNNYBAY GYM · ONE MORE REP",
-      "staffRole": "Gym desk",
+      "staffRole": "Gym desk", "staffName": "Brad Naidoo", "greet": "Day pass, then the mat. Nobody is watching your first set.", "during": "Knees over toes. Then we can talk about the next one.",
       "staff": [4.6, 4.9, 180],
       "people": [[-6.6, -3.1, 180], [5.9, -1.2, 90], [-4.4, 1.2, 270], [0.4, -3.6, 180]],
       "props": [
@@ -187,7 +187,7 @@
       "floor": "#a5714a",
       "trim": "#8a4b32",
       "sign": "DOORS OPEN · TEA AFTER",
-      "staffRole": "Hall steward",
+      "staffRole": "Hall steward", "staffName": "James Petersen", "greet": "Come in. We do not need your surname today.", "during": "Tea is free. Biscuit is plain. I remembered how you take it.",
       "staff": [4.2, 8.6, 270],
       "people": [[-3.3, 4.7, 180], [3.3, -0.1, 180], [-3.3, -2.5, 180], [0, -5.2, 180]],
       "props": [
@@ -209,7 +209,7 @@
       "floor": "#cfd6dc",
       "trim": "#1e5bb8",
       "sign": "SUNNYBAY CARS · FIRST CARS WELCOME",
-      "staffRole": "Salesperson",
+      "staffRole": "Salesperson", "staffName": "Pieter Venter", "greet": "Sit in anything. Hands on the wheel. I will wait.", "during": "Honest little car. One dent. The key is the whole speech.",
       "staff": [5.6, 4.7, 180],
       "people": [[-5.6, 0.6, 330], [0.6, 0.8, 20], [-6.6, 2.8, 180]],
       "props": [
@@ -233,7 +233,7 @@
       "floor": "#e2e8de",
       "trim": "#2f8f5b",
       "sign": "GREENWAY SUNNYBAY · FRESH EVERY DAY",
-      "staffRole": "Till worker",
+      "staffRole": "Till worker", "staffName": "Nadia Reddy", "greet": "Basket or trolley. The hot bread is about to come out.", "during": "Woza at the till. If it fails once, we try again. No drama.",
       "staff": [-3.6, 5.2, 180],
       "people": [[-5.9, -1.6, 90], [6.8, -3.2, 180], [-3.6, 2.7, 0], [3.6, -1, 270]],
       "props": [
@@ -249,7 +249,7 @@
     "beach": {
       "heading": "Beach",
       "template": "open",
-      "staffRole": "Ice-cream vendor",
+      "staffRole": "Ice-cream vendor", "staffName": "Zane Daniels", "greet": "Shoes off if you want. The water is colder than it looks.", "during": "Close buoy only. You made it. The sand walk is the medal.",
       "staff": [7.2, -2.6, 270],
       "people": [[11, 4.6, 90], [15, 2.4, 200], [19.4, 6.4, 320]],
       "props": [
@@ -263,7 +263,7 @@
     "park": {
       "heading": "Park",
       "template": "open",
-      "staffRole": "Park keeper",
+      "staffRole": "Park keeper", "staffName": "Lucy Dube", "greet": "Loop is short. Shoulders drop on the far side. I have seen it.", "during": "Seed from the tin, not chips. The sign is not a suggestion.",
       "staff": [2.6, -17, 270],
       "people": [[-2.4, -10.6, 90], [2.4, -26, 270], [-2.6, -34, 60]],
       "props": [
@@ -282,7 +282,7 @@
       "floor": "#241836",
       "trim": "#f0c400",
       "sign": "ARCADE & BOWLING · WINS PAY IN CHEERS",
-      "staffRole": "Arcade desk",
+      "staffRole": "Arcade desk", "staffName": "Jay Patel", "greet": "Shoes are historic. The photo is worse. You will keep it.", "during": "All ten. The lane flashed. We pretend we see that every hour.",
       "staff": [3.6, 4.6, 180],
       "people": [[-5.5, 5.6, 180], [7.9, -2.7, 90], [2.6, 1.2, 180], [6.2, 2.1, 150]],
       "props": [
@@ -298,7 +298,7 @@
     "taxi_rank": {
       "heading": "Taxi rank",
       "template": "open",
-      "staffRole": "Rank marshal",
+      "staffRole": "Rank marshal", "staffName": "Oscar Dlamini", "greet": "Where to. Say it once, clearly. I will find you a van.", "during": "Fare goes forward. Your stop will arrive before the story ends.",
       "staff": [1.2, -8.6, 180],
       "people": [[6.6, -7.6, 270], [-6.6, -6.8, 90], [4.4, -11.4, 0]],
       "props": [
@@ -311,7 +311,7 @@
     "petrol": {
       "heading": "Petrol station",
       "template": "open",
-      "staffRole": "Pump attendant",
+      "staffRole": "Pump attendant", "staffName": "Johan du Toit", "greet": "Pie is hot. Phone can charge by the fridge. Stay.", "during": "Amount first. I will not round you up. That is the job.",
       "staff": [3.4, 14.6, 0],
       "people": [[21.6, 14.2, 270], [-9.6, 24, 90], [1.6, 35.8, 0]],
       "props": [
@@ -324,7 +324,7 @@
     "stadium": {
       "heading": "Stadium",
       "template": "open",
-      "staffRole": "Stadium steward",
+      "staffRole": "Stadium steward", "staffName": "Faith Nkosi", "greet": "Student block is standing. I will show you the step.", "during": "When it fills, you are the calm one. Point, scan, breathe.",
       "staff": [-0.9, 3.4, 90],
       "people": [[-0.9, -7.4, 0], [-1.2, 8.2, 180], [-5.6, -1.6, 90]],
       "props": [
@@ -337,7 +337,7 @@
     "driving_school": {
       "heading": "Driving school",
       "template": "open",
-      "staffRole": "Driving instructor",
+      "staffRole": "Driving instructor", "staffName": "Carla Meyer", "greet": "Book on the chair. Cones are already nervous. You will be fine.", "during": "Clutch, then cones. Stall, recover. Again. That is how the card happens.",
       "staff": [-9.4, -24.6, 90],
       "people": [[-13.4, -26.4, 0], [-7.2, -21.4, 200], [-16.6, -24.2, 90]],
       "props": [
