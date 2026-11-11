@@ -1534,6 +1534,9 @@ window.mzansiPortrait = async (look, o) => {
   sun.color.set(o.sun[0]); sun.intensity = o.sun[1]; hemi.color.set(o.hemi[0]); hemi.groundColor.set(o.hemi[1]); hemi.intensity = o.hemi[2]
   for (const p of people) if (p) p.visible = false
   av.visible = false
+  // (o.hide: things by name left out of the photo, e.g. 'far-city', the plain blocks that stand in for SunnyBay)
+  const left = (o.hide || []).map((name) => scene.getObjectByName(name)).filter((n) => n?.visible)
+  for (const n of left) n.visible = false
   const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 24), new THREE.MeshBasicMaterial({ color: 0x1a0d10, transparent: true, opacity: 0.45, depthWrite: false, fog: false }))
   blob.rotation.x = -Math.PI / 2; blob.scale.set(1.1, 0.6, 1); blob.rotation.z = o.shadow || 0
   blob.position.set(av.position.x, av.position.y + 0.1, av.position.z)
@@ -1559,6 +1562,7 @@ window.mzansiPortrait = async (look, o) => {
   scene.remove(av); av.userData.disposed = true
   for (const [ch, v] of was) ch.visible = v
   for (const n of tags) n.visible = true
+  for (const n of left) n.visible = true
   scene.fog.near = fog[0]; scene.fog.far = fog[1]
   nightNow = -1; applyTime()
   renderer.setPixelRatio(ratio); renderer.setSize(size.x, size.y)

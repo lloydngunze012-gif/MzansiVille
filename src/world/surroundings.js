@@ -215,6 +215,7 @@ export function addSurroundings(parent) {
   buildCity({ far: true }).then((city) => {
     shell = city
     city.group.position.y = -0.07 // (its ground under the campus's own ring road and gate road)
+    city.group.name = 'far-city'
     group.add(city.group)
     city.applyNight(night)
   }).catch((error) => console.warn('sunnybay: the far view did not build', error))

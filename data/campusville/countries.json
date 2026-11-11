@@ -1,6 +1,7 @@
 {
   "note": "Where you are from (owner, 9 Nov). Every country: African ones first (South Africa on top, then alphabetical), then the rest of the world, alphabetical. Built by scripts/countries-build.mjs; edit the welcome lines here. 'iso' gives the flag emoji in the dropdown; 'flag' is the place name src/from.js draws the name-tag flag for (a globe where none is drawn). 'welcome' is the one line your roommate says at the house door on day 1 when you are not from South Africa; a country without its own line gets: All the way from {country}? You'll love it here.",
   "default": "South Africa",
+  "first": ["United States", "South Africa", "United Kingdom", "Australia", "Nigeria", "India", "China"],
   "countries": [
     { "id": "South Africa", "iso": "ZA", "region": "africa", "flag": "South Africa", "welcome": "" },
     { "id": "Algeria", "iso": "DZ", "region": "africa", "flag": "Elsewhere in Africa", "welcome": "All the way from Algeria? You'll love it here." },

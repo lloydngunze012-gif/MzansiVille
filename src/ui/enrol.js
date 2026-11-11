@@ -133,7 +133,8 @@ function lookStep(state, still) {
 // first, then the rest of the world). South Africa is the default. No intro text.
 // South Africa: which province? (optional) It picks the day-1 home (a suburban house or a township street house).
 // Social A (owner, 11 Nov): every African country in the list gets the same optional second dropdown, under its own
-// word (province, state, county, region...: data/campusville/regions.json). Other countries get none.
+// word (province, state, county, region...: data/campusville/regions.json). V2.1: so do the United States, the
+// United Kingdom, Australia, India and China. Other countries get none.
 function provincePick(state) {
   const mine = countryOf({ country: state.draft.country })
   const info = REGIONS[mine]

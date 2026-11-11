@@ -7,7 +7,8 @@
 //   O1  the opening page: the scene is the picked student photographed in the campus (the real logo over it), and tapping
 //       another portrait swaps it for that student's own render
 //   O2  blocked pictures still look good (the dusk behind the scene alone), and Play never waits for them
-//   O5  every student at 360, 390 and 414 px: layout, palette, contrast (WCAG AA), picture budget; screenshots
+//   O5  every student at 360, 390 and 414 px: layout, the light palette (V2.1), contrast (WCAG AA), picture budget, "Pick your character"; screenshots
+//   O6  the country list starts with seven countries; each of them has its own second dropdown under its own word
 //   O3  an empty name shakes the field and says so; Play's gold button never greys out
 //   O4  the name and the handle both pass handle_blocklist.json before Play works
 // The score RPC's daily limit is tested against real Postgres in scripts/sql-check.mjs (npm run check).
@@ -83,7 +84,8 @@ test('L1 a new player goes from the link to the home scene in under 30 s: one sc
   await expect(page.locator('.qs-card')).toHaveCount(8)
   await expect(page.locator('.en-dots, [data-act="enrol-next"], [data-act="enrol-skip"]')).toHaveCount(0)
   const looks = await page.locator('.qs-card').evaluateAll((els) => els.map((e) => e.dataset.preset))
-  expect(looks).toEqual(['q-naledi', 'q-emma', 'q-amy', 'q-priya', 'q-thabo', 'q-sam', 'q-jason', 'q-dev'])
+  expect(looks).toEqual(['q-emma', 'q-thabo', 'q-priya', 'q-jason', 'q-naledi', 'q-sam', 'q-amy', 'q-dev']) // (V2.1: Emma first, then the cast mix)
+  await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveAttribute('data-preset', 'q-emma') // (and she is the one picked when the page opens)
   await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveCount(1)
   await expect(page.locator('select[data-country]')).toHaveValue('South Africa')
   const name = page.locator('#name')
@@ -195,6 +197,13 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
   await brandNew(page)
   const ids = await page.locator('.qs-card').evaluateAll((els) => els.map((e) => e.dataset.preset))
   expect(ids).toHaveLength(8)
+  // "Pick your character": a small label with an arrow, just above the portraits, bobbing slowly (not under reduced
+  // motion, which every test run asks for); it goes after the first tap on a portrait
+  const pick = page.locator('.qs-pick')
+  await expect(pick).toHaveText('Pick your character↓')
+  const lay = await page.evaluate(() => { const p = document.querySelector('.qs-pick').getBoundingClientRect(), r = document.querySelector('.qs-row').getBoundingClientRect(); return { gap: r.top - p.bottom, anim: getComputedStyle(document.querySelector('.qs-pick')).animationName } })
+  expect(lay.gap).toBeGreaterThanOrEqual(0); expect(lay.gap).toBeLessThan(12)
+  expect(lay.anim, 'no bob under reduced motion').toBe('none')
   let total = (await (await request.get('/opening/logo.webp')).body()).length
   for (const id of ids) {
     const still = (await (await request.get(`/opening/${id}.webp`)).body()).length
@@ -205,20 +214,22 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
   for (const [w, h] of [[360, 740], [390, 844], [414, 896]]) {
     await page.setViewportSize({ width: w, height: h })
     for (const id of ids) {
+      if (id === ids[0] && w === 360) { await page.waitForTimeout(450); await page.screenshot({ path: `${out}/first-screen-360.png` }) } // (as it opens: Emma, the label still there)
       await page.locator(`[data-preset="${id}"]`).scrollIntoViewIfNeeded()
       await page.locator(`[data-preset="${id}"]`).tap()
+      if (id === ids[0] && w === 360) await expect(pick).toHaveCount(0) // (gone after the first tap on a portrait, even the one already picked)
       await expect(page.locator('.qs-scene')).toHaveAttribute('data-still', `/opening/${id}.webp`)
       await page.evaluate((src) => new Promise((done) => { const im = new Image(); im.onload = im.onerror = done; im.src = src }), `/opening/${id}.webp`)
       if (id === ids[0]) {
         const m = await page.evaluate(() => {
           const box = (s) => document.querySelector(s).getBoundingClientRect()
           const scene = box('.qs-scene'), row = box('.qs-card'), panel = box('.qs-panel'), play = box('[data-act="qs-play"]'), fine = box('.qs-fine')
-          // contrast of a text against the panel's plum (the glass over the page's plum) or its own field
+          // contrast of a text against the white panel or its own field
           const lum = (c) => { const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
           const rgb = (str) => str.match(/[\d.]+/g).map(Number)
           const over = (fg, bg) => { const a = fg[3] ?? 1; return fg.slice(0, 3).map((v, i) => v * a + bg[i] * (1 - a)) }
           const ratio = (fg, bg) => { const a = lum(over(fg, bg)), b = lum(bg); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }
-          const plum = [26, 13, 51]
+          const plum = [255, 255, 255] // (V2.1: the panel is white; the name is kept so the lines below read as before)
           const css = (s, pseudo) => getComputedStyle(document.querySelector(s), pseudo)
           const field = rgb(css('#name').backgroundColor)
           const texts = {
@@ -227,10 +238,11 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
             name: [css('#name').color, field, css('#name').fontSize],
             placeholder: [css('#name', '::placeholder').color, field, css('#name').fontSize],
             country: [css('.qs2 .en-ctypick span').color, rgb(css('.qs2 .en-ctypick').backgroundColor), css('.qs2 .en-ctypick span').fontSize],
-            play: [css('.qs-play').color, [240, 180, 0], css('.qs-play').fontSize],
+            play: [css('.qs-play').color, [240, 196, 0], css('.qs-play').fontSize],
             fine: [css('.qs-fine').color, plum, css('.qs-fine').fontSize],
             link: [css('.qs-fine a').color, plum, css('.qs-fine a').fontSize],
-            uni: [css('.qs-uni').color, [43, 22, 80], css('.qs-uni').fontSize],
+            uni: [css('.qs-uni').color, [63, 143, 220], css('.qs-uni').fontSize], // (over the sky's deepest blue)
+            // ("Pick your character" is ink with a white glow over the lawn: checked where it is shown, in O6)
           }
           const out = {}
           for (const [k, [fg, bg, size]] of Object.entries(texts)) out[k] = { ratio: +ratio(rgb(fg), bg).toFixed(2), size: parseFloat(size) }
@@ -239,6 +251,11 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
             fits: play.bottom <= innerHeight && fine.bottom <= innerHeight && document.documentElement.scrollHeight <= innerHeight + 2 && document.documentElement.scrollWidth <= innerWidth,
             texts: out, fieldBg: css('#name').backgroundColor, countryBg: css('.qs2 .en-ctypick').backgroundColor, fieldH: [box('#name').height, box('.qs2 .en-ctypick').height],
             border: css('.qs-panel').borderTopColor, logoH: box('.qs-logo').height,
+            page: css('.qs2').backgroundColor, panel: css('.qs-panel').backgroundColor, playBg: css('.qs-play').backgroundColor, bar: document.querySelector('meta[name="theme-color"]').content,
+            label: [css('.qs-name > span').textTransform, css('.qs-name > span').color], ring: [css('.qs-card[aria-pressed="true"]').borderTopColor, css('.qs-card[aria-pressed="false"]').borderTopColor],
+            // every colour the page paints with (not the pictures): none of them plum, purple or pink
+            purples: [...document.querySelectorAll('.qs2, .qs2 *')].flatMap((el) => { const c = getComputedStyle(el); return [c.color, c.backgroundColor, c.borderTopColor] })
+              .map((v) => v.match(/[\d.]+/g).map(Number)).filter(([r, g, b, a = 1]) => a > 0.05 && b > g + 25 && r > g + 10).length,
           }
         })
         expect(m.fits, `the page fits one screen at ${w} px`).toBe(true)
@@ -249,9 +266,20 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
         expect(m.texts.name.size).toBeGreaterThanOrEqual(16); expect(m.texts.country.size).toBeGreaterThanOrEqual(16); expect(m.texts.fine.size).toBeGreaterThanOrEqual(12)
         expect(m.countryBg, 'the name and the country are the same field').toBe(m.fieldBg); expect(m.fieldH[0]).toBe(m.fieldH[1])
         expect(m.fieldBg).toBe('rgb(244, 239, 228)') // cream
-        expect(m.border).toMatch(/245, 196, 0/) // a thin gold border
+        // V2.1, light and international: a cream page, a white panel with a thin warm-grey border, a yellow Play
+        // with ink text, labels in muted warm grey and not in capitals, cream browser bars, a yellow ring on the
+        // picked portrait and light grey on the others, and no plum, purple or pink anywhere
+        expect(m.page).toBe('rgb(244, 239, 228)')
+        expect(m.panel).toBe('rgb(255, 255, 255)')
+        expect(m.border).toBe('rgb(217, 208, 192)')
+        expect(m.playBg).toBe('rgb(240, 196, 0)')
+        expect(m.bar).toBe('#f4efe4')
+        expect(m.label).toEqual(['none', 'rgb(111, 103, 92)'])
+        expect(m.ring).toEqual(['rgb(240, 196, 0)', 'rgb(217, 208, 192)'])
+        expect(m.purples, 'no plum, purple or pink on the page').toBe(0)
       }
-      if (w !== 414) { await page.waitForTimeout(450); await page.screenshot({ path: `${out}/${id}-${w}.png` }) }
+      await page.waitForTimeout(450)
+      await page.screenshot({ path: `${out}/${id}-${w}.png` })
     }
   }
 })
@@ -445,7 +473,8 @@ test('L4 the leaderboard: a returning player gets the card, a new one does not; 
   await expect(pop(page).locator('.dy-board').first().locator('span')).toHaveCount(3)
   await pop(page).locator('[data-dy="boards"]').tap()
   await expect(pop(page).locator('.lp-tab')).toHaveText(['Academics', 'Social', 'Sport'])
-  await expect(pop(page).locator('.lp-list li')).toHaveCount(10)
+  // (the rows come from the server: on a busy machine that answer has taken longer than the default 5 s)
+  await expect(pop(page).locator('.lp-list li')).toHaveCount(10, { timeout: 20000 })
   await expect(pop(page).locator('[data-you]')).toHaveText('You: #12 · 30 points')
   await expect(pop(page)).toContainText('resets in')
   expect(seen[0]).toBe('academics')
@@ -590,4 +619,29 @@ test('L6 a lost graphics context during the drop-off skips to arrival at the gat
   const log = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.errors') || '[]'))
   expect(log.some((e) => e.kind === 'gl' && /context lost/.test(e.message))).toBe(true)
   expect(errors).toEqual([])
+})
+
+test('O6 the country list: seven first, then the groups as before; a second dropdown for each of the seven', async ({ page }) => {
+  await brandNew(page)
+  const groups = await page.locator('.qs-panel select[data-country] optgroup').evaluateAll((els) => els.map((g) => ({ label: g.label, first: [...g.children].slice(0, 8).map((o) => o.value), n: g.children.length })))
+  expect(groups.map((g) => g.label)).toEqual(['Most picked', 'Africa', 'Rest of the world'])
+  expect(groups[0].first).toEqual(['United States', 'South Africa', 'United Kingdom', 'Australia', 'Nigeria', 'India', 'China'])
+  expect(groups[1].first.slice(0, 2)).toEqual(['South Africa', 'Algeria'])
+  await expect(page.locator('.qs-panel select[data-country]')).toHaveValue('South Africa') // (still the default)
+  // its whole name shows beside the second dropdown, at 360 px too
+  for (const w of [360, 390]) {
+    await page.setViewportSize({ width: w, height: w === 360 ? 740 : 844 })
+    expect(await page.evaluate(() => { const el = document.querySelector('.qs-panel [data-country-pick] span'); return el.scrollWidth <= el.clientWidth }), `South Africa is not cut short at ${w} px`).toBe(true)
+  }
+  const region = page.locator('.qs-panel select[data-region], .qs-panel select[data-province]')
+  const want = { 'United States': ['State', 52, 'Texas'], 'South Africa': ['Province', 10, 'Gauteng'], 'United Kingdom': ['Nation', 5, 'Scotland'], Australia: ['State or territory', 9, 'Victoria'], Nigeria: ['State', 38, 'Lagos'], India: ['State', 37, 'Kerala'], China: ['Province', 34, 'Sichuan'] }
+  for (const [country, [label, count, one]] of Object.entries(want)) {
+    await page.locator('.qs-panel select[data-country]').selectOption(country)
+    await expect(region.locator('option').first()).toHaveText(`${label} (optional)`)
+    await expect(region.locator('option')).toHaveCount(count)
+    await region.selectOption(one)
+    await expect(page.locator('.qs-panel [data-province-pick] span')).toHaveText(one)
+    expect(await page.evaluate(() => document.querySelector('[data-act="qs-play"]').getBoundingClientRect().bottom <= innerHeight), `${country}: Play is still on screen`).toBe(true)
+  }
+  await shot(page, 'opening-country-390')
 })

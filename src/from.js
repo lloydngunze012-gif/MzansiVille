@@ -131,6 +131,8 @@ export const hasCountry = (character) => Boolean(countryRow(character?.country))
 // The country dropdown (owner, 9 Nov): African countries first, then the rest of the world. Each option
 // shows its flag emoji (a Windows PC shows the two letters instead; the drawn flags stay on cards and tags).
 export const COUNTRY_GROUPS = [
+  // (V2.1, owner 11 Nov: seven countries first, in the order of countries.json "first"; they are also in their groups below)
+  { id: 'first', label: 'Most picked', countries: (COUNTRY_DATA.first || []).map((id) => COUNTRY_DATA.countries.find((c) => c.id === id)).filter(Boolean) },
   { id: 'africa', label: 'Africa', countries: COUNTRY_DATA.countries.filter((c) => c.region === 'africa') },
   { id: 'world', label: 'Rest of the world', countries: COUNTRY_DATA.countries.filter((c) => c.region !== 'africa') },
 ]

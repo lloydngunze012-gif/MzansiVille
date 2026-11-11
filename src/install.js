@@ -32,7 +32,8 @@ try { window.matchMedia('(display-mode: standalone)').addEventListener('change',
 // The phone's status and navigation bars (<meta name="theme-color">) follow the screen: night
 // plum on the title (the manifest's colour, so the splash and the first screen match) and on
 // enrolment, the dark Settings plum there, cream everywhere else in the game.
-const BARS = { boot: '#1a0d33', title: '#1a0d33', create: '#140a24', settings: '#1c0e34', errors: '#1c0e34' }
+// (quick: the opening page, light since V2.1; main.js passes it instead of 'create')
+const BARS = { boot: '#1a0d33', title: '#1a0d33', quick: '#f4efe4', create: '#140a24', settings: '#1c0e34', errors: '#1c0e34' }
 export function barColour(screen) {
   const colour = BARS[screen] || '#f4efe4'
   const meta = document.querySelector('meta[name="theme-color"]')

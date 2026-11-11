@@ -22,14 +22,21 @@ fs.mkdirSync(OUT, { recursive: true })
 // to one side (a three-quarter view), looking past them at the gate with the town and the sea beyond.
 const SHOT = {
   w: W, h: H, fov: 30, time: 2.4,
-  sky: [[0, '#2b1650'], [0.1, '#3d2140'], [0.24, '#93582f'], [0.37, '#eaa64f'], [0.5, '#f9d98f'], [1, '#f9d98f']],
-  haze: '#eebb7c', fog: [50, 700],
-  sun: ['#ffc680', 1.9], hemi: ['#ffe6c4', '#7f7f4c', 1.3], sea: ['#3a7fa3', 0.035],
+  // (the campus shows SunnyBay past its fence as plain grey blocks, which is what read as "a grey city": the photo
+  // leaves them out, so past the fence there is the road, the green and the sea)
+  hide: ['far-city'],
+  // (V2.1, owner 11 Nov: bright late-morning daylight, a blue sky, the sea in view; no golden hour)
+  sky: [[0, '#3f8fdc'], [0.28, '#7db8ea'], [0.46, '#cfe6f6'], [0.52, '#e6f1f8'], [1, '#e6f1f8']],
+  haze: '#dcecf5', fog: [90, 1100],
+  sun: ['#fff4e0', 1.7], hemi: ['#ffffff', '#9db86f', 1.25], sea: ['#2f8fc4', 0.075],
   
 }
 // A relaxed stance on top of the idle: the weight on one hip, shoulders dropped, arms in to the
 // sides, the head turned a little to the camera. Women and men lean opposite ways, for variety.
 const EXTRA = process.env.BONES ? JSON.parse(process.env.BONES) : {}
+// One student at a time: Naledi's long braids hang over her shoulders, and an arm tucked in as far as the others'
+// pushed a braid's tip through the upper arm (a dark triangle by the shoulder), so hers hang a little wider.
+const OWN = { 'q-naledi': { UpperArmL: [0, 0, -0.06], UpperArmR: [0, 0, -0.06] } }
 const stance = (lean) => ({ UpperArmL: [0, 0, -0.26], UpperArmR: [0, 0, -0.26], ...EXTRA,
   Hips: [0, 0, 0.05 * lean], Abdomen: [0, 0, -0.04 * lean], Torso: [0, 0, -0.04 * lean], Chest: [0.02, 0.06 * lean, -0.03 * lean],
   Neck: [0, -0.1 * lean, 0], Head: [-0.06, -0.14 * lean, 0.02 * lean],
@@ -46,22 +53,23 @@ await page.locator('[data-act="qs-play"]').click()
 await page.waitForURL(/#\/(play|morning)/, { timeout: 30000 })
 await page.evaluate(() => {
   const s = JSON.parse(localStorage.getItem('mzansiville.v1'))
-  Object.assign(s.run, { day: 2, morningDone: true, resMorningDone: true, queue: [], phase: 'leisure', minutes: 17 * 60 + 30, lectureResolved: true, lectureRoute: false, at: 'gate' })
+  Object.assign(s.run, { day: 2, morningDone: true, resMorningDone: true, queue: [], phase: 'leisure', minutes: 11 * 60, lectureResolved: true, lectureRoute: false, at: 'gate' })
   delete s.run.dropOff
   localStorage.setItem('mzansiville.v1', JSON.stringify(s))
 })
-await page.goto(`${BASE}/?morning=0&hour=17.5#/play`)
+await page.goto(`${BASE}/?morning=0&hour=11#/play`)
 await page.reload()
 await page.locator('#world[data-ready="1"]').waitFor({ timeout: 90000 })
-await page.waitForTimeout(1500)
+await page.waitForTimeout(4000) // (the far city and the kit models have all arrived: the same picture every run)
 const gate = await page.evaluate(() => window.mzansiPlaceOf('gate'))
 console.log('gate', JSON.stringify(gate))
 
 // Where they stand and where the camera is, from the gate (x east, z south).
 const gx = gate.x, gz = gate.z
 const env = (k, d) => (process.env[k] ? process.env[k].split(',').map(Number) : d)
-const at = env('AT', [gx + 2.4, gz - 1.6])
-const aim = env('AIM', [gx + 60, gz + 3]) // (past the gate, towards the town and the sea)
+// (V2.1: on the lawn east of the gate, looking east over the fence to the sea; the gate pillar is out of shot)
+const at = env('AT', [gx + 22, gz])
+const aim = env('AIM', [gx + 80, gz - 4]) // (past the gate, towards the town and the sea)
 const dir = Math.atan2(aim[0] - at[0], aim[1] - at[1])
 const dist = Number(process.env.DIST || 3.7)
 const cam = env('CAM', [at[0] - Math.sin(dir) * dist, 1.32, at[1] - Math.cos(dir) * dist])
@@ -81,8 +89,8 @@ for (const [i, s] of DATA.students.entries()) {
   // lights, from where the camera stands: the key low over its left shoulder, the rim behind the student
   const right_ = [Math.cos(dir), -Math.sin(dir)] // (the camera's right)
   const rel = (back_, right, y, col, power) => [col, power, -Math.sin(dir) * back_ + right_[0] * right, y, -Math.cos(dir) * back_ + right_[1] * right]
-  const lights = { key: rel(5, -3 * lean, 2.4, '#ffd7a1', 2.6), rim: rel(-3.5, 4 * lean, 2.2, '#ffb14a', 4.5), fill: rel(4, 4 * lean, 1.2, '#fff1dc', 0.5) }
-  const r = await page.evaluate(([look_, o]) => window.mzansiPortrait(look_, o), [s.avatar, { ...SHOT, ...lights, at, rot, cam, look, bones: stance(lean), shadow: dir }])
+  const lights = { key: rel(5, -3 * lean, 3.2, '#fff3df', 2.2), rim: rel(-3.5, 4 * lean, 2.6, '#ffffff', 1.6), fill: rel(4, 4 * lean, 1.4, '#eaf3ff', 0.9) }
+  const r = await page.evaluate(([look_, o]) => window.mzansiPortrait(look_, o), [s.avatar, { ...SHOT, ...lights, at, rot, cam, look, bones: { ...stance(lean), ...(OWN[s.id] || {}) }, shadow: dir }])
   if (RAW) { fs.mkdirSync(RAW, { recursive: true }); fs.writeFileSync(`${RAW}/${s.id}-back.png`, png(r.back)) }
   const raw = (b) => sharp(b).removeAlpha().raw().toBuffer()
   const [back, black, white] = await Promise.all([png(r.back), png(r.black), png(r.white)].map(raw))
@@ -93,15 +101,15 @@ for (const [i, s] of DATA.students.entries()) {
   for (let y = 0; y < H; y++) {
     const near = Math.min(1, Math.max(0, (y / H - 0.62) / 0.3)) // 0 far (top), 1 near (the lawn at the bottom)
     // a gentle vignette, and the bottom settling towards plum so the portraits and panel sit on it
-    const dusk = Math.min(1, Math.max(0, (y / H - 0.72) / 0.28)) ** 1.5 * 0.55
+    const dusk = Math.min(1, Math.max(0, (y / H - 0.74) / 0.26)) ** 1.5 * 0.6
     for (let x = 0; x < W; x++) {
       const p = (y * W + x) * 3
       const a = 1 - ((white[p] - black[p]) + (white[p + 1] - black[p + 1]) + (white[p + 2] - black[p + 2])) / 765
       const vx = (x / W - 0.5) * 2
-      const vig = 1 - 0.22 * vx * vx
+      const vig = 1 - 0.06 * vx * vx
       for (let k = 0; k < 3; k++) {
         let b = (soft[p + k] * (1 - near) + softer[p + k] * near) * vig
-        b = b * (1 - dusk) + [26, 13, 51][k] * dusk
+        b = b * (1 - dusk) + [244, 239, 228][k] * dusk // (the bottom settles into the page's cream)
         // (the student's pass is already multiplied by its own outline: black is "colour times alpha")
         out[p + k] = Math.max(0, Math.min(255, Math.round(b * (1 - a) + black[p + k])))
       }

@@ -85,7 +85,7 @@ import { initDaily } from './daily.js'
 import { followPlayer } from './board.js'
 import { paintFollowers } from './ui/board.js'
 import { startJoinToasts } from './jointoast.js'
-import { STUDENTS, stillOf } from './ui/quick.js'
+import { notePick, STUDENTS, stillOf } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
 import { addActivities as addScoreActivities, flush as flushScores, loadBadges, note as noteScore } from './scores.js'
 import { funnel, returning, startSession } from './events.js'
@@ -797,7 +797,8 @@ function paint() {
   if (newLog) newLog.scrollTop = chat.menuId && logTop != null ? logTop : newLog.scrollHeight
   const screen = app.querySelector('[data-screen]')
   app.dataset.screen = screen?.dataset.screen || 'title'
-  barColour(app.dataset.screen)
+  // (the opening page is light: cream bars, not the creator's night plum)
+  barColour(app.querySelector('.qs2') ? 'quick' : app.dataset.screen)
   syncPreview(viewState)
   cycleFlavour()
   if (focusId) {
@@ -1454,7 +1455,8 @@ function quickPick(i) {
   // (no handle guess before they've typed a name: "@student" would be exactly the fake-name look we're avoiding)
   if (!draft.handleEdited) draft.handle = draft.name.trim() ? candidates(draft.name)[0] || '' : ''
 }
-function quickPreselect() { quickPick(Math.floor(Math.random() * STUDENTS.length)) }
+// (V2.1: the first in the row, Emma, is the one picked when the page opens)
+function quickPreselect() { quickPick(0) }
 
 // Play: a name, a student, a country. The house, course and roommate get a default; the @handle comes from the name.
 async function quickPlay() {
@@ -1730,6 +1732,7 @@ app.addEventListener('click', async (event) => {
   const link = event.target.closest('a[href^="#/"]')
   if (link && link.getAttribute('href') === location.hash) { pulse(link, 'You\u2019re already here'); return }
   if (button && button.dataset.act !== 'sound' && button.dataset.act !== 'smooth-switch' && (button.getAttribute('aria-pressed') === 'true' || button.hasAttribute('aria-current'))) {
+    if (button.dataset.act === 'qs-pick') notePick() // (a tap on the portrait that is already picked counts too)
     pulse(button, button.dataset.act === 'view' ? 'Already in this view' : button.hasAttribute('aria-current') ? 'You\u2019re already here' : 'Already selected \u2713')
     if (button.hasAttribute('aria-current')) window.scrollTo({ top: 0, behavior: 'smooth' })
     return
@@ -1756,6 +1759,7 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'qs-pick') {
     captureForm()
+    notePick() // ("Pick your character" has done its job)
     quickPick(Number(button.dataset.i))
     paint()
     return

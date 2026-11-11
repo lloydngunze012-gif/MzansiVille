@@ -1,64 +1,82 @@
 /* (Selectors start ":root .qs2.en.screen" so they win over the enrolment's themed rules, html[data-theme] .en ...:
-   this page is plum under every theme.) */
-/* Quick start / the opening page, V2 (src/ui/quick.js): one scene per student, the real logo, a row of
-   round portraits over the scene's bottom edge, a plum glass panel. Brand plum, gold and cream only:
-   no pink, no light blue. Sits on the enrolment's theme (creator.css, class .en); everything here is
-   the part that is only on this screen. */
-:root .qs2.en.screen { padding: 0; margin: 0; max-width: none; --q-plum: #1a0d33; --q-plum-2: #2b1650; --q-gold: #f5c400; --q-cream: #f4efe4;
-  position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100dvh; min-height: 0; box-sizing: border-box; background: var(--q-plum); }
+   this page looks the same under every theme.) */
+/* Quick start / the opening page, V2.1 (src/ui/quick.js; owner, 11 Nov): light and international. V2's layout and
+   logo; a cream page, a white panel with a soft shadow and a thin warm-grey border, ink text, labels in a muted
+   warm grey (no gold capitals), a yellow Play with ink text like the website's "Play free". No plum, purple or
+   pink anywhere on the page except inside the logo. The photo (bright daylight) fades into the cream. */
+:root .qs2.en.screen { padding: 0; margin: 0; max-width: none; --q-ink: #1c1915; --q-cream: #f4efe4; --q-yellow: #f0c400; --q-grey: #6f675c; --q-line: #d9d0c0;
+  position: relative; overflow: hidden; display: flex; flex-direction: column; height: 100dvh; min-height: 0; box-sizing: border-box; background: var(--q-cream); color: var(--q-ink); }
 @media (min-width: 700px) { :root .qs2.en.screen { max-width: 440px; margin: 0 auto; } }
-/* (the page behind it, on a wide screen and under any theme, is the same plum) */
-body:has(.qs2) { background: #1a0d33; }
+/* (the page behind it, on a wide screen and under any theme, is the same cream) */
+body:has(.qs2) { background: #f4efe4; }
 
-/* The scene: the picked student's picture, edge to edge, filling everything above the portraits (no
-   empty bands). Behind it a dusk of its own, plum down to gold and back to plum: that is what shows
-   at once, and all that shows if the picture is blocked. The bottom settles into the page's plum. */
+/* The scene: the picked student's picture, edge to edge, filling everything above the portraits (no empty
+   bands). Behind it a day of its own, blue sky down to lawn and into cream: that is what shows at once, and all
+   that shows if the picture is blocked. The bottom settles into the page's cream. */
 .qs-scene { flex: 1 1 auto; min-height: 120px; margin-bottom: -30px; position: relative; z-index: 0;
-  background-image: var(--still), linear-gradient(180deg, #2b1650 0%, #3d2140 14%, #93582f 34%, #eaa64f 52%, #6f6a2c 64%, #3c3a26 80%, #1a0d33 100%);
+  background-image: var(--still), linear-gradient(180deg, #3f8fdc 0%, #7db8ea 26%, #cfe6f6 44%, #7fae5f 56%, #9cc47c 78%, #f4efe4 100%);
   background-size: cover; background-position: 50% 18%; background-repeat: no-repeat; }
-.qs-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,13,51,.5) 0%, rgba(26,13,51,0) 20%, rgba(26,13,51,0) 68%, rgba(26,13,51,.75) 90%, #1a0d33 100%); }
+.qs-scene::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(244,239,228,0) 0%, rgba(244,239,228,0) 76%, rgba(244,239,228,.85) 95%, #f4efe4 100%); }
 .qs-scene.qs-swap { animation: qs-swap .35s ease-out; }
 @keyframes qs-swap { from { opacity: .35; transform: scale(1.03); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .qs-scene.qs-swap { animation: none; } }
 
-/* The logo: the SL monogram (never plain text), "University of Mzansi" under it, over the plum sky. */
+/* The logo: the SL monogram (never plain text), "University of Mzansi" under it, over the sky. */
 .qs-top { position: absolute; z-index: 2; top: 0; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: calc(10px + var(--safe-t, 0px)) 16px 0; pointer-events: none; }
-.qs-logo { display: block; width: auto; height: 68px; filter: drop-shadow(0 4px 10px rgba(10,4,22,.6)); }
-.qs-uni { font: 800 12px/1.2 system-ui; letter-spacing: .2em; text-transform: uppercase; color: var(--q-gold); text-shadow: 0 1px 2px #1a0d33, 0 0 10px #1a0d33; }
+.qs-logo { display: block; width: auto; height: 68px; filter: drop-shadow(0 3px 8px rgba(28,25,21,.28)); }
+.qs-uni { font: 800 12px/1.2 system-ui; letter-spacing: .2em; text-transform: uppercase; color: var(--q-ink); text-shadow: 0 0 6px #fff, 0 0 12px #fff; }
 
-/* The row: the eight students as round portraits, over the scene's bottom edge, swiped sideways. */
-.qs-row { flex: none; position: relative; z-index: 1; display: flex; gap: 10px; padding: 4px 16px 10px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+/* "Pick your character": a small label and a soft arrow pointing down at the portraits, just above them. A slow,
+   gentle bob (none under reduced motion); it fades away after the first tap on a portrait. */
+.qs-rowwrap { flex: none; position: relative; z-index: 1; }
+.qs-pick { position: absolute; left: 0; right: 0; bottom: calc(100% + 2px); margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0; pointer-events: none;
+  font: 700 14px/1.2 system-ui; color: var(--q-ink); text-shadow: 0 0 6px #fff, 0 0 10px #fff; animation: qs-bob 2.4s ease-in-out infinite; }
+.qs-pick i { font-style: normal; font-size: 16px; line-height: 1; opacity: .7; }
+.qs-pick.gone { animation: qs-gone .45s ease-out forwards; }
+@keyframes qs-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+@keyframes qs-gone { to { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .qs-pick { animation: none; } .qs-pick.gone { animation: none; opacity: 0; } }
+
+/* The row: the eight students as round portraits, over the scene's bottom edge, swiped sideways. The picked one
+   has a yellow ring, the others light grey. */
+.qs-row { position: relative; display: flex; gap: 10px; padding: 4px 16px 10px; overflow-x: auto; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .qs-row::-webkit-scrollbar { display: none; }
 .qs-card { all: unset; box-sizing: border-box; flex: none; scroll-snap-align: center; cursor: pointer; width: 58px; height: 58px; border-radius: 50%;
-  background: var(--q-plum-2); border: 2.5px solid rgba(244,239,228,.45); box-shadow: 0 4px 10px rgba(10,4,22,.6); -webkit-tap-highlight-color: transparent; overflow: hidden; }
+  background: #fff; border: 3px solid var(--q-line); box-shadow: 0 3px 8px rgba(28,25,21,.18); -webkit-tap-highlight-color: transparent; overflow: hidden; }
 .qs-card .qs-pic { display: block; width: 100%; height: 100%; object-fit: cover; }
-.qs-card[aria-pressed="true"] { border-color: var(--q-gold); box-shadow: 0 0 0 3px rgba(245,196,0,.35), 0 4px 10px rgba(10,4,22,.7); }
+.qs-card[aria-pressed="true"] { border-color: var(--q-yellow); box-shadow: 0 0 0 3px rgba(240,196,0,.35), 0 3px 8px rgba(28,25,21,.22); }
 .qs-card:active { transform: scale(.94); }
-.qs-card:focus-visible { outline: 2px solid var(--q-gold); outline-offset: 2px; }
+.qs-card:focus-visible { outline: 2px solid var(--q-ink); outline-offset: 2px; }
 
-/* The panel: plum glass, a thin gold border. Labels in small gold caps; the name and the country in
-   the same cream field with plum text; gold Play with plum text; the rules line in cream at 75%. */
+/* The panel: white, a soft shadow, a thin warm-grey border. Labels in a muted warm grey; the name and the country
+   in the same field with ink text; a yellow Play with ink text; the rules line small and grey. */
 .qs-panel { flex: none; position: relative; z-index: 1; margin: 0 12px calc(12px + env(safe-area-inset-bottom, 0px)); padding: 12px 14px 12px;
-  border-radius: 20px; background: rgba(26, 13, 51, .78); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(245, 196, 0, .6); box-shadow: 0 10px 30px rgba(10,4,22,.55); display: flex; flex-direction: column; gap: 6px; }
-:root .qs2.en.screen .qs-name { margin: 0; display: flex; flex-direction: column; gap: 5px; }
-:root .qs2.en.screen .qs-name > span, :root .qs2.en.screen .en-ctyrow h3 { margin: 0; font: 800 11px/1.2 system-ui; letter-spacing: .16em; text-transform: uppercase; color: var(--q-gold); }
+  border-radius: 20px; background: #fff; border: 1px solid var(--q-line); box-shadow: 0 10px 28px rgba(28,25,21,.12); display: flex; flex-direction: column; gap: 6px; }
+:root .qs2.en.screen .qs-name { margin: 0; display: flex; flex-direction: column; gap: 5px; color: var(--q-ink); }
+:root .qs2.en.screen .qs-name > span, :root .qs2.en.screen .en-ctyrow h3 { margin: 0; font: 600 13px/1.2 system-ui; letter-spacing: 0; text-transform: none; color: var(--q-grey); }
 :root .qs2.en.screen .qs-name input, :root .qs2.en.screen .en-ctypick { box-sizing: border-box; width: 100%; height: 48px; min-height: 48px; margin: 0; padding: 0 14px; border-radius: 12px;
-  background: var(--q-cream); color: var(--q-plum); border: 1.5px solid transparent; box-shadow: none; font: 700 17px/1 system-ui; }
-:root .qs2.en.screen .qs-name input::placeholder { color: rgba(26,13,51,.68); font-weight: 600; }
-:root .qs2.en.screen .qs-name input:focus, :root .qs2.en.screen .en-ctypick:focus-within { border-color: var(--q-gold); box-shadow: 0 0 0 3px rgba(245,196,0,.4); outline: none; }
-:root .qs2.en.screen .en-ctypick span, :root .qs2.en.screen .en-ctypick b { color: var(--q-plum); font: 700 17px/1 system-ui; }
+  background: var(--q-cream); color: var(--q-ink); border: 1.5px solid var(--q-line); box-shadow: none; font: 700 17px/1 system-ui; }
+:root .qs2.en.screen .qs-name input::placeholder { color: rgba(28,25,21,.62); font-weight: 600; }
+:root .qs2.en.screen .qs-name input:focus, :root .qs2.en.screen .en-ctypick:focus-within { border-color: var(--q-ink); box-shadow: 0 0 0 3px rgba(240,196,0,.45); outline: none; }
+:root .qs2.en.screen .en-ctypick span, :root .qs2.en.screen .en-ctypick b { color: var(--q-ink); font: 700 17px/1 system-ui; }
 :root .qs2.en.screen .en-ctyrow { margin: 0; display: flex; flex-direction: column; gap: 5px; }
+/* (the country keeps room for its whole name beside the second dropdown: "South Africa" is never cut short at 360 px) */
+:root .qs2.en.screen .en-ctypair { gap: 6px; }
+:root .qs2.en.screen .en-ctypair .en-ctypick { padding: 0 10px; gap: 6px; }
+:root .qs2.en.screen .en-ctypair .en-ctypick:first-child:not(:last-child) { flex: 1.75 1 0; }
+:root .qs2.en.screen .en-ctypair .en-ctypick span, :root .qs2.en.screen .en-ctypair .en-ctypick b { font-size: 16px; }
+:root .qs2.en.screen .en-ctypair .en-ctypick svg.flag { width: 24px; height: 16px; }
 :root .qs2.en.screen .qs-name.qs-shake { animation: qs-shake .4s ease-in-out; }
 @keyframes qs-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
 @media (prefers-reduced-motion: reduce) { :root .qs2.en.screen .qs-name.qs-shake { animation: none; } }
-:root .qs2.en.screen .qs-handle { margin: 0; min-height: 18px; font: 600 14px/1.25 system-ui; color: rgba(244,239,228,.85); }
-:root .qs2.en.screen .qs-handle b { color: var(--q-gold); }
+:root .qs2.en.screen .qs-handle { margin: 0; min-height: 18px; font: 600 14px/1.25 system-ui; color: var(--q-grey); }
+:root .qs2.en.screen .qs-handle b { color: var(--q-ink); }
 :root .qs2.en.screen .qs-handle:empty { display: none; } /* (no empty gap before a name is typed) */
-:root .qs2.en.screen .en-err { margin: 0; font: 700 14px/1.3 system-ui; color: #ffd84a; }
-:root .qs2.en.screen .qs-play { margin-top: 4px; color: var(--q-plum); }
-:root .qs2.en.screen .qs-fine { margin: 2px 0 0; font: 500 12px/1.35 system-ui; color: rgba(244,239,228,.75); text-align: center; }
-:root .qs2.en.screen .qs-fine a { color: var(--q-gold); }
+:root .qs2.en.screen .en-err { margin: 0; font: 700 14px/1.3 system-ui; color: #9b1f1f; }
+:root .qs2.en.screen .qs-play { margin-top: 4px; background: var(--q-yellow); color: var(--q-ink); box-shadow: 0 3px 0 #b89600, 0 8px 18px rgba(240,196,0,.25); }
+:root .qs2.en.screen .qs-play:active { box-shadow: 0 1px 0 #b89600; }
+:root .qs2.en.screen .qs-fine { margin: 2px 0 0; font: 500 12px/1.35 system-ui; color: var(--q-grey); text-align: center; }
+:root .qs2.en.screen .qs-fine a { color: var(--q-ink); }
 @media (max-height: 780px) { .qs-logo { height: 54px; } .qs-card { width: 50px; height: 50px; } .qs-scene { margin-bottom: -26px; } .qs-panel { padding: 10px 12px; gap: 5px; } :root .qs2.en.screen .qs-name input, :root .qs2.en.screen .en-ctypick { height: 44px; min-height: 44px; } }
 @media (min-width: 700px) { .qs-row { justify-content: center; } }
 

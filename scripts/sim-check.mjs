@@ -1074,8 +1074,12 @@ check('quick start: four women and four men, skins deep, fair, brown, amber each
   assert.equal(quick.length, 8)
   for (const gender of ['female', 'male']) {
     const group = quick.filter((s) => s.avatar.gender === gender)
-    assert.deepEqual(group.map((s) => s.avatar.skin), ['deep', 'fair', 'brown', 'amber'], gender)
+    // (V2.1, owner 11 Nov: the order is Emma first, then the cast mix; each of the four skins once per gender, in any order)
+    assert.deepEqual(group.map((s) => s.avatar.skin).sort(), ['amber', 'brown', 'deep', 'fair'], gender)
   }
+  assert.equal(quick[0].id, 'q-emma', 'Emma is first')
+  assert.deepEqual(quick.map((s) => s.avatar.gender), ['female', 'male', 'female', 'male', 'female', 'male', 'female', 'male'], 'a woman and a man in turn')
+  for (let i = 0; i < 7; i++) assert.notEqual(quick[i].avatar.skin, quick[i + 1].avatar.skin, 'no two the same skin side by side')
   const room = JSON.parse(read('roommates.json'))
   const cast = new Set([...room.women, ...room.men].map((r) => r.name.toLowerCase()))
   const looks = new Set(quick.map((s) => JSON.stringify(s.avatar)))
