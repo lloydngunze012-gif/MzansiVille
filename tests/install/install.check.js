@@ -135,8 +135,8 @@ for (const [w, h] of [[360, 800], [412, 915]]) {
     const context = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
     const page = await context.newPage()
     await page.goto(`/?${ROOM}&morning=0#/new`)
-    await page.evaluate(() => { localStorage.clear(); localStorage.setItem('mzansiville.view', 'map') })
-    await page.goto(`/?${ROOM}&morning=0#/new`)
+    await page.evaluate(() => { localStorage.clear() })
+    await page.goto(`/?${ROOM}&morning=0&view=map#/new`) // (the 2D map from the start: the view is no longer remembered between visits)
     await enrolUI(page, { name: 'Thandeka', house: 1, course: 1 })
     await page.locator('[data-act="gear"]').first().waitFor({ timeout: 30000 })
     await page.evaluate(() => {

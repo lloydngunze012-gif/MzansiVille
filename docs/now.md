@@ -1,9 +1,15 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (Loops and People).
+Last updated: 11 Nov, Claude Code (Sims view first).
 
 **Next jobs: docs/queue.md** (Sound, then Movement, word for word as the owner sent them; each for a fresh session).
+
+## Sims view first (owner, 11 Nov): built; push and deploy at the end of the job. No SQL to run.
+- **What changed.** Every visit starts in Sims. The view (Top, Sims, Eye, and the 2D Map) is no longer remembered between visits; within one visit your choice holds across campus, the Caf, home and SunnyBay. At every start on campus and in SunnyBay (first arrival, back from the Caf, back from home at the drop-off, back in through the gate, into SunnyBay, off a taxi, out of a place, after a reload) the camera goes to the normal tilt (52 degrees on campus, 45 in SunnyBay) and, if anything stands between it and you, turns round you to the nearest clear angle (16 directions tried, nearest first; with none clear, the one with the most room). The check runs at any tilt.
+- **Decisions made, the owner's to change.** (1) The 2D Map is a view too, so a visit no longer opens on the Map even if you left on it. (2) A start also resets the tilt to normal, not only the angle. (3) Inside the Caf, the day-1 home and a house's common room the framing is as it was (those rooms were framed by hand and have no outside walls in the way); they do open in this visit's view.
+- **Not done.** The Caf's and the home's own starts are not ray-checked. Trees count as "in the way" on campus (the check uses everything solid, not only buildings).
+- **Tests.** `tests/e2e/sims-first.spec.js` S1-S2 (quick project): Eye chosen, reload: Sims; each start: Sims, normal tilt, no hit on a ray from the head to the camera, the head on screen. home.spec checks the drop-off. install.check I4 asks for the 2D map with `?view=map` (it used the remembered choice). Screenshots at 390 px (not committed): docs/sprints/sims-first/ (campus-first-arrival, campus-back-from-caf, campus-after-reload, campus-back-from-home-suburban and -township, campus-back-from-sunnybay, city-into-sunnybay, city-off-a-taxi, city-arrive-lounge, -town, -beachfront, city-out-of-lifecup, city-after-reload).
 
 ## Loops and People (owner, 11 Nov): built; RUN supabase/chat.sql ONCE MORE
 - **Lloyd: run the whole of `supabase/chat.sql` again.** Two parts need it: a group's flame and "Invite a friend". Everything else in this job works without it.

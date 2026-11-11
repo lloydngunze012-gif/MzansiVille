@@ -1,3 +1,4 @@
+import { getCam, getView } from '../cammode.js'
 import { preorderOffer } from '../loops.js'
 import { chipLabel, countLabel, peersOnCampus } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
@@ -631,12 +632,11 @@ function summaryCard(state) {
 export const viewFlags = { world: false, gl: true }
 
 export function viewPref() {
-  try { return localStorage.getItem('mzansiville.view') === 'map' ? 'map' : '3d' } catch { return '3d' }
+  return getView() // (this visit's choice; every visit starts in the 3D Sims view: src/cammode.js)
 }
 
 function viewBar(world) {
-  let cam = 'sims'
-  try { cam = localStorage.getItem('mzansiville.camera') || 'sims' } catch { /* ignore */ }
+  let cam = getCam()
   const shot = new URLSearchParams(location.search).get('shot') || ''
   if (shot.startsWith('cam-')) cam = shot.slice(4)
   const views = [['top', '\u25A3', 'Top'], ['sims', '\u25E2', 'Sims'], ['eye', '\u25C9', 'Eye']]

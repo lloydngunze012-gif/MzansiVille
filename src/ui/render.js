@@ -1,4 +1,5 @@
 import { avatarSvg, bodiesFor, genderOf, genders, hairsFor, outfitsFor, skins } from '../avatar.js'
+import { getCam } from '../cammode.js'
 import { readErrors } from '../errors.js'
 import { balancedScore, rollingAverage } from '../engine/board.js'
 import { formatClock, formatMoney, weekdayName } from '../engine/format.js'
@@ -129,11 +130,7 @@ function phaseWord(id) {
 function camMode() {
   const shot = new URLSearchParams(location.search).get('shot') || ''
   if (shot.startsWith('cam-')) return shot.slice(4)
-  try {
-    return localStorage.getItem('mzansiville.camera') || 'sims'
-  } catch {
-    return 'sims'
-  }
+  return getCam()
 }
 
 function hudMode() {

@@ -13,6 +13,7 @@ import { fromKey } from '../from.js'
 import { HOME_CHATTERS, HOME_WALKERS } from './skinmix.js'
 import { appearNow, createAvatar, layDown, warmLook, measureBody, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
+import { getCam } from '../cammode.js'
 import { createPlayer } from './player.js'
 import { bindInput } from './input.js'
 import { loadModel } from './models.js'
@@ -1194,6 +1195,7 @@ export async function startHome(options) {
   uiRoot.hidden = false
   host.dataset.on = '1'
   host.dataset.style = styleId
+  rig.setMode(getCam()) // (this visit's view; Sims at the start of a visit)
   if (running) return
   running = true
   host.dataset.ready = '0'

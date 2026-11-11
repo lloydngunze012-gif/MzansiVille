@@ -22,6 +22,7 @@ import * as curtain from '../curtain.js'
 import { onPoke, reportLocal, sendPoke, setArea } from '../presence.js'
 import { appearNow, createAvatar, gesture, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
+import { getCam } from '../cammode.js'
 import { bindInput } from './input.js'
 import { createPlayer } from './player.js'
 import { createOthers } from './others.js'
@@ -700,6 +701,8 @@ function place(x, z, facing) {
   player.position.set(spot.x, 0, spot.z)
   player.userData.lastPos?.set(spot.x, 0, spot.z)
   if (facing !== undefined) { player.rotation.y = facing; rig.turnBehind(facing); rig.yaw -= 0.45 }
+  // (every arrival: Sims at the city's tilt, turned to an angle with no building between the camera and you)
+  if (!inside && built) host.dataset.start = JSON.stringify(rig.startClear(player.position, built.group, 45))
   rig.apply(camera, player.position, 30, null)
   notePart(true)
 }
@@ -1273,6 +1276,7 @@ export async function startCity(options) {
   busy = false
   syncBar()
   freshScene()
+  rig.setMode(getCam()) // (this visit's view, chosen on campus or in the Caf; Sims at the start of a visit)
   syncCams()
   try {
     const layout = options.district ? buildingLayout(options.district) : null
@@ -1368,6 +1372,7 @@ if (typeof window !== 'undefined') {
       renderer.render(scene, camera)
       return { ready, part: part.id, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, total: built?.tris, cells: built?.cells, player: [player.position.x, player.position.z], cam: rig.mode, npcs: npcs.filter((n) => n.avatar.visible).length, money: moneyOf(opts.run), car: host.dataset.car || '' }
     },
+    view: () => (player ? { ...rig.check(camera, player.position, inside ? [] : built?.group), start: host.dataset.start || '' } : null),
     teleport: (x, z, facing) => { if (!player) return false; place(x, z, facing); return true },
     // (tests: drag the view like a finger would; the tilt in degrees)
     tilt: (dy) => { rig.drag(0, dy); return rig.pitchDeg },

@@ -2,6 +2,13 @@
 
 ---
 
+# SIMS VIEW FIRST (owner, 11 Nov). Push and deploy. Status: built.
+- **The view lasts one visit:** src/cammode.js (getCam/setCam: top | sims | eye; getView/setView: 3d | map; in memory only, starts sims + 3d; `?view=map` for tests; the old localStorage keys mzansiville.camera and mzansiville.view are removed at load). camera.js reads and writes it; game.js viewPref/viewBar, render.js camMode and main.js's `view` act use it. The Caf, the city and the home keep their rig between starts, so each start calls `rig.setMode(getCam())`.
+- **A clear start:** camera.js `rig.startClear(target, obstacles, tiltDeg)`: Sims at the scene's tilt, a ray from the head (1.5 m) to where the camera will stand; blocked: try the planned yaw +-22.5 degrees, +-45... (16 directions), take the first clear, else the one with the most room. Called from scene.js showWorld's `enter()` when it is a start (`fresh`: hidden before, a respawn, or back from the city; never in a house's common room; tilt 52) and from city.js `place()` (spawn, taxi, teleport, out of a place; tilt 45). The result is on `#world[data-start]` / `#city3d[data-start]`.
+- **Tests:** `rig.check(camera, target, obstacles)` behind `window.mzansiView()` (campus) and `window.mzansiCity.view()`: mode, pitch, blocked (name of what is in the way, or null), head { x, y, on }. tests/e2e/sims-first.spec.js S1-S2 (quick project), home.spec (the drop-off). Screenshots (not committed): docs/sprints/sims-first/.
+
+---
+
 # LOOPS AND PEOPLE (owner, 11 Nov). Push and deploy. Status: built. **Needs supabase/chat.sql run again** (the group flame and invite-a-friend are in it; until then those two stay off and everything else works).
 Rules: src/loops.js. What the player sees: src/ui/loops.js. Data (built from words.md and social.md by Claude Code; Cursor's now): specials.json, badges.json, share.json; city_places.json (staffName, greet, during), countries.json (20 welcome lines), billboards.json (lines).
 - **Daily specials:** specialFor(run.day) from specials.json (21, day 1 a Monday). On the Caf's HOT MEALS board (caf.js: the board's second line, `#caf3d[data-special]`, set smaller until it fits), first on Mama Liz's menu (dressMenu puts `special` into MENUS.mama_liz; main.js paint and buyFood call it), and in the Daily.

@@ -1418,6 +1418,7 @@ window.mzansiHeads = (ids = []) => {
 }
 // Tests (Piece 3, read only): the camera now, the close shot it is in or easing to, and
 // the conversation (who with), with the camera's distance and height from the pair.
+window.mzansiView = () => (player && campus ? { ...rig.check(camera, player.position, [campus.buildings, campus.dressing.group, ...(room ? [room.group] : [])]), start: host.dataset.start || '', house: Boolean(inHouse) } : null)
 window.mzansiShot = () => {
   if (!camera || !player) return null
   const them = convoAvatar(convo) || (talk?.avatar ?? null)
@@ -3042,12 +3043,15 @@ export function showCampus(district, run) {
   const homeId = homePlaceId(district, run.character?.residence)
   const key = spawnKey(district, run)
   const needs = builtId !== buildKey(district, homeId, run) || key !== spawnedKey || (run.at === 'gate' && gateDay !== String(run.day))
+  const fresh = !visible || needs || Boolean(pendingArrive) // (a start: first arrival, a reload, back from the Caf, home or SunnyBay)
   const enter = () => {
     refreshMarkers()
     const shot = new URLSearchParams(location.search).get('shot') || ''
     if (shot === 'cam-top' || shot === 'cam-sims' || shot === 'cam-eye') rig.setMode(shot.slice(4))
     if (shot === 'map') mapUi.open()
     applyArrive()
+    // (every start: Sims at the normal tilt, turned to an angle with no building between the camera and you)
+    if (fresh && player && campus && !inHouse) host.dataset.start = JSON.stringify(rig.startClear(player.position, [campus.buildings, campus.dressing.group], 52))
     syncCar()
     setVisible(true)
   }

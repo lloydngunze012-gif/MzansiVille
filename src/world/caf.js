@@ -20,6 +20,7 @@ import { smooth } from '../smooth.js'
 import * as curtain from '../curtain.js'
 import { appearNow, createAvatar, poseAvatar } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
+import { getCam } from '../cammode.js'
 import { bindInput } from './input.js'
 import { createPlayer } from './player.js'
 
@@ -660,6 +661,9 @@ export async function startCaf(options) {
   host.hidden = false
   uiRoot.hidden = false
   host.dataset.on = '1'
+  // (this visit's view, chosen on campus or in SunnyBay; Sims at the start of a visit)
+  rig.setMode(getCam())
+  uiRoot.querySelectorAll('[data-cam]').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cam === rig.mode)))
   if (running) return
   running = true
   ready = false

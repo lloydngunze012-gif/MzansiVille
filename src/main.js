@@ -95,6 +95,7 @@ import { notePick, STUDENTS, stillOf } from './ui/quick.js'
 import { CARD_REWARD, initLaunch, openBoard, openFeedback } from './launch.js'
 import { addActivities as addScoreActivities, flush as flushScores, loadBadges, note as noteScore } from './scores.js'
 import { funnel, returning, startSession } from './events.js'
+import { setCam, setView } from './cammode.js'
 import { BUILD, COMMIT, checkHealth } from './health.js'
 
 installErrorReporting()
@@ -1387,7 +1388,7 @@ function gameAct(act, button) {
     ui.gear = false
     // From the 2D map (with 3D available): back to the 3D view and walk there.
     if (!viewFlags.world && viewFlags.gl && button.closest('.g-map')) {
-      try { localStorage.setItem('mzansiville.view', '3d') } catch { /* ignore */ }
+      setView('3d')
       const id = button.dataset.id
       go('play')
       paint()
@@ -1889,9 +1890,9 @@ app.addEventListener('click', async (event) => {
   }
   if (act === 'view') {
     const mode = button.dataset.mode
-    try { localStorage.setItem('mzansiville.view', mode === 'map' ? 'map' : '3d') } catch { /* ignore */ }
+    setView(mode === 'map' ? 'map' : '3d')
     if (mode !== 'map') {
-      try { localStorage.setItem('mzansiville.camera', mode) } catch { /* ignore */ }
+      setCam(mode)
       window.dispatchEvent(new CustomEvent('mzansi-cam', { detail: mode }))
     }
     paint()

@@ -1,17 +1,17 @@
 import * as THREE from 'three'
 
-const KEY = 'mzansiville.camera'
+import { getCam, setCam } from '../cammode.js'
+
 const MODES = ['top', 'sims', 'eye']
 // Sims tilt in degrees: 18 comes down almost level; 60 is the top. The camera height is 1.2 m + sin(pitch) x distance, so it never goes below eye height or under the ground.
 const MIN_PITCH = 18
 
+// Every visit starts in Sims; within a visit the player's choice holds across the scenes (src/cammode.js).
 function loadMode() {
-  try {
-    const saved = localStorage.getItem(KEY)
-    if (MODES.includes(saved)) return saved
-  } catch { /* private mode */ }
-  return 'sims'
+  return getCam()
 }
+// Anything but the ground and the little markers stands in the way of a view.
+const SOLID = (item) => item.object.name !== 'beacon' && item.object.name !== 'badge' && item.object.visible && item.point.y > 0.2
 
 function smooth(t) {
   const x = Math.min(1, Math.max(0, t))
@@ -143,7 +143,7 @@ export function createCameraRig() {
         }
       }
       rig.mode = next
-      try { localStorage.setItem(KEY, next) } catch { /* ignore */ }
+      setCam(next)
     },
     cycle() {
       const index = MODES.indexOf(rig.mode)
@@ -159,6 +159,50 @@ export function createCameraRig() {
       if (rig.mode === 'sims') {
         rig.pitch = Math.min(60 * Math.PI / 180, Math.max(MIN_PITCH * Math.PI / 180, rig.pitch + dy * 0.004))
       }
+    },
+    // A start (an arrival, a reload, off a taxi): the Sims camera at the scene's normal tilt, turned round the player
+    // to the clear angle nearest the planned one, so nobody starts a visit staring at a wall. 16 directions are
+    // tried, nearest first; with none clear, the one with the most room. Runs at any tilt. Returns what it found.
+    startClear(target, obstacles, deg) {
+      if (deg) rig.pitch = Math.min(60, Math.max(MIN_PITCH, deg)) * Math.PI / 180
+      seeded = false // (a start is a cut, not a swing from the last picture)
+      if (rig.mode !== 'sims' || !obstacles) return { turned: 0, clear: true }
+      const head = new THREE.Vector3(target.x, 1.5, target.z)
+      const horiz = Math.cos(rig.pitch) * rig.distance.sims
+      const up = 1.2 + Math.sin(rig.pitch) * rig.distance.sims - 1.5
+      const room = (yaw) => {
+        const dir = new THREE.Vector3(Math.sin(yaw) * horiz, up, Math.cos(yaw) * horiz)
+        const dist = dir.length()
+        raycaster.set(head, dir.normalize())
+        raycaster.far = dist
+        const hit = [].concat(obstacles).flatMap((o) => raycaster.intersectObject(o, true)).filter(SOLID).sort((a, b) => a.distance - b.distance)[0]
+        return hit ? hit.distance : Infinity
+      }
+      const planned = rig.yaw
+      let best = { yaw: planned, room: -1, turned: 0 }
+      for (let k = 0; k <= 8; k++) {
+        for (const sign of k === 0 || k === 8 ? [1] : [1, -1]) {
+          const yaw = planned + sign * k * Math.PI / 8
+          const r = room(yaw)
+          if (r === Infinity) { rig.yaw = yaw; return { turned: sign * k, clear: true } }
+          if (r > best.room) best = { yaw, room: r, turned: sign * k }
+        }
+      }
+      rig.yaw = best.yaw
+      return { turned: best.turned, clear: false }
+    },
+    // For tests: is anything between the camera and the player's head, and is the head on the picture?
+    check(camera, target, obstacles) {
+      const head = new THREE.Vector3(target.x, 1.5, target.z)
+      const dir = camera.position.clone().sub(head)
+      const dist = dir.length()
+      raycaster.set(head, dir.normalize())
+      raycaster.far = Math.max(0, dist - 0.3)
+      const hit = [].concat(obstacles || []).flatMap((o) => raycaster.intersectObject(o, true)).filter(SOLID).sort((a, b) => a.distance - b.distance)[0]
+      const p = new THREE.Vector3(target.x, 1.6, target.z).project(camera)
+      const x = (p.x * 0.5 + 0.5) * window.innerWidth
+      const y = (-p.y * 0.5 + 0.5) * window.innerHeight
+      return { mode: rig.mode, pitch: Math.round(rig.pitch * 180 / Math.PI), blocked: hit ? (hit.object.name || hit.object.parent?.name || 'mesh') : null, head: { x: Math.round(x), y: Math.round(y), on: p.z < 1 && x > 0 && x < window.innerWidth && y > 0 && y < window.innerHeight } }
     },
     // A scene's own starting distance for a mode (the day-1 home is smaller than campus).
     setDistance(mode, d) { if (rig.distance[mode] !== undefined) rig.distance[mode] = d },
