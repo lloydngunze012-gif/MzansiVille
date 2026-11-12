@@ -25,7 +25,7 @@ const WAIT = Math.max(0.2, Number(params.get('findwait')) || 8) * 1000
 // sharing a spot and Go to work either way)
 const cardsOn = !navigator.webdriver || params.has('findwait')
 // (never on top of another small card that sits in the same place: the wake-up, an ask, a join toast, a new message)
-const roomForCard = () => cardsOn && !card && !document.querySelector('.cht-wake, .cht-ask, .jt-toast, .cht-ping:not([hidden]), .sl-pop')
+const roomForCard = () => cardsOn && !card && !document.querySelector('.fm-card, .cht-wake, .cht-ask, .jt-toast, .cht-ping:not([hidden]), .sl-pop')
 const FENCE = 104 // (the campus fence: inside it is the campus, past it SunnyBay's Campus district)
 let api = { toast: () => {} }
 let started = false

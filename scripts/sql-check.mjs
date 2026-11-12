@@ -798,4 +798,114 @@ await check('social c: a group\'s name or topic can be reported once per player;
   await db.exec('reset role')
 })
 
+
+// (named arguments, as the phone sends them)
+const chat = async (fn, args) => { const keys = Object.keys(args); return (await one(`select public.${fn}(${keys.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`, keys.map((k) => args[k]))).r }
+// ---------- NOTIFICATIONS (owner, 11 Nov) ----------
+await check('notifications: a push only to members not in the game, never from a blocked player, never a muted group or The Quad; one per thread per 10 minutes', async () => {
+  const mk = async (id) => { await chat('chat_sync', { p_id: id, p_secret: `${id}-secret-0123456789`, p_name: id.split('-')[0] }); return { p_id: id, p_secret: `${id}-secret-0123456789` } }
+  const A = await mk('nina-push-0001'), B = await mk('omar-push-0002'), C = await mk('pete-push-0003'), D = await mk('quin-push-0004')
+  for (const p of [B, C, D]) await chat('chat_push_sub', { ...p, p_endpoint: `https://push.example/${p.p_id}`, p_p256dh: 'k'.repeat(87), p_auth: 'a'.repeat(22) })
+  // (nobody but the game's server may ask who gets a push)
+  await db.exec('set role anon')
+  await assert.rejects(db.query("select public.chat_push_due('x','y','z')"), /permission denied/)
+  for (const table of ['chat_push_subs', 'chat_welcomes']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  await db.exec('reset role')
+  // B, C and D are "away": seen more than a minute ago; outside quiet hours for this check
+  const away = () => db.query("update chat_players set seen_at = now() - interval '5 minutes', push_quiet = false where id <> $1", [A.p_id])
+  const g = (await chat('chat_group_create', { ...A, p_name: 'Push Crew' })).thread
+  for (const p of [B, C, D]) await db.query('insert into chat_members (thread, player) values ($1, $2) on conflict do nothing', [g, p.p_id])
+  await chat('chat_mute', { ...D, p_thread: g, p_on: true }) // D muted the group
+  await chat('chat_block', { ...C, p_other: A.p_id, p_on: true }) // C blocked A
+  await away()
+  await chat('chat_send', { ...A, p_thread: g, p_body: 'Library at 3?' })
+  const due = async (p, t) => (await one('select public.chat_push_due($1,$2,$3) as r', [p.p_id, p.p_secret, t])).r
+  let r = await due(A, g)
+  assert.deepEqual(r.pushes.map((x) => x.player), [B.p_id], 'only B: C blocked A, D muted it')
+  assert.equal(r.pushes[0].kind, 'group'); assert.equal(r.pushes[0].group, 'Push Crew'); assert.equal(r.pushes[0].unread, 1)
+  // within 10 minutes: nothing more for that thread (the lines fold into the next push)
+  await db.query("update chat_lines set at = now() - interval '3 seconds' where sender = $1", [A.p_id])
+  await chat('chat_send', { ...A, p_thread: g, p_body: 'Bring snacks' })
+  assert.equal((await due(A, g)).pushes.length, 0, 'one push per thread per 10 minutes')
+  await db.query("update chat_members set pushed_at = now() - interval '11 minutes' where thread = $1", [g])
+  await db.query("update chat_lines set at = now() - interval '3 seconds' where sender = $1", [A.p_id])
+  await chat('chat_send', { ...A, p_thread: g, p_body: 'Or 4' })
+  r = await due(A, g)
+  assert.equal(r.pushes[0].unread, 3, 'the folded lines are counted')
+  // in the game (seen in the last minute): no push
+  await db.query("update chat_members set pushed_at = null where thread = $1", [g])
+  await db.query('update chat_players set seen_at = now() where id = $1', [B.p_id])
+  await db.query("update chat_lines set at = now() - interval '3 seconds' where sender = $1", [A.p_id])
+  await chat('chat_send', { ...A, p_thread: g, p_body: 'Anyone?' })
+  assert.equal((await due(A, g)).pushes.length, 0, 'B is in the game')
+  // The Quad never pushes
+  await away()
+  await chat('chat_send', { ...A, p_thread: 'quad', p_body: 'hi quad' }).catch(() => {})
+  assert.equal((await due(A, 'quad')).pushes.length, 0)
+  // a DM: the first line, the sender's name; hide message text is passed on
+  await db.query("update chat_lines set at = now() - interval '3 seconds' where sender = $1", [A.p_id])
+  const dm = (await chat('chat_dm', { ...A, p_other: B.p_id })).thread
+  await chat('chat_push_prefs', { ...B, p_hide: true })
+  await away()
+  await chat('chat_send', { ...A, p_thread: dm, p_body: 'You up?' })
+  r = await due(A, dm)
+  assert.equal(r.pushes.length, 1); assert.equal(r.pushes[0].kind, 'dm'); assert.equal(r.pushes[0].from, 'nina'); assert.equal(r.pushes[0].first, 'You up?'); assert.equal(r.pushes[0].hide, true)
+  // an old line (over 2 minutes) never pushes: the sender cannot replay
+  await db.exec("update chat_members set pushed_at = null; update chat_lines set at = now() - interval '3 minutes'")
+  assert.equal((await due(A, dm)).pushes.length, 0)
+  // a subscription can be dropped
+  await chat('chat_push_sub', { ...B, p_endpoint: `https://push.example/${B.p_id}`, p_on: false })
+  assert.equal((await one('select count(*)::int as n from chat_push_subs where player = $1', [B.p_id])).n, 0)
+})
+
+await check('notifications: quiet hours (23:00 to 07:00 SAST) hold pushes back unless the player turned them off', async () => {
+  const quiet = (await one('select public.chat_quiet_now() as q')).q
+  const P = { p_id: 'rosa-quiet-0001', p_secret: 'rosa-quiet-0001-secret-0123456789' }, S = { p_id: 'sami-quiet-0002', p_secret: 'sami-quiet-0002-secret-0123456789' }
+  for (const p of [P, S]) await chat('chat_sync', { ...p, p_name: p.p_id.split('-')[0] })
+  await chat('chat_push_sub', { ...S, p_endpoint: 'https://push.example/sami', p_p256dh: 'k'.repeat(87), p_auth: 'a'.repeat(22) })
+  const dm = (await chat('chat_dm', { ...P, p_other: S.p_id })).thread
+  // pretend it is 02:00 SAST: the function reads the clock, so wrap it
+  await db.exec("create or replace function public.chat_quiet_now() returns boolean language sql stable as $$ select true $$")
+  await db.query("update chat_players set seen_at = now() - interval '5 minutes', push_quiet = true where id = $1", [S.p_id])
+  await chat('chat_send', { ...P, p_thread: dm, p_body: 'late night' })
+  const due = async () => (await one('select public.chat_push_due($1,$2,$3) as r', [P.p_id, P.p_secret, dm])).r.pushes.length
+  assert.equal(await due(), 0, 'quiet hours: held back')
+  await chat('chat_push_prefs', { ...S, p_quiet: false })
+  assert.equal(await due(), 1, 'quiet hours off: sent')
+  // and the clock itself: 23:00 and 06:59 are quiet, 07:00 and 22:59 are not
+  for (const [h, want] of [[23, true], [6, true], [7, false], [22, false]]) {
+    assert.equal((await one(`select extract(hour from timestamp '2026-11-12 ${String(h).padStart(2, '0')}:30') >= 23 or extract(hour from timestamp '2026-11-12 ${String(h).padStart(2, '0')}:30') < 7 as q`)).q, want)
+  }
+  await db.exec(chatSql.slice(chatSql.indexOf('create or replace function public.chat_quiet_now()'), chatSql.indexOf('$$;', chatSql.indexOf('create or replace function public.chat_quiet_now()')) + 3))
+  assert.equal((await one('select public.chat_quiet_now() as q')).q, quiet)
+})
+
+await check('notifications: the local welcome goes to online players from the same town, never past a block, one per 10 minutes; one summary push a day', async () => {
+  const mk = async (id, town) => { const p = { p_id: id, p_secret: `${id}-secret-0123456789` }; await chat('chat_sync', { ...p, p_name: id.split('-')[0] }); if (town) await chat('chat_town', { ...p, p_town: town }); return p }
+  const U = await mk('una-town-0001', 'Durban'), V = await mk('vic-town-0002', 'Durban'), X = await mk('xan-town-0003', 'Cape Town'), Y = await mk('yas-town-0004', 'Durban')
+  await chat('chat_block', { ...Y, p_other: 'emma-new-0005', p_on: true })
+  const E = await mk('emma-new-0005')
+  assert.equal((await chat('chat_joined', { ...E, p_area: 'Durban' })).ok, true)
+  assert.equal((await chat('chat_joined', { ...E, p_area: 'Durban' })).ok, false, 'once, ever')
+  const welcome = async (p) => (await chat('chat_sync', p)).welcome
+  const w = await welcome(U)
+  assert.equal(w.name, 'emma'); assert.equal(w.area, 'Durban'); assert.equal(w.id, E.p_id)
+  assert.equal(await welcome(U), null, 'told once')
+  assert.equal(await welcome(X), null, 'another town')
+  assert.equal(await welcome(Y), null, 'never past a block')
+  // a second newcomer within 10 minutes: not told to U yet
+  const F = await mk('finn-new-0006')
+  await chat('chat_joined', { ...F, p_area: 'Durban' })
+  assert.equal(await welcome(U), null, 'one per 10 minutes')
+  await db.query("update chat_players set welcome_at = now() - interval '11 minutes' where id = $1", [U.p_id])
+  assert.equal((await welcome(U)).name, 'finn')
+  // the summary: V (away, notifications on, area on) gets one a day; U turned the area summary off
+  for (const p of [U, V]) await chat('chat_push_sub', { ...p, p_endpoint: `https://push.example/${p.p_id}`, p_p256dh: 'k'.repeat(87), p_auth: 'a'.repeat(22) })
+  await chat('chat_push_prefs', { ...U, p_area: false })
+  await db.query("update chat_players set seen_at = now() - interval '5 minutes', push_quiet = false")
+  const d = (await one('select public.chat_push_digest() as r')).r.pushes
+  assert.deepEqual(d.map((x) => x.player), [V.p_id]); assert.equal(d[0].count, 2); assert.equal(d[0].area, 'Durban')
+  assert.equal((await one('select public.chat_push_digest() as r')).r.pushes.length, 0, 'once a day')
+})
+
 console.log(`${passed} sql checks passed`)

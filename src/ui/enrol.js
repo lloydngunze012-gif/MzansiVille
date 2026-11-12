@@ -140,6 +140,15 @@ function provincePick(state) {
   const info = REGIONS[mine]
   if (!info) return ''
   const sa = mine === 'South Africa'
+  // Notifications (owner, 11 Nov): South Africa's dropdown also holds each province's main towns (regions.json
+  // `towns`), optional: a province alone, or "Province|Town". The pill shows the town when one is picked.
+  if (sa && info.towns) {
+    const prov = PROVINCES.includes(fromPlace(state.draft.from)) ? fromPlace(state.draft.from) : ''
+    const town = prov && (info.towns[prov] || []).includes(state.draft.town) ? state.draft.town : ''
+    const groups = PROVINCES.map((p) => `<optgroup label="${esc(p)}"><option value="${esc(p)}"${p === prov && !town ? ' selected' : ''}>${esc(p)} (anywhere)</option>${(info.towns[p] || []).map((t) => `<option value="${esc(`${p}|${t}`)}"${p === prov && t === town ? ' selected' : ''}>${esc(t)}</option>`).join('')}</optgroup>`).join('')
+    return `<label class="en-frompick en-ctypick en-provpick" data-province-pick aria-pressed="${Boolean(prov)}"><span>${esc(town || prov || info.label)}</span><b aria-hidden="true">▾</b>
+        <select data-province aria-label="Which province or town?"><option value="">${esc(info.label)} (optional)</option>${groups}</select></label>`
+  }
   const list = sa ? PROVINCES : info.list || []
   const now = sa ? (PROVINCES.includes(fromPlace(state.draft.from)) ? fromPlace(state.draft.from) : '') : list.includes(state.draft.region) ? state.draft.region : ''
   return `<label class="en-frompick en-ctypick en-provpick" data-province-pick aria-pressed="${Boolean(now)}"><span>${esc(now || info.label)}</span><b aria-hidden="true">▾</b>

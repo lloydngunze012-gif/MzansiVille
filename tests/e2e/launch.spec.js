@@ -18,6 +18,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import BLOCKLIST from '../../data/campusville/handle_blocklist.json' with { type: 'json' }
+import REGIONS from '../../data/campusville/regions.json' with { type: 'json' }
 
 const OUT = 'docs/sprints/launch'
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 })
@@ -655,7 +656,7 @@ test('O6 the country list: seven first, then the groups as before; a second drop
     expect(await page.evaluate(() => { const el = document.querySelector('.qs-panel [data-country-pick] span'); return el.scrollWidth <= el.clientWidth }), `South Africa is not cut short at ${w} px`).toBe(true)
   }
   const region = page.locator('.qs-panel select[data-region], .qs-panel select[data-province]')
-  const want = { 'United States': ['State', 52, 'Texas'], 'South Africa': ['Province', 10, 'Gauteng'], 'United Kingdom': ['Nation', 5, 'Scotland'], Australia: ['State or territory', 9, 'Victoria'], Nigeria: ['State', 38, 'Lagos'], India: ['State', 37, 'Kerala'], China: ['Province', 34, 'Sichuan'] }
+  const want = { 'United States': ['State', 52, 'Texas'], 'South Africa': ['Province', 10 + Object.values(REGIONS['South Africa'].towns).flat().length, 'Gauteng'] /* (Notifications: each province's towns are in the same list) */, 'United Kingdom': ['Nation', 5, 'Scotland'], Australia: ['State or territory', 9, 'Victoria'], Nigeria: ['State', 38, 'Lagos'], India: ['State', 37, 'Kerala'], China: ['Province', 34, 'Sichuan'] }
   for (const [country, [label, count, one]] of Object.entries(want)) {
     await page.locator('.qs-panel select[data-country]').selectOption(country)
     await expect(region.locator('option').first()).toHaveText(`${label} (optional)`)

@@ -24,7 +24,7 @@ export async function chatServer() {
   const call = (fn, args) => {
     const job = chain.then(async () => {
       if (!/^chat_[a-z_]+$/.test(fn)) return { status: 404, body: { message: `Could not find the function public.${fn} in the schema cache` } }
-      const keys = Object.keys(args || {}).filter((k) => /^p_[a-z_]+$/.test(k))
+      const keys = Object.keys(args || {}).filter((k) => /^p_[a-z0-9_]+$/.test(k))
       // (a list stays a list, as PostgREST sends a text[]; any other object goes as JSON)
       const values = keys.map((k) => (Array.isArray(args[k]) ? args[k] : args[k] !== null && typeof args[k] === 'object' ? JSON.stringify(args[k]) : args[k]))
       try {

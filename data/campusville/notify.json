@@ -1,0 +1,47 @@
+{
+  "note": "Notifications (owner, 11 Nov). Words for the permission card, the iPhone steps, the menu card, the pushes and the local welcome. Written by Claude Code; Cursor's to change. {name}, {line}, {group}, {n}, {area}, {them} are filled in by the game. Read by src/notify.js (the phone) and api/_push.js (the server).",
+  "card": {
+    "title": "Get a ping when someone messages you?",
+    "why": "Only for messages to you. Turn it off in the menu any time.",
+    "yes": "Yes",
+    "no": "Not now"
+  },
+  "ios": {
+    "title": "First, put Soft Life on your home screen",
+    "why": "iPhones only send pings to games on the home screen.",
+    "steps": ["Tap the Share button at the bottom of Safari.", "Tap Add to Home Screen, then Add.", "Open Soft Life from your home screen and turn on Notifications in the menu."],
+    "ok": "Got it"
+  },
+  "toast": {
+    "on": "You'll get a ping when someone messages you.",
+    "blocked": "Notifications are blocked for this site. Allow them in your browser's settings.",
+    "cant": "Couldn't turn notifications on right now."
+  },
+  "menu": {
+    "button": "Notifications",
+    "kicker": "Settings",
+    "title": "Notifications",
+    "on": "Pings for messages",
+    "quiet": "Quiet hours (23:00 to 07:00)",
+    "hide": "Hide message text on the lock screen",
+    "area": "New students from my area (once a day)",
+    "done": "Done",
+    "blocked": "Notifications are blocked for this site. Allow them in your browser's settings, then come back here.",
+    "ios": "On iPhone, put Soft Life on your home screen first (Share, then Add to Home Screen).",
+    "none": "This browser can't show notifications."
+  },
+  "push": {
+    "title": "Soft Life",
+    "dm": "{name}: {line}",
+    "dmHidden": "{name} sent you a message",
+    "group": "{group} · {n} new messages",
+    "groupOne": "{group} · 1 new message",
+    "area": "{n} new students from {area} joined today. Say hi.",
+    "areaOne": "{name} from {area} joined today. Say hi."
+  },
+  "welcome": {
+    "line": "{name} from {area} just enrolled at UMzansi. Show {them} around.",
+    "hi": "Say hi",
+    "everyMinutes": 10
+  }
+}

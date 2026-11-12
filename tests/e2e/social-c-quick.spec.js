@@ -201,7 +201,8 @@ test('C3 open groups: the creator opens one with an interest; a matching one is 
   await page.locator('.cht-open[data-ct="info"]').tap()
   await expect(page.locator('.cht-openrow')).toHaveCount(0) // (only its creator opens or closes it)
   const report = page.locator('[data-ct="report-group"]')
-  await report.scrollIntoViewIfNeeded()
+  // (no scrollIntoViewIfNeeded: the group page repaints on every chat sync, and that call does not retry when its
+  // element is replaced; tap scrolls it into view and retries)
   await report.tap()
   await expect(page.locator('[data-ct="report-group"]')).toHaveText('Tap again to report')
   await page.locator('[data-ct="report-group"]').tap()

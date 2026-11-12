@@ -27,3 +27,31 @@ self.addEventListener('fetch', (event) => {
   if (req.mode !== 'navigate' || new URL(req.url).origin !== self.location.origin) return
   event.respondWith(fetch(req).catch(() => caches.match('/offline.html').then((page) => page || Response.error())))
 })
+
+// Notifications (owner, 11 Nov): a push from the game's server (api/push.js) carries { title, body, tag, url }.
+// One notification per thread (the tag): a newer one replaces it. A tap opens the game straight into the thread:
+// an open game is focused and told which thread; otherwise the game opens at /?thread=<id>.
+self.addEventListener('push', (event) => {
+  let data = {}
+  try { data = event.data ? event.data.json() : {} } catch { data = { body: event.data ? event.data.text() : '' } }
+  const title = data.title || 'Soft Life'
+  event.waitUntil(self.registration.showNotification(title, {
+    body: data.body || '', tag: data.tag || 'soft-life', renotify: true, icon: '/icons/icon-192.png', badge: '/icons/icon-192.png',
+    data: { url: data.url || '/', thread: (data.url || '').match(/[?&]thread=([^&#]+)/)?.[1] ? decodeURIComponent(data.url.match(/[?&]thread=([^&#]+)/)[1]) : '' },
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const { url = '/', thread = '' } = event.notification.data || {}
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const open = all.find((c) => new URL(c.url).origin === self.location.origin)
+    if (open) {
+      await open.focus()
+      if (thread) open.postMessage({ type: 'open-thread', thread })
+      return
+    }
+    await self.clients.openWindow(url)
+  })())
+})

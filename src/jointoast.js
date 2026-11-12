@@ -59,7 +59,7 @@ export function startJoinToasts({ run, label, said }) {
     tries += 1
     if (run.joinSaid) { asking = false; return }
     if (!socialReady() || !connected()) { if (tries < 40) setTimeout(go, 1500); else asking = false; return }
-    const ok = await mayAnnounce()
+    const ok = await mayAnnounce(run.character?.town || '') // (Notifications: with a town, the local welcome too)
     asking = false
     said()
     if (ok) sendJoined(label)

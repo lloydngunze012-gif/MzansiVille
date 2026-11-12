@@ -4,53 +4,7 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running.
 
-Order (owner, 12 Nov, the latest word): **E (Notifications), D (Character in 3D), then Movement.** (Opening page V2.2: done 12 Nov.) A fresh session takes them. Done already: Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C).
-
----
-
-## E. Notifications (Fable, high · Medium). Next, before D.
-
-```
-NOTIFICATIONS (owner, 11 Nov). Bring players back when someone messages
-them, and welcome newcomers from their own area.
-
-1. Message notifications (web push), built on the existing
-   manifest.webmanifest, sw.js and install.js.
-   - Ask at a good moment, never on first load: the first time the
-     player gets a reply or sends a DM, our own card first ("Get a ping
-     when someone messages you? Yes / Not now"); only Yes opens the
-     browser's own prompt.
-   - Push when a DM or group message arrives and the player is not in
-     the game. DMs: "[Name]: [first line]". Groups: "[Group] · N new
-     messages". Tapping opens the game straight into that thread.
-   - Never from a blocked player. Muted groups and The Quad never push.
-     At most one push per thread per 10 minutes (later ones fold in).
-     Quiet hours 23:00-07:00 SAST unless the player turns them off. A
-     setting to hide message text on the lock screen. Turn it all off
-     any time in the menu.
-   - iPhone: push only works after Add to Home Screen. When an iPhone
-     player says Yes, show the Add to Home Screen steps first.
-   - Server: a table for subscriptions and a function that sends the
-     pushes. Keys in environment variables, never in the repo. Give the
-     owner step-by-step setup for anything he has to do in Supabase or
-     Vercel.
-2. Local welcome. Never ask for the phone's location.
-   - For South Africa, an optional town or city under the province
-     (main cities and towns), in regions.json for Cursor to read over.
-   - When a new player finishes the quick start with an area picked,
-     online players from the same area get a toast: "Emma from Durban
-     just enrolled at UMzansi. Show her around. Say hi" (never past a
-     block; at most one per 10 minutes per player; words in data/ for
-     Cursor).
-   - Players from that area who are not in the game get at most one
-     push a day, as a summary: "3 new students from Durban joined today.
-     Say hi." Only if they turned notifications on, with its own on/off.
-
-Tests: server checks for blocks, mutes, the 10-minute limit and quiet
-hours; a two-browser push test on Android Chrome; screenshots of the
-permission card, the iPhone steps and a notification. Report plainly
-what was and wasn't tried on a real iPhone.
-```
+Order (owner, 12 Nov, the latest word): **D (Character in 3D), then Movement.** (Opening page V2.2 and E, Notifications: done 12 Nov.) A fresh session takes them. Done already: Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications).
 
 ---
 

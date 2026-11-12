@@ -14,7 +14,7 @@
 .fm-row { display: flex; gap: 8px; align-items: stretch; }
 .fm-row button { all: unset; box-sizing: border-box; min-height: 44px; padding: 0 14px; display: grid; place-items: center; border-radius: 12px; font: 800 15px/1 Figtree, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
 .fm-row button:active { transform: scale(.97); }
-.fm-yes { flex: 1; background: #f0c400; color: #1c1915; }
-.fm-no { flex: 1; background: #fff; color: #1c1915; border: 1.5px solid #e3d8c4; }
+.fm-row .fm-yes { flex: 1; background: #f0c400; color: #1c1915; }
+.fm-row .fm-no { flex: 1; background: #fff; color: #1c1915; border: 1.5px solid #e3d8c4; }
 .fm-row .fm-x, .fm-row .fm-flag { flex: none; padding: 0 12px; background: #fff; color: #1c1915; border: 1.5px solid #e3d8c4; }
 .fm-row .fm-flag { color: #9b1f1f; }

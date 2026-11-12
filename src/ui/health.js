@@ -5,7 +5,7 @@ const yes = (ok) => `<b class="hl-${ok ? 'yes' : 'no'}" data-ok="${ok ? 'yes' : 
 // Social SQL: the later blocks of supabase/chat.sql (Social A, Social B, the follow-ups, Social C). "Yes" only when the
 // newest of them is in, so the owner can see that a re-run took; otherwise which part is missing.
 const social = (parts = []) => {
-  const names = ['Social A', 'Social B', 'follow-ups', 'Social C']
+  const names = ['Social A', 'Social B', 'follow-ups', 'Social C', 'Notifications']
   const all = parts.length === names.length && parts.every(Boolean)
   return all ? yes(true) : `${yes(false)} <small data-missing>run supabase/chat.sql again (missing: ${names.filter((_, i) => !parts[i]).join(', ')})</small>`
 }
@@ -25,6 +25,7 @@ export function healthScreen(health, info) {
       ${row('Feedback SQL', h ? yes(h.sql.feedback) : '…', 'sql-feedback')}
       ${row('Chat SQL', h ? yes(h.sql.chat) : '…', 'sql-chat')}
       ${row('Social SQL', h ? social(h.sql.social) : '…', 'sql-social')}
+      ${row('Push keys (Vercel)', h ? (h.push ? yes(true) : `${yes(false)} <small data-missing>add the keys in docs/notifications.md</small>`) : '…', 'push')}
       ${row('Rooms and players online', h ? `<b data-hl-players>${h.players}</b> in ${h.rooms.length || 0} room${h.rooms.length === 1 ? '' : 's'}` : '…', 'online')}
       ${row('Rooms', rooms, 'rooms')}
       ${row('Checked', h ? esc(new Date(h.at).toLocaleTimeString('en-ZA')) : 'checking…', 'at')}

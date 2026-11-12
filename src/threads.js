@@ -153,6 +153,10 @@ export function sync() {
     socialB = Array.isArray(data.interests)
     socialC = data.find !== undefined
     findOn = Boolean(data.find)
+    // (Notifications: your choices on the server, and a newcomer from your town to welcome)
+    pushOk = data.push !== undefined && data.push !== null
+    if (data.push) emit('push-prefs', data.push)
+    if (data.welcome?.id && !blocked.has(data.welcome.id)) emit('welcome', data.welcome)
     asks = (data.asks || []).filter((a) => !blocked.has(a.from_id)).map((a) => ({ ...a, group: filterText(String(a.group || 'a group')).text || 'a group', from: filterText(String(a.from || 'Someone')).text || 'Someone' }))
     // (what became of the asks you sent: "added" or "can't right now", told once)
     // (Loops: friends who started playing through your invite link since you were last told)
@@ -354,6 +358,7 @@ export async function sendLine(id, raw) {
   emit('lines', id)
   emit('list')
   nudge(id, data.to || [])
+  emit('sent', id) // (src/notify.js: push the others who are not in the game; the first DM is a moment to ask)
   window.dispatchEvent(new CustomEvent('mzansi-said')) // (counted for the weekly leaderboard: main.js)
   return { ok: true, note: res.removed.join(' ') }
 }
@@ -416,6 +421,9 @@ export const chatCall = act
 
 // ---------- Social C (owner, 11 Nov): find me, open groups ----------
 export const socialCReady = () => socialC
+// Notifications: the server has the NOTIFICATIONS block of supabase/chat.sql (chat_sync carries `push`).
+let pushOk = false
+export const pushReady = () => pushOk
 // Are you letting friends find you today (the server's answer on the last sync)?
 export const findMeOn = () => findOn
 // Yes or no. Yes lasts until the end of today (SAST); no clears your spot on the server at once.
@@ -547,7 +555,10 @@ export async function removeFriend(id) {
   return act('chat_friend', { p_other: id, p_on: false })
 }
 // "{name} just joined": the server lets a player announce themselves once, ever.
-export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
+// area: the town picked under the province (Notifications: the local welcome), if any.
+export async function mayAnnounce(area = '') { return (await act('chat_joined', area ? { p_area: String(area).slice(0, 60) } : {})).ok }
+// Your town, told to the server again when you change it (the welcomes and the daily summary go by it).
+export async function setTown(town) { return act('chat_town', { p_town: String(town || '').slice(0, 60) }) }
 
 // Tests: a nudge as if it had come over Realtime (the test server has no Realtime; a typing signal is one).
 window.mzansiNudge = (p) => nudged(p || {})

@@ -5,7 +5,7 @@ import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
 import { formatClock, formatMoney, toMinutes } from '../engine/format.js'
 import { homePlaceId } from '../engine/model.js'
 import { chatFor } from '../engine/people.js'
-import { findMeOn, socialCReady, unreadTotal } from '../threads.js'
+import { findMeOn, socialCReady, pushReady, unreadTotal } from '../threads.js'
 import { cardHtml, esc, summaryRows } from './render.js'
 import { ART, LAYOUT, groundHtml, inkOn, residence, routeSvg, todOf } from './campus.js'
 import { csvToWorld } from '../world/layout.js'
@@ -317,6 +317,10 @@ function meButton(run) {
   const letter = esc(String(run?.character?.name || '?').trim().slice(0, 1).toUpperCase() || '?')
   return `<button class="tb-me" type="button" data-act="edit-look" aria-label="Change your look" title="Change your look"><span class="tb-me-face" data-me-face>${has ? `<img src="${esc(meFace.url)}" alt="">` : `<b>${letter}</b>`}</span><i class="tb-me-pen" aria-hidden="true">\u270E</i></button>`
 }
+// Notifications (src/notify.js keeps the answer): on when this phone said yes and the browser allows it.
+function notifyOn() {
+  try { return JSON.parse(localStorage.getItem('mzansiville.notify') || '{}').on === true && window.Notification?.permission === 'granted' } catch { return false }
+}
 export function musicOn() {
   try { return localStorage.getItem('mzansiville.music') !== 'off' } catch { return true }
 }
@@ -334,6 +338,7 @@ function gearMenu(run) {
     <button type="button" data-act="lp-board">\u{1F3C6} Weekly leaderboard</button>
     ${preorderOffer(run) ? '<button type="button" class="news" data-act="preorder">\u{1F35B} Order tomorrow’s special <i class="tb-dot" aria-label="new"></i></button>' : ''}
     ${socialCReady() ? `<button type="button" data-act="find-toggle" data-find="${findMeOn() ? 'on' : 'off'}">\u{1F4CD} Friends can find you: <b>${findMeOn() ? 'On today' : 'Off'}</b></button>` : ''}
+    ${pushReady() ? `<button type="button" data-act="notify-open">\u{1F514} Notifications: <b>${notifyOn() ? 'On' : 'Off'}</b></button>` : ''}
     <button type="button" data-act="invite-friend">\u{1F381} Invite a friend: R100 each</button>
     <button type="button" data-act="chat-open">\u{1F4AC} Chat <small class="cht-unread inline" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>

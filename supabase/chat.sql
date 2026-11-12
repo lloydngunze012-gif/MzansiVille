@@ -492,7 +492,10 @@ begin
     'followers', (select count(*) from chat_follows where followed = p_id),
     'interests', (select to_jsonb(interests) from chat_players where id = p_id),
     -- (Social C: are you letting friends find you today)
-    'find', (select coalesce(find_day = today, false) from chat_players where id = p_id));
+    'find', (select coalesce(find_day = today, false) from chat_players where id = p_id),
+    -- (Notifications: your choices, and a newcomer from your town to welcome; both null until that block is run)
+    'push', (select jsonb_build_object('quiet', push_quiet, 'hide', push_hide, 'area', push_area, 'town', town) from chat_players where id = p_id),
+    'welcome', chat_welcome_for(p_id));
 end $$;
 grant execute on function public.chat_sync(text, text, text, text, text, jsonb, int) to anon, authenticated;
 
@@ -1207,3 +1210,202 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 grant execute on function public.chat_group_report(text, text, text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- NOTIFICATIONS (owner, 11 Nov): web push for messages, and the local welcome. Re-runnable.
+-- The phone keeps its push subscription here (chat_push_sub) and its choices (chat_push_prefs). The pushes are
+-- SENT by the game's own server function (api/push.js on Vercel), which calls chat_push_due with the service
+-- role after a phone has sent a line; only the service role may call chat_push_due, chat_push_gone and
+-- chat_push_digest (the subscriptions are never handed to a phone).
+-- Rules, all decided here:
+--   never from a blocked player (either way); never for a muted thread, The Quad or a post's replies; never to a
+--   player who is in the game (seen in the last 60 s); at most one push per thread per player per 10 minutes
+--   (lines in between fold into the next one: a group's says how many are unread); quiet hours 23:00 to 07:00
+--   SAST unless the player turned them off; "hide message text" sends no words from the message.
+-- The local welcome: a new player who picked a town (chat_joined's p_area) is told to the online players from the
+-- same town (chat_sync's `welcome`, at most one per player per 10 minutes, never past a block), and those who
+-- are not in the game get one summary push a day (chat_push_digest) if they have notifications and "new
+-- students from my area" on.
+-- =====================================================================================================
+alter table public.chat_players add column if not exists town text not null default '';
+alter table public.chat_players add column if not exists push_quiet boolean not null default true;
+alter table public.chat_players add column if not exists push_hide boolean not null default false;
+alter table public.chat_players add column if not exists push_area boolean not null default true;
+alter table public.chat_players add column if not exists welcome_at timestamptz;
+alter table public.chat_players add column if not exists welcome_seen bigint not null default 0;
+alter table public.chat_players add column if not exists digest_day date;
+alter table public.chat_members add column if not exists pushed_at timestamptz;
+
+create table if not exists public.chat_push_subs (
+  endpoint text primary key,
+  player text not null,
+  p256dh text not null,
+  auth text not null,
+  at timestamptz not null default now()
+);
+create index if not exists chat_push_subs_player_idx on public.chat_push_subs (player);
+alter table public.chat_push_subs enable row level security;
+
+create table if not exists public.chat_welcomes (
+  id bigint generated always as identity primary key,
+  player text not null,
+  name text not null,
+  area text not null,
+  look jsonb not null default '{}'::jsonb,
+  at timestamptz not null default now()
+);
+create index if not exists chat_welcomes_area_idx on public.chat_welcomes (area, at desc);
+alter table public.chat_welcomes enable row level security;
+
+-- Keep (p_on) or drop this phone's push subscription. At most 5 phones a player (the oldest goes).
+--   { ok, on } | { ok: false, reason: 'bad' }
+create or replace function public.chat_push_sub(p_id text, p_secret text, p_endpoint text, p_p256dh text default null, p_auth text default null, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  if p_endpoint is null or p_endpoint !~ '^https://' or length(p_endpoint) > 800 then return jsonb_build_object('ok', false, 'reason', 'bad'); end if;
+  if not coalesce(p_on, true) then
+    delete from chat_push_subs where endpoint = p_endpoint and player = p_id;
+    return jsonb_build_object('ok', true, 'on', false);
+  end if;
+  if p_p256dh is null or p_auth is null or length(p_p256dh) > 200 or length(p_auth) > 100 then return jsonb_build_object('ok', false, 'reason', 'bad'); end if;
+  insert into chat_push_subs (endpoint, player, p256dh, auth) values (p_endpoint, p_id, p_p256dh, p_auth)
+    on conflict (endpoint) do update set player = excluded.player, p256dh = excluded.p256dh, auth = excluded.auth, at = now();
+  delete from chat_push_subs where player = p_id and endpoint in (select endpoint from chat_push_subs where player = p_id order by at desc offset 5);
+  return jsonb_build_object('ok', true, 'on', true);
+end $$;
+grant execute on function public.chat_push_sub(text, text, text, text, text, boolean) to anon, authenticated;
+
+-- The player's choices (a null leaves one as it is). { ok, quiet, hide, area, phones }
+create or replace function public.chat_push_prefs(p_id text, p_secret text, p_quiet boolean default null, p_hide boolean default null, p_area boolean default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare me chat_players%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_players set push_quiet = coalesce(p_quiet, push_quiet), push_hide = coalesce(p_hide, push_hide), push_area = coalesce(p_area, push_area)
+    where id = p_id returning * into me;
+  return jsonb_build_object('ok', true, 'quiet', me.push_quiet, 'hide', me.push_hide, 'area', me.push_area,
+    'phones', (select count(*) from chat_push_subs where player = p_id));
+end $$;
+grant execute on function public.chat_push_prefs(text, text, boolean, boolean, boolean) to anon, authenticated;
+
+-- Is it quiet hours (23:00 to 07:00 SAST) right now?
+create or replace function public.chat_quiet_now() returns boolean language sql stable as $$
+  select extract(hour from (now() at time zone 'Africa/Johannesburg')) >= 23 or extract(hour from (now() at time zone 'Africa/Johannesburg')) < 7
+$$;
+
+-- After p_id sent a line to p_thread: who gets a push now, and what it says. Service role only (api/push.js).
+-- The sender proves who they are with their secret, and their latest line in the thread must be under 2 minutes
+-- old. Marks each one pushed (the 10-minute window). Returns { ok, pushes: [{ endpoint, p256dh, auth, player,
+-- kind: 'dm' | 'group', thread, from, group, first, unread, hide }] }.
+create or replace function public.chat_push_due(p_id text, p_secret text, p_thread text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype; line chat_lines%rowtype; who text; out jsonb;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_threads where id = p_thread;
+  if not found or chat_is_quad(t.id) or t.id like 'p:%' then return jsonb_build_object('ok', true, 'pushes', '[]'::jsonb); end if;
+  select * into line from chat_lines where thread = p_thread and sender = p_id order by id desc limit 1;
+  if not found or line.at < now() - interval '2 minutes' then return jsonb_build_object('ok', true, 'pushes', '[]'::jsonb); end if;
+  select name into who from chat_players where id = p_id;
+  with due as (
+    select m.player, m.last_read from chat_members m join chat_players pl on pl.id = m.player
+    where m.thread = t.id and m.player <> p_id and not m.muted
+      and not chat_blocked(p_id, m.player)
+      and pl.seen_at < now() - interval '60 seconds'
+      and (m.pushed_at is null or m.pushed_at < now() - interval '10 minutes')
+      and not (pl.push_quiet and chat_quiet_now())
+      and m.last_read < line.id
+      and exists (select 1 from chat_push_subs s where s.player = m.player)
+  ), marked as (
+    update chat_members m set pushed_at = now() from due where m.thread = t.id and m.player = due.player returning m.player, due.last_read
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('endpoint', s.endpoint, 'p256dh', s.p256dh, 'auth', s.auth, 'player', mk.player,
+      'kind', t.kind, 'thread', t.id, 'from', coalesce(who, 'Student'), 'group', t.name, 'first', line.body, 'hide', pl.push_hide,
+      'unread', (select count(*) from chat_lines l where l.thread = t.id and l.id > mk.last_read and l.sender <> mk.player and not chat_blocked(mk.player, l.sender)))), '[]'::jsonb)
+    into out from marked mk join chat_push_subs s on s.player = mk.player join chat_players pl on pl.id = mk.player;
+  return jsonb_build_object('ok', true, 'pushes', out);
+end $$;
+revoke all on function public.chat_push_due(text, text, text) from public, anon, authenticated;
+
+-- A push service said this subscription is gone (404 or 410): forget it. Service role only.
+create or replace function public.chat_push_gone(p_endpoint text) returns void
+language sql security definer set search_path = public as $$ delete from chat_push_subs where endpoint = p_endpoint $$;
+revoke all on function public.chat_push_gone(text) from public, anon, authenticated;
+
+-- Once a day (api/push-daily.js, a Vercel cron): for each player not in the game who has notifications and "new
+-- students from my area" on, how many players from their town joined today (not themselves, never someone
+-- blocked either way). At most one a day per player, never in quiet hours if they keep them. Service role only.
+-- Returns { ok, pushes: [{ endpoint, p256dh, auth, player, area, count, name }] } (name: the one, when count is 1).
+create or replace function public.chat_push_digest()
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare today date := (now() at time zone 'Africa/Johannesburg')::date; out jsonb;
+begin
+  with joined as (
+    select pl.id as player, pl.town as area, count(w.id) as n, min(w.name) as name
+    from chat_players pl join chat_welcomes w on w.area = pl.town and w.player <> pl.id and not chat_blocked(pl.id, w.player)
+      and (w.at at time zone 'Africa/Johannesburg')::date = today
+    where pl.town <> '' and pl.push_area and (pl.digest_day is null or pl.digest_day < today)
+      and pl.seen_at < now() - interval '60 seconds' and not (pl.push_quiet and chat_quiet_now())
+      and exists (select 1 from chat_push_subs s where s.player = pl.id)
+    group by pl.id, pl.town
+  ), marked as (
+    update chat_players p set digest_day = today from joined j where p.id = j.player returning j.*
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('endpoint', s.endpoint, 'p256dh', s.p256dh, 'auth', s.auth, 'player', m.player,
+      'area', m.area, 'count', m.n, 'name', m.name)), '[]'::jsonb)
+    into out from marked m join chat_push_subs s on s.player = m.player;
+  return jsonb_build_object('ok', true, 'pushes', out);
+end $$;
+revoke all on function public.chat_push_digest() from public, anon, authenticated;
+
+-- "{name} just joined": a phone may announce its player once, ever (Social A). The local welcome: with p_area (a
+-- town picked under the province) the newcomer is also told to the online players from that town.
+drop function if exists public.chat_joined(text, text);
+create or replace function public.chat_joined(p_id text, p_secret text, p_area text default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare area text := left(trim(coalesce(p_area, '')), 60); me chat_players%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_players set joined_said = true, town = case when area = '' then town else area end where id = p_id and not joined_said returning * into me;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'done'); end if;
+  if area <> '' then insert into chat_welcomes (player, name, area, look) values (p_id, me.name, area, me.look); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_joined(text, text, text) to anon, authenticated;
+
+-- Your town (for the welcomes and the daily summary), set again when you change it. { ok, town }
+create or replace function public.chat_town(p_id text, p_secret text, p_town text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare tw text := left(trim(coalesce(p_town, '')), 60);
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_players set town = tw where id = p_id;
+  return jsonb_build_object('ok', true, 'town', tw);
+end $$;
+grant execute on function public.chat_town(text, text, text) to anon, authenticated;
+
+-- The welcome waiting for you (chat_sync calls this): a newcomer from your town in the last 15 minutes, never
+-- past a block, at most one every 10 minutes, each newcomer once. null when there is none.
+create or replace function public.chat_welcome_for(p_id text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me chat_players%rowtype; w chat_welcomes%rowtype;
+begin
+  select * into me from chat_players where id = p_id;
+  if me.town = '' or (me.welcome_at is not null and me.welcome_at > now() - interval '10 minutes') then return null; end if;
+  select * into w from chat_welcomes x where x.area = me.town and x.player <> p_id and x.id > me.welcome_seen
+    and x.at > now() - interval '15 minutes' and not chat_blocked(p_id, x.player) order by x.id desc limit 1;
+  if not found then return null; end if;
+  update chat_players set welcome_at = now(), welcome_seen = w.id where id = p_id;
+  return jsonb_build_object('id', w.player, 'name', w.name, 'area', w.area, 'gender', w.look->>'gender');
+end $$;
+revoke all on function public.chat_welcome_for(text) from public;
+
+-- (the game's server function calls these with the service role)
+do $$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    grant execute on function public.chat_push_due(text, text, text) to service_role;
+    grant execute on function public.chat_push_gone(text) to service_role;
+    grant execute on function public.chat_push_digest() to service_role;
+  end if;
+end $$;
