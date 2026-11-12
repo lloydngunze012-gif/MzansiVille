@@ -18,6 +18,15 @@
 .screen > .g-hud.tb { margin: 0; position: sticky; top: 0; border-radius: 0; }
 /* Row 1: the time pill, the players chip (fills the middle), the goal badge, the menu. */
 .tb-row { display: flex; align-items: center; gap: 6px; height: 34px; }
+/* Your face and a pencil: opens the character screen (owner, 12 Nov). In the bar, so it is on every screen that has
+   the bar and can never sit over another fixed button. */
+.tb-me { all: unset; box-sizing: border-box; flex: none; position: relative; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+.tb-me-face { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; box-sizing: border-box; background: #fff; border: 2px solid #f0c400; }
+.tb-me-face img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 18%; display: block; }
+.tb-me-face b { font: 800 15px/1 Figtree, system-ui, sans-serif; color: #1c1915; }
+.tb-me-pen { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: #f0c400; color: #1c1915; border: 1.5px solid #fff; font: 800 10px/1 system-ui, sans-serif; font-style: normal; }
+.tb-me:focus-visible .tb-me-face { box-shadow: 0 0 0 3px #f0c40066; }
+.tb-me:active { transform: scale(.94); }
 
 /* The time pill: weekday over the clock, the day's progress as a gold line along the bottom. */
 .tb-time {

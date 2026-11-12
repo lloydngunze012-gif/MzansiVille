@@ -2,6 +2,14 @@
 
 ---
 
+# THE CHARACTER BUTTON (owner, 12 Nov; a correction to Tester fixes 2). Push and deploy. Status: built. No SQL.
+- game.js `meButton(run)`: `.tb-me` (`data-act="edit-look"`), first in the top bar's row 1, so it is on campus, in the Caf and in SunnyBay: `.tb-me-face` (an `<img>` once `setMeFace(key, url)` has one for this look, else the initial) and `.tb-me-pen`. Styles: topbar.css.
+- main.js: `hydrateMeFace()` after every paint (a quick-start student's unchanged look uses /opening/<id>-face.webp; any other look thumbs3d.js `thumbFor(look, 'hair')`, cached); `openLookEditor()` = openCardEditor with `draft.toPlay` and no reward prompt; `enrol-save-look` saves avatar, from, country and region and goes back to play (go() steps out of the Caf or the city and #/play walks back in). enrol.js: on the look step with `draft.edit && draft.toPlay` the footer is "Save my look" + `.en-more` "Name, house and card" and Back goes to #/play.
+- createRun copies only the character fields it knows: set extras (courseAuto) on `save.run.character` after it.
+- Test: tests/e2e/tester-fixes2.spec.js F5.
+
+---
+
 # TESTER FIXES 2 (owner, 11 Nov). Push and deploy. Status: built. No SQL.
 - **NPC rule (src/world/crowd.js):** never more than NEAR_MAX (3) NPCs within NEAR_R (4 m) of a real player; no walker stands on one spot longer than STILL_MAX (8 s). `update(dt, playerPos, players)`: scene.js passes you and every other real player drawn (others.nearbyPositions). `keepRoom` (every 0.3 s): seated, queueing, talking people count and stay; walkers past the count are sent away (`sendAway`: `leaving`, no giving way, the door furthest from the player), one walking into a full circle turns first. `nextTrip` never picks a door a player stands at and routes with the ground round players closed (`aroundPlayers`: 1.5 m, or the whole circle of a player who has their three). Giving way (`yields`) for 1.5 s in a row = go round. The cause of the 11 Nov pile-up was giving way for ever to a player standing still. `crowd.report()` behind `window.mzansiCrowd()` (people with `still`, `near` per player).
 - **Door prompt:** scene.js `clearOfButtons(node)` after `pin` in promptDoor: lifted above (or below a top bar) any fixed button it would overlap (.minimap, .chat-btn, .stop-btn, .ps-leave, #app .g-views, .tb, .g-cta), kept on screen; the buttons' boxes are re-read every 20 frames.

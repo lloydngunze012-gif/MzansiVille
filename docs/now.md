@@ -1,9 +1,17 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 11 Nov, Claude Code (Tester fixes 2).
+Last updated: 12 Nov, Claude Code (the character button).
 
 **Next jobs: docs/queue.md**, in the owner's order: B (Chat V2), C (Social C), E (notifications), D (character in 3D), then Movement. A (tester fixes 2) is done, below. Sound was built and in its gate when that order came, so it went out before A.
+
+## The character button (owner's correction to Tester fixes 2, 12 Nov): built; push and deploy at the end of the job. No SQL to run.
+- **What the owner meant** by the button hidden under the round map: a way to the character screen, not a Home button. (The fix to the "Tap to enter your house" prompt from 11 Nov stays: it was a real overlap.)
+- **What is new.** A small round button with your own face and a pencil, first in the top bar, on every screen that has the bar (campus, the Caf, SunnyBay). A tap opens the character screen on your look. "Save my look" saves the look (and where you are from) and brings you straight back to where you were; "Name, house and card" under it goes on through the rest of the card as before; Back changes nothing. The older "Edit character" in the menu and Settings is still there.
+- **The face.** One of the eight quick-start students with the look unchanged: their ready-made portrait (no 3D needed). Any other look: a head shot made once from the 3D character and kept on the phone. Until it lands, your initial.
+- **Why in the bar.** It is on every screen without new code per screen, and it cannot sit over another fixed button. The overlap test covers it at 360, 390 and 414 px.
+- **A hole in the 11 Nov course fix, found here and closed.** A brand-new quick-start player still had the drawn course on their card until the page was reloaded: the "not picked" mark was dropped when the save was made. My test reloaded, so it missed it. The mark is now set when the save is made, and the test checks that.
+- **Tests.** `tests/e2e/tester-fixes2.spec.js` F5 (the button on campus, in the Caf and in SunnyBay, topmost where it is drawn, no overlaps; the character screen opens on the look; a new outfit is saved, you are back in SunnyBay wearing it, the button shows the new head shot; Back saves nothing). topbar.spec B1-B7 still green. Screenshots at 390 px (not committed): docs/sprints/tester-fixes2/ (face-button-campus, face-button-sunnybay, character-screen).
 
 ## Tester fixes 2 (owner, 11 Nov): built; push and deploy at the end of the job. No SQL to run.
 - **1. NPC pile-up: cause found and fixed.** Reproduced on one phone: standing on the library's door spot, two walkers arrived within a minute and never left (six game minutes), and more join with time. Cause: a walker whose way led through a player who was standing still "gave way" for half a second, tried again, gave way again, for ever; and walkers did not see the other real player at all. With nine walkers, most end up standing round two people talking on a path or at a door. Fixed where it happens (src/world/crowd.js): after 1.5 s of giving way a walker goes round instead; walkers plan their way round every real player (yours and the others on your screen) and do not head for a door a player is standing at. **The rule, enforced every 0.3 s:** never more than 3 NPCs within 4 m of a player; a walker past the count turns and goes, and one about to step into a full circle turns before it gets there. No walker stands on one spot longer than 8 s (its longest pause between trips is 5.5 s); past that it sets off again.

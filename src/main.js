@@ -58,7 +58,7 @@ import { startGroove, stopGroove } from './groove.js'
 let shareMilestone = null
 let shareBlob = null
 import { emptyDraft, shotState, view } from './ui/render.js'
-import { anyEnabled, fpsText, hereOf, layoutOf, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
+import { anyEnabled, fpsText, hereOf, layoutOf, meFaceKey, setMeFace, soundOn, ui, viewFlags, viewPref } from './ui/game.js'
 import { homePlaceId, houseOf } from './engine/model.js'
 import { venueFor } from './venues.js'
 import { toMinutes } from './engine/format.js'
@@ -843,6 +843,7 @@ function paint() {
   syncWorld(shown)
   armToasts()
   armAuto()
+  hydrateMeFace()
 }
 
 // Meeting people (owner, 10 Nov), item 7: the menu's own links (Settings, Student
@@ -1382,6 +1383,7 @@ function gameAct(act, button) {
   if (act === 'talk-bye') { endTalk({ away: button.dataset.away === '1' }); paint(); return true }
   if (act === 'talk-phone') { endTalk(); go('notices'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
+  if (act === 'edit-look') { openLookEditor(); return true }
   if (act === 'install-go') { promptInstall(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
@@ -1520,6 +1522,7 @@ async function quickPlay() {
   save.run = createRun(district, { ...character, ...storyWithDefaults({}) })
   save.run.bestieName = roommateFor(save.run.character).name
   save.run.quick = true // (finish your student card, and get R200, comes later: launch.js)
+  save.run.character.courseAuto = true // (createRun keeps only the fields it knows: the drawn course is not yours until you pick one)
   draft = emptyDraft()
   persist()
   saveMyCard(save.run)
@@ -1527,6 +1530,36 @@ async function quickPlay() {
 }
 
 // "Finish your student card": the full look editor, vibe and card (the old enrol steps) on the player's own student.
+// The top bar's face-and-pencil button: the character screen, opened on your look. "Save my look" there saves the
+// look alone and brings you straight back; Next goes on to the rest of the card as before.
+function openLookEditor() {
+  openCardEditor()
+  if (route().name === 'new' || draft.edit) { draft.fromPrompt = false; draft.toPlay = true; draft.step = 'look'; paint() }
+}
+// The head shot on that button: from the 3D character, once per look (cached by thumbs3d.js), put in after a paint.
+let meFaceBusy = ''
+function hydrateMeFace() {
+  const node = app.querySelector('[data-me-face]')
+  if (!node || !save.run?.character) return
+  const key = meFaceKey(save.run)
+  if (node.querySelector('img') || meFaceBusy === key) return
+  const put = (url) => {
+    if (!url || meFaceKey(save.run) !== key) return
+    setMeFace(key, url)
+    const now = app.querySelector('[data-me-face]')
+    if (now && !now.querySelector('img')) now.innerHTML = `<img src="${url}" alt="">`
+  }
+  // (one of the eight quick-start students, look unchanged: their portrait is already a picture, no 3D needed)
+  const look = { ...save.run.character.avatar }
+  const preset = STUDENTS.find((s) => Object.keys(s.avatar).length === Object.keys(look).length && Object.keys(s.avatar).every((k) => s.avatar[k] === look[k]))
+  if (preset) { put(`/opening/${preset.id}-face.webp`); return }
+  if (!hasGL()) return
+  meFaceBusy = key
+  import('./ui/thumbs3d.js').then(({ thumbFor }) => thumbFor(look, 'hair')).then((url) => {
+    meFaceBusy = ''
+    put(url)
+  }).catch(() => { meFaceBusy = '' })
+}
 function openCardEditor() {
   const run = save.run
   if (!run?.character) return
@@ -2086,22 +2119,36 @@ app.addEventListener('click', async (event) => {
         funnel('card_finished')
       }
       const fromPrompt = Boolean(draft.fromPrompt)
+      const toPlay = Boolean(draft.toPlay)
       // (Social B: the student-card flow ends with "pick 3 interests", at the next calm moment: src/daily.js)
       if (!save.run.character.interests?.length) save.run.interestsAsk = true
       draft = emptyDraft()
       persist()
       saveMyCard(save.run)
-      go(fromPrompt || first ? 'play' : 'title')
+      go(fromPrompt || first || toPlay ? 'play' : 'title')
       if (first) setTimeout(() => toast(`\u{1FAAA} Student card done: +R${CARD_REWARD} and the Card Carried badge`), 400)
       return
     }
     save.run = createRun(district, { ...character, ...storyWithDefaults(draft.story) })
+    if (character.courseAuto) save.run.character.courseAuto = true // (the course step was skipped)
     // (the roommate you picked is your bestie from the start)
     save.run.bestieName = roommateFor(save.run.character).name
     draft = emptyDraft()
     persist()
     saveMyCard(save.run)
     go('play')
+    return
+  }
+  // The character screen opened from the top bar: save the look (and where you are from) alone, and back to the game.
+  if (act === 'enrol-save-look' && draft.edit && save.run) {
+    captureForm()
+    const c = save.run.character
+    save.run.character = { ...c, avatar: { ...draft.avatar }, from: draft.from, country: draft.country || c.country || DEFAULT_COUNTRY, region: draft.region || '' }
+    draft = emptyDraft()
+    persist()
+    saveMyCard(save.run)
+    go('play')
+    setTimeout(() => toast('Look saved'), 400)
     return
   }
   if (act === 'avatar') {

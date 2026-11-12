@@ -200,3 +200,68 @@ test('F4 "+ Group" and the chat tabs: ink on yellow, 4.5:1 or better', async ({ 
   expect(errors).toEqual([])
   await context.close()
 })
+
+// ---------- F5 the character screen from the main screen (owner's correction, 12 Nov) ----------
+// What the owner meant by the hidden button: a way to the character screen, always there. A small round button with
+// your own face and a pencil, first in the top bar on campus, in the Caf and in SunnyBay; it opens the character
+// screen on your look; "Save my look" saves it and brings you straight back.
+test('F5 your face with a pencil is always in the top bar; it opens the character screen; a new look is saved', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  const errors = await atGate(page)
+  // (the drawn course is marked "not picked" the moment the quick start makes the save, not only after a reload:
+  // this save's card is "done", so the load-time catch-up for older saves does not apply to it)
+  expect((await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)).character.courseAuto).toBe(true)
+  const me = page.locator('.tb-me')
+  const topmost = () => me.evaluate((el) => { const r = el.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return r.width >= 32 && r.height >= 32 && (el === top || el.contains(top)) })
+  // on campus: there, round, your own face (the quick-start student's portrait), a pencil, nothing over it
+  await expect(me).toBeVisible()
+  await expect(me.locator('img')).toHaveAttribute('src', /\/opening\/q-priya-face\.webp$/, { timeout: 15000 })
+  await expect(me.locator('.tb-me-pen')).toBeVisible()
+  expect(await topmost()).toBe(true)
+  expect(await overlaps(page), 'on campus').toEqual([])
+  await page.screenshot({ path: `${SHOTS}/face-button-campus-390.png` })
+  // in the Caf and in SunnyBay too
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent('mzansi-walk-to', { detail: 'cafeteria' })))
+  await expect(page.locator('#caf3d')).toHaveAttribute('data-ready', '1', { timeout: 90000 })
+  await expect(me).toBeVisible()
+  expect(await topmost()).toBe(true)
+  await page.locator('.caf-out').tap()
+  await expect(page.locator('#world')).toHaveAttribute('data-on', '1', { timeout: 60000 })
+  await page.evaluate(() => window.mzansiPlace(0, 99, 0, 104))
+  await intoCity(page)
+  await expect(me).toBeVisible()
+  expect(await topmost()).toBe(true)
+  expect(await overlaps(page), 'in SunnyBay').toEqual([])
+  await page.screenshot({ path: `${SHOTS}/face-button-sunnybay-390.png` })
+  // a tap: the character screen, on the look, with what you wear now picked
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.character.avatar)
+  const drawnBefore = await page.evaluate(() => document.querySelector('#city3d').dataset.look)
+  await me.tap()
+  await page.locator('.en[data-step="look"]').waitFor({ timeout: 30000 })
+  await expect(page.locator(`[data-act="avatar"][data-part="outfit"][data-id="${before.outfit}"]`)).toHaveAttribute('aria-pressed', 'true')
+  await page.screenshot({ path: `${SHOTS}/character-screen-390.png` })
+  // change the outfit, Save my look: back in the game (in SunnyBay, where you were), wearing it
+  const other = await page.evaluate((mine) => [...document.querySelectorAll('[data-act="avatar"][data-part="outfit"]')].map((b) => b.dataset.id).find((v) => v !== mine), before.outfit)
+  const chip = page.locator(`[data-act="avatar"][data-part="outfit"][data-id="${other}"]`)
+  await chip.scrollIntoViewIfNeeded()
+  await chip.tap()
+  await page.locator('[data-act="enrol-save-look"]').tap()
+  await page.waitForURL(/#\/play/, { timeout: 30000 })
+  await expect(city(page)).toHaveAttribute('data-ready', '1', { timeout: 120000 })
+  const run = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)
+  expect(run.character.avatar.outfit).toBe(other)
+  expect(run.character.name).toBe('Lerato')
+  // (the student who walks SunnyBay is drawn from the new look)
+  await expect.poll(() => page.evaluate(() => document.querySelector('#city3d').dataset.look), { timeout: 20000 }).not.toBe(drawnBefore)
+  // the button shows the new look's own head shot now (made from the 3D character), not the old portrait
+  await expect(me.locator('img')).toHaveAttribute('src', /^data:image\//, { timeout: 30000 })
+  // Back, without saving, changes nothing
+  await me.tap()
+  await page.locator('.en[data-step="look"]').waitFor({ timeout: 30000 })
+  await page.locator('.en-back').tap()
+  await page.waitForURL(/#\/play/, { timeout: 30000 })
+  expect((await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run)).character.avatar.outfit).toBe(other)
+  expect(errors).toEqual([])
+  await context.close()
+})

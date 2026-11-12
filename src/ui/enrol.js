@@ -249,13 +249,16 @@ export function enrolScreen(state, { still = '', photo = '' } = {}) {
   const body = step === 'look' ? lookStep(state, still) : step === 'roommate' ? roommateStep(state) : step === 'who' ? whoStep(state) : step === 'vibe' ? vibeStep(state) : cardStep(state, photo)
   const first = step === 'look'
   const last = step === 'card'
+  // (opened from the top bar's face button: the look can be saved on its own, straight back to the game)
+  const lookOnly = first && draft.edit && draft.toPlay
   const go = last ? `<button class="en-go" type="button" data-act="enrol-enter">${draft.edit ? 'Save changes' : 'Enter campus ›'}</button>`
+    : lookOnly ? `<button class="en-go" type="button" data-act="enrol-save-look">Save my look</button><button class="en-more" type="button" data-act="enrol-next">Name, house and card ›</button>`
     : `<button class="en-go" type="button" data-act="enrol-next">Next ›</button>`
   return `<main class="screen en" data-screen="create" data-step="${step}">
     <header class="en-top">
-      ${first ? '<a class="en-back" href="#/">‹ Back</a>' : '<button class="en-back" type="button" data-act="enrol-back">‹ Back</button>'}
+      ${first ? `<a class="en-back" href="${draft.edit && draft.toPlay ? '#/play' : '#/'}">‹ Back</a>` : '<button class="en-back" type="button" data-act="enrol-back">‹ Back</button>'}
       ${dots(step)}
-      ${last ? '<span class="en-skip" aria-hidden="true"></span>' : '<button class="en-skip" type="button" data-act="enrol-skip">Skip</button>'}
+      ${last || lookOnly ? '<span class="en-skip" aria-hidden="true"></span>' : '<button class="en-skip" type="button" data-act="enrol-skip">Skip</button>'}
     </header>
     <div class="en-body">${body}</div>
     <footer class="en-foot">${go}</footer>

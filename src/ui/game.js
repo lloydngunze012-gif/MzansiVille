@@ -282,6 +282,7 @@ export function hud(district, run, opts = {}) {
   const goals = opts.goals ? goalBits(run) : { badge: '', chips: '', peek: '' }
   return `<header class="g-hud tb">
     <div class="g-row tb-row">
+      ${meButton(run)}
       <button class="tb-time${ui.timeline ? ' on' : ''}" type="button" data-act="timeline" aria-expanded="${ui.timeline ? 'true' : 'false'}" aria-label="Day ${run.day}, ${day}, ${clock}. Today's timeline" style="--day:${dayFill(run.minutes)}%"><i aria-hidden="true">${dayIcon(run.minutes)}</i><b>${day.slice(0, 3)}</b><span>${clock}</span></button>
       <span class="tb-online" data-online data-chip title="Students here right now">${chipLabel()}</span>
       ${goals.badge}${goals.chips}
@@ -305,6 +306,17 @@ export function fpsText() {
   return `${live}${world.fpsAvg} average, ${world.fpsLow} slowest (last 10 s)`
 }
 
+// Your own face with a pencil, first in the top bar on every screen that has the bar (campus, the Caf, SunnyBay):
+// it opens the character screen, so you can change your look any time (owner, 12 Nov). The face is a head shot of
+// your 3D character (main.js fills it in: setMeFace); until it lands, your initial.
+let meFace = { key: '', url: '' }
+export function setMeFace(key, url) { meFace = { key, url } }
+export const meFaceKey = (run) => JSON.stringify(run?.character?.avatar || {})
+function meButton(run) {
+  const has = meFace.url && meFace.key === meFaceKey(run)
+  const letter = esc(String(run?.character?.name || '?').trim().slice(0, 1).toUpperCase() || '?')
+  return `<button class="tb-me" type="button" data-act="edit-look" aria-label="Change your look" title="Change your look"><span class="tb-me-face" data-me-face>${has ? `<img src="${esc(meFace.url)}" alt="">` : `<b>${letter}</b>`}</span><i class="tb-me-pen" aria-hidden="true">\u270E</i></button>`
+}
 export function musicOn() {
   try { return localStorage.getItem('mzansiville.music') !== 'off' } catch { return true }
 }

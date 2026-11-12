@@ -417,6 +417,8 @@ body > .chat-panel { background: var(--cr-bg); color: var(--cr-ink); }
    scroll beneath its fade, only the button takes taps, and the last row ends above it. */
 .en-foot { z-index: 9; pointer-events: none; }
 .en-foot .en-go { pointer-events: auto; }
+/* (the character screen opened from the top bar: under "Save my look", the way on to the rest of the card) */
+.en-more { all: unset; box-sizing: border-box; display: block; width: 100%; min-height: 44px; margin-top: 6px; text-align: center; cursor: pointer; pointer-events: auto; font: 800 15px/44px Figtree, system-ui, sans-serif; color: var(--cr-ink, #1c1915); text-decoration: underline; text-underline-offset: 3px; }
 .en[data-step="look"] .en-body { padding-bottom: 18px; }
 /* The still is a picture of the whole studio stage (public/creator-still.png), same framing as the live one. */
 .en-stage .cc-still, .cc-stage .cc-still { inset: 0; left: 0; bottom: 0; width: 100%; height: 100%; transform: none; object-fit: contain; object-position: 50% 50%; }
