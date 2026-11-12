@@ -56,7 +56,7 @@ export function quickScreen(state) {
   const chip = (s, i) => `<button class="qs-card" type="button" data-act="qs-pick" data-i="${i}" data-preset="${esc(s.id)}" aria-pressed="${picked === i}" aria-label="${esc(s.name)}">
       <img class="qs-pic" src="/opening/${esc(s.id)}-face.webp" alt="" width="64" height="64" decoding="async">
     </button>`
-  const handle = tidyHandle(draft.handle)
+  const handle = String(draft.name || '').trim() ? tidyHandle(draft.handle) : '' // (job I: shown once a name is typed; never made from it)
   const pickHint = hint ? '<p class="qs-pick" data-qs-pick>Pick your character<i aria-hidden="true">↓</i></p>' : ''
   return `<main class="screen en qs qs2" data-screen="create" data-step="quick">
     <div class="qs-scene" data-scene data-i="${picked}" data-still="${esc(stillOf(hero))}" aria-hidden="true"><i class="qs-fig${swap ? ' qs-swap' : ''}" data-fig style="--still: url('${esc(stillOf(hero))}')"></i></div>

@@ -45,8 +45,8 @@ test('two phones in Lifecup: they see each other, the mini card and Wave work, f
   }
   await expect(b.page.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
   await expect(b.page.locator('[data-pc="race"]')).toHaveCount(0)
-  await b.page.locator('[data-pc="wave"]').tap()
-  await expect(a.page.locator('#toast-action')).toContainText('waved at you', { timeout: 10000 })
+  await expect(b.page.locator('[data-pc="wave"]')).toHaveCount(0) // (job I: Chat and Follow only)
+  await b.page.locator('.pc-mini-x').tap()
 
   // a friends row with B in the place: the full Social
   await a.page.locator('.city-do').tap()

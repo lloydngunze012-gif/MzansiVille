@@ -11,13 +11,14 @@
 import './threads.css'
 import { faceHtml } from '../faces3d.js'
 import { MSG_MAX } from '../engine/filter.js'
+import { seenText } from '../engine/seen.js'
 import { peerList } from '../presence.js'
 import { newFollowers } from '../board.js'
 import { boardClick, boardHtml, boardInput, boardOpen, boardSubmit, closeBoard, feedHtml, openBoardOf, refreshFeed } from './board.js'
 import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
 import INTERESTS from '../../data/campusville/interests.json'
-import { canType, typing, typingIn, reportGroup, setGroupOpen, socialCReady, addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
+import { answerChat, chatAsks, canType, typing, typingIn, reportGroup, setGroupOpen, socialCReady, addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
@@ -103,6 +104,8 @@ export function mountThreads() {
     if (kind === 'typing') { if (detail === view) paintTyping(); return }
     // (follow-ups) what became of an ask you sent: "added" or "can't right now", nothing more
     if (kind === 'answers') { for (const a of detail) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: a.added ? `${first(a.name)} was added to ${a.group}.` : `${first(a.name)} can’t right now.` } })); return }
+    // (job I: what became of your chat requests: "said yes" opens nothing by itself, the DM is in Chats now)
+    if (kind === 'dm-answers') { for (const a of detail) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: a.yes ? `${first(a.name)} said yes. Your chat is open.` : `${first(a.name)} can’t chat right now.` } })); return }
     if (kind === 'refs') { window.dispatchEvent(new CustomEvent('mzansi-invite-paid', { detail: { names: detail } })); return }
     if (kind === 'list') paintAsk()
     if (kind === 'first') {
@@ -151,8 +154,11 @@ export function openChat(threadId = '') {
 export async function openDm(otherId, who = {}) {
   mountThreads()
   const res = await dmWith(otherId, who)
-  if (!res.ok) { openChat(); tell(res.note, true); return }
+  if (!res.ok) { openChat(); tell(res.note, true); return res }
+  // (job I: a request was sent: nothing opens until they accept; the card says so)
+  if (res.asked) { window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: res.note } })); return res }
   openChat(res.thread)
+  return res
 }
 export function closeChat() {
   if (!view) return
@@ -271,8 +277,10 @@ const flameHtml = (t) => (Number(t?.flame) > 0 ? `<span class="cht-flame" title=
 function headHtml(t) {
   // (a DM: "online" for a friend both ways who is on right now, as the server says; a group: how many are in it)
   const pal = t?.kind === 'dm' ? friendList().find((f) => f.id === t.peer?.id) : null
-  const on = Boolean(pal?.mutual && pal.online)
-  const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : on ? 'online' : t.peer?.handle ? `@${t.peer.handle}` : 'Direct message'
+  const on = Boolean(pal?.mutual && pal.online) || Boolean(t?.peer?.online)
+  // (job I: "last seen 2 h ago" for a friend both ways who is not on; the server sends `seen` for nobody else)
+  const last = t?.kind === 'dm' && !on ? seenText(pal?.mutual ? pal.seen : null, false) || seenText(t.peer?.seen, false) : ''
+  const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : on ? 'online' : last || (t.peer?.handle ? `@${t.peer.handle}` : 'Direct message')
   return `<button type="button" class="cht-back" data-ct="back" aria-label="Back to chats">‹</button>
     <span class="cht-av cht-sm">${!t || t.kind === 'group' ? GROUP_FACE : face(t.peer?.look, 36)}</span>
     ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>${flameHtml(t)}` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small${on ? ' class="cht-on"' : ''}>${esc(sub)}</small></span>`}
@@ -614,7 +622,7 @@ function hidePing() {
 function paintAsk() {
   const a = groupAsks()[0]
   const shown = document.querySelector('.cht-ask')
-  if (!a) { shown?.remove(); return }
+  if (!a) { paintChatAsk(shown); return }
   if (shown) { if (Number(shown.dataset.ask) === a.id) return; shown.remove() }
   const el = document.createElement('div')
   el.className = 'cht-ask'
@@ -630,6 +638,31 @@ function paintAsk() {
       if (k !== 'join') return
       if (r.ok && r.thread) openChat(r.thread)
       else window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: r.reason === 'full' ? 'That group is full (40 members).' : 'That invite has gone.' } }))
+    })
+  })
+  document.body.append(el)
+}
+
+// A chat request (job I): "[Name] wants to chat. Accept / Decline". The DM opens only after Accept; Decline tells
+// them only "can't right now" (and they cannot ask again for 7 days: the server's rule).
+function paintChatAsk(shown) {
+  const a = chatAsks()[0]
+  if (!a) { shown?.remove(); return }
+  if (shown) { if (shown.dataset.chatAsk === a.from) return; shown.remove() }
+  const el = document.createElement('div')
+  el.className = 'cht-ask cht-chatask'
+  el.dataset.chatAsk = a.from
+  el.setAttribute('role', 'status')
+  el.innerHTML = `<div class="cht-ask-who"><span class="cht-av">${face(a.look, 44)}</span><p><b>${esc(first(a.name))}</b> wants to chat.${a.handle ? `<small>@${esc(a.handle)}${a.house ? ` · ${esc(a.house)}` : ''}</small>` : ''}</p></div><div class="cht-ask-row"><button type="button" class="cht-btn" data-ask="accept">Accept</button><button type="button" class="cht-btn ghost" data-ask="decline">Decline</button></div>`
+  for (const type of ['pointerdown', 'touchstart', 'mousedown']) el.addEventListener(type, (event) => event.stopPropagation(), { passive: true })
+  el.addEventListener('click', (event) => {
+    const k = event.target.closest('[data-ask]')?.dataset.ask
+    if (!k) return
+    el.remove()
+    answerChat(a.from, k === 'accept').then((r) => {
+      if (k !== 'accept') return
+      if (r.ok && r.thread) openChat(r.thread)
+      else window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: r.note || 'That request has gone.' } }))
     })
   })
   document.body.append(el)

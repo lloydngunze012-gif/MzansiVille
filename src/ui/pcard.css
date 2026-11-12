@@ -1,0 +1,33 @@
+/* The card you see when you tap a player (owner, 12 Nov, job I): the chat's light blue, ink text, yellow Chat with
+   ink, white Follow with ink (docs/palette.md). Overrides the dark 10 Nov mini card in styles.css. */
+.pc-sheet-wrap .pc-mini-body { background: #dcebf5; color: #1c1915; border: 1px solid #bcd3e3; box-shadow: 0 10px 30px #0004; }
+.pc-sheet-wrap .pc-mini { gap: 12px; }
+.pc-sheet-wrap .pc-mini-row { gap: 12px; }
+.pc-sheet-wrap .pc-mini-face { width: 72px; height: 72px; background: #f4efe4; border: 3px solid var(--h1, #f0c400); box-shadow: 0 0 0 2px var(--h2, #1c1915) inset; }
+.pc-sheet-wrap .pc-mini-name { font: 800 19px/1.2 Figtree, system-ui, sans-serif; color: #1c1915; }
+.pc-sheet-wrap .pc-mini-handle { margin: 1px 0 0; font: 700 14px Figtree, system-ui, sans-serif; color: #3d4a55; }
+.pc-sheet-wrap .pc-mini-handle .pc-fol { display: none; }
+.pc-sheet-wrap .pc-mini-grey { margin: 3px 0 0; font: 600 14px/1.3 Figtree, system-ui, sans-serif; color: #3d4a55; }
+.pc-sheet-wrap .pc-mini-seen { margin: 3px 0 0; font: 700 14px Figtree, system-ui, sans-serif; color: #4a5560; }
+.pc-sheet-wrap .pc-mini-seen.on { color: #0f6b38; }
+.pc-sheet-wrap .pc-mini-seen.on::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: #1f9d55; }
+.pc-sheet-wrap .pc-mini-x { background: #ffffffb3; color: #1c1915; }
+.pc-sheet-wrap .pc-mini-stats { margin: 0; display: flex; gap: 8px; }
+.pc-sheet-wrap .pc-mini-stats span { flex: 1; padding: 8px 10px; border-radius: 12px; background: #fff; font: 600 14px Figtree, system-ui, sans-serif; color: #3d4a55; text-align: center; }
+.pc-sheet-wrap .pc-mini-stats b { display: block; font: 800 18px/1.1 Figtree, system-ui, sans-serif; color: #1c1915; }
+.pc-sheet-wrap .pc-mini-acts { gap: 8px; }
+.pc-sheet-wrap .pc-mini-acts > button { flex: 1; min-height: 46px; border-radius: 23px; font: 800 16px Figtree, system-ui, sans-serif; }
+.pc-sheet-wrap .pc-mini-chat { background: #f0c400; color: #1c1915; border: 0; }
+.pc-sheet-wrap .pc-mini-chat:disabled { background: #fff; color: #1c1915; border: 2px dashed #8a96a0; opacity: 1; }
+.pc-sheet-wrap .pc-mini-follow { background: #fff; color: #1c1915; border: 2px solid #1c1915; }
+.pc-sheet-wrap .pc-mini-follow[aria-pressed="true"] { background: #e9f6ee; border-color: #0f6b38; color: #0f4d29; }
+.pc-sheet-wrap .pc-mini-more { margin-left: 0; }
+.pc-sheet-wrap .pc-mini-more > button { width: 46px; height: 46px; background: #fff; color: #1c1915; font-size: 20px; border: 2px solid #bcd3e3; }
+.pc-sheet-wrap .pc-mini-menu { background: #fff; border: 1px solid #d5dde3; }
+.pc-sheet-wrap .pc-mini-menu button { color: #1c1915; }
+.pc-sheet-wrap .pc-mini-menu button:hover, .pc-sheet-wrap .pc-mini-menu button:active { background: #eef4f8; }
+.pc-sheet-wrap .pc-mini-menu button.bad { color: #9b1f1f; }
+.pc-sheet-wrap .pc-report button { color: #1c1915; }
+.pc-sheet-wrap .pc-mini-body .pc-report { color: #1c1915; }
+.pc-sheet-wrap .pc-mini-body .pc-report button { min-height: 40px; border-radius: 12px; border: 1px solid #bcd3e3; background: #fff; font: 700 14px Figtree, system-ui, sans-serif; }
+.pc-sheet-wrap .pc-mini-body .pc-report .ghost { background: transparent; border-color: #8a96a0; }

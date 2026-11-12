@@ -8,6 +8,8 @@ import HOMES from '../../data/campusville/homes.json'
 import { createAvatar, poseAvatar } from './avatar3d.js'
 import { loadModel } from './models.js'
 import { loop as soundLoop } from '../audio.js'
+import { familyFor, familyLook } from '../family.js'
+import { myIdentity } from '../presence.js'
 
 const AUTO_TALK = typeof location !== 'undefined' && new URLSearchParams(location.search).get('talk') === 'auto'
 // (?door=hold: tests that tap "Swap roommate" keep the lines at the house door from clicking themselves)
@@ -18,7 +20,10 @@ export function startDropOff(ctx) {
   const { scene, host, player, run } = ctx
   const style = HOMES.styles[run.dropOff?.style] || HOMES.styles[HOMES.default]
   const home = run.home || {}
-  const call = home.call || style.parent.call
+  // (job I: your own driver and car, the same as at breakfast; src/family.js)
+  const fam = familyFor(myIdentity().id, run.dropOff?.style || HOMES.default)
+  const call = home.call || fam.call || style.parent.call
+  const carPick = home.car || fam.car
   const pocket = home.pocket || style.pocket
   const tasks = []
   const people = []
@@ -34,8 +39,14 @@ export function startDropOff(ctx) {
 
   // the stop: on the gate road, in the left lane, right in front of the Main Gate (the
   // gatehouse and its UMzansi sign ahead); you walk in through the gate from there
-  const stop = { x: ctx.gate.x - 1.8, z: ctx.gate.maxZ + 4.5 }
-  const enter = { x: ctx.gate.x - 1.8, z: ctx.gate.maxZ + 24 }
+  // Job I: two players arriving together landed on the same spot. Somebody already at the drop-off (another
+  // player's car is pulling up, or they are standing at the stop): you pull up behind them, a car length per player.
+  const zone = (p) => Math.abs(p.x - (ctx.gate.x - 1.8)) < 6 && p.z > ctx.gate.maxZ + 1 && p.z < ctx.gate.maxZ + 40
+  const ahead = Math.min(3, (ctx.peers?.() || []).filter(zone).length)
+  const back = ahead * 7.5
+  const stop = { x: ctx.gate.x - 1.8, z: ctx.gate.maxZ + 4.5 + back }
+  const enter = { x: ctx.gate.x - 1.8, z: ctx.gate.maxZ + 24 + back }
+  host.dataset.dropoffQueue = String(ahead)
 
   // ---- the card (a dialog: while it's open you don't walk off) ----
   host.insertAdjacentHTML('beforeend', `<section class="dp-card" role="dialog" aria-label="The drop-off" hidden><b class="dp-name"></b><p class="dp-line"></p><div class="dp-acts"></div></section><p class="dp-caption" role="dialog" hidden></p><button type="button" class="mm-go dp-walk" hidden></button>`)
@@ -158,10 +169,19 @@ export function startDropOff(ctx) {
     caption.hidden = false
     caption.textContent = `\u{1F697} Pulling up at UMzansi's Main Gate…`
     // the car and your parent (in your family's look)
-    const model = await loadModel(`/models/cars/${style.street.familyCar}.glb`).catch(() => null)
+    const model = await loadModel(`/models/cars/${carPick?.model || style.street.familyCar}.glb`).catch(() => null)
     car = new THREE.Group()
     car.name = 'dropoff-car'
-    if (model) { const body = model.clone(); body.scale.setScalar(1.9); car.add(body) }
+    car.userData.model = carPick?.model || style.street.familyCar
+    car.userData.colour = carPick?.colour || style.street.familyCarColour
+    if (model) {
+      const body = model.clone()
+      body.scale.setScalar(1.9)
+      // (the family's own colour: the drop-off used to show every car in the kit's default paint)
+      body.traverse((m) => { if (m.isMesh && m.material?.map) { m.material = m.material.clone(); m.material.color = new THREE.Color(car.userData.colour) } })
+      car.add(body)
+    }
+    host.dataset.dropoffCar = `${car.userData.model}:${car.userData.colour}`
     car.position.set(enter.x, 0, enter.z)
     car.rotation.y = Math.PI
     scene.add(car)
@@ -179,7 +199,8 @@ export function startDropOff(ctx) {
       maxZ: Math.max(...swept.map((p) => p.z)) + reach,
     }
     ctx.keepOut?.(keepRect)
-    parent = createAvatar(home.parentLook || { gender: 'female', outfit: style.parent.outfit, topColor: style.parent.top })
+    parent = createAvatar(home.parentLook || familyLook(fam, run.character?.avatar || {}))
+    host.dataset.dropoffDriver = home.driver || fam.role
     parent.name = 'parent'
     parent.visible = false
     parent.userData.pose = 'stand'

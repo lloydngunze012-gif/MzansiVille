@@ -24,7 +24,7 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { createOthers } from './others.js'
-import { onlineCount, reportLocal } from '../presence.js'
+import { onlineCount, reportLocal, peersOnCampus } from '../presence.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createDust } from './dust.js'
@@ -33,7 +33,7 @@ import { bodyReport, depthIn, resolveBodies } from './bodies.js'
 import { collidersOf } from './colliders.js'
 import { doorPoint, frontOf, frontPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
 import { reportError } from '../errors.js'
-import { createCampusMap, createCityMap } from './map.js'
+import { createCampusMap, createCityMap, takeCampusGoal } from './map.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
@@ -285,6 +285,7 @@ function ensureRenderer() {
     run: () => currentRun,
     go: (way, target) => window.dispatchEvent(new CustomEvent('mzansi-city-go', { detail: { way, target } })),
     campusMap: () => mapUi.open(),
+    goCampus: (id) => { interrupt(); goTo(id) }, // (job I: a campus place picked on the whole map)
   })
   mapUi.setCity(() => cityMap.open())
   window.addEventListener('mzansi-open-city-map', () => { if (visible) cityMap.open() })
@@ -713,6 +714,7 @@ function approach(id, onArrive) {
   else walkTo(door.x, door.z, there, { always: true, arrive: true })
 }
 // Arrived: turn on the spot to face the place (the body turns, the feet stay put).
+let keyWalk = false // (job I: this frame the keys are steering)
 let faceTo = null
 
 function openPlace(id) {
@@ -2528,6 +2530,8 @@ function respawn(district, run) {
       rig,
       keepOut: (rect) => crowd?.setKeepOut(rect),
       walkers: () => (crowd?.people || []).filter((p) => p.avatar.visible).map((p) => p.avatar.position),
+      // (job I: other players already at the drop-off: your car pulls up behind theirs)
+      peers: () => peersOnCampus().map((p) => ({ x: p.x, z: p.z })),
       onUpdate: () => window.dispatchEvent(new CustomEvent('mzansi-dropoff-update')),
       onDone: () => { const d = dropOff; dropOff = null; d?.stop(); window.dispatchEvent(new CustomEvent('mzansi-dropoff-done')) },
     })
@@ -2910,6 +2914,7 @@ function frameBody(now) {
     // tap target. Only an open card or sheet pauses them.
     if (!hold) {
       const push = input.stick() || forcedSteer
+      keyWalk = Boolean(push) // (job I: walking on the keys: the view holds still, see below)
       if (push) interrupt()
       mover.setStick(push?.x, push?.z, push?.run, push?.mag)
       mover.speedScale = speedFactor(currentRun)
@@ -2955,7 +2960,9 @@ function frameBody(now) {
     setSound({ inside: Boolean(inHouse) }) // (a house's common room: the murmur, not the Quad's crowd)
     poseAvatar(player, walking, clock)
     // (only while you cover ground: turning on the spot never swings the view)
-    if (rig.mode === 'eye' && walking && mover.speed > 0.5 && player.userData.yaw !== undefined) {
+    // (job I: and never while the keys steer: keys are relative to the view, so a view that followed the body turned
+    // "right" round with it, and D or W+D walked you in a curve. On the keys the view holds; a tap's walk still leads it.)
+    if (rig.mode === 'eye' && walking && !keyWalk && mover.speed > 0.5 && player.userData.yaw !== undefined) {
       rig.facing += Math.atan2(Math.sin(player.userData.yaw - rig.facing), Math.cos(player.userData.yaw - rig.facing)) * Math.min(1, dt * 3)
     }
     applyTime()
@@ -3161,6 +3168,9 @@ function applyArrive() {
     rig.turnBehind(Math.PI)
   }
   player.userData.pose = 'stand'
+  // (job I: a campus place picked on the whole map from SunnyBay: on through the gate to it)
+  const goal = takeCampusGoal()
+  if (goal) setTimeout(() => goTo(goal), 400)
 }
 // Your car, parked outside your house (a save with run.licence and run.car, the car not left in the city).
 let myCar = null

@@ -70,6 +70,8 @@ test('P1 a real push: on from the menu, away, a DM arrives as a notification; th
   await T.page.goto(`${BASE}/offline.html`)
   await server.db.query("update chat_players set seen_at = now() - interval '5 minutes', push_quiet = false where id = $1", [thabo.p_id])
 
+  // (job I: a chat is a request; friends both ways skip it)
+  await server.call('chat_friend', { ...ayanda, p_other: thabo.p_id, p_on: true }); await server.call('chat_friend', { ...thabo, p_other: ayanda.p_id, p_on: true })
   // Ayanda messages him from her phone
   const dm = await A.page.evaluate((id) => import('/src/threads.js').then((m) => m.dmWith(id, { name: 'Thabo' })), thabo.p_id)
   expect(dm.ok).toBe(true)

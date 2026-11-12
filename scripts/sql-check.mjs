@@ -181,9 +181,13 @@ await check('chat: a new player is in The Quad at once; only the phone with the 
 
 let dm = ''
 await check('chat: a DM reaches the other player with an unread count, in order, and reading clears it', async () => {
-  const made = await rpc('chat_dm', CA, CB.id)
-  assert.equal(made.ok, true)
-  dm = made.thread
+  // (job I: a chat is a request; B accepts, then the DM opens for both)
+  const asked = await rpc('chat_dm', CA, CB.id)
+  assert.deepEqual(asked, { ok: true, asked: true })
+  const answered = await rpc('chat_dm_answer', CB, CA.id, true)
+  assert.equal(answered.ok, true)
+  dm = answered.thread
+  assert.equal((await rpc('chat_dm', CA, CB.id)).thread, dm, 'open once accepted')
   assert.equal((await rpc('chat_dm', CB, CA.id)).thread, dm, 'one thread per pair, whoever starts it')
   assert.equal((await rpc('chat_dm', CA, 'never-seen-player-01')).reason, 'unknown')
   for (const text of ['Howzit', 'You at the Caf?', 'Come through']) assert.equal((await say(CA, dm, text)).ok, true)
@@ -252,7 +256,8 @@ await check('chat: a block hides both players from each other, in the group and 
   assert.ok(forB.lines.some((l) => l.sender === CB.id), 'their own lines are still there')
   assert.ok(!(await rpc('chat_fetch', CA, 'quad')).lines.some((l) => l.sender === CB.id), 'and they no longer see the blocker')
   assert.equal((await rpc('chat_send', CA, dm, 'hello?')).reason, 'blocked')
-  assert.equal((await rpc('chat_dm', CA, CB.id)).reason, 'blocked')
+  assert.deepEqual(await rpc('chat_dm', CA, CB.id), { ok: true, asked: true }, '(job I) the blocked player is told the same as any request')
+  assert.equal((await rpc('chat_dm', CB, CA.id)).reason, 'blocked')
   const b = await rpc('chat_sync', CB)
   assert.ok(!b.threads.some((t) => t.id === dm), 'the DM leaves the list')
   assert.deepEqual(b.blocked, [CA.id])
@@ -844,6 +849,7 @@ await check('notifications: a push only to members not in the game, never from a
   assert.equal((await due(A, 'quad')).pushes.length, 0)
   // a DM: the first line, the sender's name; hide message text is passed on
   await db.query("update chat_lines set at = now() - interval '3 seconds' where sender = $1", [A.p_id])
+  await chat('chat_friend', { ...A, p_other: B.p_id, p_on: true }); await chat('chat_friend', { ...B, p_other: A.p_id, p_on: true })
   const dm = (await chat('chat_dm', { ...A, p_other: B.p_id })).thread
   await chat('chat_push_prefs', { ...B, p_hide: true })
   await away()
@@ -863,6 +869,7 @@ await check('notifications: quiet hours (23:00 to 07:00 SAST) hold pushes back u
   const P = { p_id: 'rosa-quiet-0001', p_secret: 'rosa-quiet-0001-secret-0123456789' }, S = { p_id: 'sami-quiet-0002', p_secret: 'sami-quiet-0002-secret-0123456789' }
   for (const p of [P, S]) await chat('chat_sync', { ...p, p_name: p.p_id.split('-')[0] })
   await chat('chat_push_sub', { ...S, p_endpoint: 'https://push.example/sami', p_p256dh: 'k'.repeat(87), p_auth: 'a'.repeat(22) })
+  await chat('chat_friend', { ...P, p_other: S.p_id, p_on: true }); await chat('chat_friend', { ...S, p_other: P.p_id, p_on: true })
   const dm = (await chat('chat_dm', { ...P, p_other: S.p_id })).thread
   // pretend it is 02:00 SAST: the function reads the clock, so wrap it
   await db.exec("create or replace function public.chat_quiet_now() returns boolean language sql stable as $$ select true $$")
@@ -906,6 +913,93 @@ await check('notifications: the local welcome goes to online players from the sa
   const d = (await one('select public.chat_push_digest() as r')).r.pushes
   assert.deepEqual(d.map((x) => x.player), [V.p_id]); assert.equal(d[0].count, 2); assert.equal(d[0].area, 'Durban')
   assert.equal((await one('select public.chat_push_digest() as r')).r.pushes.length, 0, 'once a day')
+})
+
+// ---- Job I (12 Nov): a chat is a request, last seen for friends both ways, the card's counts, the Quad's 24 hours ----
+await check('job I: a chat is a request: accept opens it, decline is "can\u2019t right now" and no asking again for 7 days, never past a block, 20 a day', async () => {
+  const mk = async (id) => { const p = { p_id: id, p_secret: `${id}-secret-0123456789` }; await chat('chat_sync', { ...p, p_name: id.split('-')[0] }); return p }
+  const [T, U, V, W] = [await mk('thabo-ask-0001'), await mk('una-ask-0002'), await mk('vusi-ask-0003'), await mk('wren-ask-0004')]
+  const sync = (p) => chat('chat_sync', p)
+  // ask: nothing opens, the other sees the request with the asker's name
+  assert.deepEqual(await chat('chat_dm', { ...T, p_other: U.p_id }), { ok: true, asked: true })
+  assert.equal((await one("select count(*)::int as n from chat_threads where id like 'dm:%' and id like '%thabo-ask%'")).n, 0, 'no thread before Accept')
+  assert.deepEqual((await sync(U)).dm_asks.map((a) => [a.from, a.name]), [[T.p_id, 'thabo']])
+  assert.deepEqual(await chat('chat_dm', { ...T, p_other: U.p_id }), { ok: true, asked: true }, 'asking again while it waits is the same request')
+  // decline: the asker hears only "can't right now", once; then 7 days of "later"
+  assert.equal((await chat('chat_dm_answer', { ...U, p_from: T.p_id, p_yes: false })).ok, true)
+  assert.equal((await sync(U)).dm_asks.length, 0)
+  assert.deepEqual((await sync(T)).dm_answers, [{ id: U.p_id, name: 'una', yes: false }])
+  assert.deepEqual((await sync(T)).dm_answers, [], 'told once')
+  assert.equal((await chat('chat_dm', { ...T, p_other: U.p_id })).reason, 'later')
+  await db.query("update chat_dm_asks set answered_at = now() - interval '8 days' where asker = $1", [T.p_id])
+  assert.deepEqual(await chat('chat_dm', { ...T, p_other: U.p_id }), { ok: true, asked: true }, 'after 7 days they may ask again')
+  // accept: the DM opens; the asker hears "yes" with the thread
+  const yes = await chat('chat_dm_answer', { ...U, p_from: T.p_id, p_yes: true })
+  assert.equal(yes.thread, `dm:${T.p_id}:${U.p_id}`)
+  assert.deepEqual((await sync(T)).dm_answers, [{ id: U.p_id, name: 'una', yes: true, thread: yes.thread }])
+  // the other asking first: asking back opens it (no request both ways)
+  await chat('chat_dm', { ...V, p_other: W.p_id })
+  assert.equal((await chat('chat_dm', { ...W, p_other: V.p_id })).thread, `dm:${V.p_id}:${W.p_id}`)
+  // friends both ways skip the request
+  const X = await mk('xola-ask-0005')
+  await chat('chat_friend', { ...X, p_other: T.p_id, p_on: true }); await chat('chat_friend', { ...T, p_other: X.p_id, p_on: true })
+  assert.ok((await chat('chat_dm', { ...X, p_other: T.p_id })).thread)
+  // a block: the asker is told the same, and nothing reaches the blocker
+  const Y = await mk('yara-ask-0006')
+  await chat('chat_block', { ...Y, p_other: V.p_id, p_on: true })
+  assert.deepEqual(await chat('chat_dm', { ...V, p_other: Y.p_id }), { ok: true, asked: true })
+  assert.equal((await sync(Y)).dm_asks.length, 0)
+  assert.equal((await chat('chat_dm', { ...Y, p_other: V.p_id })).reason, 'blocked')
+  // an unanswered request goes after 24 hours ("can't right now", and no 7-day wait)
+  const Z = await mk('zane-ask-0007')
+  await chat('chat_dm', { ...Z, p_other: U.p_id })
+  await db.query("update chat_dm_asks set at = now() - interval '25 hours' where asker = $1", [Z.p_id])
+  assert.equal((await sync(U)).dm_asks.length, 0)
+  assert.deepEqual((await sync(Z)).dm_answers, [{ id: U.p_id, name: 'una', yes: false }])
+  assert.deepEqual(await chat('chat_dm', { ...Z, p_other: U.p_id }), { ok: true, asked: true })
+  // 20 requests a day
+  const many = []
+  for (let i = 0; i < 21; i++) many.push(await mk(`many-ask-${String(i).padStart(4, '0')}`))
+  for (let i = 0; i < 18; i++) assert.equal((await chat('chat_dm', { ...Z, p_other: many[i].p_id })).asked, true) // (Z asked twice above: 20 in all)
+  assert.equal((await chat('chat_dm', { ...Z, p_other: many[20].p_id })).reason, 'today')
+})
+
+await check('job I: the card counts followers and friends both ways; online and last seen only for friends both ways; the Quad shows its last 24 hours', async () => {
+  const mk = async (id) => { const p = { p_id: id, p_secret: `${id}-secret-0123456789` }; await chat('chat_sync', { ...p, p_name: id.split('-')[0] }); return p }
+  const [A, B, C] = [await mk('amara-card-0001'), await mk('bongi-card-0002'), await mk('cleo-card-0003')]
+  await chat('chat_friend', { ...A, p_other: B.p_id, p_on: true }); await chat('chat_friend', { ...B, p_other: A.p_id, p_on: true })
+  await chat('chat_friend', { ...C, p_other: B.p_id, p_on: true }) // (one way: not counted)
+  await chat('chat_follow', { ...A, p_other: B.p_id, p_on: true }); await chat('chat_follow', { ...C, p_other: B.p_id, p_on: true })
+  const forA = await chat('chat_card', { ...A, p_who: B.p_id })
+  assert.equal(forA.followers, 2); assert.equal(forA.friends, 1); assert.equal(forA.following, true); assert.equal(forA.mutual, true); assert.equal(forA.chat, 'open')
+  assert.equal(forA.online, true); assert.ok(forA.seen)
+  const forC = await chat('chat_card', { ...C, p_who: B.p_id })
+  assert.equal(forC.online, undefined, 'one-way: no online'); assert.equal(forC.seen, undefined, 'one-way: no last seen'); assert.equal(forC.chat, 'ask')
+  const pals = (await chat('chat_sync', A)).friends
+  assert.ok(pals.find((f) => f.id === B.p_id).seen, 'a friend both ways carries last seen')
+  assert.equal((await chat('chat_sync', C)).friends.find((f) => f.id === B.p_id).seen, undefined)
+  // the Quad: a line from yesterday is not shown or counted
+  await chat('chat_send', { ...A, p_thread: 'quad', p_body: 'from yesterday' })
+  await db.query("update chat_lines set at = now() - interval '25 hours' where sender = $1", [A.p_id])
+  await chat('chat_send', { ...C, p_thread: 'quad', p_body: 'from today' })
+  const lines = (await chat('chat_fetch', { ...B, p_thread: 'quad' })).lines.map((l) => l.body)
+  assert.ok(lines.includes('from today')); assert.ok(!lines.includes('from yesterday'))
+})
+
+await check('job I: the launch reset empties players, messages, groups and posts; keeps the Quad, the interest groups and the named people’s posts', async () => {
+  const reset = readFileSync(join(root, 'supabase', 'reset-launch.sql'), 'utf8')
+  assert.ok((await one('select count(*)::int as n from chat_players')).n > 5)
+  await db.exec(reset)
+  await db.exec(reset) // (twice is fine)
+  for (const t of ['chat_players', 'chat_lines', 'chat_members', 'chat_friends', 'chat_follows', 'chat_dm_asks', 'activity_log', 'score_players']) {
+    assert.equal((await one(`select count(*)::int as n from ${t}`)).n, 0, `${t} is empty`)
+  }
+  const threads = (await q('select id from chat_threads')).map((r) => r.id)
+  assert.ok(threads.includes('quad')); assert.ok(threads.every((id) => id === 'quad' || id.startsWith('i:')), threads.join(','))
+  assert.equal((await one("select count(*)::int as n from chat_threads where id like 'i:%'")).n, dataOf('interests.json').interests.length)
+  const posts = await q('select author from chat_posts')
+  assert.equal(posts.length, dataOf('npc_posts.json').posts.length); assert.ok(posts.every((r) => r.author.startsWith('npc:')))
+  assert.equal((await one('select count(*)::int as n from score_rules')).n > 0, true, 'the game data stays')
 })
 
 console.log(`${passed} sql checks passed`)

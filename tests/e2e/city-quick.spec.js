@@ -19,7 +19,7 @@ test('SunnyBay: out of the gate, the map, a taxi to the Mall, back onto campus',
   expect(await page.evaluate(() => window.mzansiCity.coverage())).toBeGreaterThan(0.97)
   const before = await money(page)
   await page.locator('[data-city="map"]').tap()
-  await expect(page.locator('.cm-head h2')).toHaveText('SunnyBay')
+  await expect(page.locator('.cm-head h2')).toHaveText('UMzansi & SunnyBay') // (job I: the whole map)
   await expect(page.locator('.cm-pin')).toHaveCount(19)
   await page.locator('.cm-pin[data-pin="mall"]').tap()
   await expect(page.locator('.cm-detail [data-way="drive"]')).toBeDisabled() // (no licence, no car)

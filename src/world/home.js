@@ -19,6 +19,8 @@ import { bindInput } from './input.js'
 import { loadModel } from './models.js'
 import { SPEED as FAST } from '../speed.js'
 import { smooth } from '../smooth.js'
+import { familyFor, familyLook as driverLook } from '../family.js'
+import { myIdentity } from '../presence.js'
 import * as curtain from '../curtain.js'
 
 export function homeStyleId(character) {
@@ -45,6 +47,7 @@ const AUTO_TALK = typeof location !== 'undefined' && new URLSearchParams(locatio
 let opts = null
 let style = null
 let styleId = ''
+let fam = null // (job I: who drives you, in which car: src/family.js)
 let host, renderer, scene, camera, rig, mover, input, sun
 let uiRoot = null
 let running = false
@@ -78,7 +81,7 @@ function tween(s, fn, ease = (x) => x * x * (3 - 2 * x)) {
 function setStep(name) { host.dataset.step = name }
 function fmt(m) { return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}` }
 function fill(text, vars = {}) {
-  const all = { neighbour: style.neighbour.name, dog: style.dog.name, call: style.parent.call, sibling: style.sibling.name, ...vars }
+  const all = { neighbour: style.neighbour.name, dog: style.dog.name, call: fam?.call || style.parent.call, sibling: style.sibling.name, ...vars }
   return String(text || '').replace(/\{(\w+)\}/g, (m, k) => (k in all ? String(all[k]) : m))
 }
 const L = (key, vars) => fill(style.lines[key], vars)
@@ -131,7 +134,7 @@ function bubble(text, who) {
   const node = uiq('.mm-bubble')
   if (!text) { node.hidden = true; speaker = null; return }
   node.textContent = ''
-  const name = who === parent ? style.parent.call : who === sibling ? style.sibling.name : who === neighbour ? style.neighbour.name : ''
+  const name = who === parent ? fam?.call || style.parent.call : who === sibling ? style.sibling.name : who === neighbour ? style.neighbour.name : ''
   if (name) { const b = document.createElement('b'); b.className = 'mm-name'; b.textContent = name; node.append(b) }
   node.append(document.createTextNode(text))
   node.dataset.who = who === player ? 'player' : 'other'
@@ -573,12 +576,12 @@ async function buildStreet(homeParts, suburbParts) {
     }
   }
   // the family car in the driveway, nose to the street
-  const fam = await loadModel(`/models/cars/${style.street.familyCar}.glb`).catch(() => null)
+  const famCar = await loadModel(`/models/cars/${fam?.car.model || style.street.familyCar}.glb`).catch(() => null)
   car = new THREE.Group()
-  if (fam) {
-    const body = fam.clone()
+  if (famCar) {
+    const body = famCar.clone()
     body.scale.setScalar(1.9)
-    body.traverse((m) => { if (m.isMesh && m.material?.map) { m.material = m.material.clone(); m.material.color = new THREE.Color(style.street.familyCarColour) } })
+    body.traverse((m) => { if (m.isMesh && m.material?.map) { m.material = m.material.clone(); m.material.color = new THREE.Color(fam?.car.colour || style.street.familyCarColour) } })
     car.add(body)
   }
   car.name = 'family-car'
@@ -623,7 +626,7 @@ function person(look) {
   return a
 }
 async function buildPeople() {
-  parent = person(familyLook(style.parent))
+  parent = person(fam ? driverLook(fam, opts.run.character?.avatar || {}) : familyLook(style.parent))
   parent.position.set(-2.64, 0, -1.7)
   parent.rotation.y = Math.PI
   sibling = person(familyLook(style.sibling))
@@ -1015,7 +1018,7 @@ async function play() {
   await Promise.all([addMinutes(12, 1.2), wait(0.8)])
   plate.visible = false
   changeStats({ hunger: style.breakfast.fullness, energy: style.breakfast.energy })
-  run.home = { style: styleId, sibling: replies[pick].id, siblingName: style.sibling.name, call: style.parent.call, dog: style.dog.name, pocket: style.pocket, parentLook: familyLook(style.parent) }
+  run.home = { style: styleId, sibling: replies[pick].id, siblingName: style.sibling.name, call: fam?.call || style.parent.call, dog: style.dog.name, pocket: style.pocket, parentLook: fam ? driverLook(fam, run.character?.avatar || {}) : familyLook(style.parent), driver: fam?.role || 'mom', car: fam?.car || null }
   await Promise.all([standUp(player), standUp(parent)])
   player.userData.scripted = false
   mover.attach(player)
@@ -1189,6 +1192,7 @@ export async function startHome(options) {
   }
   styleId = homeStyleId(opts.run.character)
   style = HOMES.styles[styleId]
+  fam = familyFor(myIdentity().id, styleId)
   if (!renderer) build()
   else renderer.setSize(window.innerWidth, window.innerHeight) // (released at the last stop)
   host.hidden = false

@@ -48,6 +48,8 @@ let syncAgain = false
 let friends = [] // [{ id, name, handle, house, look, online }]
 let social = false
 let asks = [] // (follow-ups: groups someone wants to add you to, waiting for Join or No thanks)
+let dmAsks = [] // (job I: players who want to chat with you, waiting for Accept or Decline: [{ from, name, handle, house, look }])
+let dmAsksOk = false // (job I: the server has chat requests; false until supabase/chat.sql has been run again)
 let socialB = false // (Social B: the Board, follow, the Feed, interests)
 let socialC = false // (Social C: find me, open groups; false until supabase/chat.sql has been run again)
 let findOn = false // (you said "let friends find me" today: the server's word)
@@ -74,6 +76,8 @@ export const friendList = () => friends
 export const isFriend = (id) => friends.some((f) => f.id === id)
 export const socialReady = () => social
 export const groupAsks = () => asks
+export const chatAsks = () => dmAsks
+export const chatAsksReady = () => dmAsksOk
 export const socialBReady = () => socialB
 export const myInterests = () => interests
 export const myFollowers = () => followers
@@ -161,6 +165,10 @@ export function sync() {
     // (what became of the asks you sent: "added" or "can't right now", told once)
     // (Loops: friends who started playing through your invite link since you were last told)
     if (data.refs?.length) emit('refs', data.refs.map((n) => filterText(String(n || 'A friend')).text || 'A friend'))
+    // (job I: chat requests waiting for you, and what became of yours: "said yes" with the thread, or "can't right now")
+    dmAsksOk = Array.isArray(data.dm_asks)
+    dmAsks = (data.dm_asks || []).filter((a) => a?.from && !blocked.has(a.from)).map((a) => ({ ...a, name: filterText(String(a.name || 'Someone')).text || 'Someone' }))
+    if (data.dm_answers?.length) emit('dm-answers', data.dm_answers.filter((a) => !blocked.has(a.id)).map((a) => ({ ...a, name: filterText(String(a.name || 'They')).text || 'They', yes: Boolean(a.yes) })))
     if (data.answers?.length) emit('answers', data.answers.map((a) => ({ name: filterText(String(a.name || 'They')).text || 'They', group: filterText(String(a.group || 'the group')).text || 'the group', added: Boolean(a.added) })))
     interests = socialB ? data.interests : []
     followers = Number(data.followers) || 0
@@ -370,9 +378,36 @@ export async function dmWith(otherId, who = {}) {
   if (blocked.has(otherId)) return { ok: false, note: 'You blocked this player.' }
   const { data, error } = await rpc('chat_dm', { p_other: otherId })
   if (error) return { ok: false, note: error === 'soon' ? WHY.soon : 'Couldn’t open the chat. Check your connection.' }
-  if (!data?.ok) return { ok: false, note: data?.reason === 'unknown' ? 'They haven’t opened their chat yet. Try again in a moment.' : data?.reason === 'blocked' ? WHY.blocked : 'Couldn’t open the chat.' }
+  if (!data?.ok) return { ok: false, reason: data?.reason, note: data?.reason === 'unknown' ? 'They haven’t opened their chat yet. Try again in a moment.' : data?.reason === 'blocked' ? WHY.blocked : data?.reason === 'later' ? `${firstName(who.name)} can’t chat right now.` : data?.reason === 'today' ? 'That’s all your chat requests for today. Try again tomorrow.' : 'Couldn’t open the chat.' }
+  // (job I: not friends both ways and no chat yet: a request; their phone hears at once and shows Accept / Decline)
+  if (data.asked) { nudge('', [otherId], { r: 1 }); return { ok: true, asked: true, note: `Chat request sent to ${firstName(who.name)}.` } }
   if (!threadOf(data.thread)) threads.unshift({ id: data.thread, kind: 'dm', name: filterText(String(who.name || 'Student')).text || 'Student', topic: '', members: 2, peer: { id: otherId, name: who.name || 'Student', handle: who.handle || '', house: who.house || '', look: who.look || {} }, last: null, unread: 0 })
   return { ok: true, thread: data.thread }
+}
+
+const firstName = (n) => String(filterText(String(n || 'They')).text || 'They').split(' ')[0]
+
+// Answer a chat request (job I): Accept opens the DM ({ ok, thread }); Decline tells them only "can't right now".
+export async function answerChat(fromId, yes) {
+  dmAsks = dmAsks.filter((a) => a.from !== fromId)
+  emit('list')
+  const { data, error } = await rpc('chat_dm_answer', { p_from: fromId, p_yes: Boolean(yes) })
+  nudge('', [fromId], { r: 1 }) // (the asker's phone hears at once)
+  if (error || !data?.ok) return { ok: false, note: 'That request has gone.' }
+  if (data.thread) {
+    const a = { id: fromId }
+    if (!threadOf(data.thread)) threads.unshift({ id: data.thread, kind: 'dm', name: 'Student', topic: '', members: 2, peer: a, last: null, unread: 0 })
+    await sync()
+  }
+  return { ok: true, thread: data.thread || '' }
+}
+
+// What a player's card shows that only the server knows (job I): { followers, friends, following, mutual, chat,
+// online?, seen? } (online and seen only for a friend both ways). null when the chat is not up.
+export async function cardInfo(otherId) {
+  if (!live() || !otherId) return null
+  const { data, error } = await rpc('chat_card', { p_who: otherId })
+  return error || !data?.ok ? null : data
 }
 
 // Block: their lines go from every thread on this phone, and (on the server) yours from theirs.
@@ -566,7 +601,7 @@ window.mzansiNudge = (p) => nudged(p || {})
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
   typingSent, typing: Object.fromEntries([...typingNow].filter(([, v]) => v.until > Date.now()).map(([k, v]) => [k, v.name])),
-  social, socialB, socialC, find: findOn, sharing: sharingFriends().map((f) => ({ id: f.id, name: f.name, spot: f.spot })), interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
+  social, socialB, socialC, find: findOn, sharing: sharingFriends().map((f) => ({ id: f.id, name: f.name, spot: f.spot })), interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), chatAsks: dmAsks.map((a) => ({ from: a.from, name: a.name })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual), ...(f.seen ? { seen: f.seen } : {}) })),
   threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '', flame: Number(t.flame) || 0 })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

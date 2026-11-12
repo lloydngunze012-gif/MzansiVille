@@ -1,7 +1,7 @@
 import { actionsAt, actionState } from '../engine/sim.js'
 import { doorPoint } from './layout.js'
 import { areaCounts } from '../presence.js'
-import { CITY, LOTS, PARTS, RING_OUT, SPAWN, STOPS, WAVE2, lotOf, moneyOf, partAt, partOf, waysTo } from '../city/plan.js'
+import { CITY, LOTS, PARTS, RIDE_EXTRA, RIDE_WAIT, RING_OUT, SPAWN, STOPS, WAVE2, lotOf, moneyOf, partAt, partOf, waysTo } from '../city/plan.js'
 const PAD = 8
 // Short names so labels never run into each other on a phone.
 const SHORT = {
@@ -19,6 +19,11 @@ function frameOf(buildings) {
   const maxZ = Math.max(...buildings.map((b) => b.minZ + b.d)) + PAD
   return { x: minX, z: minZ, w: maxX - minX, h: maxZ - minZ }
 }
+// (job I) the campus's buildings as the campus scene last laid them out: the whole map shows them when zoomed in
+let campusPlaces = []
+// A campus place picked on the whole map while you are in SunnyBay: the campus walks you there once you are back.
+let campusGoal = ''
+export function takeCampusGoal() { const g = campusGoal; campusGoal = ''; return g }
 const KIND_ICON = {
   hub: '◆',
   food: '🍽',
@@ -40,7 +45,7 @@ export function createCampusMap(host) {
   overlay.hidden = true
   overlay.innerHTML = `
     <div class="map-card">
-      <div class="map-head"><h2>Campus map</h2><span class="map-head-btns"><button type="button" data-map="city">SunnyBay</button> <button type="button" data-map="close">Close</button></span></div>
+      <div class="map-head"><h2>Campus map</h2><span class="map-head-btns"><button type="button" data-map="city">Whole map</button> <button type="button" data-map="close">Close</button></span></div>
       <div class="map-canvas"></div>
       <aside class="map-detail" hidden>
         <h3></h3>
@@ -201,6 +206,7 @@ export function createCampusMap(host) {
     setGo(fn) { onGo = fn },
     setCity(fn) { onCity = fn },
     sync(next) {
+      if (next?.buildings) campusPlaces = next.buildings
       buildings = next.buildings
       paths = next.paths || []
       district = next.district
@@ -272,7 +278,7 @@ function cityStyle() {
 .cm-head .cm-campus{background:#f0c400;color:#1c1915;margin-right:6px}
 .cm-back{width:44px!important;padding:0!important;background:#fffaf0!important;color:#1c1915!important;border:1.5px solid #e2d4b8!important;font-size:18px!important}
 .cm-body{flex:0 1 auto;min-height:0;display:flex;align-items:flex-start;justify-content:center;padding:0 8px}
-.cm-stage{position:relative;width:100%;max-width:min(560px,calc((100vh - 330px) * 1.04));aspect-ratio:${CM.w} / ${CM.h};border-radius:16px;overflow:hidden;border:1.5px solid #d9c9a8;background:#7f9a58}
+.cm-stage{position:relative;width:100%;max-width:min(560px,calc((100vh - 384px) * 1.04));aspect-ratio:${CM.w} / ${CM.h};border-radius:16px;overflow:hidden;border:1.5px solid #d9c9a8;background:#7f9a58}
 .cm-stage svg{position:absolute;inset:0;width:100%;height:100%}
 .cm-stage text{font:800 26px Figtree,system-ui,sans-serif;paint-order:stroke;stroke:#fffaf0;stroke-width:6px;stroke-linejoin:round}
 .cm-stage text.n{font-size:20px;font-weight:700}
@@ -295,7 +301,26 @@ function cityStyle() {
 .cm-ways button:disabled{background:#e9dfc8;color:#6b5d48;cursor:default}
 .cm-ways button:disabled b{color:#6b5d48}
 .cm-hint{margin:8px auto 0;width:min(calc(100% - 24px),420px);text-align:center;font-size:14px;color:#6b5d48}
-.cm-hint[hidden]{display:none}`
+.cm-hint[hidden]{display:none}
+.cm-world{position:absolute;inset:0;transform-origin:0 0;touch-action:none}
+.cm-stage{touch-action:none;cursor:grab}
+.cm-pin,.cm-cpin,.cm-stop,.cm-you{transform:translate(-50%,-50%) scale(var(--inv,1))}
+.cm-pin i,.cm-cpin i,.cm-stop i{position:absolute;top:calc(100% - 6px);left:50%;transform:translateX(-50%);white-space:nowrap;font:800 11px/1.15 Figtree,system-ui,sans-serif;font-style:normal;color:#1c1915;background:#fffaf0e8;border:1px solid #d9c9a8;border-radius:6px;padding:1px 5px;pointer-events:none;display:none}
+.cm-overlay[data-zoom="close"] .cm-pin i,.cm-overlay[data-zoom="close"] .cm-stop i,.cm-cpin i{display:block}
+.cm-pin.hub i{display:block}
+.cm-cpin{position:absolute;width:40px;height:40px;border:0;background:none;padding:0;cursor:pointer;display:none;place-items:center}
+.cm-overlay[data-zoom="close"] .cm-cpin{display:grid}
+.cm-cpin span{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid #2f6a3a;display:grid;place-items:center;font-size:12px}
+.cm-cpin.on span{background:#f0c400}
+.cm-stop{position:absolute;width:0;height:0;pointer-events:none;display:none}
+.cm-overlay[data-zoom="close"] .cm-stop{display:block}
+.cm-overlay[data-zoom="close"] .cm-names{opacity:.4}
+.cm-you{z-index:5}
+.cm-you::after{content:'You are here';position:absolute;left:12px;top:-11px;white-space:nowrap;font:800 12px/1 Figtree,system-ui,sans-serif;color:#fff;background:#c2185b;border-radius:8px;padding:4px 6px}
+.cm-body{flex-direction:column;align-items:center}
+.cm-zoom{display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+.cm-zoom button{width:44px;height:44px;border-radius:22px;border:1.5px solid #d9c9a8;background:#fffaf0;color:#1c1915;font:800 20px Figtree,system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 0 #0002}
+.cm-zoom button.wide{width:auto;padding:0 14px;font-size:14px}`
   document.head.append(style)
 }
 
@@ -314,12 +339,13 @@ function buildCityMap(parent) {
   overlay.hidden = true
   overlay.setAttribute('role', 'dialog')
   overlay.setAttribute('aria-label', `${CITY.name} map`)
-  overlay.innerHTML = `<div class="cm-head"><div class="cm-title"><button type="button" class="cm-back" data-cm="close" aria-label="Back">←</button><div><h2>${CITY.name}</h2><p data-cm-here></p></div></div><span><button type="button" class="cm-campus" data-cm="campus" hidden>Campus map</button><button type="button" data-cm="close">Close</button></span></div>
-    <div class="cm-body"><div class="cm-stage"></div></div>
-    <p class="cm-hint">Tap a pin to see how to get there.</p>
+  overlay.innerHTML = `<div class="cm-head"><div class="cm-title"><button type="button" class="cm-back" data-cm="close" aria-label="Back">←</button><div><h2>UMzansi &amp; ${CITY.name}</h2><p data-cm-here></p></div></div><span><button type="button" class="cm-campus" data-cm="campus" hidden>Close-up</button><button type="button" data-cm="close">Close</button></span></div>
+    <div class="cm-body"><div class="cm-stage"><div class="cm-world"></div></div><div class="cm-zoom"><button type="button" data-cm="in" aria-label="Zoom in">+</button><button type="button" data-cm="out" aria-label="Zoom out">−</button><button type="button" class="wide" data-cm="campus-zoom">UMzansi</button><button type="button" class="wide" data-cm="me">Where I am</button></div></div>
+    <p class="cm-hint">Tap a place to go there. Zoom in for every name.</p>
     <aside class="cm-detail" hidden></aside>`
   parent.append(overlay)
-  const stage = overlay.querySelector('.cm-stage')
+  const box = overlay.querySelector('.cm-stage')
+  const stage = overlay.querySelector('.cm-world') // (job I: everything drawn lives in the world layer, which zooms and pans)
   const detail = overlay.querySelector('.cm-detail')
   const hint = overlay.querySelector('.cm-hint')
   let selected = null
@@ -341,7 +367,12 @@ function buildCityMap(parent) {
     for (const r of CITY.roads) svg += rect(r.rect, '#4a4b50')
     svg += `<circle cx="0" cy="0" r="${RING_OUT - 3.5}" fill="#6ea84e" stroke="#4a4b50" stroke-width="7"></circle><rect x="-4" y="88" width="8" height="26" fill="#4a4b50"></rect>`
     for (const l of WAVE2) svg += `<circle cx="${l.x}" cy="${l.z}" r="6" fill="#22143b" opacity=".35"></circle>`
+    // (job I) the taxis' round: the gate on campus to every stop, dashed yellow
+    const loop = ['gate', 'town', 'beachfront', 'suburbs', 'township', 'rank'].map((id) => STOPS.find((x) => x.id === id)).filter(Boolean)
+    if (loop.length > 1) svg += `<polyline points="${[...loop, loop[0]].map((x) => `${x.x},${x.z}`).join(' ')}" fill="none" stroke="#f0c400" stroke-width="4" stroke-dasharray="9 7" opacity=".9"></polyline>`
     for (const s of STOPS) svg += `<rect x="${s.x - 6}" y="${s.z - 6}" width="12" height="12" rx="3" fill="#f0c400" stroke="#22143b" stroke-width="2"></rect>`
+    // (job I) the campus's buildings, small, inside the ring
+    for (const b of campusPlaces) svg += `<rect x="${b.minX}" y="${b.minZ}" width="${b.w}" height="${b.d}" rx="1.2" fill="#fffaf2" opacity=".85"></rect>`
     svg += '</svg>'
     stage.innerHTML = svg
     // district names (and how many players are there), each in a corner of its outline that no pin uses
@@ -379,7 +410,29 @@ function buildCityMap(parent) {
       b.style.left = `${Math.max(5, Math.min(95, spot.get(l.id).x))}%`
       b.style.top = `${Math.max(5, Math.min(95, spot.get(l.id).y))}%`
       b.setAttribute('aria-label', l.name)
-      b.innerHTML = `<span>${l.icon || '•'}</span>`
+      b.innerHTML = `<span>${l.icon || '•'}</span><i>${l.hub ? 'UMzansi' : l.name}</i>`
+      stage.append(b)
+    }
+    // (job I) the taxi stops by name, and every campus place (shown when zoomed in)
+    for (const st of STOPS) {
+      const n = document.createElement('div')
+      n.className = 'cm-stop'
+      n.style.left = `${px(st.x)}%`
+      n.style.top = `${pz(st.z + 9)}%`
+      n.innerHTML = `<i>\u{1F690} ${st.name}</i>`
+      stage.append(n)
+    }
+    for (const c of campusPlaces) {
+      const at = doorPoint(c)
+      const b = document.createElement('button')
+      b.type = 'button'
+      b.className = 'cm-cpin'
+      b.dataset.cpin = c.id
+      b.style.left = `${px(at.x)}%`
+      b.style.top = `${pz(at.z)}%`
+      const label = c.id === 'quad' ? 'The Quad' : SHORT[c.name] || c.name.replace(/ House$/, '')
+      b.setAttribute('aria-label', c.id === 'quad' ? 'The Quad' : c.name)
+      b.innerHTML = `<span>${c.id === 'quad' ? KIND_ICON.hub : KIND_ICON[c.kind] || '•'}</span><i>${label}</i>`
       stage.append(b)
     }
     const you = document.createElement('div')
@@ -387,6 +440,49 @@ function buildCityMap(parent) {
     stage.append(you)
     place()
   }
+  // ---- zoom and pan (job I): 1 = the whole map; names show from 1.9; drag to move about ----
+  const view = { s: 1, tx: 0, ty: 0 }
+  function applyView() {
+    const W = box.clientWidth || 1
+    const H = box.clientHeight || 1
+    view.s = Math.max(1, Math.min(5, view.s))
+    view.tx = Math.min(0, Math.max(W - W * view.s, view.tx))
+    view.ty = Math.min(0, Math.max(H - H * view.s, view.ty))
+    stage.style.transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.s})`
+    stage.style.setProperty('--inv', String(1 / view.s))
+    overlay.dataset.zoom = view.s >= 1.9 ? 'close' : 'far'
+    overlay.dataset.scale = view.s.toFixed(2)
+  }
+  function zoomAt(s, cx, cy) {
+    const k = Math.max(1, Math.min(5, s)) / view.s
+    view.tx = cx - (cx - view.tx) * k
+    view.ty = cy - (cy - view.ty) * k
+    view.s *= k
+    applyView()
+  }
+  function centerOn(x, z, s) {
+    view.s = s
+    view.tx = box.clientWidth / 2 - (px(x) / 100) * box.clientWidth * s
+    view.ty = box.clientHeight / 2 - (pz(z) / 100) * box.clientHeight * s
+    applyView()
+  }
+  let drag = null
+  let dragged = false
+  box.addEventListener('pointerdown', (e) => { if (e.target.closest('.cm-zoom')) return; drag = { x: e.clientX, y: e.clientY, tx: view.tx, ty: view.ty }; dragged = false })
+  box.addEventListener('pointermove', (e) => {
+    if (!drag) return
+    const dx = e.clientX - drag.x
+    const dy = e.clientY - drag.y
+    if (!dragged && Math.hypot(dx, dy) < 8) return
+    dragged = true
+    view.tx = drag.tx + dx
+    view.ty = drag.ty + dy
+    applyView()
+  })
+  const endDrag = () => { drag = null; setTimeout(() => { dragged = false }, 0) }
+  box.addEventListener('pointerup', endDrag)
+  box.addEventListener('pointercancel', endDrag)
+  box.addEventListener('wheel', (e) => { e.preventDefault(); const r = box.getBoundingClientRect(); zoomAt(view.s * (e.deltaY < 0 ? 1.25 : 0.8), e.clientX - r.left, e.clientY - r.top) }, { passive: false })
   function place() {
     const w = api.where()
     const you = stage.querySelector('.cm-you')
@@ -404,6 +500,26 @@ function buildCityMap(parent) {
       }
       overlay.dataset.counts = JSON.stringify(got)
     })
+  }
+  // (job I) a campus place: on campus, walk there; in SunnyBay, the ways back to campus, then the campus walks you on
+  function selectCampus(id) {
+    const c = campusPlaces.find((b) => b.id === id)
+    if (!c) return
+    const w = api.where()
+    const name = c.id === 'quad' ? 'The Quad' : c.name
+    for (const b of stage.querySelectorAll('.cm-pin, .cm-cpin')) b.classList.toggle('on', b.dataset.cpin === id)
+    selected = `campus:${id}`
+    let rows = ''
+    if (w.campus) rows = `<button type="button" data-way="campus-walk"><span>\u{1F6B6} Walk there<small>On campus</small></span><b>Free</b></button>`
+    else {
+      const ways = waysTo(api.run(), w, { x: SPAWN.x, z: SPAWN.z, part: 'campus' })
+      rows += `<button type="button" data-way="walk"><span>\u{1F6B6} Walk<small>Back through the Main Gate, then to ${name}</small></span><b>Free · about ${ways.walk.minutes} min</b></button>`
+      if (ways.taxi && !ways.taxi.short) rows += `<button type="button" data-way="taxi"><span>\u{1F690} Minibus taxi<small>To the campus gate, then on foot</small></span><b>R${ways.taxi.fare} · ${ways.taxi.minutes} min</b></button>`
+    }
+    detail.innerHTML = `<h3>${c.id === 'quad' ? KIND_ICON.hub : KIND_ICON[c.kind] || '•'} ${name}</h3><p class="cm-sub">Campus district</p><div class="cm-ways">${rows}</div>`
+    detail.hidden = false
+    detail.dataset.pin = selected
+    hint.hidden = true
   }
   function select(id) {
     const w = api.where()
@@ -424,6 +540,7 @@ function buildCityMap(parent) {
           ? `<button type="button" disabled data-way="taxi"><span>🚐 Minibus taxi<small>You are R${t.short} short for this one. Walking is free.</small></span><b>R${t.fare}</b></button>`
           : `<button type="button" data-way="taxi"><span>🚐 Minibus taxi<small>${t.alight ? `Taxi to ${t.alight.name}, then a short walk` : `From ${t.stop.name}${t.dist > 9 ? ` (${t.dist} m from you)` : ''}`}</small></span><b>R${t.fare} · ${t.minutes} min</b></button>`
       }
+      if (!w.campus && ways.taxi) { const fare = ways.taxi.fare + RIDE_EXTRA; const short = fare > moneyOf(run); rows += `<button type="button" data-way="request"${short ? ' disabled' : ''}><span>\u{1F695} Request a ride<small>${short ? `You are R${fare - moneyOf(run)} short` : `A taxi comes to you in about ${RIDE_WAIT} min`}</small></span><b>R${fare}</b></button>` }
       if (!ways.car) rows += `<button type="button" disabled data-way="drive"><span>🚗 Drive<small>${CITY.travel.lines.noCar}</small></span><b>R${CITY.travel.car.petrol}</b></button>`
       else if (!ways.car.here) rows += `<button type="button" disabled data-way="drive"><span>🚗 Drive<small>${CITY.travel.lines.carAway.replace('{place}', ways.car.parkedName)}</small></span><b>R${ways.car.fare}</b></button>`
       else if (ways.car.short) rows += `<button type="button" disabled data-way="drive"><span>🚗 Drive<small>Petrol is R${ways.car.fare}: you are R${ways.car.short} short.</small></span><b>R${ways.car.fare}</b></button>`
@@ -436,13 +553,22 @@ function buildCityMap(parent) {
     hint.hidden = true
   }
   overlay.addEventListener('click', (event) => {
+    if (dragged) return
     const pin = event.target.closest('.cm-pin')
     if (pin) { select(pin.dataset.pin); return }
+    const cp = event.target.closest('.cm-cpin')
+    if (cp) { selectCampus(cp.dataset.cpin); return }
+    const zoom = event.target.closest('[data-cm]')?.dataset.cm
+    if (zoom === 'in' || zoom === 'out') { zoomAt(view.s * (zoom === 'in' ? 1.6 : 1 / 1.6), box.clientWidth / 2, box.clientHeight / 2); return }
+    if (zoom === 'campus-zoom') { centerOn(0, 0, 2.9); return }
+    if (zoom === 'me') { const w = api.where(); centerOn(w.x, w.z, Math.max(2.4, view.s)); return }
     const way = event.target.closest('[data-way]')
     if (way && !way.disabled && selected) {
       const target = selected
       close()
       if (way.dataset.way === 'close') api.campusMap?.()
+      else if (way.dataset.way === 'campus-walk') api.goCampus?.(target.slice(7))
+      else if (target.startsWith('campus:')) { campusGoal = target.slice(7); api.go(way.dataset.way, 'campus') }
       else api.go(way.dataset.way, target)
       return
     }
@@ -458,6 +584,8 @@ function buildCityMap(parent) {
     selected = null
     overlay.querySelector('.cm-campus').hidden = !(api.campusMap && api.where().campus)
     draw()
+    view.s = 1; view.tx = 0; view.ty = 0
+    requestAnimationFrame(applyView)
     counts()
     clearInterval(timer)
     timer = setInterval(() => { if (overlay.hidden) clearInterval(timer); else place() }, 500)

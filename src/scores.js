@@ -35,7 +35,7 @@ export function note(district, run, id, place = '', category = '') {
   const action = district.activities.find((a) => a.id === id) || extra.find((a) => a.id === id)
   const cat = category || r[id]?.board || (action ? categoryOf(action, r) : 'social')
   const hit = countActivity(run, { id, place: place || action?.placeId || '', cat }, r, LB)
-  for (const fn of listeners) fn({ id, place, cat, hit })
+  for (const fn of listeners) fn({ id, place, cat, hit, action })
   return hit
 }
 const listeners = new Set()

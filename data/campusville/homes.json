@@ -1,6 +1,36 @@
 {
   "about": "Day 1 (leaving home): the family home's styles, picked from the student's 'From' answer. Add a style here and map 'From' answers to it; no code changes. Models are names inside the kit files in public/models/home/ (scripts/home-assets.mjs). Colours are South African palettes: roofs, walls and paint are recoloured at load.",
   "default": "suburban",
+  "driversAbout": "Who drives the player to UMzansi on day 1 (owner, 12 Nov, job I: every player had the same mum, in the same clothes, in the same car). src/family.js picks one driver, one of their looks and one family car with one of its colours from the player's id, so it stays the same all day. call: what the player calls them, per home style. grey: grey hair (gogo). Outfits: jacket, dress, skirt, shweshwe, hoodie, shirt (men: hoodie, shirt, jacket). Hair: crop, curls, fade, braids. Cars: models in public/models/cars.",
+  "drivers": [
+    { "role": "mom", "gender": "female", "call": { "suburban": "Mom", "township": "Ma" }, "looks": [
+      { "outfit": "jacket", "top": "#7a3b5c", "bottom": "#2b2b35", "hair": "curls" },
+      { "outfit": "dress", "top": "#2f7a6b", "bottom": "#2f7a6b", "hair": "braids" },
+      { "outfit": "shweshwe", "top": "#2c4f8c", "bottom": "#2c4f8c", "hair": "curls" } ] },
+    { "role": "dad", "gender": "male", "call": { "suburban": "Dad", "township": "Baba" }, "looks": [
+      { "outfit": "shirt", "top": "#3d6fa8", "bottom": "#3a3a40", "hair": "crop" },
+      { "outfit": "jacket", "top": "#5a4632", "bottom": "#2b2b35", "hair": "fade" },
+      { "outfit": "hoodie", "top": "#6b7a3a", "bottom": "#2f3a4f", "hair": "crop" } ] },
+    { "role": "aunt", "gender": "female", "call": { "suburban": "Aunty", "township": "Aunty" }, "looks": [
+      { "outfit": "skirt", "top": "#c0603a", "bottom": "#3a2f4f", "hair": "braids" },
+      { "outfit": "dress", "top": "#8a4fb0", "bottom": "#8a4fb0", "hair": "curls" } ] },
+    { "role": "uncle", "gender": "male", "call": { "suburban": "Uncle", "township": "Malume" }, "looks": [
+      { "outfit": "shirt", "top": "#e0b23a", "bottom": "#3a3a40", "hair": "fade" },
+      { "outfit": "jacket", "top": "#2f4f3a", "bottom": "#2b2b35", "hair": "crop" } ] },
+    { "role": "gogo", "gender": "female", "grey": true, "call": { "suburban": "Gran", "township": "Gogo" }, "looks": [
+      { "outfit": "shweshwe", "top": "#7a2f3a", "bottom": "#7a2f3a", "hair": "curls" },
+      { "outfit": "dress", "top": "#4f6b8a", "bottom": "#4f6b8a", "hair": "curls" } ] },
+    { "role": "sibling", "gender": "female", "call": { "default": "Sis" }, "looks": [
+      { "outfit": "hoodie", "top": "#d6456b", "bottom": "#2f3a4f", "hair": "braids" } ] },
+    { "role": "sibling", "gender": "male", "call": { "default": "Bro" }, "looks": [
+      { "outfit": "hoodie", "top": "#2e8b57", "bottom": "#2b3a55", "hair": "fade" } ] }
+  ],
+  "familyCars": [
+    { "model": "suv", "colours": ["#d9dde2", "#2f3f5f", "#7a1f2b", "#1f1f22"] },
+    { "model": "sedan", "colours": ["#c8c2b4", "#e8e8e8", "#3f5f3a", "#8a8f99"] },
+    { "model": "hatchback-sports", "colours": ["#d1402f", "#f0c400", "#ffffff", "#2a6fb0"] },
+    { "model": "van", "colours": ["#ffffff", "#c9d6e0"] }
+  ],
   "from": {
     "Durban": "suburban",
     "Joburg": "suburban",
@@ -119,8 +149,8 @@
         "embarrassReply": "Ma! The matric photo?",
         "sibling": "So... can I have your room now?",
         "bags": "Everything I own, in one suitcase and a backpack.",
-        "car": "Come, my child. Uncle lent us the car till twelve.",
-        "drive": "Ma drives slowly. The street waves: {neighbour}, the spaza, the kids by the high mast.",
+        "car": "Come, my child. We have the car till twelve.",
+        "drive": "{call} drives slowly. The street waves: {neighbour}, the spaza, the kids by the high mast.",
         "gate1": "Here we are. UMzansi.",
         "gate2": "Phone me tonight. And eat properly, not just noodles.",
         "money": "Here. R{amount}. For food, not for parties.",

@@ -213,12 +213,13 @@ test('T3 player chat: Say hi, bubbles within 15 m for 8 s, log, quick phrases, f
   const lineOn = (frame, text) => frame.evaluate((t) => window.mzansiChat().some((m) => m.text.includes(t)), text)
   const bubbleOn = (frame, speaker) => frame.evaluate((s) => window.mzansiBubbles().find((b) => b.speaker === s) || null, speaker)
 
-  // 1. B taps A; Say hi opens the text box (the card goes, the two-shot stays).
+  // 1. B taps A, closes the card and opens the nearby chat with the Talk button (job I: the card's Say hi is gone).
   for (let i = 0; i < 5 && !(await B.locator('.pc-mini-body .pc-mini-name').isVisible().catch(() => false)); i++) {
     await tapOther(page, B, BX)
     await page.waitForTimeout(900)
   }
-  await tapIn(page, B.locator('[data-pc="hi"]'))
+  await tapIn(page, B.locator('.pc-mini-x'))
+  await tapIn(page, B.locator('#world .chat-btn'))
   await expect(B.locator('.chat-panel')).toBeVisible({ timeout: 5000 })
   await page.waitForTimeout(900)
   out.shotWhileChatting = await B.evaluate(() => { const s = window.mzansiShot(); return { convo: s.convo?.kind, eased: s.eased, back: s.back, height: s.height } })

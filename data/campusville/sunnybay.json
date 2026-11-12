@@ -55,7 +55,10 @@
     "taxi": {
       "near": 15,
       "far": 25,
-      "minutes": 25
+      "minutes": 25,
+      "every": 5,
+      "requestExtra": 10,
+      "requestWait": 3
     },
     "car": {
       "petrol": 8

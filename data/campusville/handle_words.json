@@ -1,0 +1,5 @@
+{
+  "note": "Soft Life @handles (owner, 12 Nov, job I): never made from the player's name. A new player gets adjective_noun + two digits (at most 20 characters), e.g. sunny_kombi27. Cursor owns these words: keep them short (3 to 7 letters), friendly, lowercase a-z only, nothing that reads as staff or official (handle_blocklist.json is checked as well).",
+  "adjectives": ["sunny", "chill", "lekker", "bright", "breezy", "golden", "quiet", "brave", "cosy", "lucky", "swift", "happy", "mellow", "bold", "calm", "clever", "jolly", "zesty", "vivid", "witty", "steady", "cheeky", "salty", "sandy", "misty", "rainy", "starry", "dusty", "fresh", "cool"],
+  "nouns": ["kombi", "gecko", "protea", "mango", "biltong", "rusk", "dune", "wave", "pier", "lion", "zebra", "kudu", "hippo", "otter", "eagle", "falcon", "baobab", "comet", "pixel", "koki", "taxi", "braai", "kettle", "mamba", "dassie", "meerkat", "penguin", "cactus", "lemon", "rooibos"]
+}

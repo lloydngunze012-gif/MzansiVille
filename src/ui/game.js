@@ -346,7 +346,7 @@ function gearMenu(run) {
     <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>
     <button type="button" data-act="nav" data-go="notices" class="${news ? 'news' : ''}">\u{1F4E2} Notices${news ? ' <i class="tb-dot" aria-label="new"></i>' : ''}</button>
     ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
-    ${location.hash.startsWith('#/play') && document.body.dataset.caf !== '1' ? '<button type="button" data-act="city-map">\u{1F5FA} SunnyBay map</button>' : ''}
+    ${location.hash.startsWith('#/play') && document.body.dataset.caf !== '1' ? '<button type="button" data-act="city-map">\u{1F5FA} Map</button><button type="button" data-act="ride-request">\u{1F695} Request a ride</button>' : ''}
     <button type="button" data-act="nav" data-go="profile">Student card</button>
     <button type="button" data-act="nav" data-go="milestones">Milestones</button>
     <button type="button" data-act="nav" data-go="board">All-time boards</button>
@@ -447,7 +447,7 @@ function sheetHtml(district, run, placeId) {
     return names.length ? `${ph.label} ${ph.start}: ${names.join(', ')}` : ''
   }).filter(Boolean)
   const nowLabel = phases[nowIdx]?.label || 'now'
-  const empty = status.public
+  const empty = placeId === 'gate' ? '' : status.public
     ? `Nothing to do at ${placeName(place)} during ${nowLabel}. ${ahead.length ? `Coming up \u2014 ${ahead.join(' \u00b7 ')}.` : later ? `Things happen here from ${later}.` : 'Nothing else on today.'}`
     : status.label ? `Nothing here right now \u00b7 ${status.label}.` : 'Nothing to do here this phase.'
   const lines = story ? story.flavour[isNight(run) ? 'night' : 'day'] : [place.blurb || '']
@@ -457,10 +457,11 @@ function sheetHtml(district, run, placeId) {
     <div class="g-grab"></div>
     <div class="g-sheet-head"><span class="g-sheet-ic">${story?.icon || ICON[place.kind] || ''}</span><div><h2>${esc(place.name)}</h2><p class="g-flavour" data-lines="${esc(JSON.stringify(lines))}">${esc(lines[0] || '')}</p></div><button type="button" class="g-x" data-act="close-sheet" aria-label="Close">\u00d7</button></div>
     ${spots ? `<div class="g-row-title"><span>Spots here</span><small>\u{1F463} Tap one to walk there</small></div><div class="g-spots">${spots}</div>` : ''}
+    ${placeId === 'gate' ? `<div class="g-gate"><p><b>SunnyBay is 5 min by taxi.</b> The town, the beach, the mall and more, just outside the gate.</p><div class="g-gate-row"><button type="button" class="g-go" data-act="gate-taxi">\u{1F690} Take a taxi</button><button type="button" class="g-go ghost" data-act="gate-walk">\u{1F6B6} Walk</button></div></div>` : ''}
     ${placeId === 'greenway' && district.greenway ? shopHtml(district, run) : ''}
     ${isHouse ? fridgeHtml(district, run) : ''}
-    ${placeId === 'greenway' && !rows ? '' : `<div class="g-row-title"><span>Things to do</span>${rows ? `<small>${run.slotsLeft} of ${run.slotsTotal} slots left</small>` : ''}</div>
-    <div class="g-acts g-cards">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>`}
+    ${(placeId === 'greenway' || placeId === 'gate') && !rows ? '' : `<div class="g-row-title"><span>Things to do</span>${rows ? `<small>${run.slotsLeft} of ${run.slotsTotal} slots left</small>` : ''}</div>
+    ${rows || empty ? `<div class="g-acts g-cards">${rows || `<p class="g-empty">${esc(empty)}</p>`}</div>` : ''}`}
   </section>`
 }
 

@@ -13,6 +13,7 @@ import { BOARDS, loadBoard, onNote } from './scores.js'
 import { resetText } from './engine/scores.js'
 import { returning, sessionNo, funnel } from './events.js'
 import { myIdentity, onPoke } from './presence.js'
+import { cardOf } from './cards.js'
 import { logRow } from './errors.js'
 import { authEnabled, getClient } from './net.js'
 import { followerCounts, followersText } from './board.js'
@@ -114,6 +115,7 @@ let pendingCard = ''
 function showCardPrompt() {
   const run = api.save().run
   run.cardAsked = today()
+  if (!run.quick) run.cardNudged = true // (the one gentle ask for an older card)
   api.persist()
   const pop = open('card', `<p class="lp-kicker">Student card</p><h2>Finish your student card</h2>
     <p class="lp-lede">Finish your student card so people know you, and get <b>R${CARD_REWARD}</b>.</p>
@@ -121,9 +123,17 @@ function showCardPrompt() {
   pop.dataset.reason = pendingCard
   pendingCard = ''
 }
+// Job I (owner, 12 Nov: neither his phone nor his PC was ever asked): a quick-start player is asked after their first
+// meal or paid gig, or when another player looks at their card, at most once a day until it is done. Anyone else whose
+// card is still empty (an older save, the full enrolment skipped through) is asked once, gently, ever (run.cardNudged).
+export function cardEmpty(run) {
+  const c = cardOf(run, '')
+  return !c.bio && !c.tags.course && !c.tags.vibe && !c.tags.looking
+}
 function wantCard(reason) {
   const run = api?.save()?.run
-  if (!run || !run.quick || run.cardDone) return
+  if (!run?.character || run.cardDone) return
+  if (!run.quick && (run.cardNudged || !cardEmpty(run))) return
   run.cardTriggered = true
   pendingCard = pendingCard || reason
 }
@@ -262,8 +272,12 @@ export function initLaunch(handles) {
   setInterval(tick, 1200)
   window.addEventListener('mzansi-swap-roommate', (event) => openSwap(event.detail))
   // The first meal or the first paid gig; any later one asks again on a new day (once the first has happened).
-  onNote(({ cat }) => {
-    if (cat === 'food' || cat === 'work') wantCard(cat === 'work' ? 'gig' : 'meal')
+  // (job I: by what the activity does, not its leaderboard board: a scored meal used to arrive as 'social' and never asked)
+  onNote(({ cat, action }) => {
+    const d = action?.deltas || {}
+    const gig = cat === 'work' || Number(d.money) > 0
+    const meal = cat === 'food' || Number(d.hunger) > 0
+    if (gig || meal) wantCard(gig ? 'gig' : 'meal')
   })
   // The same for a city row (a gig or a meal in a SunnyBay place).
   window.addEventListener('mzansi-city-note', (event) => wantCard(event.detail?.kind === 'gig' ? 'gig' : 'meal'))
@@ -272,6 +286,8 @@ export function initLaunch(handles) {
   // A new day, the card still not done and they have started to play: ask once more at a calm moment.
   const run = api.save()?.run
   if (run?.quick && !run.cardDone && run.cardTriggered && !askedToday(run)) pendingCard = 'again'
+  // (a returning player whose card is still empty: one gentle ask, a little into the session)
+  else if (run?.character && !run.quick && !run.cardDone && !run.cardNudged && returning() && cardEmpty(run)) setTimeout(() => wantCard('empty'), 20000)
 }
 // The menu's Feedback and Leaderboard buttons, and tests.
 window.mzansiLaunch = { openBoard, openFeedback, promptCard: () => showCardPrompt(), calm, why: calmWhy, pending: () => pendingCard, open: () => current, want: (r) => wantCard(r || 'test') }

@@ -62,7 +62,7 @@ test('Y2 the map: tap the Mall pin, take a taxi, arrive at its door; the fare is
   const clock = (await run(page)).minutes
   await page.locator('[data-city="map"]').tap()
   await expect(page.locator('.cm-overlay')).toBeVisible()
-  await expect(page.locator('.cm-head h2')).toHaveText('SunnyBay')
+  await expect(page.locator('.cm-head h2')).toHaveText('UMzansi & SunnyBay') // (job I: the whole map)
   await expect(page.locator('.cm-pin')).toHaveCount(19) // 18 places and the campus
   await shot(page, 'y2-map')
   await page.locator('.cm-pin[data-pin="mall"]').tap()
@@ -225,7 +225,7 @@ test('Y6 every district: no void at the edges, draw calls and triangles, screens
   expect(new Set(skins).size).toBeGreaterThanOrEqual(4)
   // the things the report shows: the welcome sign, a billboard, a door, a wave 2 plot, the sea, the hills
   const pose = async (name, pos, look, far) => { await page.evaluate(([p, l, f]) => window.mzansiCity.shot(p, l, f), [pos, look, far || 0]); await page.waitForTimeout(500); await shot(page, name) }
-  await pose('y6-welcome-sign', [1.5, 3.2, 108.5], [0, 2, 119.6])
+  await pose('y6-welcome-sign', [5, 3.2, 110], [15.5, 2, 121]) // (job I: beside the road now)
   await pose('y6-billboard', [-3, 4, 152], [-12, 5.6, 168])
   await pose('y6-bank-door', [-25, 4.5, 216], [-32, 3, 200])
   await pose('y6-wave2-plot', [40, 5, 268], [40, 2, 254])

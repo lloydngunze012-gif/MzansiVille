@@ -88,14 +88,26 @@ export function taxiFare(fromPart, toPart) {
   return partOf(fromPart).next.includes(toPart) ? TAXI.near : TAXI.far
 }
 export const moneyOf = (run) => Math.floor(run?.stats?.money || 0)
+// Job I: a taxi calls at every stop every few game minutes (each stop a little after the one before), so a stop's
+// board can say when the next one comes; "Request a ride" brings one to you for a little more, after a short wait.
+export const TAXI_EVERY = Number(TAXI.every) || 5
+export const RIDE_EXTRA = Number(TAXI.requestExtra) || 10
+export const RIDE_WAIT = Number(TAXI.requestWait) || 3
+export function nextTaxi(stopId, minutes) {
+  const i = Math.max(0, STOPS.findIndex((s) => s.id === stopId))
+  const m = Math.floor(Number(minutes) || 0)
+  const wait = TAXI_EVERY - ((m + i * 2) % TAXI_EVERY) // 1..TAXI_EVERY
+  const at = (m + wait) % 1440
+  return { wait, at: `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}` }
+}
 // A car works when the save has both a licence and a car (job B grants them: run.licence = true, run.car = { id }).
 export const canDrive = (run) => Boolean(run?.licence && run?.car)
 // Where the car is parked: 'res' (outside your house on campus) or a lot's id.
 export const carAt = (run) => (canDrive(run) ? run.carAt || 'res' : null)
 
 // Pay for a taxi. { ok, fare } or { ok: false, fare, short } (R short); the money is only taken when ok.
-export function payTaxi(run, fromPart, toPart) {
-  const fare = taxiFare(fromPart, toPart)
+export function payTaxi(run, fromPart, toPart, extra = 0) {
+  const fare = taxiFare(fromPart, toPart) + Math.max(0, Number(extra) || 0) // (job I: a requested ride costs a little more)
   const money = moneyOf(run)
   if (money < fare) return { ok: false, fare, money, short: fare - money }
   run.stats.money = (run.stats.money || 0) - fare

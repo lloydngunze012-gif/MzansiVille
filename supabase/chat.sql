@@ -173,6 +173,7 @@ begin
   with recent as (
     select l.id, l.sender, l.body, l.at from chat_lines l
     where l.thread = p_thread and l.id > coalesce(p_after, 0) and not chat_blocked(p_id, l.sender)
+      and (not chat_is_quad(p_thread) or l.at > now() - interval '24 hours') -- (job I: the Quad shows its last 24 hours)
     order by l.id desc limit 200
   )
   select coalesce(jsonb_agg(jsonb_build_object('id', r.id, 'sender', r.sender, 'body', r.body, 'at', r.at) order by r.id), '[]'::jsonb),
@@ -405,13 +406,17 @@ begin
   select jsonb_build_object('id', l.id, 'body', l.body, 'at', l.at, 'sender', l.sender, 'name', coalesce(p.name, 'Student'))
     into last_line
     from chat_lines l left join chat_players p on p.id = l.sender
-    where l.thread = t.id and not chat_blocked(p_id, l.sender) order by l.id desc limit 1;
+    where l.thread = t.id and not chat_blocked(p_id, l.sender)
+      and (not chat_is_quad(t.id) or l.at > now() - interval '24 hours') order by l.id desc limit 1;
   select count(*) into n_unread from chat_lines l
-    where l.thread = t.id and l.id > coalesce(mine, 0) and l.sender <> p_id and not chat_blocked(p_id, l.sender);
+    where l.thread = t.id and l.id > coalesce(mine, 0) and l.sender <> p_id and not chat_blocked(p_id, l.sender)
+      and (not chat_is_quad(t.id) or l.at > now() - interval '24 hours');
   select count(*) into n_members from chat_members where thread = t.id;
   return jsonb_build_object('id', t.id, 'kind', t.kind, 'name', case when t.kind = 'dm' then coalesce(peer.name, 'Student') else t.name end,
     'topic', t.topic, 'members', n_members, 'creator', t.creator,
-    'peer', case when t.kind = 'dm' and peer.id is not null then jsonb_build_object('id', peer.id, 'name', peer.name, 'handle', peer.handle, 'house', peer.house, 'look', peer.look) end,
+    'peer', case when t.kind = 'dm' and peer.id is not null then jsonb_build_object('id', peer.id, 'name', peer.name, 'handle', peer.handle, 'house', peer.house, 'look', peer.look)
+      -- (job I: "online" or "last seen" for a friend both ways only)
+      || case when chat_mutual(p_id, peer.id) then jsonb_build_object('online', peer.seen_at > now() - interval '70 seconds', 'seen', peer.seen_at) else '{}'::jsonb end end,
     'last', last_line, 'unread', n_unread, 'muted', coalesce(is_muted, false), 'quad', chat_is_quad(t.id),
     -- (Loops: the group's flame; 0 once a day has been missed)
     'flame', case when t.flame_day >= (now() at time zone 'Africa/Johannesburg')::date - 1 then t.flame else 0 end,
@@ -461,18 +466,22 @@ begin
     select chat_thread_json(p_id, t) as j, coalesce(t.last_at, case when t.kind = 'group' then t.created_at end) as at
     from chat_members m join chat_threads t on t.id = m.thread
     where m.player = p_id and t.id not like 'p:%' -- (Social B: the replies to a post are opened from the post, not listed)
-      and (t.kind = 'group' or (t.last_id > 0 and not exists (
+      and (t.kind = 'group' or ((t.last_id > 0
+          -- (job I: a chat request that was accepted lists the DM before its first line)
+          or (to_regclass('public.chat_dm_asks') is not null and exists (select 1 from chat_members o join chat_dm_asks a on a.state = 'yes'
+            and ((a.asker = o.player and a.player = p_id) or (a.player = o.player and a.asker = p_id)) where o.thread = t.id and o.player <> p_id)))
+        and not exists (
         select 1 from chat_members o where o.thread = t.id and o.player <> p_id and chat_blocked(p_id, o.player))))
   ) x;
   select coalesce(jsonb_agg(blocked), '[]'::jsonb) into mine from chat_blocks where blocker = p_id;
   -- (who is online is only told about friends both ways: a one-way friend has no "online" in the reply at all)
   -- (Social C: where a friend is in the game, only if they said yes today, are online, and are a friend both ways)
   select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'name', x.name, 'handle', x.handle, 'house', x.house, 'look', x.look, 'mutual', x.mutual)
-      || case when x.mutual then jsonb_build_object('online', x.online) else '{}'::jsonb end
+      || case when x.mutual then jsonb_build_object('online', x.online, 'seen', x.seen_at) else '{}'::jsonb end
       || case when x.mutual and x.online and x.find_day = today and x.spot is not null then jsonb_build_object('spot', x.spot) else '{}'::jsonb end
       order by (x.mutual and x.online) desc, x.name), '[]'::jsonb)
     into pals from (
-      select p.id, p.name, p.handle, p.house, p.look, chat_mutual(p_id, p.id) as mutual, p.seen_at > now() - interval '70 seconds' as online, p.find_day, p.spot
+      select p.id, p.name, p.handle, p.house, p.look, chat_mutual(p_id, p.id) as mutual, p.seen_at > now() - interval '70 seconds' as online, p.seen_at, p.find_day, p.spot
       from chat_friends f join chat_players p on p.id = f.friend where f.player = p_id and not chat_blocked(p_id, p.id)) x;
   -- asks waiting for your answer (24 hours, never from someone blocked either way)
   select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'thread', a.thread, 'group', t.name, 'from', coalesce(p.name, 'Student'), 'from_id', a.asker) order by a.at), '[]'::jsonb)
@@ -495,7 +504,10 @@ begin
     'find', (select coalesce(find_day = today, false) from chat_players where id = p_id),
     -- (Notifications: your choices, and a newcomer from your town to welcome; both null until that block is run)
     'push', (select jsonb_build_object('quiet', push_quiet, 'hide', push_hide, 'area', push_area, 'town', town) from chat_players where id = p_id),
-    'welcome', chat_welcome_for(p_id));
+    'welcome', chat_welcome_for(p_id),
+    -- (job I: chat requests waiting for you, and what became of yours; null until its block below has been run)
+    'dm_asks', case when to_regclass('public.chat_dm_asks') is not null then chat_dm_asks_for(p_id) end,
+    'dm_answers', case when to_regclass('public.chat_dm_asks') is not null then chat_dm_answers_for(p_id) end);
 end $$;
 grant execute on function public.chat_sync(text, text, text, text, text, jsonb, int) to anon, authenticated;
 
@@ -1409,3 +1421,139 @@ do $$ begin
     grant execute on function public.chat_push_digest() to service_role;
   end if;
 end $$;
+
+-- =====================================================================================================
+-- FIRST-PLAY FIXES (owner, 12 Nov, job I): a chat is a request, "last seen", the card's counts. Re-runnable.
+--   A DM opens straight away only between friends both ways, or when the two already have a chat. Anyone else:
+--   chat_dm makes a request ({ ok, asked: true }); the other player sees "X wants to chat. Accept / Decline".
+--   Decline tells the asker only "can't right now", and they cannot ask that player again for 7 days. A request
+--   nobody answered goes after 24 hours (also "can't right now", and they may ask again). Never past a block:
+--   a player who blocked you gets nothing, and you are told the same as for any request. 20 requests a day.
+--   The Quad shows only its last 24 hours (chat_fetch and chat_thread_json, above).
+-- =====================================================================================================
+create table if not exists public.chat_dm_asks (
+  asker text not null,
+  player text not null,
+  state text not null default 'pending' check (state in ('pending', 'yes', 'no')),
+  at timestamptz not null default now(),
+  answered_at timestamptz,
+  told boolean not null default false,
+  primary key (asker, player)
+);
+create index if not exists chat_dm_asks_player_idx on public.chat_dm_asks (player, state, at desc);
+alter table public.chat_dm_asks enable row level security;
+
+-- Open the DM with another player, or ask for it.
+-- Returns { ok, thread } (open), { ok, asked: true } (a request is waiting for their answer), or
+-- { ok: false, reason: unknown | self | blocked | later | today }. later: they said no in the last 7 days.
+create or replace function public.chat_dm(p_id text, p_secret text, p_other text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare tid text; t chat_threads%rowtype; mine chat_dm_asks%rowtype; theirs chat_dm_asks%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  if p_other is null or p_other = p_id then return jsonb_build_object('ok', false, 'reason', 'self'); end if;
+  if not exists (select 1 from chat_players where id = p_other) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if exists (select 1 from chat_blocks where blocker = p_id and blocked = p_other) then return jsonb_build_object('ok', false, 'reason', 'blocked'); end if;
+  -- (they blocked you: told the same as any request, and nothing reaches them)
+  if chat_blocked(p_id, p_other) then return jsonb_build_object('ok', true, 'asked', true); end if;
+  tid := 'dm:' || least(p_id, p_other) || ':' || greatest(p_id, p_other);
+  select * into t from chat_threads where id = tid;
+  select * into theirs from chat_dm_asks where asker = p_other and player = p_id;
+  -- friends both ways, a chat you already have, a request of theirs waiting for you, or one they accepted: open
+  if chat_mutual(p_id, p_other) or (t.id is not null and t.last_id > 0)
+     or (theirs.asker is not null and theirs.state = 'pending' and theirs.at > now() - interval '24 hours')
+     or (theirs.asker is not null and theirs.state = 'yes')
+     or exists (select 1 from chat_dm_asks where asker = p_id and player = p_other and state = 'yes') then
+    insert into chat_threads (id, kind, creator) values (tid, 'dm', p_id) on conflict (id) do nothing;
+    insert into chat_members (thread, player) values (tid, p_id), (tid, p_other) on conflict do nothing;
+    update chat_dm_asks set state = 'yes', answered_at = now(), told = true where asker = p_other and player = p_id and state = 'pending';
+    return jsonb_build_object('ok', true, 'thread', tid);
+  end if;
+  select * into mine from chat_dm_asks where asker = p_id and player = p_other;
+  if mine.asker is not null and mine.state = 'no' and mine.answered_at > now() - interval '7 days' then
+    return jsonb_build_object('ok', false, 'reason', 'later');
+  end if;
+  if mine.asker is not null and mine.state = 'pending' and mine.at > now() - interval '24 hours' then
+    return jsonb_build_object('ok', true, 'asked', true);
+  end if;
+  if (select count(*) from chat_events where player = p_id and kind = 'dm_ask' and at > now() - interval '1 day') >= 20 then
+    return jsonb_build_object('ok', false, 'reason', 'today');
+  end if;
+  insert into chat_dm_asks (asker, player) values (p_id, p_other)
+    on conflict (asker, player) do update set state = 'pending', at = now(), answered_at = null, told = false;
+  insert into chat_events (player, kind) values (p_id, 'dm_ask');
+  return jsonb_build_object('ok', true, 'asked', true);
+end $$;
+grant execute on function public.chat_dm(text, text, text) to anon, authenticated;
+
+-- Answer a request: Accept (the DM opens: { ok, thread }) or Decline ({ ok }). The asker hears on their next sync.
+create or replace function public.chat_dm_answer(p_id text, p_secret text, p_from text, p_yes boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare a chat_dm_asks%rowtype; tid text;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into a from chat_dm_asks where asker = p_from and player = p_id and state = 'pending' and at > now() - interval '24 hours';
+  if not found then return jsonb_build_object('ok', false, 'reason', 'gone'); end if;
+  if not coalesce(p_yes, false) or chat_blocked(p_id, p_from) then
+    update chat_dm_asks set state = 'no', answered_at = now() where asker = p_from and player = p_id;
+    return jsonb_build_object('ok', true);
+  end if;
+  update chat_dm_asks set state = 'yes', answered_at = now() where asker = p_from and player = p_id;
+  tid := 'dm:' || least(p_id, p_from) || ':' || greatest(p_id, p_from);
+  insert into chat_threads (id, kind, creator) values (tid, 'dm', p_from) on conflict (id) do nothing;
+  insert into chat_members (thread, player) values (tid, p_id), (tid, p_from) on conflict do nothing;
+  return jsonb_build_object('ok', true, 'thread', tid, 'to', jsonb_build_array(p_from));
+end $$;
+grant execute on function public.chat_dm_answer(text, text, text, boolean) to anon, authenticated;
+
+-- Requests waiting for you (chat_sync calls this): [{ from, name, handle, look }], 24 hours, never past a block.
+create or replace function public.chat_dm_asks_for(p_id text) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('from', a.asker, 'name', coalesce(p.name, 'Student'), 'handle', coalesce(p.handle, ''), 'house', coalesce(p.house, ''), 'look', coalesce(p.look, '{}'::jsonb)) order by a.at), '[]'::jsonb)
+  from chat_dm_asks a left join chat_players p on p.id = a.asker
+  where a.player = p_id and a.state = 'pending' and a.at > now() - interval '24 hours' and not chat_blocked(p_id, a.asker)
+$$;
+revoke all on function public.chat_dm_asks_for(text) from public;
+
+-- What became of your requests, told once: [{ id, name, thread }] for a yes, [{ id, name }] for "can't right now"
+-- (a no, or 24 hours without an answer: the asker cannot tell them apart).
+create or replace function public.chat_dm_answers_for(p_id text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare out jsonb;
+begin
+  with done as (
+    update chat_dm_asks a set told = true
+    where a.asker = p_id and not a.told and (a.state <> 'pending' or a.at <= now() - interval '24 hours')
+    returning a.player, a.state)
+  select coalesce(jsonb_agg(jsonb_build_object('id', d.player, 'name', coalesce(p.name, 'Student'), 'yes', d.state = 'yes')
+      || case when d.state = 'yes' then jsonb_build_object('thread', 'dm:' || least(p_id, d.player) || ':' || greatest(p_id, d.player)) else '{}'::jsonb end), '[]'::jsonb)
+    into out from done d left join chat_players p on p.id = d.player where not chat_blocked(p_id, d.player);
+  return out;
+end $$;
+revoke all on function public.chat_dm_answers_for(text) from public;
+
+-- What a player's card shows about them: { followers, friends (friends both ways), following (you follow them),
+-- mutual (you are friends both ways), online and seen (only when mutual), chat: open | asked | later | ask }.
+create or replace function public.chat_card(p_id text, p_secret text, p_who text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare p chat_players%rowtype; mu boolean; tid text; chat text := 'ask'; a chat_dm_asks%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into p from chat_players where id = p_who;
+  if not found or chat_blocked(p_id, p_who) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  mu := chat_mutual(p_id, p_who);
+  tid := 'dm:' || least(p_id, p_who) || ':' || greatest(p_id, p_who);
+  select * into a from chat_dm_asks where asker = p_id and player = p_who;
+  if mu or exists (select 1 from chat_threads where id = tid and last_id > 0)
+     or exists (select 1 from chat_dm_asks where ((asker = p_id and player = p_who) or (asker = p_who and player = p_id)) and state = 'yes') then chat := 'open';
+  elsif a.asker is not null and a.state = 'pending' and a.at > now() - interval '24 hours' then chat := 'asked';
+  elsif a.asker is not null and a.state = 'no' and a.answered_at > now() - interval '7 days' then chat := 'later';
+  end if;
+  return jsonb_build_object('ok', true,
+    'followers', (select count(*) from chat_follows where followed = p_who),
+    'following', exists (select 1 from chat_follows where follower = p_id and followed = p_who),
+    'friends', (select count(*) from chat_friends f where f.player = p_who and exists (select 1 from chat_friends g where g.player = f.friend and g.friend = p_who)),
+    'mutual', mu, 'chat', chat)
+    || case when mu then jsonb_build_object('online', p.seen_at > now() - interval '70 seconds', 'seen', p.seen_at) else '{}'::jsonb end;
+end $$;
+grant execute on function public.chat_card(text, text, text) to anon, authenticated;

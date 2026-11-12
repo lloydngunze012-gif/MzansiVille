@@ -2,6 +2,7 @@ import { getClient } from './net.js'
 import { BLOCK } from './engine/filter.js'
 import { myIdentity } from './presence.js'
 import LIST from '../data/campusville/handle_blocklist.json'
+import WORDS from '../data/campusville/handle_words.json'
 
 // @handles (owner, 6 Nov). Chosen in enrolment step 2, shown under the name on the card,
 // in chat bubbles and on the leaderboard. 3 to 20 characters: lowercase letters, numbers
@@ -45,16 +46,21 @@ export function nameBlocked(name) {
   return LIST.reserved.some((w) => bare.includes(w.replace(/_/g, '')))
 }
 
-// Handles to offer from a name: the name, with an underscore, a number, the year...
-export function candidates(name) {
-  const words = String(name || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9 ]/g, '').split(/\s+/).filter(Boolean)
-  const full = words.join('_') || 'student'
-  const first = words[0] || 'student'
-  const n = (k) => String(Math.floor(Math.random() * k))
-  // (each one fits in 20: the name is cut only to make room for what's added)
-  const fit = (stem, tail = '') => `${stem.slice(0, 20 - tail.length)}${tail}`
-  const list = [fit(full), fit(first, '_26'), fit(full, String(Number(n(90)) + 10)), fit(first, `_${Number(n(900)) + 100}`), fit(`the_${first}`), fit(first, `_${(words[1] || 'za').slice(0, 4)}`), fit(first, String(Number(n(9000)) + 1000)), fit(full, '_x')]
-  return [...new Set(list.map(tidyHandle))].filter((h) => checkRules(h).ok)
+// A Soft Life handle (owner, 12 Nov, job I): never made from the player's name (a real name is mandatory, and the
+// handle is what strangers see): a friendly adjective_noun with two digits from handle_words.json, e.g. sunny_kombi27.
+export function randomHandle() {
+  const pick = (list) => list[Math.floor(Math.random() * list.length)]
+  for (let i = 0; i < 40; i++) {
+    const h = `${pick(WORDS.adjectives)}_${pick(WORDS.nouns)}`.slice(0, 18) + String(Math.floor(Math.random() * 90) + 10)
+    if (checkRules(h).ok) return h
+  }
+  return `student_${Math.floor(Math.random() * 90000) + 10000}`.replace('student', 'sunny')
+}
+// Handles to offer (the name is not used: job I). Eight different ones.
+export function candidates() {
+  const out = new Set()
+  for (let i = 0; i < 40 && out.size < 8; i++) out.add(randomHandle())
+  return [...out]
 }
 
 // Which of these handles someone else already has: a Set, or null (not checked).
@@ -74,9 +80,9 @@ export async function handleStatus(handle) {
   return t.has(tidyHandle(handle)) ? 'taken' : 'free'
 }
 
-// Three free handles made from the name (the first three if nothing can be checked).
+// Three free handles (the first three if nothing can be checked). The name is not used (job I).
 export async function suggestFor(name, skip = '') {
-  const list = candidates(name).filter((h) => h !== tidyHandle(skip))
+  const list = candidates().filter((h) => h !== tidyHandle(skip))
   const t = await taken(list)
   return list.filter((h) => !t || !t.has(h)).slice(0, 3)
 }

@@ -134,3 +134,10 @@
 /* In the Caf and SunnyBay their own buttons (Leave, the cameras, Campus) float over #app just under the bar: while a
    drop-down is open the game layer comes up over them, the way it does for the menu (game.css). */
 body:has(.g-hud.tb .tb-pop) #app { z-index: 100; }
+
+/* Job I: the Main Gate's sheet points to SunnyBay (it said "nothing to do here"). */
+.g-gate { margin: 4px 0 10px; padding: 12px; border-radius: 14px; background: #f4efe4; color: #1c1915; }
+.g-gate p { margin: 0 0 10px; font-size: 15px; line-height: 1.35; }
+.g-gate-row { display: flex; gap: 8px; }
+.g-gate-row .g-go { flex: 1; min-height: 44px; }
+.g-gate-row .g-go.ghost { background: #fff; color: #1c1915; border: 2px solid #1c1915; }

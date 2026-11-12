@@ -144,7 +144,8 @@ export function isBigWin(delta, extra = false) {
 
 // fill: { lecturer, subject, place }. Returns the inner HTML of the card (without the button).
 // line: the card's own words (a city row's result line) instead of a random one; type: its tile, if not from the action.
-export function resultBody({ cardId, title, delta, action, fill = {}, esc, goalTicked = false, line = '', type: kind = '' }) {
+// eyebrow: the kind of activity in words, when the place knows better than the type (job I: the Arcade said "Shopping done").
+export function resultBody({ cardId, title, delta, action, fill = {}, esc, goalTicked = false, line = '', type: kind = '', eyebrow = '' }) {
   const type = TILE[kind] ? kind : typeOf(action)
   const big = isBigWin(delta, goalTicked)
   const gains = ORDER.filter(([k]) => delta[k] > 0)
@@ -165,7 +166,7 @@ export function resultBody({ cardId, title, delta, action, fill = {}, esc, goalT
     html: `${confetti}
     <header class="rc-head">
       <span class="rc-tile">${TILE[type]}</span>
-      <div><p class="g-kind rc-eyebrow">${big ? 'Big win' : EYEBROW[type]}</p><h2>${esc(title)}</h2></div>
+      <div><p class="g-kind rc-eyebrow">${big ? 'Big win' : esc(eyebrow || EYEBROW[type])}</p><h2>${esc(title)}</h2></div>
     </header>
     <p class="rc-line">${esc(line || lineFor(type, cardId, fill))}</p>
     ${gainHtml ? `<div class="rc-gains">${gainHtml}</div>` : ''}

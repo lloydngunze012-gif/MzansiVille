@@ -46,19 +46,10 @@ test('two phones in SunnyBay: the mini card, Wave, Race to the pier, and the rin
   await expect(b.page.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
   await b.page.screenshot({ path: 'docs/sprints/meeting/mini-card-city-390.png' })
 
-  // Item 2: Wave reaches A, with a Wave back button.
-  await b.page.locator('[data-pc="wave"]').tap()
-  await expect(a.page.locator('#toast-action')).toContainText('waved at you', { timeout: 10000 })
-  await expect(a.page.locator('#toast-action button')).toContainText('Wave back')
-  await a.page.screenshot({ path: 'docs/sprints/meeting/wave-toast-390.png' })
-
-  // Item 6: Race to the pier. B invites A (re-open the card: Wave closed it).
-  opened = false
-  for (let i = 0; i < 6 && !opened; i++) {
-    await tapOther(b, a)
-    await b.page.waitForTimeout(900)
-    opened = await b.page.locator('[data-pc="race"]').isVisible().catch(() => false)
-  }
+  // (job I, 12 Nov: no Wave on the card any more: Chat and Follow, the rest in ⋯)
+  await expect(b.page.locator('[data-pc="wave"]')).toHaveCount(0)
+  // Item 6: Race to the pier, from the card's ⋯ menu in the city. B invites A.
+  await b.page.locator('[data-pc="more"]').tap()
   await b.page.locator('[data-pc="race"]').tap()
   await expect(a.page.locator('.tg-invite')).toBeVisible({ timeout: 10000 })
   await a.page.screenshot({ path: 'docs/sprints/meeting/race-invite-390.png' })

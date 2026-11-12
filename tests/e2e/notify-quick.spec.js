@@ -64,6 +64,8 @@ test('N1 asked at a good moment, Not now, then on from the menu; the server keep
   await expect(page.locator('.fm-card[data-fm="push"]')).toHaveCount(0)
   expect(await page.evaluate(() => window.__asked)).toBe(0)
   // Bonga messages: the first reply in a DM is the moment, and it is our card first
+  // (job I: a chat is a request; friends both ways skip it)
+  await server.call('chat_friend', { ...BONGA, p_other: mine.p_id, p_on: true }); await server.call('chat_friend', { ...mine, p_other: BONGA.p_id, p_on: true })
   const dm = (await server.call('chat_dm', { ...BONGA, p_other: mine.p_id })).body.thread
   await server.call('chat_send', { ...BONGA, p_thread: dm, p_body: 'Howzit! You at the Caf later?' })
   await syncNow(page)
@@ -125,6 +127,8 @@ test('N2 an iPhone in Safari: Yes shows the Add to Home Screen steps first', asy
   await expect.poll(async () => (await page.evaluate(() => window.mzansiThreads())).status, { timeout: 30000 }).toBe('ready')
   const mine = await me(page)
   expect((await notify(page)).state).toBe('ios')
+  // (job I: a chat is a request; friends both ways skip it)
+  await server.call('chat_friend', { ...BONGA, p_other: mine.p_id, p_on: true }); await server.call('chat_friend', { ...mine, p_other: BONGA.p_id, p_on: true })
   const dm = (await server.call('chat_dm', { ...BONGA, p_other: mine.p_id })).body.thread
   await server.call('chat_send', { ...BONGA, p_thread: dm, p_body: 'Sharp sharp' })
   await syncNow(page)
@@ -177,7 +181,9 @@ test('N3 the town on the opening page is saved; a newcomer from your town is wel
   await expect(toast).toContainText('Emma from Durban just enrolled at UMzansi. Show her around.')
   await shot(page, 'welcome-toast-390')
   await toast.locator('[data-jt="hi"]').tap()
-  await expect.poll(async () => (await page.evaluate(() => window.mzansiThreads())).open, { timeout: 15000 }).toMatch(/^dm:/)
+  // (job I: a chat is a request: Say hi asks Emma, and her phone gets "wants to chat")
+  await expect.poll(() => page.evaluate(() => (window.mzansiToasts || []).some((t) => t.startsWith('Chat request sent to Emma'))), { timeout: 15000 }).toBe(true)
+  expect((await server.call('chat_sync', EMMA)).body.dm_asks.map((a) => a.name)).toContain('Ayanda')
   // told once
   await syncNow(page)
   await page.waitForTimeout(1000)
@@ -190,6 +196,8 @@ test('N4 a tapped notification opens the game straight into its thread', async (
   const errors = await atGate(page, { query: Q('d'), name: 'Thando' })
   await expect.poll(async () => (await page.evaluate(() => window.mzansiThreads())).status, { timeout: 30000 }).toBe('ready')
   const mine = await me(page)
+  // (job I: a chat is a request; friends both ways skip it)
+  await server.call('chat_friend', { ...BONGA, p_other: mine.p_id, p_on: true }); await server.call('chat_friend', { ...mine, p_other: BONGA.p_id, p_on: true })
   const dm = (await server.call('chat_dm', { ...BONGA, p_other: mine.p_id })).body.thread
   await server.call('chat_send', { ...BONGA, p_thread: dm, p_body: 'Tap me' })
   // what public/sw.js opens when the game is not running: /?thread=<id>#/play

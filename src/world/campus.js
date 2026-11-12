@@ -6,6 +6,7 @@ import { buildGrid } from './nav.js'
 import { dressPlaces } from './dress.js'
 import { applyBuildingNight, buildSpecial, dressGrocer, setWindowBuilder, upgradeBuilding } from './buildings.js'
 import { addSurroundings } from './surroundings.js'
+import { signMesh } from './text.js'
 import { loadGlb, modelManifest, modelUrl } from './models.js'
 
 const pathMaterial = new THREE.MeshStandardMaterial({ color: 0xe4d2b0, roughness: 1 })
@@ -252,6 +253,38 @@ function mulberry32(seed) {
   }
 }
 
+// Job I (owner: the gate said "nothing to do", and nothing on campus said SunnyBay was out there): yellow
+// fingerposts on the way to the Main Gate, by the Quad and just inside the gate. Each stands clear of every building.
+function addSignposts(group, layout) {
+  const gate = layout.buildings.find((b) => b.id === 'gate')
+  if (!gate) return
+  const gx = gate.minX + gate.w / 2
+  const clear = (x, z) => !layout.buildings.some((b) => x > b.minX - 1.2 && x < b.minX + b.w + 1.2 && z > b.minZ - 1.2 && z < b.minZ + b.d + 1.2)
+  const spots = [[gx + 4, gate.minZ - 5], [4.5, 16]]
+  for (const [x0, z] of spots) {
+    let x = x0
+    for (let k = 0; k < 12 && !clear(x, z); k++) x += k % 2 ? -2 * k : 2 * k
+    if (!clear(x, z)) continue
+    const canvas = document.createElement('canvas')
+    canvas.width = 512
+    canvas.height = 160
+    const g = canvas.getContext('2d')
+    g.fillStyle = '#f0c400'; g.fillRect(0, 0, 512, 160)
+    g.fillStyle = '#1c1915'; g.textAlign = 'center'; g.textBaseline = 'middle'
+    g.font = 'bold 60px sans-serif'; g.fillText('SUNNYBAY  \u2193', 256, 58, 490)
+    g.font = 'bold 34px sans-serif'; g.fillText('Main Gate \u00b7 taxis \u00b7 5 min', 256, 122, 490)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    const sign = signMesh(new THREE.PlaneGeometry(2.4, 0.75), tex)
+    sign.position.set(x, 2.35, z)
+    sign.name = 'signpost-sunnybay'
+    group.add(sign)
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.0, 0.12), new THREE.MeshStandardMaterial({ color: 0x2f3338, roughness: 0.6 }))
+    post.position.set(x, 1.0, z)
+    group.add(post)
+  }
+}
+
 export function createCampus(district, homeId) {
   const layout = buildingLayout(district)
   const group = new THREE.Group()
@@ -281,6 +314,7 @@ export function createCampus(district, homeId) {
   group.add(buildings)
   const dressing = dressPlaces(layout, floor)
   group.add(dressing.group)
+  addSignposts(group, layout)
   addTrees(group, { ...layout, buildings: layout.buildings.concat(dressing.obstacles.map((o) => ({ ...o }))), plazas: [{ x: 0, z: 0, r: 13 }] })
 
   const grid = buildGrid(layout.obstacles.concat(dressing.obstacles))

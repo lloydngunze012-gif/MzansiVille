@@ -71,12 +71,12 @@ import { payDrive } from './city/plan.js'
 import { adsFor } from './city/billboards.js'
 import { compactCard, loadCard, reportPlayer, saveMyCard } from './cards.js'
 import { saidBy } from './chat.js'
-import { addFriend, blockInChat, removeFriend, setTown, startThreads, threadOf } from './threads.js'
+import { addFriend, blockInChat, cardInfo, removeFriend, setTown, startThreads, threadOf } from './threads.js'
 import { mountThreads, openChat, openDm } from './ui/threads.js'
 import { ENROL_STEPS, draftCard } from './ui/enrol.js'
 import './theme.js'
 import { watchStats, wireSfx } from './sfx.js'
-import { candidates, checkRules, claimHandle, handleStatus, nameBlocked, nextChange, suggestFor, tidyHandle } from './handles.js'
+import { candidates, checkRules, claimHandle, handleStatus, nameBlocked, nextChange, randomHandle, suggestFor, tidyHandle } from './handles.js'
 import { miniCardHtml, playerCardHtml } from './ui/card.js'
 import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
@@ -724,7 +724,7 @@ window.addEventListener('mzansi-enter-city', () => {
 // From the campus map's SunnyBay view: a way to a place in the city.
 window.addEventListener('mzansi-city-go', (event) => {
   const { way, target } = event.detail || {}
-  if (!save.run || cityLive || !target) return
+  if (!save.run || cityLive || (!target && way !== 'out')) return // (job I: 'out' = just walk out of the gate)
   if (way === 'drive') {
     const res = payDrive(save.run, target)
     if (!res.ok) { toast(res.why === 'short' ? `Petrol is R${res.fare}. You have R${res.money}.` : 'You need a licence and a car to drive.'); return }
@@ -787,7 +787,7 @@ function paint() {
   // (Loops: Mama Liz's menu starts with today's special, and your paid plate when one is waiting)
   if (save.run && ui.talk?.id === 'mama_liz') dressMenu(MENUS.mama_liz, save.run)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
-  if (save.run?.character) { joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) }
+  if (save.run?.character) { ensureHandle(); joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) }
   const shot = new URLSearchParams(location.search).get('shot')
   // An old save was never asked where it is from (owner, 9 Nov): the "Where are you from?" step, once,
   // on the way into the game (South Africa pre-selected; a tap on Continue keeps it).
@@ -1505,8 +1505,8 @@ function quickPick(i) {
   if (!s) return
   draft.avatar = { ...s.avatar }
   draft.preset = s.id
-  // (no handle guess before they've typed a name: "@student" would be exactly the fake-name look we're avoiding)
-  if (!draft.handleEdited) draft.handle = draft.name.trim() ? candidates(draft.name)[0] || '' : ''
+  // (job I: a Soft Life handle, never made from the name; drawn once and kept while the page is open)
+  if (!draft.handleEdited && !draft.handle) draft.handle = randomHandle()
 }
 // (V2.1: the first in the row, Emma, is the one picked when the page opens)
 function quickPreselect() { quickPick(0) }
@@ -1522,14 +1522,17 @@ async function quickPlay() {
   if (nameBlocked(name)) { draft.error = 'That name looks reserved. Pick another.'; paint(); return }
   draft.error = ''
   funnel('play_tapped')
-  // The handle: the first free one from the name. A slow or missing check never holds the player up (3 s, then as it is).
+  // The handle (job I): the Soft Life handle shown on the page, never made from the name, else the next free one.
+  // A slow or missing check never holds the player up (3 s, then as it is); an unchecked one is claimed later (ensureHandle).
   const within = (p, fallback) => Promise.race([p, new Promise((r) => setTimeout(() => r(fallback), 3000))])
-  const free = await within(suggestFor(name), [])
-  const options = [...new Set([...free, ...candidates(name), `${tidyHandle(name).slice(0, 14) || 'student'}_${Math.floor(Math.random() * 9000) + 1000}`])].filter((h) => checkRules(h).ok)
-  let handle = options[0] || `student_${Math.floor(Math.random() * 9000) + 1000}`
+  const shown = tidyHandle(draft.handle)
+  const free = await within(suggestFor(''), [])
+  const options = [...new Set([shown, ...free, ...candidates()])].filter((h) => h && checkRules(h).ok)
+  let handle = options[0] || randomHandle()
+  let handleClaimed = false
   for (const h of options.slice(0, 4)) {
     const claim = await within(claimHandle(h), 'unchecked')
-    if (claim === 'ok' || claim === 'unchecked') { handle = h; break }
+    if (claim === 'ok' || claim === 'unchecked') { handle = h; handleClaimed = claim === 'ok'; break }
   }
   const houses = district.houses || []
   const house = houses[Math.floor(Math.random() * houses.length)]
@@ -1545,10 +1548,35 @@ async function quickPlay() {
   save.run.quick = true // (finish your student card, and get R200, comes later: launch.js)
   save.run.character.courseAuto = true // (createRun keeps only the fields it knows: the drawn course is not yours until you pick one)
   save.run.character.town = draft.town || '' // (Notifications: the town under the province, for the local welcome)
+  save.run.character.handleClaimed = handleClaimed // (job I: unchecked at Play: ensureHandle claims it once the server answers)
   draft = emptyDraft()
   persist()
   saveMyCard(save.run)
   go('play')
+}
+
+// Job I: every @handle is unique (case does not count: handles are lowercase). One claimed at Play is done; one that
+// could not be checked then (offline, slow, before the Handles SQL) is claimed once a session; taken or no longer
+// allowed (an older handle made from a name that now reads as official, say): a new Soft Life handle.
+let handleTried = false
+async function ensureHandle() {
+  const c = save.run?.character
+  if (!c || handleTried || c.handleClaimed) return
+  handleTried = true
+  let h = tidyHandle(c.handle)
+  for (let i = 0; i < 4; i++) {
+    if (!checkRules(h).ok) { h = randomHandle(); continue }
+    const claim = await claimHandle(h)
+    if (claim === 'unchecked' || claim === 'cooldown' || claim === 'not-yours') return // (try again next session)
+    if (claim === 'ok') {
+      if (h !== tidyHandle(c.handle)) { c.handle = h; c.handleChangedAt = new Date().toISOString(); toast(`Your @handle is @${h}.`) }
+      c.handleClaimed = true
+      persist()
+      saveMyCard(save.run)
+      return
+    }
+    h = randomHandle()
+  }
 }
 
 // "Finish your student card": the full look editor, vibe and card (the old enrol steps) on the player's own student.
@@ -1736,14 +1764,14 @@ app.addEventListener('input', (event) => {
   if (event.target.id === 'name') {
     draft.name = event.target.value
     draft.nameTyped = true
-    // (the handle follows your name until you type your own)
-    if (!draft.handleEdited && app.querySelector('.en #handle')) {
-      draft.handle = candidates(draft.name)[0] || ''
+    // (job I: the handle is never made from the name: one Soft Life handle is drawn and kept until you type your own)
+    if (!draft.handleEdited && !draft.handle && app.querySelector('.en #handle')) {
+      draft.handle = randomHandle()
       app.querySelector('.en #handle').value = draft.handle
     }
-    // (the quick start shows the @handle it will make from the name)
+    // (the quick start shows your @handle once you have typed a name)
     const hint = app.querySelector('[data-qs-handle]')
-    if (hint) { if (!draft.handleEdited) draft.handle = candidates(draft.name)[0] || ''; hint.innerHTML = draft.handle ? `Your @handle: <b>@${escHtml(tidyHandle(draft.handle))}</b>` : '' }
+    if (hint) { if (!draft.handleEdited && !draft.handle) draft.handle = randomHandle(); hint.innerHTML = draft.name.trim() && draft.handle ? `Your @handle: <b>@${escHtml(tidyHandle(draft.handle))}</b>` : '' }
     enrolCardText()
   }
   if (event.target.id === 'handle' && app.querySelector('.en #handle')) {
@@ -1865,6 +1893,14 @@ app.addEventListener('click', async (event) => {
     else enterCity({ kind: 'gate' })
     return
   }
+  // (job I) Request a ride: in SunnyBay a taxi comes to you; on campus, out of the gate to the taxi stop
+  if (act === 'ride-request') {
+    ui.gear = false
+    paint()
+    if (cityLive) window.dispatchEvent(new CustomEvent('mzansi-city-request'))
+    else window.dispatchEvent(new CustomEvent('mzansi-city-go', { detail: { way: 'stop', target: 'gate' } }))
+    return
+  }
   if (act === 'lp-feedback') { ui.gear = false; paint(); openFeedback('menu'); return }
   if (act === 'start') {
     draft = emptyDraft()
@@ -1963,6 +1999,13 @@ app.addEventListener('click', async (event) => {
     go(button.dataset.go)
     return
   }
+  // (job I) the Main Gate's sheet: a taxi from the gate stop (out of the gate, then its card asks where to), or walk out
+  if (act === 'gate-taxi' || act === 'gate-walk') {
+    ui.sheet = null
+    if (route().name === 'place') go('play')
+    window.dispatchEvent(new CustomEvent('mzansi-city-go', { detail: act === 'gate-taxi' ? { way: 'stop', target: 'gate' } : { way: 'out', target: '' } }))
+    return
+  }
   if (act === 'open-map') {
     window.dispatchEvent(new CustomEvent('mzansi-open-map'))
     return
@@ -2050,13 +2093,13 @@ app.addEventListener('click', async (event) => {
       if (filterText(name).blocked) { draft.error = 'Pick another name.'; paint(); return }
       if (nameBlocked(name)) { draft.error = 'That name looks reserved. Pick another.'; paint(); return }
       // The @handle: the rules here, then free on campus (Supabase); taken: three free ones.
-      draft.handle = tidyHandle(draft.handle) || (skip || !draft.handleEdited ? (await suggestFor(name))[0] || '' : '')
+      draft.handle = tidyHandle(draft.handle) || (skip || !draft.handleEdited ? (await suggestFor(''))[0] || '' : '')
       const rules = checkRules(draft.handle)
-      if (!rules.ok) { draft.error = rules.why; draft.handleSuggest = await suggestFor(name, draft.handle); paint(); return }
+      if (!rules.ok) { draft.error = rules.why; draft.handleSuggest = await suggestFor('', draft.handle); paint(); return }
       const status = await handleStatus(draft.handle)
       if (status === 'taken') {
-        if (skip) draft.handle = (await suggestFor(name, draft.handle))[0] || draft.handle
-        else { draft.error = `@${draft.handle} is taken.`; draft.handleSuggest = await suggestFor(name, draft.handle); paint(); return }
+        if (skip) draft.handle = (await suggestFor('', draft.handle))[0] || draft.handle
+        else { draft.error = `@${draft.handle} is taken.`; draft.handleSuggest = await suggestFor('', draft.handle); paint(); return }
       }
       draft.handleSuggest = []
       draft.handleNote = status === 'free' ? `@${draft.handle} is yours if you want it.` : ''
@@ -2105,7 +2148,7 @@ app.addEventListener('click', async (event) => {
       if (claim === 'taken' || claim === 'invalid') {
         draft.step = 'who'
         draft.error = claim === 'taken' ? `@${tidyHandle(draft.handle)} was just taken.` : checkRules(draft.handle).why
-        draft.handleSuggest = await suggestFor(draft.name, draft.handle)
+        draft.handleSuggest = await suggestFor('', draft.handle)
         paint()
         return
       }
@@ -2133,7 +2176,7 @@ app.addEventListener('click', async (event) => {
       if ((save.run.character.town || '') !== character.town) setTown(character.town)
       save.run.character = { ...save.run.character, ...character }
       // A quick-start student who finishes the full card: R200 once, and the badge "Card made".
-      const first = Boolean(save.run.quick && !save.run.cardDone)
+      const first = Boolean((save.run.quick || save.run.cardNudged) && !save.run.cardDone) // (job I: an older card that was asked once too)
       if (first) {
         save.run.cardDone = true
         if (!save.run.cardPaid) {
@@ -2703,6 +2746,7 @@ let sheetMessage = '' // opened from a line in the chat: that line goes with a r
 let sheetKeep = false // opened from the chat: closing it leaves the chat (and its camera) as it was
 let sheetMode = 'mini' // 'mini' | 'full'
 let sheetMore = false // the mini card's ⋯ menu
+let sheetInfo = null // (job I: what the server says about them: followers, friends, following, chat, online, seen)
 const escHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 function sheetEl() {
   let el = document.querySelector('.pc-sheet-wrap')
@@ -2723,12 +2767,15 @@ function openPlayerCard(id, opts = {}) {
   sheetKeep = Boolean(opts.keep)
   sheetMode = opts.full ? 'full' : 'mini'
   sheetMore = false
+  sheetInfo = null
   const el = sheetEl()
   el.innerHTML = sheetMode === 'full' ? FULL_HTML : MINI_HTML
   el.hidden = false
   el.dataset.opened = String(Date.now())
   requestAnimationFrame(() => el.classList.add('on'))
   loadCard(id, (card) => { if (sheetFor === id) { sheetCard = card; renderSheet() } })
+  // (job I: followers, friends, Follow's state and whether Chat is a request; online / last seen for friends both ways)
+  cardInfo(id).then((info) => { if (sheetFor === id && info) { sheetInfo = info; if (sheetCard) renderSheet() } })
   sendPoke(id, 'look') // (they see nothing; a quick-start student is then asked to finish their card: launch.js)
 }
 // keep: the conversation goes on (Say hi opens the chat); otherwise it ends and the
@@ -2748,7 +2795,7 @@ function renderSheet(reporting = false) {
     if (!body || !sheetCard) return
     const house = districtNow().houses?.find((h) => h.name === canonicalHouse(sheetCard.house)) || null
     const friend = (save.run?.friends || []).some((f) => f.id === sheetFor)
-    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive && !document.body.dataset.cityPlace, moreOpen: sheetMore, id: sheetFor }); paintFollowers(body); return }
+    if (!reporting) { body.innerHTML = miniCardHtml(sheetCard, house, { friend, race: cityLive && !document.body.dataset.cityPlace, moreOpen: sheetMore, id: sheetFor, info: sheetInfo }); if (!sheetInfo) paintFollowers(body); return }
     const first = escHtml(String(sheetCard.name || 'them').split(' ')[0])
     const reasons = ['Rude or hateful', 'A bad name or bio', 'Spam or a scam', 'Something else']
     body.innerHTML = `<div class="pc-report"><p><b>Report ${first}?</b> Pick what is wrong. You won’t see them on campus after this.${sheetMessage ? `<br><small>Their message goes with it: “${escHtml(sheetMessage)}”</small>` : ''}</p>
@@ -2768,11 +2815,10 @@ function renderSheet(reporting = false) {
       ${reasons.map((r) => `<button type="button" data-pc="report-${escHtml(r)}">${escHtml(r)}</button>`).join('')}
       <button type="button" class="ghost" data-pc="report-cancel">Cancel</button></div>`
     : `<div class="pc-sheet-acts">
-      <button type="button" data-pc="wave">\u{1F44B} Wave</button>
-      <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
+      <button type="button" data-pc="dm"${sheetInfo?.chat === 'asked' ? ' disabled' : ''}>${sheetInfo?.chat === 'asked' ? '✓ Request sent' : '\u{1F4AC} Chat'}</button>
+      <button type="button" data-pc="follow">${sheetInfo?.following ? '✓ Following' : '＋ Follow'}</button>
       <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
       <button type="button" data-pc="board">\u{1F4CB} Board</button>
-      <button type="button" data-pc="follow">＋ Follow</button>
       <button type="button" data-pc="group">\u{1F465} Add to a group</button>
       <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
       <button type="button" class="bad" data-pc="block">\u{1F6AB} Block</button>
@@ -2816,10 +2862,14 @@ function onSheetClick(event) {
     return
   }
   // Message (Chat sprint): the DM with them opens; the card goes, the world stays walkable.
+  // (job I: not friends both ways and no chat yet, it is a request: the card stays and says "Request sent")
   if (k === 'dm') {
     const who = { name: sheetCard?.name, handle: sheetCard?.handle, look: sheetCard?.look, house: sheetCard?.house }
-    closePlayerCard()
-    openDm(id, who)
+    if (sheetInfo?.chat === 'open') { closePlayerCard(); openDm(id, who); return }
+    openDm(id, who).then((res) => {
+      if (res?.asked && sheetFor === id) { sheetInfo = { ...(sheetInfo || {}), chat: 'asked' }; renderSheet(); return }
+      if (res?.ok && sheetFor === id) closePlayerCard()
+    })
     return
   }
   // Block: their body, bubbles, lines in your chat and card are gone for you.
@@ -2837,7 +2887,13 @@ function onSheetClick(event) {
     return
   }
   if (k === 'follow') {
-    followPlayer(id, true).then((r) => { toast(r.ok ? `You follow ${name} now. Their posts are in your Feed.` : r.note || 'Couldn’t follow them right now.'); if (r.ok) paintFollowers(document.querySelector('.pc-sheet-wrap') || document) })
+    const on = !sheetInfo?.following
+    followPlayer(id, on).then((r) => {
+      toast(r.ok ? (on ? `You follow ${name} now. Their posts are in your Feed.` : `You unfollowed ${name}.`) : r.note || 'Couldn’t follow them right now.')
+      if (!r.ok) return
+      if (sheetInfo) { sheetInfo = { ...sheetInfo, following: on, followers: Number.isFinite(r.followers) ? r.followers : Math.max(0, (Number(sheetInfo.followers) || 0) + (on ? 1 : -1)) }; if (sheetFor === id) renderSheet() }
+      else paintFollowers(document.querySelector('.pc-sheet-wrap') || document)
+    })
     return
   }
   // Add to a group (Social A): the chat sheet asks which of your groups.

@@ -872,6 +872,7 @@ export async function buildCity(opts = {}) {
   }
 
   // ---------- taxi stops: a shelter, a sign, a minibus taxi waiting ----------
+  const stopBoards = {} // (job I: stop id -> the next-taxi board)
   for (const s of STOPS) {
     if (far) continue
     if (s.id !== 'rank') {
@@ -880,6 +881,10 @@ export async function buildCity(opts = {}) {
       for (const t of [-3.7, 3.7]) { box(0.16, 3, 0.16, s.x + t, 1.5, s.z + 2.5, '#2f3338'); solid(s.x + t, s.z + 2.5, 0.4, 0.4) }
       box(6, 0.12, 0.6, s.x, 0.5, s.z + 2.1, '#8a5a3a'); solid(s.x, s.z + 2.1, 6, 0.7)
       sign(atlas.cell(256, 64, board('#f0c400', '#22143b', 'TAXI', s.name.toUpperCase())), 3.6, 0.9, s.x, 3.6, s.z + 1.4, 0)
+      // (job I) the times board on the shelter's post: "NEXT TAXI 07:42", redrawn by city.js as the clock moves
+      const times = atlas.cell(192, 96, board('#1c1915', '#f0c400', 'NEXT TAXI', '--:--'))
+      sign(times, 1.5, 0.75, s.x + 3.7, 2.1, s.z + 2.25, 0)
+      stopBoards[s.id] = { cell: times, paint: (at) => times.redraw(board('#1c1915', '#f0c400', 'NEXT TAXI', at)) }
     }
     put(van, s.van[0], s.van[1], { scale: 1.75, rot: s.van[2] })
   }
@@ -892,12 +897,12 @@ export async function buildCity(opts = {}) {
     }
     border('Town centre', 7, 138, 0); border('Suburbs', 7, -138, 0); border('Beachfront', 147, 7, Math.PI / 2); border('Beachfront', 147, 122, Math.PI / 2)
     border('Township', -185, 7.5, Math.PI / 2); border('Industrial', -185, 222.5, Math.PI / 2); border('Township', -252, 96, 0); border('Industrial', -252, 104, 0)
-    border('Campus', -159, 7.5, Math.PI / 2); border('Town centre', -150, 222.5, Math.PI / 2); border('Suburbs', -150, -122, Math.PI / 2)
-    // "Welcome to SunnyBay": where the campus road meets the city the road opens into a forecourt, and the sign
-    // stands on an island in the middle of it, low enough that it never hides you from the camera
-    // (a phone held upright sees only a few metres either side of the road's middle).
-    const wx = 0
-    const wz = 119.6
+    border('Campus', -163, 7.5, Math.PI / 2); border('Town centre', -150, 222.5, Math.PI / 2); border('Suburbs', -150, -122, Math.PI / 2)
+    // "Welcome to SunnyBay": where the campus road meets the city the road opens into a forecourt; the sign stands
+    // BESIDE it on the east kerb, low enough that it never hides you from the camera. (Job I: it stood on an island in
+    // the middle of Varsity Road and the cars drove through it.)
+    const wx = 15.5
+    const wz = 121
     flat(-11, RING_OUT - 1, 11, 126, 0.031, ROAD)
     flat(-4.6, wz - 1.3, 4.6, wz + 1.3, 0.05, '#d9cfb6')
     box(8.4, 0.5, 1.5, wx, 0.25, wz, '#8f8a80')
@@ -925,7 +930,9 @@ export async function buildCity(opts = {}) {
       for (let t = 14; t < len - 8; t += 44) {
         const x = alongX ? x0 + t : x1 + 1.4
         const z = alongX ? z1 + 1.4 : z0 + t
-        if (!solids.some((s) => x > s.minX - 0.6 && x < s.maxX + 0.6 && z > s.minZ - 0.6 && z < s.maxZ + 0.6) && !(x > rv[0] - 4 && x < rv[2] + 4) && Math.hypot(x, z) > RING_OUT + 1) { lamp(x, z); solid(x, z, 0.3, 0.3) }
+        // (job I: never on a lane: a lamp beside one road could stand in the middle of the road crossing it)
+        const onRoad = CITY.roads.some((o) => x > o.rect[0] - 0.8 && x < o.rect[2] + 0.8 && z > o.rect[1] - 0.8 && z < o.rect[3] + 0.8)
+        if (!onRoad && !solids.some((s) => x > s.minX - 0.6 && x < s.maxX + 0.6 && z > s.minZ - 0.6 && z < s.maxZ + 0.6) && !(x > rv[0] - 4 && x < rv[2] + 4) && Math.hypot(x, z) > RING_OUT + 1) { lamp(x, z); solid(x, z, 0.3, 0.3) }
       }
     }
   }
@@ -981,7 +988,7 @@ export async function buildCity(opts = {}) {
   }
 
   return {
-    group, solids, doors, boards, tris, cells,
+    group, solids, doors, boards, tris, cells, stopBoards,
     // n: 0 day, 1 night
     applyNight(n) {
       glassMat.emissiveIntensity = n * 0.9

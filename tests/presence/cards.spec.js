@@ -122,14 +122,14 @@ test('C2 tap another player: their card slides up; Wave, Add friend, Report', as
   await tapIn(page, B.locator('.pc-sheet [data-pc="close"]').first())
   await expect(B.locator('.pc-sheet-wrap.on')).toHaveCount(0, { timeout: 3000 })
 
-  // Wave: A hears it, with a "Wave back" action toast (item 2).
+  // (job I, 12 Nov: the card has two buttons, Chat and Follow; Wave, Say hi and the envelope are gone)
   await page.waitForTimeout(600)
   await tapA(page, B, BX)
   await expect(B.locator('.pc-mini-body .pc-mini-name')).toBeVisible({ timeout: 5000 })
-  await tapIn(page, B.locator('[data-pc="wave"]'))
-  await expect(A.locator('#toast-action')).toContainText('Kabelo waved at you', { timeout: 8000 })
-  await expect(A.locator('#toast-action button')).toContainText('Wave back')
-  await page.screenshot({ path: `${OUT}/C2-wave.png` })
+  await expect(B.locator('.pc-mini-acts > button')).toHaveText(['\u{1F4AC} Chat', '＋ Follow'])
+  await expect(B.locator('[data-pc="wave"], [data-pc="hi"]')).toHaveCount(0)
+  await page.screenshot({ path: `${OUT}/C2-card.png` })
+  await tapIn(page, B.locator('.pc-mini-x'))
   // Add friend (behind the ⋯ menu): A hears it; the menu's button says Friends.
   await page.waitForTimeout(600)
   await tapA(page, B, BX)

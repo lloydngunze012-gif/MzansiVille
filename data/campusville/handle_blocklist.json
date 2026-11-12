@@ -1,5 +1,5 @@
 {
-  "note": "Handles may not contain any of these (impersonation of staff, the game or the university). Slurs are blocked too, from src/engine/filter.js. Matched anywhere in the handle.",
+  "note": "Handles may not contain any of these (impersonation of staff, the game or the university). Slurs are blocked too, from src/engine/filter.js. Matched anywhere in the handle. Social media names are refused too (owner, 12 Nov, job I: Soft Life handles only).",
   "reserved": [
     "admin",
     "administrator",
@@ -18,7 +18,27 @@
     "lecturer",
     "registrar",
     "nsfas",
-    "src_president"
+    "src_president",
+    "instagram",
+    "tiktok",
+    "snapchat",
+    "facebook",
+    "twitter",
+    "whatsapp",
+    "youtube",
+    "onlyfans",
+    "telegram"
   ],
-  "exact": ["mod", "mods", "root", "help", "team", "null", "undefined", "you", "player", "student"]
+  "exact": [
+    "mod",
+    "mods",
+    "root",
+    "help",
+    "team",
+    "null",
+    "undefined",
+    "you",
+    "player",
+    "student"
+  ]
 }

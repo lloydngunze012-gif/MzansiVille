@@ -1,0 +1,21 @@
+{
+  "note": "Placeholders (owner, 12 Nov, job I) until Cursor's words land from docs/world-designer/alive.md: Cursor owns this file. greet: what a person on the street or at an open-ground place says when you tap them. driver: what a driver calls out after stopping and hooting for you (nothing offensive, never about the player's looks). Short: one line each.",
+  "greet": [
+    "Howzit!",
+    "Morning! Lekker day, hey?",
+    "Sharp sharp.",
+    "Hey! You new around here?",
+    "Hi! Have you tried Lifecup yet?",
+    "Shame, it's hot today.",
+    "Hello! Going to the beach later?",
+    "Hey hey. Nice to see a new face."
+  ],
+  "driver": [
+    "Eish, watch the road, friend!",
+    "Pavement's that way, hey!",
+    "Careful there!",
+    "Look left, look right!",
+    "Ag no man, the zebra is right there!",
+    "Hey! Cars use this bit too."
+  ]
+}

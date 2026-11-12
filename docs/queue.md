@@ -4,65 +4,9 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 and 12 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running, and the PLAYER PASS (CLAUDE.md, top): play the changed areas as a new player at 390 px for 10 game minutes before pushing, with an "As a player" section in the report.
 
-Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
+Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I is done (12 Nov), so next is **K**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
 
-Done already: Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
-
----
-
-=== JOB I · Opus, High · FIRST-PLAY FIXES (owner's play test, 12 Nov) === (IN PROGRESS, 12 Nov, Claude Code)
-Bugs
-1. Tapping an NPC in SunnyBay made it vanish.
-2. NPC feet sink into the ground; NPCs bunch up and stand silent at the
-   bowling alley and the beach. Every NPC either does its place's thing
-   or moves on.
-3. You can walk through cars: player and cars collide. Cars still never
-   hit you: they stop, hoot, and the driver shouts a short line (words in
-   data/ for Cursor, nothing offensive).
-4. The SunnyBay sign stands in the road and cars drive through it. Move
-   it beside the road; no prop on any lane.
-5. Keyboard movement drifts diagonally. Keys go straight in the pressed
-   direction, relative to the camera (the mouse is fine as it is).
-6. The bank must show the player's current money.
-7. The Arcade card says "Shopping done". Each place's result card names
-   the right kind of activity.
-8. Two players arriving together landed on the same spot from identical
-   cars, the same mum in the same clothes. Arrivals queue behind each
-   other at the drop-off; drivers vary (mum, dad, aunt, uncle, gogo,
-   older sibling) with varied outfits and cars.
-9. Neither the owner's phone nor PC asked him to complete the student
-   card. New players get the card flow; a returning player with an empty
-   card gets one gentle "Finish your student card" prompt.
-10. Launch reset: a script the owner runs before launch that clears test
-    players, messages, groups and posts. The Quad shows only the last 24
-    hours to anyone.
-Social
-11. Tapping a player opens their full card on the light blue chat
-    background (not dark): face, name, @handle, house, course, year,
-    followers count, friends count. Two buttons only: Chat and Follow.
-    Remove Wave, Say hi and the envelope.
-12. Chat is a request: "Thabo wants to chat. Accept / Decline". The DM
-    opens only after Accept. Decline tells the asker only "can't right
-    now"; they can't ask that player again for 7 days. Never past a
-    block; a daily cap on requests. Friends both ways and existing chats
-    skip the request.
-13. "Online" / "last seen 2 h ago" in the chat header and on the card,
-    for friends both ways only.
-14. Handles: Soft Life handles only, no social media. Unique (case does
-    not count), word-filtered, refuse staff-like names (admin, support,
-    softlife, moderator), never made from the player's name.
-Finding your way
-15. A new map with campus and SunnyBay together: the road and taxis
-    between them, every place named, "You are here", tap a place to go
-    (walk or taxi). Clear at 390 px; SunnyBay's map gets names too.
-16. The campus gate points to SunnyBay ("SunnyBay is 5 min by taxi. Take
-    a taxi / Walk") instead of "nothing to do at the gate". Signposts to
-    SunnyBay on campus.
-17. Taxi ranks: a board with the next taxi and its time. Tapping the
-    rank offers "Wait for the next taxi (2 min)". "Request a ride" in the
-    menu and on the map: a taxi comes to you, a little dearer, after a
-    short wait.
-Player pass with two players. Screenshots at 390 px.
+Done already: I (first-play fixes), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
 
 ---
 

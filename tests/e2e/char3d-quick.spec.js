@@ -75,6 +75,8 @@ test('D2 the chat avatars are head shots from the 3D character', async ({ page }
   const errors = await atGate(page, { query: `&chat=1&room=test-faces-${Date.now().toString(36)}`, name: 'Ayanda', preset: 'q-priya' })
   await expect.poll(async () => (await page.evaluate(() => window.mzansiThreads())).status, { timeout: 30000 }).toBe('ready')
   const mine = await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.presence')).id)
+  // (job I: a chat is a request; friends both ways skip it)
+  await server.call('chat_friend', { ...BONGA, p_other: mine, p_on: true }); await server.call('chat_friend', { p_id: mine, p_secret: await page.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.presence')).secret), p_other: BONGA.p_id, p_on: true })
   const dm = (await server.call('chat_dm', { ...BONGA, p_other: mine })).body.thread
   await server.call('chat_send', { ...BONGA, p_thread: dm, p_body: 'Howzit!' })
   await page.evaluate(() => import('/src/threads.js').then((m) => m.sync()))

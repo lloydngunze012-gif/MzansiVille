@@ -311,6 +311,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     if (c.wait > 0) { c.wait -= dt; c.v = 0; return }
     const { limit, ped, why } = limitFor(c)
     c.stoppedFor = ped
+    c.pedHeld = ped && c.v < 0.3 ? (c.pedHeld || 0) + dt : 0 // (job I: how long it has been standing for somebody)
     c.why = why
     if (c.v > limit) c.v = Math.max(limit, c.v - BRAKE * dt)
     else c.v = Math.min(limit, c.v + ACCEL * dt)
@@ -350,7 +351,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
       if (!mesh) continue
       if (c.on) {
         q.setFromAxisAngle(UP, c.h + flip)
-        m4.compose(pos.set(c.x, 0.02, c.z), q, scl.setScalar(c.scale))
+        m4.compose(pos.set(c.x, 0.05, c.z), q, scl.setScalar(c.scale)) // (job I: the tyres on the road, which is drawn 3 cm up)
       } else m4.makeScale(0, 0, 0)
       mesh.setMatrixAt(c.slot, m4)
     }
@@ -382,6 +383,32 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     },
     cost: 0,
     setVisible(on) { group.visible = on },
+    // Job I: a car is solid. Is (x, z) inside a car on the road (its body plus pad)? Your steps slide off it.
+    solidAt(x, z, pad = 0.3) {
+      for (const c of cars) {
+        if (!c.on) continue
+        const rx = x - c.x
+        const rz = z - c.z
+        if (Math.abs(rx) > 6 || Math.abs(rz) > 6) continue
+        const fx = Math.sin(c.h)
+        const fz = Math.cos(c.h)
+        if (Math.abs(rx * fx + rz * fz) < c.half + pad && Math.abs(rx * fz - rz * fx) < 1.0 + pad) return true
+      }
+      return false
+    },
+    // Job I: a car that has stood for somebody at (px, pz) for a second hoots, once every 8 s at most. Returns it, or null.
+    hootFor(px, pz, now = performance.now()) {
+      for (const c of cars) {
+        if (!c.on || c.ride || !c.stoppedFor || (c.pedHeld || 0) < 1 || now - (c.hootAt || -1e9) < 8000) continue
+        const rx = px - c.x
+        const rz = pz - c.z
+        const along = rx * Math.sin(c.h) + rz * Math.cos(c.h)
+        if (Math.hypot(rx, rz) > c.half + 5 || along < -c.half) continue
+        c.hootAt = now
+        return { id: `${c.kind}${c.slot}`, kind: c.kind, x: c.x, z: c.z }
+      }
+      return null
+    },
     // Is something driving at or near this spot (somebody about to cross waits for it to stop)?
     movingNear(x, z, r = 7) {
       for (const c of cars) if (c.on && c.v > 0.8 && Math.hypot(c.x - x, c.z - z) < r) return true

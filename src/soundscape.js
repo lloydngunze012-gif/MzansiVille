@@ -194,6 +194,16 @@ function hooter(ctx, out) {
     lp.connect(g).connect(out)
   }
 }
+// A car that stopped for you hoots (job I): the same two-tone hooter, a touch louder, once.
+export function hootNow() {
+  const g = graph()
+  if (!g) return false
+  const out = gainOf(g.ctx, 2.4)
+  out.connect(g.master)
+  hooter(g.ctx, out)
+  setTimeout(() => out.disconnect(), 900)
+  return true
+}
 // A vehicle going by: the engine loop, low, swelling in and away over four seconds.
 function passing(ctx, out) {
   ensure('bus_engine').then((buffer) => {

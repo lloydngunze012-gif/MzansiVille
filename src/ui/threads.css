@@ -192,6 +192,11 @@ button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; fl
 .cht-ask-row .cht-btn { flex: 1; }
 .cht-ask-row .cht-btn:first-child { background: #f0c400; color: #1c1915; }
 .cht-ask-row .cht-btn.ghost { color: #1c1915; }
+/* Job I: a chat request ("[Name] wants to chat"), the same card with their face. */
+.cht-ask-who { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.cht-ask-who .cht-av { width: 44px; height: 44px; flex: none; border-radius: 50%; overflow: hidden; }
+.cht-ask-who p { margin: 0; }
+.cht-ask-who small { display: block; color: #6b6359; font-size: 14px; font-weight: 600; }
 
 /* ---------- Chat V2: familiar and clear (owner, 11 Nov). The palette is docs/palette.md: light surfaces carry ink,
    yellow carries ink, dark surfaces carry white, no purple or navy buttons, every pair 4.5:1 or better. ---------- */

@@ -1,6 +1,8 @@
 import { faceHtml } from '../faces3d.js'
 import { flagOf, fromPlace } from '../from.js'
 import { canonicalHouse } from '../houses.js'
+import { seenText } from '../engine/seen.js'
+import './pcard.css'
 
 // The player card (build plan, Piece 1a): one phone screen, nothing scrolling. The same
 // card for your own (with Edit) and for anyone you tap on campus. Never an age.
@@ -41,41 +43,47 @@ export function playerCardHtml(card, house, opts = {}) {
   </article>`
 }
 
-// Meeting people (owner, 10 Nov), item 1: the mini card. About a third of the screen,
-// the world visible behind it, never a dialog (main.js gives it no role so it never
-// pauses movement; src/ui/minicard-state.js closes it when you walk away). Face,
-// name, flag, @handle, the vibe line, one grey "House · Course · Year" line, then
-// Wave / Say hi / (Race, in the city) / a ⋯ menu for Add friend, View full card,
-// Block, Report.
+// The card you see when you tap a player (owner, 12 Nov, job I; it was the 10 Nov mini card). The light blue of the
+// chat, never dark: face, name, @handle, house, course, year, followers and friends; "online" or "last seen" for a
+// friend both ways. Two buttons only: Chat (a request unless you are friends both ways or already chat) and Follow.
+// Everything else (add friend, Board, a group, walk, the race in the city, the full card, block, report) is in ⋯.
+// Never a dialog (main.js gives it no role so it never pauses movement; minicard-state.js closes it when you walk away).
+// opts.info: threads.js cardInfo (followers, friends, following, mutual, chat, online, seen), null until it answers.
 export function miniCardHtml(card, house, opts = {}) {
   const vars = house ? `--h1:${house.main};--h2:${house.accent}` : ''
-  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : faceHtml(card.look, 72)
+  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : faceHtml(card.look, 96)
   const friend = Boolean(opts.friend)
+  const info = opts.info || null
   const houseName = house?.name || canonicalHouse(card.house) || 'UMzansi'
   const grey = [houseName, card.tags?.course, card.year ? `${esc(ORD[card.year] || `${card.year}th`)} year` : ''].filter(Boolean).join(' · ')
   const flag = (card.from || card.country) ? flagOf(card.from || card.country) : ''
-  return `<article class="pc-mini" data-house="${esc(house?.id || '')}" style="${vars}">
+  const seen = info?.mutual ? seenText(info.seen, info.online) : ''
+  const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0)
+  const following = Boolean(info?.following)
+  const chat = info?.chat || 'ask'
+  const chatBtn = chat === 'asked' ? '<button type="button" class="pc-mini-chat" data-pc="dm" disabled>✓ Request sent</button>'
+    : '<button type="button" class="pc-mini-chat" data-pc="dm">\u{1F4AC} Chat</button>'
+  return `<article class="pc-mini" data-house="${esc(house?.id || '')}" data-chat="${esc(chat)}" style="${vars}">
     <div class="pc-mini-row">
       <div class="pc-mini-face">${photo}</div>
       <div class="pc-mini-id">
-        <p class="pc-mini-name">${esc(card.name || 'Student')} ${flag}${card.handle ? `<small>@${esc(card.handle)}</small>` : ''} <small class="pc-fol" data-followers="${esc(opts.id || '')}" hidden></small></p>
-        <p class="pc-mini-vibe">${card.tags?.vibe ? `✨ ${esc(card.tags.vibe)}` : '<span class="empty">No vibe set yet</span>'}</p>
+        <p class="pc-mini-name">${esc(card.name || 'Student')} ${flag}</p>
+        <p class="pc-mini-handle">${card.handle ? `@${esc(card.handle)}` : ''}<small class="pc-fol" data-followers="${esc(opts.id || '')}" hidden></small></p>
         <p class="pc-mini-grey">${esc(grey || 'UMzansi student')}</p>
+        ${seen ? `<p class="pc-mini-seen${info?.online ? ' on' : ''}">${esc(seen)}</p>` : ''}
       </div>
       <button type="button" class="pc-mini-x" data-pc="close" aria-label="Close">✕</button>
     </div>
+    <p class="pc-mini-stats"><span><b data-count="followers">${info ? n(info.followers) : '–'}</b> follower${info && n(info.followers) === 1 ? '' : 's'}</span><span><b data-count="friends">${info ? n(info.friends) : '–'}</b> friend${info && n(info.friends) === 1 ? '' : 's'}</span></p>
     <div class="pc-mini-acts">
-      <button type="button" class="pc-mini-wave" data-pc="wave">\u{1F44B} Wave</button>
-      <button type="button" data-pc="hi">\u{1F4AC} Say hi</button>
-      ${opts.race ? '' : '<button type="button" class="pc-mini-dm-ic" data-pc="dm" aria-label="Message">\u{2709}\u{FE0F}</button>'}
-      ${opts.race ? '<button type="button" class="pc-mini-race" data-pc="race">\u{1F3C1} Race</button>' : ''}
+      ${chatBtn}
+      <button type="button" class="pc-mini-follow" data-pc="follow" aria-pressed="${following ? 'true' : 'false'}">${following ? '✓ Following' : '＋ Follow'}</button>
       <span class="pc-mini-more">
         <button type="button" data-pc="more" aria-haspopup="true" aria-expanded="${opts.moreOpen ? 'true' : 'false'}" aria-label="More">⋯</button>
         <span class="pc-mini-menu"${opts.moreOpen ? '' : ' hidden'}>
-          ${opts.race ? '<button type="button" data-pc="dm">\u{2709}\u{FE0F} Message</button>' : ''}
+          ${opts.race ? '<button type="button" data-pc="race">\u{1F3C1} Race to the pier</button>' : ''}
           <button type="button" data-pc="friend"${friend ? ' disabled' : ''}>${friend ? '✓ Friends' : '➕ Add friend'}</button>
           <button type="button" data-pc="board">\u{1F4CB} Board</button>
-          <button type="button" data-pc="follow">＋ Follow</button>
           <button type="button" data-pc="group">\u{1F465} Add to a group</button>
           <button type="button" data-pc="walk">\u{1F6B6} Walk with me</button>
           <button type="button" data-pc="full">\u{1F4C7} View full card</button>
