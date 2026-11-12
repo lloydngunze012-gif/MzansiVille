@@ -4,27 +4,9 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 and 12 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running, and the PLAYER PASS (CLAUDE.md, top): play the changed areas as a new player at 390 px for 10 game minutes before pushing, with an "As a player" section in the report.
 
-Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I is done (12 Nov), so next is **K**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
+Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I and K are done (12 Nov), so next is **J**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
 
-Done already: I (first-play fixes), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
-
----
-
-=== JOB K · Opus, High · ACTIVITIES YOU PLAY ===
-Activities are only a card with numbers today. Make them things you do.
-1. Bowling: walk to a lane, aim by dragging, release; the ball rolls,
-   pins fall with sound, a score shows; NPCs bowl on other lanes; staff
-   at the shoe counter.
-2. Caf meal: join the queue, order from Mama Liz's menu, carry the tray,
-   sit at a table and eat; friends at the same table share it.
-3. Arcade racing cabinet: a 20-second steer-by-tap race.
-4. Beach: a kick-about with NPCs (tap to kick), and a swim.
-5. Library study: a short focus moment (tap on the beat) that sets the
-   Grades gain.
-6. Gym: a short rep moment that sets the Energy cost and the gain.
-Every other activity: your student visibly does it (sits, eats, browses,
-dances at church choir, works out) for a few seconds before the card.
-Each has its own fitting sound; no generic beeps.
+Done already: I (first-play fixes), K (activities you play), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
 
 ---
 

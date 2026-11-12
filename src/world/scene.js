@@ -5,7 +5,7 @@ import { homePlaceId, houseOf } from '../engine/model.js'
 import { FENCE_R, canDrive, carAt } from '../city/plan.js'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { setSound } from '../soundscape.js'
-import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor } from './avatar3d.js'
+import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor, holdIn } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf } from '../avatar.js'
 import { roommateFor, roommateLook } from '../roommates.js'
@@ -24,7 +24,7 @@ import { startGroove, stopGroove } from '../groove.js'
 import { setGrooveLevel } from '../audio.js'
 import { createCrowd } from './crowd.js'
 import { createOthers } from './others.js'
-import { onlineCount, reportLocal, peersOnCampus } from '../presence.js'
+import { onlineCount, reportLocal, peersOnCampus, sendPoke } from '../presence.js'
 import { bindInput } from './input.js'
 import { createPlayer, WALK } from './player.js'
 import { createDust } from './dust.js'
@@ -1584,6 +1584,8 @@ window.mzansiObstacles = () => ({
   props: campus?.dressing?.obstacles || [],
   room: room ? room.blocks : [],
 })
+// (job K, tests) what you hold, and whether you are eating at a table
+window.mzansiHeld = () => ({ held: player?.userData.held?.name || '', eating: Boolean(player?.userData.eating), pose: player?.userData.pose || '' })
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
 window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
 window.mzansiPersonOnScreen = (id) => {
@@ -1818,18 +1820,15 @@ function activityApi() {
       node.hidden = false
     },
     progress: (k) => { const span = bar().querySelector('span'); span.style.width = `${Math.round(Math.min(1, k) * 100)}%` },
+    // (job K: avatar3d holdIn finds the rig's real wrist bone; until now nothing held ever showed)
+    // (job K) real players within r metres of a point (a Caf table), and telling them they shared it
+    playersNear: (x, z, r) => peersOnCampus().filter((p) => Math.hypot(p.x - x, p.z - z) < r).map((p) => ({ id: p.id, name: String(p.meta?.name || 'Someone').split(' ')[0] })),
+    shareWith: (list) => { for (const p of list) sendPoke(p.id, 'share') },
+    eating: (on) => { player.userData.eating = Boolean(on) },
     hold: (mesh) => {
       if (held) held.removeFromParent()
       held = mesh
-      const hand = player.getObjectByName('hand_r') || player.getObjectByName('arm-right')
-      const rig = player.getObjectByName('rig')
-      if (!mesh || !hand || !rig) return
-      // Held in the right hand, at world size whatever the bone's scale.
-      const s = new THREE.Vector3()
-      hand.getWorldScale(s)
-      mesh.scale.setScalar(1 / s.x)
-      mesh.position.set(0.06 / s.x, 0.04 / s.x, 0)
-      hand.add(mesh)
+      holdIn(player, mesh)
     },
     groove: (level) => {
       if (level == null) stopGroove('activity')
@@ -2009,6 +2008,7 @@ function activityApi() {
     },
     clearTemps: () => { clearTemps(); clearRoom() },
     end: () => {
+      if (player) player.userData.eating = false // (job K: never left eating after an activity is cut short)
       if (held) { held.removeFromParent(); held = null }
       standUp()
       sayNode().hidden = true

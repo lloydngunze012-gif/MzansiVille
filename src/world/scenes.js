@@ -163,20 +163,38 @@ export const SCENE_OF = {
 }
 
 function holdable(kind) {
+  if (kind === 'tray') return trayMesh()
+  // (job K: real sizes: until the hand bone was found, nothing held ever showed)
   const spec = {
-    food: [[0.34, 0.2, 0.28], 0xd08a3a],
-    book: [[0.4, 0.08, 0.3], 0x1e5bb8],
-    paper: [[0.3, 0.02, 0.4], 0xf4f1e6],
-    phone: [[0.1, 0.2, 0.03], 0x1c1915],
-    cup: [[0.16, 0.2, 0.16], 0xffffff],
-    ball: [[0.32, 0.32, 0.32], 0xf4f1e6],
-    tool: [[0.08, 0.4, 0.08], 0x8a8f96],
-  }[kind] || [[0.2, 0.2, 0.2], 0xffffff]
+    food: [[0.16, 0.07, 0.13], 0xd08a3a],
+    book: [[0.18, 0.04, 0.24], 0x1e5bb8],
+    paper: [[0.16, 0.01, 0.22], 0xf4f1e6],
+    phone: [[0.07, 0.14, 0.012], 0x1c1915],
+    cup: [[0.08, 0.11, 0.08], 0xffffff],
+    ball: [[0.22, 0.22, 0.22], 0xf4f1e6],
+    tool: [[0.04, 0.25, 0.04], 0x8a8f96],
+  }[kind] || [[0.12, 0.12, 0.12], 0xffffff]
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(...spec[0]), new THREE.MeshStandardMaterial({ color: spec[1], roughness: 0.7, emissive: kind === 'phone' ? 0x2a6aff : 0x000000, emissiveIntensity: kind === 'phone' ? 0.25 : 0 }))
   mesh.name = `held-${kind}`
   return mesh
 }
 
+// (job K) the Caf's tray: a brown tray, a plate with the food on it and a cooldrink. Carried, then put on the table.
+function trayMesh() {
+  const g = new THREE.Group()
+  const m = (geo, color) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.75 }))
+  const tray = m(new THREE.BoxGeometry(0.38, 0.02, 0.28), 0x8a5a3a)
+  const plate = m(new THREE.CylinderGeometry(0.1, 0.09, 0.015, 16), 0xffffff)
+  plate.position.set(-0.06, 0.018, 0)
+  const food = m(new THREE.BoxGeometry(0.1, 0.05, 0.08), 0xd08a3a)
+  food.position.set(-0.06, 0.05, 0)
+  food.name = 'tray-food'
+  const cup = m(new THREE.CylinderGeometry(0.035, 0.03, 0.1, 10), 0xd6452f)
+  cup.position.set(0.12, 0.06, 0.05)
+  g.add(tray, plate, food, cup)
+  g.name = 'held-tray'
+  return g
+}
 export function createScenes(api) {
   const P = () => api.player.position
   const steps = (n, each = 1.1, fn) => (async () => { for (let i = 0; i < n; i++) { api.progress((i + 1) / (n + 1)); if (fn) fn(i); await api.wait(each) } })()
@@ -314,7 +332,9 @@ export function createScenes(api) {
       await api.pose('sit', top)
       api.hold(holdable('food'))
       api.say(`Lunch: ${opt.food}.`)
-      await steps(3, 1.1, () => api.gesture('interact-right'))
+      api.eating?.(true) // (job K: the food goes to your mouth while you sit; a gesture never played seated)
+      await steps(3, 1.1)
+      api.eating?.(false)
       api.hold(null)
       api.pose('stand')
     },
@@ -330,8 +350,10 @@ export function createScenes(api) {
       await api.walkTo(s.x - 2, s.z + 0.5)
       await sitOn({ x: s.x - 1.2, z: s.z, rot: Math.PI / 2, y: CHAIR_SEAT })
       api.hold(holdable('food'))
+      api.eating?.(true)
       const lines = [['Can I sit here?', 'you'], ['Sure! Everyone squeezes in.', 'friend'], ['The caf is so full today.', 'you']]
       for (const [i, [text, who]] of lines.entries()) { api.progress((i + 1) / 4); api.say(text, who); api.gestureOf(who === 'you' ? null : a, 'emote-yes'); if (who === 'you') api.gesture('interact-right'); await api.wait(1.3) }
+      api.eating?.(false)
       api.hold(null)
       api.pose('stand')
     },
@@ -428,14 +450,20 @@ export function createScenes(api) {
       api.say(`Here you go! One ${opt.food}.`, opt.vendorName || 'Vendor')
       api.gesture('pick-up')
       await api.wait(0.8)
-      api.hold(holdable('food'))
+      api.hold(holdable(opt.eat ? 'tray' : 'food')) // (job K: a tray to carry to the table)
       api.progress(0.3)
       await api.wait(0.6)
       if (opt.eat) {
         // A free table: the cafeteria terrace, else a free bench (food on your lap).
         const t = place.id !== 'quad' && api.dressing.freeTables?.[0]
         const bench = !t && api.freeSeat()
-        const seat = t ? t.seat : bench
+        // (job K) somebody really playing is already in that chair: you take the one across from them (on a bench,
+        // the other half of it), and share
+        const first = t ? t.seat : bench
+        const taken = Boolean(first && !opt.with && api.playersNear?.(first.x, first.z, 0.8).length)
+        const across = Boolean(t && taken)
+        if (across && t.sitter) t.sitter.visible = false
+        const seat = t ? (across ? t.other : t.seat) : taken && bench ? { x: bench.x - Math.cos(bench.rot) * 0.64, z: bench.z + Math.sin(bench.rot) * 0.64, rot: bench.rot, y: bench.y } : bench
         if (seat) {
           api.frame(t ? t.table : seat)
           // A table chair is reached from behind it (the table is in front); a bench from the front.
@@ -456,11 +484,18 @@ export function createScenes(api) {
           }
           let plate = null
           if (t) {
-            // The food goes on the table in front of you.
+            // The tray goes on the table in front of you: the plate, the food and the cooldrink on it.
             api.hold(null)
-            plate = api.box(0.34, 0.03, 0.34, 0xffffff, t.table.x, t.table.y, t.table.z)
-            api.box(0.24, 0.12, 0.2, 0xd08a3a, t.table.x, t.table.y + 0.07, t.table.z)
+            plate = api.box(0.4, 0.02, 0.3, 0x8a5a3a, t.table.x, t.table.y, t.table.z)
+            api.box(0.22, 0.015, 0.22, 0xffffff, t.table.x - 0.06, t.table.y + 0.02, t.table.z)
+            api.box(0.12, 0.06, 0.1, 0xd08a3a, t.table.x - 0.06, t.table.y + 0.05, t.table.z)
+            api.box(0.07, 0.1, 0.07, 0xd6452f, t.table.x + 0.13, t.table.y + 0.06, t.table.z + 0.05)
           }
+          // (job K) anybody really playing who is at your table shares it (they see it too, by a poke)
+          const at = t ? t.table : seat
+          const sharing = api.playersNear ? api.playersNear(at.x, at.z, t ? 2.4 : 1.6) : []
+          if (sharing.length) { opt.shared = sharing.map((p) => p.name); api.say(`Shared the table with ${opt.shared.join(' and ')}. Chips in the middle.`); api.shareWith?.(sharing); await api.wait(1.2) }
+          api.eating?.(true)
           if (friend) {
             await api.companionSettled()
             const lines = [[`Sitting down with my ${opt.food}.`, 'you'], ['Eish, I needed this.', opt.name], ['Same. Lectures make you hungry.', 'you'], ['Next time I choose the spot.', opt.name]]
@@ -476,8 +511,10 @@ export function createScenes(api) {
           }
           api.say('Mmm. Worth every rand.')
           await api.wait(0.8)
+          api.eating?.(false)
           void plate
           if (friend) { api.seatCompanion(null); if (t?.sitter && t.sitter !== friend) t.sitter.visible = true }
+          if (across && t.sitter) t.sitter.visible = true
           api.pose('stand')
           await api.walkTo(seat.x + side * Math.sin(seat.rot) * 1.1, seat.z + side * Math.cos(seat.rot) * 1.1)
         }

@@ -89,11 +89,29 @@ export async function toDoor(page, id, { sheet = true } = {}) {
   return at
 }
 // Pick a row of the open sheet by its id; resolves with the result card on screen.
+// (job K) a row that is a game opens it first: these tests are about the row, so they Skip it like a player would.
 export async function pickRow(page, rowId) {
   const row = page.locator(`.city-todo .ct-row[data-row="${rowId}"]`)
   await row.scrollIntoViewIfNeeded()
   await row.tap()
-  await expect(page.locator('.city-result')).toBeVisible({ timeout: 20000 })
+  await skipGame(page)
+  await expect(page.locator('.city-result')).toBeVisible({ timeout: 30000 })
+}
+// If a game (src/minigames.js) opens within a few seconds: Skip, then Continue.
+export async function skipGame(page, ms = 8000) {
+  const game = page.locator('.mg')
+  const end = Date.now() + ms
+  while (Date.now() < end) {
+    if (await game.isVisible().catch(() => false)) {
+      await game.locator('[data-mg="skip"]').tap()
+      await game.locator('[data-mg="done"]').tap()
+      await expect(game).toHaveCount(0)
+      return true
+    }
+    if (await page.locator('.city-result, .g-result.rc').first().isVisible().catch(() => false)) return false
+    await page.waitForTimeout(150)
+  }
+  return false
 }
 // A finger on a greyed row (Playwright's own tap waits for an "enabled" element; a finger does not).
 export async function fingerTap(page, locator) {

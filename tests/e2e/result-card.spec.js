@@ -3,6 +3,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { enrolUI } from '../enrol.js'
+import { skipGame } from '../city.js'
 
 const OUT = 'docs/sprints/result-card'
 test.use({ viewport: { width: 390, height: 844 } })
@@ -31,6 +32,7 @@ test('R1: study at the library ends on the new card, inside a 390 px phone', asy
   const study = page.locator('[data-act="do"][data-id="library_study"]')
   await expect(study).toBeVisible({ timeout: 15000 })
   await study.tap()
+  await skipGame(page, 20000) // (job K: studying opens the focus moment first)
   const card = page.locator('.g-result.rc')
   await expect(card).toBeVisible({ timeout: 60000 })
   await expect(card.locator('.rc-tile svg')).toBeVisible()

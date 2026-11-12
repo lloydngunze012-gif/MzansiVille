@@ -621,7 +621,8 @@ export function dismissCard(run, id) {
   return run
 }
 
-export function applyAction(district, run, actionId, rng = Math.random) {
+// opts.adjust(deltas): (job K) a game's score sets part of what it gives (the library's Grades, the gym's Energy cost).
+export function applyAction(district, run, actionId, rng = Math.random, opts = {}) {
   if (run.mode !== 'play' || run.excluded) return { ok: false, error: 'The day is not open' }
   const action = district.activities.find((item) => item.id === actionId)
   if (!action) return { ok: false, error: 'Unknown action' }
@@ -631,6 +632,7 @@ export function applyAction(district, run, actionId, rng = Math.random) {
   const cards = []
   const moneyFactor = rollTwist(district, run, action, rng, cards)
   const deltas = shapeDeltas(district, run, action, { moneyFactor })
+  opts.adjust?.(deltas)
   if (action.tags.includes('sleep')) deltas.energy = 0
   const hungrySleep = action.tags.includes('sleep') && run.stats.hunger < district.meta.day.hungrySleepBelow
   applyStats(run, deltas)

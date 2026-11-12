@@ -1,5 +1,5 @@
 {
-  "note": "Placeholders (owner, 12 Nov, job I) until Cursor's words land from docs/world-designer/alive.md: Cursor owns this file. greet: what a person on the street or at an open-ground place says when you tap them. driver: what a driver calls out after stopping and hooting for you (nothing offensive, never about the player's looks). Short: one line each.",
+  "note": "greet: what a person on the street or at an open-ground place says when you tap them (placeholders, Claude Code, 12 Nov: Cursor's to replace). driver: Cursor's lines from docs/world-designer/alive.md (Drivers), called out after a car stops and hoots for you. Cursor owns this file.",
   "greet": [
     "Howzit!",
     "Morning! Lekker day, hey?",
@@ -11,11 +11,25 @@
     "Hey hey. Nice to see a new face."
   ],
   "driver": [
-    "Eish, watch the road, friend!",
-    "Pavement's that way, hey!",
-    "Careful there!",
-    "Look left, look right!",
-    "Ag no man, the zebra is right there!",
-    "Hey! Cars use this bit too."
+    "Hoot. The road is not a bench.",
+    "Side, friend. Wheels coming.",
+    "Hoot-hoot. Thank you. Move.",
+    "This is a street, not the Quad.",
+    "Robot is green. You are not.",
+    "Left, left — there we go.",
+    "Photos later. Road now.",
+    "I am a taxi. You are a statue.",
+    "Hoot. Bless you for shifting.",
+    "Coming through. No rush on my side.",
+    "The rank is that way. The tar is this way.",
+    "One step, my friend. Just one.",
+    "Hoot. We all have a lecture.",
+    "Mirror, signal, you. In that order.",
+    "That gap is mine. Kindly.",
+    "Hoot twice. Still here. Still waiting.",
+    "Campus is that side. You are in my lane.",
+    "Nice shoes. Wrong place for them.",
+    "I will wait. I will also hoot.",
+    "There. Was that so hard? Drive on."
   ]
 }

@@ -1404,6 +1404,7 @@ export function poseAvatar(group, walking, time) {
   } else if (!settled) model.position.y = liftOf(data)
   if (move) sitMotion(group, model, move, dt)
   else if (data.pose === 'sit') sitPose(group, onGround)
+  if (data.eating && data.pose === 'sit' && !move) eatArm(group, model, time) // (job K: eating at a table shows)
   if (data.pose === 'lie') liePose(group, model)
   // Slumping forward (dozing at a desk): bend at the waist, hips stay on the seat.
   if (data.slump && data.bones.Abdomen) {
@@ -1416,8 +1417,69 @@ export function poseAvatar(group, walking, time) {
     model.position.y += Math.abs(Math.sin(beat * Math.PI)) * 0.1
     model.rotation.y += Math.sin(beat * Math.PI / 2) * 0.4
   }
+  // (job K) a clip from the animation library on top: dancing, swimming, a workout, a kick (playClip below)
+  if (data.clip && data.pose !== 'sit' && data.pose !== 'lie') clipOn(group, model, time)
   if (!settled) data.standAt = { x: group.position.x, z: group.position.z, yaw: data.yaw }
   if (data.fade !== undefined && data.fade < 1) fadeIn(group, dt)
+}
+
+// Eating while seated (job K): a gesture cannot play on a seated body, so the right arm brings the food up to the
+// mouth and back every couple of seconds (shoulder forward, elbow bent), on top of the seated arms.
+function eatArm(group, model, time) {
+  const data = group.userData
+  data.armR ||= { up: model.getObjectByName('UpperArmR'), low: model.getObjectByName('LowerArmR') }
+  const { up, low } = data.armR
+  if (!up || !low) return
+  const k = Math.pow(Math.max(0, Math.sin(time * 2.4)), 2)
+  model.updateMatrixWorld(true)
+  sideways.set(1, 0, 0).applyQuaternion(group.getWorldQuaternion(groupQ)).normalize()
+  turnWorld(up, sideways, -0.75 * k)
+  turnWorld(low, sideways, -1.35 * k)
+}
+
+// ---------- Job K (owner, 12 Nov: "your student visibly does it"): library clips on anybody ----------
+// The Universal Animation Library (public/models/ual, Quaternius, CC0) has Dance_Loop, Swim_Fwd_Loop, Swim_Idle_Loop,
+// Punch_Jab, Punch_Cross, Push_Loop, Jump_Start, Jump_Loop, Jump_Land, PickUp_Table, Fixing_Kneeling, Crouch_Idle_Loop,
+// Idle_Talking_Loop, Interact... Until now only the seated clips were used. playClip puts one on a person (standing):
+// once (held on its last frame) or looping, at a speed; stopClip takes it off. The library loads the first time.
+let ualClips = null
+let ualClipsAsked = false
+export function preloadClips() { if (!ualClipsAsked) { ualClipsAsked = true; loadUal().then((src) => { ualClips = src }).catch(() => {}) } }
+export const clipsReady = () => Boolean(ualClips)
+export function clipLength(name) { return ualClips?.clips[name]?.duration || 0 }
+export function playClip(group, name, { once = false, speed = 1 } = {}) {
+  preloadClips()
+  group.userData.clip = { name, once, speed, t0: undefined }
+  return clipLength(name) / (speed || 1)
+}
+export function stopClip(group) { delete group.userData.clip }
+function clipOn(group, model, time) {
+  const c = group.userData.clip
+  const src = ualClips
+  const clip = src?.clips[c.name]
+  if (!clip) return
+  if (c.t0 === undefined) c.t0 = time
+  const t = (time - c.t0) * (c.speed || 1)
+  model.updateMatrixWorld(true)
+  poseFromUal(group, model, src, c.name, c.once ? Math.min(t, clip.duration - 1e-3) : t % clip.duration)
+}
+
+// Hold a small thing in the right hand (a book, a plate, a tray, a phone, a ball), at world size whatever the bone's
+// scale; null puts down what was held. (Job K: the old lookup asked for 'hand_r', which this rig does not have: its
+// wrist bone is 'WristR', so nothing anybody held ever showed.)
+export function holdIn(group, mesh, at = [0.06, 0.04, 0]) {
+  const old = group.userData.held
+  if (old) old.removeFromParent()
+  group.userData.held = mesh || null
+  if (!mesh) return false
+  const hand = group.getObjectByName('WristR') || group.getObjectByName('hand_r') || group.getObjectByName('Wrist.R')
+  if (!hand) return false
+  const s = new THREE.Vector3()
+  hand.getWorldScale(s)
+  mesh.scale.multiplyScalar(1 / (s.x || 1))
+  mesh.position.set(at[0] / (s.x || 1), at[1] / (s.x || 1), at[2] / (s.x || 1))
+  hand.add(mesh)
+  return true
 }
 
 // Tests (motion checks): every rigged person in a live scene, measured from the

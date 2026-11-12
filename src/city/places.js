@@ -112,6 +112,7 @@ export function runRow(district, run, place, row, ctx = {}) {
   const k = repeatFactor(district.meta, run, row)
   const scale = (v) => (v > 0 ? Math.round(v * k) : v) // gains shrink; costs always apply in full
   const deltas = { money: scale(row.money), energy: scale(row.energy), hunger: scale(row.fullness), grades: scale(row.grades), social: scale(state.social) }
+  ctx.adjust?.(deltas) // (job K: a mini-game's score sets some of what it gives: the Grades gain, the Energy cost)
   if (repeats(row)) c.reps[row.id] = (c.reps[row.id] || 0) + 1
   applyStats(run, deltas)
   trackToday(run, { id: row.id, tags: [] }, deltas)

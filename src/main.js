@@ -92,6 +92,8 @@ import { calm } from './launch.js'
 import { onNote } from './scores.js'
 import { initDaily } from './daily.js'
 import { followPlayer } from './board.js'
+import { playMini } from './minigames.js'
+import { play as playAct } from './actsound.js'
 import { paintFollowers } from './ui/board.js'
 import { startJoinToasts } from './jointoast.js'
 import { notePick, STUDENTS, stillOf } from './ui/quick.js'
@@ -1035,8 +1037,11 @@ function eatFood(sit) {
   const menu = MENUS[id]
   const friend = together
   together = null
-  talkScene('talk_eat', menu.place, { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name, ...(friend && { with: friend.id, name: friend.name }) }, () => {
+  const opt = { food: b.label.toLowerCase(), eat: sit, vendorName: personInfo(id)?.name, ...(friend && { with: friend.id, name: friend.name }) }
+  talkScene('talk_eat', menu.place, opt, () => {
     applyFx(save.run, b.fx)
+    // (job K) somebody really playing sat at your table: you shared it
+    if (opt.shared?.length) { applyFx(save.run, { social: 3 }); countDone('hangout', menu.place, 'social'); toast(`\u{1F37D} Shared the table with ${opt.shared.join(' and ')}: +3 Social`) }
     countDone('talk_eat', menu.place, 'food')
     spendMinutes(sit ? 25 : 5)
     save.run.at = menu.place
@@ -1577,6 +1582,31 @@ async function ensureHandle() {
     }
     h = randomHandle()
   }
+}
+
+// ---------- Job K: activities you play, on campus ----------
+// The study rows (library, law reading, tutorials) are a focus moment; the gym is a set. src/minigames.js.
+const CAMPUS_MINI = { library_study: 'focus', lib_between: 'focus', lib_night: 'focus', lib_group: 'focus', law_read: 'focus', caf_tut: 'focus', sports_gym: 'reps' }
+let campusScore = null
+function scoreAdjust({ kind, r }) {
+  const q = Math.max(0, Math.min(1, Number(r.score) || 0))
+  if (kind === 'focus') return (d) => { if (d.grades > 0) d.grades = Math.max(1, Math.round(d.grades * (0.5 + q))) }
+  return (d) => { if (d.energy < 0) d.energy = Math.round(d.energy * (1.3 - 0.5 * q)); for (const k of ['social', 'grades']) if (d[k] > 0) d[k] = Math.max(1, Math.round(d[k] * (0.6 + 0.6 * q))) }
+}
+// The sound of what you are about to do (it was one beep for everything).
+function actSound(id) {
+  const act = districtNow().activities.find((a) => a.id === id)
+  const name = `${id} ${act?.name || ''}`.toLowerCase()
+  const kind = /eat|food|meal|kota|bunny|chips|breakfast|lunch|supper|noodles|vetkoek|cook|braai/.test(name) ? 'crunch'
+    : /coffee|tea|drink|cooldrink|kettle/.test(name) ? 'sip'
+      : /study|read|lecture|notes|tut|library|lib_|case|report|cards|print|moot|exam|essay/.test(name) ? 'page'
+        : /gym|run|jog|ball|stretch|sport|soccer|netball|swim/.test(name) ? 'breath'
+          : /dance|party|music|open mic|karaoke|sing|stage/.test(name) ? 'clap'
+            : /sleep|nap|bed|couch/.test(name) ? 'hum'
+              : /shift|work|flyer|job|tutor/.test(name) ? 'rustle'
+                : /chat|talk|friend|hang|bench|walk|src/.test(name) ? 'chatter'
+                  : /laundry|wash|shower/.test(name) ? 'splash' : 'whoosh'
+  playAct(kind)
 }
 
 // "Finish your student card": the full look editor, vibe and card (the old enrol steps) on the player's own student.
@@ -2306,7 +2336,7 @@ app.addEventListener('click', async (event) => {
     if (res.ok) {
       giveBadges(['greenway_run'])
       window.dispatchEvent(new CustomEvent('mzansi-wave', { detail: { gesture: 'interact-right' } }))
-      blip(500)
+      playAct('cash') // (job K: the till, not a beep)
     }
     persist()
     paint()
@@ -2327,7 +2357,20 @@ app.addEventListener('click', async (event) => {
     const id = button.dataset.id
     if (document.body.dataset.world === '1') {
       button.classList.add('busy')
-      blip()
+      // (job K) the library's study rows are a focus moment and the gym a set: the score sets the Grades gain, or
+      // the Energy cost and the gain; the student then goes and does it. Every activity has its own sound now.
+      const mini = CAMPUS_MINI[id]
+      if (mini && !button.dataset.played) {
+        button.dataset.played = '1'
+        const sheet0 = app.querySelector('.g-sheet')
+        if (sheet0) sheet0.style.visibility = 'hidden'
+        playMini(mini).then((r) => { campusScore = { id, kind: mini, r: r || { score: 0.5 } }; button.classList.remove('busy'); if (sheet0) sheet0.style.visibility = ''; button.click() })
+        return
+      }
+      delete button.dataset.played
+      const scored = campusScore?.id === id ? campusScore : null
+      campusScore = null
+      actSound(id)
       const sheet = app.querySelector('.g-sheet')
       if (sheet) sheet.style.transform = 'translateY(110%)', sheet.style.transition = 'transform .2s'
       app.querySelectorAll('.g-scrim').forEach((el) => el.remove())
@@ -2337,7 +2380,7 @@ app.addEventListener('click', async (event) => {
           actionId: id,
           commit() {
             const before = { ...save.run.stats }
-            const result = applyAction(district, save.run, id)
+            const result = applyAction(district, save.run, id, Math.random, { adjust: scored ? scoreAdjust(scored) : null })
             if (!result.ok) { ui.notice = result.error; paint(); return }
             countDone(id, button.dataset.place || '')
             save.run.at = button.dataset.place || save.run.at
@@ -3120,6 +3163,13 @@ onPoke(({ from, kind, name }) => {
     window.dispatchEvent(new CustomEvent('mzansi-face-peer', { detail: { id: from } }))
   }
   if (kind === 'friend') toast(`\u{1F91D} ${who} added you as a friend`)
+  // (job K) they sat down to eat at your table: shared, +2 Social, once a day from each of them
+  if (kind === 'share' && save.run) {
+    const key = `${from}:${save.run.day}`
+    save.run.sharedWith ||= []
+    if (!save.run.sharedWith.includes(key)) { save.run.sharedWith = [...save.run.sharedWith.slice(-30), key]; applyFx(save.run, { social: 2 }); persist(); paint() }
+    toast(`\u{1F37D} ${who} sat down with their tray. Chips in the middle: +2 Social`)
+  }
 })
 // A scene (either one) says a toast is wanted, without needing to import main.js.
 window.addEventListener('mzansi-toast', (event) => { if (event.detail?.text) toast(event.detail.text) })

@@ -41,6 +41,7 @@ import { countdown, inviteToast, onInvite, resultCard, sendInvite } from './toge
 import { BOUNDS, CITY, LOTS, PARTS, PIER, RIDE_EXTRA, RIDE_WAIT, SPAWN, STOPS, WAVE2, atGate, canDrive, carAt, lotOf, moneyOf, nearestStop, nextTaxi, offLimits, partAt, partOf, payDrive, payTaxi, stopOf, taxiFare } from '../city/plan.js'
 import { PLACES, SLOT_NAME, cityOf, folkSeed, openLine, openNow, opensAt, placeOf, rowState, runRow, slotOf } from '../city/places.js'
 import { buildInterior } from './cityplace.js'
+import { createCityPlay } from './cityplay.js'
 import { resultBody } from '../ui/result-card.js'
 
 const Q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
@@ -70,6 +71,7 @@ let pending = null // what to do when the walk ends: { lot } | { stop } | { ride
 let card = null // the open card: { kind, id }
 let carMesh = null
 let npcs = []
+let cplay = null // (job K: the games and the doing-it moments, src/world/cityplay.js)
 const taxiLog = [] // (job I: rides, with the minutes waited and whether you asked for it, for tests)
 const hoots = [] // (job I: the cars that hooted at you, for tests)
 // Movement (owner, 11 Nov): the cars and kombis on the roads (src/world/traffic.js), and during a taxi ride the
@@ -282,6 +284,17 @@ function walkTo(x, z, then = null) {
   host.dataset.walking = '1'
   return true
 }
+// (job K) walk to a spot and resolve when there (or after a while, if something is in the way)
+function walkNear(x, z, ms = 9000) {
+  return new Promise((resolve) => {
+    const spot = freeNear(x, z)
+    if (!spot) { resolve(false); return }
+    let done = false
+    const fin = (ok) => { if (!done) { done = true; resolve(ok) } }
+    mover.walkTo(withCarsShut(() => route(player.position, spot)), { near: 0.3, done: () => fin(true) })
+    setTimeout(() => { mover.stop(); fin(false) }, Math.max(1500, ms / FAST))
+  })
+}
 function arrived(p) {
   if (p.lot) openLot(p.lot)
   else if (p.ride) ride(p.from, p.ride)
@@ -312,6 +325,8 @@ function playerHit(ndc) {
 function onTap(ndc) {
   if (!running || !player || !ready || uiBusy()) return
   ray.setFromCamera(ndc, camera)
+  // (job K) during a kick-about every tap is a kick (the ball comes to you, so the finger is often on you)
+  if (cplay?.kicking()) { cplay.tapBeach(); return }
   if (ray.intersectObject(player, true)[0]) { mover.stop(); pending = null; return }
   const other = playerHit(ndc)
   if (other) {
@@ -328,6 +343,8 @@ function onTap(ndc) {
   let ground = null
   if (ray.ray.origin.y > 0 && ray.ray.direction.y < 0) ground = ray.ray.at(-ray.ray.origin.y / ray.ray.direction.y, new THREE.Vector3())
   if (inside) { tapInside(ground); return }
+  // (job K) the beach's ball: a tap on it starts a kick-about; during one, a tap kicks
+  if (folk?.id === 'beach' && cplay?.tapBeach(ray, ground)) return
   // (job I) a person in the street or at an open-ground place: they stop, turn to you and say hello
   const who = personHit(ground)
   if (who) { greet(who); return }
@@ -382,7 +399,7 @@ function greet(p) {
   player.rotation.y = toYou + Math.PI
   if (p.n) p.n.wait = 3.5
   if (p.f) { p.f.wait = Math.max(p.f.wait || 0, 3.5); p.f.goal = null }
-  gesture(a, 'wave')
+  gesture(a, 'emote-yes')
   const line = pickLine(STREET.greet, ((a.userData.look?.seed || 0) + clock) % 1)
   greeted.push({ line, at: Math.round(clock * 10) / 10 })
   toast(`\u{1F44B} \u201C${line}\u201D`)
@@ -546,20 +563,24 @@ async function pickRow(rowId) {
   pending = null
   const to = folk?.id === place.id ? folk.list[0]?.avatar.position : null
   if (to && Math.hypot(to.x - player.position.x, to.z - player.position.z) < 12) player.rotation.y = Math.atan2(to.x - player.position.x, to.z - player.position.z)
-  const ms = Math.max(350, 1500 / FAST)
-  const pill = uiRoot.querySelector('.city-doing')
-  pill.innerHTML = `<b>${esc(row.name)}</b><i></i>`
-  pill.style.setProperty('--ms', `${ms}ms`)
-  pill.hidden = false
-  gesture(player, 'emote-yes')
+  // (job K) a game (bowling, the racing cabinet, the library's focus, a gym set, the swim) or a few seconds of your
+  // student doing it, each with its own sound; a game's score can set what the row gives
   const mine = ++doing
-  await wait(ms)
+  const pill = uiRoot.querySelector('.city-doing')
+  const game = Boolean(cplay?.kindOf(row))
+  if (!game) {
+    pill.innerHTML = `<b>${esc(row.name)}</b><i></i>`
+    pill.style.setProperty('--ms', `${Math.max(350, 3000 / FAST)}ms`)
+    pill.hidden = false
+  }
+  let extra = {}
+  try { extra = (await cplay?.playRow(place, row)) || {} } catch (e) { console.error(e) }
   pill.hidden = true
   if (!running || mine !== doing) { busy = false; return }
-  const res = runRow(opts.district, opts.run, place, row, { friends: friendsHere(place) })
+  const res = runRow(opts.district, opts.run, place, row, { friends: friendsHere(place), adjust: extra.adjust })
   if (!res.ok) { busy = false; toast(res.error); openTodo(place); return }
   opts.onRow?.({ place, row, result: res })
-  showResult(place, row, res)
+  showResult(place, row, res, extra.note)
 }
 // Job I (the Arcade's card said "Shopping done"): what kind of thing you did, by place. A gig is a shift and a real
 // meal is a meal anywhere; everything else is named for the place, with the picture that fits it.
@@ -570,12 +591,13 @@ const PLACE_KIND = {
   beach: ['social', 'Beach time done'], park: ['social', 'Park time done'], taxi_rank: ['other', 'Taxi rank stop done'], petrol: ['other', 'Petrol stop done'],
   stadium: ['gym', 'Stadium visit done'], driving_school: ['study', 'Lesson done'],
 }
-function showResult(place, row, res) {
+function showResult(place, row, res, gameNote = '') {
   const [kindType, eyebrow] = PLACE_KIND[place.id] || []
   const meal = row.fullness >= 8
   const type = row.gig ? 'work' : meal ? 'food' : kindType || (row.grades >= 3 ? 'study' : row.social >= 5 ? 'social' : 'other')
   const body = resultBody({ cardId: `city-${row.id}-${Date.now()}`, title: row.name, delta: res.delta, esc, line: row.result, type, eyebrow: row.gig || meal ? '' : eyebrow || '' })
   const notes = []
+  if (gameNote) notes.push(gameNote) // (job K: how the game went)
   // (the place's own person has a word for you: docs/world-designer/social.md, in city_places.json)
   if (place.dress.staffName && place.dress.during) notes.push(`${place.dress.staffName}: “${place.dress.during}”`)
   if (place.id === 'bank') notes.push(`\u{1F3E6} Your balance: ${formatMoney(moneyOf(opts.run))}`) // (job I: the bank shows your money)
@@ -614,6 +636,7 @@ function closeResult() {
 // ---- the staff and the patrons of a place (CAST RULE: skins from skinmix.js, through npcLook) ----
 function clearFolk() {
   if (!folk) return
+  if (folk.id === 'beach') cplay?.dropBall()
   for (const f of folk.list) { f.avatar.userData.disposed = true; scene?.remove(f.avatar) }
   folk = null
   if (host) host.dataset.folk = ''
@@ -639,6 +662,7 @@ function seatFolk(place) {
     }),
   }
   host.dataset.folk = `${place.id}:${folk.list.length}`
+  if (place.id === 'beach' && !inside) cplay?.beachBall(place) // (job K: a ball on the sand)
 }
 // Movement (owner, 11 Nov): inside a place the patrons (everybody but the one serving) live on a loop instead of
 // standing still: browse (walk to a spot and look at what is there), queue (in line in front of the staff),
@@ -812,6 +836,7 @@ async function goInside(place) {
     clearFolk()
     scene.add(room.group)
     inside = { place, room, lot: place.lot }
+    cplay?.enterRoom(place, room)
     sfx('door')
     setSound({ inside: true })
     grid = roomGrid(room)
@@ -849,6 +874,7 @@ function exitRoom() {
   scene?.remove(room.group)
   room.dispose()
   clearFolk()
+  cplay?.leaveRoom()
   inside = null
   setSound({ inside: false })
   grid = cityGrid
@@ -1578,6 +1604,7 @@ function tick(now) {
     }
   }
   if (inside && folk) patronTick(dt)
+  cplay?.update(dt / FAST) // (real time: a kick has to be tappable)
   if (folk && !inside) openTick(dt)
   else if (folk) poseAvatar(folk.list[0].avatar, false, clock) // (the one serving; the patrons move in patronTick)
   others?.update(dt, camera, player.position, true, rig.mode === 'eye')
@@ -1664,6 +1691,7 @@ export async function startCity(options) {
       return { i, avatar, speed: 1.15 + (i % 4) * 0.12, line: null, dir: 1, wait: 0 }
     })
     others = createOthers(scene)
+    cplay = createCityPlay({ scene, player: () => player, inside: () => inside, folk: () => folk, walkNear, toast, run: () => opts.run, save: () => save(), clock: () => clock })
     traffic = createTraffic({ scene, bake: (url) => bakeModel(url), flip: CAR_FLIP })
     const sp = options.spawn || { kind: 'gate' }
     const lot = sp.kind === 'lot' ? lotOf(sp.id) : null
@@ -1791,6 +1819,7 @@ if (typeof window !== 'undefined') {
     people: () => npcs.map((n) => ({ i: n.i, x: +n.avatar.position.x.toFixed(2), z: +n.avatar.position.z.toFixed(2), visible: n.avatar.visible })),
     folk: () => (folk ? { id: folk.id, list: folk.list.map((f) => ({ staff: f.staff, x: +f.avatar.position.x.toFixed(2), z: +f.avatar.position.z.toFixed(2), visible: f.avatar.visible, moving: Boolean(f.goal) && !(f.wait > 0) })) } : null),
     hoots: () => [...hoots],
+    play: () => cplay?.info() || null,
     taxis: () => [...taxiLog],
     nextTaxi: (id) => nextTaxi(id, opts.run?.minutes),
     greeted: () => [...greeted],

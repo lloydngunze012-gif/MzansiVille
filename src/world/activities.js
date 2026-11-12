@@ -36,7 +36,7 @@ function holdable(kind) {
     book: new THREE.MeshStandardMaterial({ color: 0x1e5bb8, roughness: 0.7 }),
     flyer: new THREE.MeshStandardMaterial({ color: 0xf4f1e6, roughness: 0.9 }),
   }
-  const size = { food: [0.22, 0.12, 0.18], book: [0.3, 0.06, 0.22], flyer: [0.24, 0.02, 0.32] }[kind]
+  const size = { food: [0.16, 0.07, 0.13], book: [0.18, 0.04, 0.24], flyer: [0.16, 0.01, 0.22] }[kind] // (job K: real sizes)
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), mats[kind])
   mesh.name = `held-${kind}`
   return mesh

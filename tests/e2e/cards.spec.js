@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import { enrolUI } from '../enrol.js'
+import { skipGame } from '../city.js'
 import { MOMENTS, momentCard } from '../../src/engine/moments.js'
 
 const OUT = process.env.CARD_SHOTS || 'docs/sprints/cards'
@@ -152,6 +153,7 @@ for (const [w, h] of WIDTHS) {
       await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 30000 })
       await page.waitForTimeout(1200)
       await page.locator('[data-act="do"][data-id="library_study"]').tap()
+      await skipGame(page, 20000) // (job K: studying opens the focus moment first)
       const card = page.locator('.g-result.rc')
       // (the study scene is frame-driven: on the software renderer, two browsers at once, a frame a second is a slow scene)
       await expect(card).toBeVisible({ timeout: 180000 })
