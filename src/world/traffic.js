@@ -119,13 +119,24 @@ export const crossLines = crossings.map(([x0, z0, x1, z1, alongX]) => (alongX
 // ---------- the vehicles ----------
 // kind -> [model file, scale, how many, half its length]
 const KINDS = {
-  sedan: ['/models/cars/sedan.glb', 1.6, 4, 2.1],
+  sedan: ['/models/cars/sedan.glb', 1.6, 3, 2.1], // (15 on the roads at most: 11 cars and 4 kombis; the fifth kombi is your ride)
   suv: ['/models/cars/suv.glb', 1.6, 3, 2.2],
   hatch: ['/models/cars/hatchback-sports.glb', 1.6, 3, 2],
   truck: ['/models/cars/truck.glb', 1.6, 2, 2.6],
   kombi: ['/models/cars/van.glb', 1.75, 5, 2.4], // (four on the roads, one for your own ride)
 }
 const TINTS = ['#ffffff', '#f3d9c4', '#cfe3f2', '#ffe9a8', '#d9f0d3', '#f0c8c8', '#e2e2e2']
+
+function whiteBody(src) {
+  const geo = src.clone()
+  const c = geo.attributes.color
+  for (let i = 0; i < c.count; i++) {
+    const r = c.getX(i), g = c.getY(i), b = c.getZ(i)
+    if (b > r + 0.08 && b > g + 0.02 && b > 0.18) { const l = 0.86 + Math.min(0.1, b * 0.15); c.setXYZ(i, l, l, l * 0.98) }
+  }
+  c.needsUpdate = true
+  return geo
+}
 
 export function createTraffic({ scene, bake, flip = 0 }) {
   const group = new THREE.Group()
@@ -157,7 +168,9 @@ export function createTraffic({ scene, bake, flip = 0 }) {
   Promise.all(Object.entries(KINDS).map(async ([kind, [url, , count]]) => {
     const m = await bake(url)
     if (!m || disposed) return
-    const mesh = new THREE.InstancedMesh(m.geo, material, count)
+    // (a kombi is a white minibus taxi: the kit van's blue body is painted white; glass, tyres and lights keep theirs)
+    const geo = kind === 'kombi' ? whiteBody(m.geo) : m.geo
+    const mesh = new THREE.InstancedMesh(geo, material, count)
     mesh.name = `traffic-${kind}`
     mesh.frustumCulled = false // (the instances move all over the city; the box of the first one is not theirs)
     mesh.castShadow = false
@@ -180,6 +193,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     c.edge = e
     c.s = s
     c.turn = null
+    c.next = null
     c.v = CRUISE * 0.7
     c.wait = 0
     c.held = 0
@@ -224,12 +238,13 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     return choices[Math.floor(rnd() * choices.length)]
   }
   function startTurn(c) {
-    const to = c.route?.length ? c.route.shift() : nextEdge(c)
+    const to = c.next || (c.route?.length ? c.route.shift() : nextEdge(c))
+    c.next = null
     const from = c.edge
     const p0 = lanePoint(from, from.len)
     const p3 = { x: to.x0, z: to.z0 }
     const k = Math.max(2.6, Math.hypot(p3.x - p0.x, p3.z - p0.z) * 0.42)
-    c.turn = { to, t: 0, p0, p1: { x: p0.x + from.dx * k, z: p0.z + from.dz * k }, p2: { x: p3.x - to.dx * k, z: p3.z - to.dz * k }, p3, len: Math.hypot(p3.x - p0.x, p3.z - p0.z) * 1.15 + 0.5 }
+    c.turn = { to, from, t: 0, p0, p1: { x: p0.x + from.dx * k, z: p0.z + from.dz * k }, p2: { x: p3.x - to.dx * k, z: p3.z - to.dz * k }, p3, len: Math.hypot(p3.x - p0.x, p3.z - p0.z) * 1.15 + 0.5 }
   }
 
   // ---- one step ----
@@ -254,6 +269,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     const fx = Math.sin(c.h)
     const fz = Math.cos(c.h)
     const reach = c.half + 2.2 + (c.v * c.v) / (2 * BRAKE) + c.v * 0.25
+    let why = ''
     // people on foot: anyone in the lane ahead, or right beside the car
     for (const p of peds) {
       const rx = p.x - c.x
@@ -261,30 +277,41 @@ export function createTraffic({ scene, bake, flip = 0 }) {
       if (Math.abs(rx) > 30 || Math.abs(rz) > 30) continue
       const along = rx * fx + rz * fz
       const side = Math.abs(rx * fz - rz * fx)
-      if ((along > -c.half - 0.6 && along < reach && side < 2.3) || (Math.abs(along) < c.half + 1 && side < 2.6)) return { limit: 0, ped: true }
+      if ((along > -c.half - 0.6 && along < reach && side < 2.3) || (Math.abs(along) < c.half + 1 && side < 2.6)) return { limit: 0, ped: true, why: 'person' }
     }
-    // the vehicle in front
+    // the vehicle in front, in YOUR lane only: ahead of you on the same road, turning out of that road in front of
+    // you, or (while you turn) on the road you are turning into. A car waiting at the line of another road is not in
+    // your way, even when your turn points at it: giving way to it was a gridlock (it was waiting for you).
     for (const o of cars) {
       if (!o.on || o === c) continue
+      const mine = c.turn ? (o.edge === c.turn.to && !o.turn) : ((o.edge === c.edge && !o.turn && o.s > c.s) || (o.turn && o.turn.from === c.edge))
+      if (!mine) continue
       const rx = o.x - c.x
       const rz = o.z - c.z
-      if (Math.abs(rx) > 30 || Math.abs(rz) > 30) continue
       const along = rx * fx + rz * fz
-      const side = Math.abs(rx * fz - rz * fx)
-      const gap = along - c.half - o.half
-      if (along > 0 && side < 1.7 && gap < reach + 1.5) {
-        // (two that meet nose to nose in a junction: the one further through goes)
-        const facing = Math.sin(o.h) * fx + Math.cos(o.h) * fz < -0.3
-        if (facing && (c.turn?.t || 0) >= (o.turn?.t || 0) && c.held > 1.5) continue
+      const gap = Math.hypot(rx, rz) - c.half - o.half
+      if (along > -0.5 && gap < reach + 1.5) {
+        if (gap < 2.2 || o.v < limit) why = `behind ${o.kind}${o.slot}`
         limit = Math.min(limit, gap < 2.2 ? 0 : o.v)
       }
     }
-    return { limit, ped: false }
+    return { limit, ped: false, why }
+  }
+  // Is there room for c at the start of lane e? Only what is IN that lane counts (a car waiting in the other lane, or
+  // at the line of another road, is not in the way).
+  function roomOn(e, c) {
+    for (const o of cars) {
+      if (!o.on || o === c) continue
+      if (o.edge === e && !o.turn && o.s < c.half * 2 + o.half + 2) return false
+      if (o.turn?.to === e) return false
+    }
+    return true
   }
   function step(c, dt) {
     if (c.wait > 0) { c.wait -= dt; c.v = 0; return }
-    const { limit, ped } = limitFor(c)
+    const { limit, ped, why } = limitFor(c)
     c.stoppedFor = ped
+    c.why = why
     if (c.v > limit) c.v = Math.max(limit, c.v - BRAKE * dt)
     else c.v = Math.min(limit, c.v + ACCEL * dt)
     c.held = c.v < 0.2 ? c.held + dt : 0
@@ -307,7 +334,11 @@ export function createTraffic({ scene, bake, flip = 0 }) {
       // (one vehicle through a junction at a time: the next waits at the line)
       const node = c.edge.b
       const holder = node.lock
-      if (holder && holder !== c && holder.on && holder.turn?.node === node) { c.v = 0; return }
+      if (holder && holder !== c && holder.on && holder.turn?.node === node) { c.v = 0; c.why = `junction ${holder.kind}${holder.slot}`; return }
+      // (and never into it unless there is room on the far side: a car stuck half way through a junction would hold
+      // it for ever and stop the cross traffic too; that was a gridlock at the taxi rank)
+      if (!c.next) c.next = c.route?.length ? c.route.shift() : nextEdge(c)
+      if (!roomOn(c.next, c)) { c.v = 0; c.why = 'no room past the junction'; return }
       node.lock = c
       startTurn(c)
       c.turn.node = node
@@ -333,6 +364,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     // dt: seconds (the game's, so it can run fast); px, pz: the player; people: [{ x, z }] everyone on foot
     update(dt, px, pz, people) {
       if (!ready) return
+      const t0 = performance.now()
       peds = people
       for (const c of cars) {
         if (c.ride) continue
@@ -346,7 +378,9 @@ export function createTraffic({ scene, bake, flip = 0 }) {
         for (const c of cars) if (c.on) step(c, h)
       }
       draw()
+      api.cost = api.cost * 0.95 + (performance.now() - t0) * 0.05 // (ms a frame, smoothed: tests read it)
     },
+    cost: 0,
     setVisible(on) { group.visible = on },
     // Is something driving at or near this spot (somebody about to cross waits for it to stop)?
     movingNear(x, z, r = 7) {
@@ -388,7 +422,7 @@ export function createTraffic({ scene, bake, flip = 0 }) {
     },
     info() {
       const on = cars.filter((c) => c.on)
-      return { ready, cars: on.filter((c) => !c.kombi).length, kombis: on.filter((c) => c.kombi).length, moving: on.filter((c) => c.v > 0.5).length, stoppedForPeople: on.filter((c) => c.stoppedFor).length, draws: Object.keys(meshes).length, list: on.map((c) => ({ kind: c.kind, x: +c.x.toFixed(1), z: +c.z.toFixed(1), v: +c.v.toFixed(1), h: +c.h.toFixed(2), ride: c.ride, stopped: Boolean(c.stoppedFor) })) }
+      return { ready, cost: +api.cost.toFixed(3), cars: on.filter((c) => !c.kombi).length, kombis: on.filter((c) => c.kombi).length, moving: on.filter((c) => c.v > 0.5).length, stoppedForPeople: on.filter((c) => c.stoppedFor).length, draws: Object.keys(meshes).length, list: on.map((c) => ({ id: `${c.kind}${c.slot}`, why: c.v < 0.2 ? c.why || (c.wait > 0 ? 'at a stop' : '') : '', turn: Boolean(c.turn), kind: c.kind, x: +c.x.toFixed(1), z: +c.z.toFixed(1), v: +c.v.toFixed(1), h: +c.h.toFixed(2), ride: c.ride, stopped: Boolean(c.stoppedFor) })) }
     },
     dispose() {
       disposed = true

@@ -14,7 +14,9 @@ const OUT = 'docs/sprints/char3d'
 test.setTimeout(240000)
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2, actionTimeout: 20000 })
 test.beforeAll(() => fs.mkdirSync(OUT, { recursive: true }))
-const shot = async (page, name) => { await page.waitForTimeout(400); await page.screenshot({ path: `${OUT}/${name}.png`, timeout: 60000 }) }
+// (a screenshot is evidence, not a check: when two browsers share the graphics card a frame can fail to come at all;
+// then it is noted and the test goes on to its checks)
+const shot = async (page, name) => { await page.waitForTimeout(400); try { await page.screenshot({ path: `${OUT}/${name}.png`, timeout: 30000 }) } catch (e) { console.log(`screenshot ${name} skipped: ${String(e.message).split('\n')[0]}`) } }
 const run = (page) => page.evaluate(() => window.mzansiStudioRun())
 const frames = async (page, ms = 1500) => { const a = (await run(page)).frames; await page.waitForTimeout(ms); return (await run(page)).frames - a }
 

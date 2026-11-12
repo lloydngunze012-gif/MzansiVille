@@ -247,3 +247,8 @@ A place has no Realtime room of its own: you stay in the **district's room** (`c
 
 - A lot that needs a second door or a bigger building: change its row in `sunnybay.json` (`x`, `z`, `w`, `d`, `h`, `door`, `look`, colours). Looks today: `block`, `shop`, `columns`, `mall`, `church`, `showroom`, `market`, `arcade`, and the open ones `beach`, `park`, `rank`, `petrol`, `stadium`, `yard` (those use `at` for the entrance and `area` for their ground).
 - Content rule (CLAUDE.md): no nightclubs, bars, taverns or alcohol; the church is the only place of worship; no gambling, betting or crime activities for launch. `npm run check` looks for the words.
+
+## Movement (owner, 11 Nov)
+- Traffic (src/world/traffic.js): 11 cars and 4 kombis on the roads near the player (put back a block or two away once 150 m out of sight), left lanes, a curve through each junction with one vehicle in a junction at a time, slowing for junctions and zebra crossings, stopping for anybody on foot in the lane. Kombis drive stop to stop (the stops above) and wait 3.5 s. One instanced mesh per kind of vehicle.
+- The taxi ride: a kombi pulls up at the stop, you get in, it pulls off with the camera following it, a cut, it pulls in at your stop and you step out. The fare and time rules above are unchanged.
+- Street people: two of the eight cross at the zebra crossings near the player. Inside Rooms and Halls the patrons browse, queue and leave and come back.

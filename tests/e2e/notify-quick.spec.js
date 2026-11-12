@@ -32,8 +32,9 @@ test.beforeAll(async () => {
 const me = (page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('mzansiville.presence')); return { p_id: p.id, p_secret: p.secret } })
 const syncNow = (page) => page.evaluate(() => import('/src/threads.js').then((m) => m.sync()))
 const notify = (page) => page.evaluate(() => window.mzansiNotify())
-// (a screenshot is evidence, not a check: under the gate's two browsers the page can stall for many seconds, so it gets 60 s)
-const shot = async (page, name) => { await page.waitForTimeout(400); await page.screenshot({ path: `${OUT}/${name}.png`, timeout: 60000 }) }
+// (a screenshot is evidence, not a check: when two browsers share the graphics card a frame can fail to come at all;
+// then it is noted and the test goes on to its checks)
+const shot = async (page, name) => { await page.waitForTimeout(400); try { await page.screenshot({ path: `${OUT}/${name}.png`, timeout: 30000 }) } catch (e) { console.log(`screenshot ${name} skipped: ${String(e.message).split('\n')[0]}`) } }
 const Q = (name) => `&chat=1&push=1&vapid=${VAPID}&room=${ROOM}-${name}`
 
 // The browser's push service, stubbed: permission is asked and granted, a subscription comes back.

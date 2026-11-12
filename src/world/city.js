@@ -30,7 +30,8 @@ import { createOthers } from './others.js'
 import { buildingLayout } from './layout.js'
 import { loadModel } from './models.js'
 import { skinFor } from './skinmix.js'
-import { buildCity } from './citybuild.js'
+import { bakeModel, buildCity } from './citybuild.js'
+import { createTraffic, crossLines } from './traffic.js'
 import { createCityMap } from './map.js'
 import { ringSpot } from './ring.js'
 import { checkLowHint, drainWalking, setRacing, speedFactor } from '../engine/energy.js'
@@ -46,6 +47,7 @@ const DEBUG = Q.get('citydebug') === '1'
 const BODY = 0.32
 const G = 2 // the walk grid's cell (m)
 const NPCS = 8
+const CROSSERS = 2 // (Movement: street people who cross at the zebra crossings)
 
 let opts = null
 let host, uiRoot, renderer, scene, camera, rig, mover, input, hemi, sun
@@ -67,6 +69,15 @@ let pending = null // what to do when the walk ends: { lot } | { stop } | { ride
 let card = null // the open card: { kind, id }
 let carMesh = null
 let npcs = []
+// Movement (owner, 11 Nov): the cars and kombis on the roads (src/world/traffic.js), and during a taxi ride the
+// point the camera follows (the kombi you are in), else null.
+let traffic = null
+let trafficOn = true // (tests: off, to measure what the traffic costs)
+let rideCam = null
+const rideAt = new THREE.Vector3()
+const rideLog = [] // (tests: every step of the last kombi ride, in order)
+// (the models of the car kit face +Z: a car's heading is its rotation)
+const CAR_FLIP = 0
 let shot = null
 let lastSave = 0
 let rides = 0
@@ -547,11 +558,73 @@ function seatFolk(place) {
       avatar.position.set(s.x, 0, s.z)
       avatar.rotation.y = s.rot
       scene.add(avatar)
-      return { avatar, i, staff: i === 0 }
+      return { avatar, i, staff: i === 0, state: 'browse', goal: null, wait: 1.5 + i * 0.7, left: 0 }
     }),
   }
   host.dataset.folk = `${place.id}:${folk.list.length}`
 }
+// Movement (owner, 11 Nov): inside a place the patrons (everybody but the one serving) live on a loop instead of
+// standing still: browse (walk to a spot and look at what is there), queue (in line in front of the staff),
+// and now and then leave through the door and come back in a little later. The staff stays at the counter.
+const PATRON_SPEED = 1.05
+function patronPlan(f) {
+  const room = inside?.room
+  if (!room) return
+  const spots = room.people.length ? room.people : [room.focus]
+  if (f.state === 'out') { f.state = 'in'; f.goal = spots[(f.i + (f.round || 0)) % spots.length]; return }
+  // (each patron goes round browse, queue, browse, leave, starting at a different place in the round)
+  f.round = (f.round ?? f.i) + 1
+  const next = ['browse', 'queue', 'browse', 'leave'][f.round % 4]
+  if (next === 'leave') { f.state = 'leave'; f.goal = { x: room.exit.x, z: room.exit.z - 0.6 }; return }
+  if (next === 'queue') {
+    // (in line: one behind the other in front of the counter)
+    const inLine = folk.list.filter((o) => o !== f && o.state === 'queue').length
+    const sx = Math.sin(room.staff.rot)
+    const sz = Math.cos(room.staff.rot)
+    f.state = 'queue'
+    f.goal = { x: room.focus.x + sx * inLine * 0.9, z: room.focus.z + sz * inLine * 0.9, face: Math.atan2(-sx, -sz) }
+    return
+  }
+  const s = spots[(f.i * 3 + f.round) % spots.length]
+  f.state = 'browse'
+  f.goal = { x: s.x + (((f.i * 37) % 7) - 3) * 0.15, z: s.z + (((f.i * 53) % 7) - 3) * 0.15, face: s.rot }
+}
+function patronTick(dt) {
+  for (const f of folk.list) {
+    if (f.staff) continue
+    const a = f.avatar
+    if (f.wait > 0) {
+      f.wait -= dt
+      if (f.state === 'out') { a.visible = false; if (f.wait <= 0) { a.visible = true; a.position.set(inside.room.exit.x, 0, inside.room.exit.z - 0.4); a.userData.lastPos?.copy(a.position); patronPlan(f) } continue }
+      poseAvatar(a, false, clock + f.i * 1.7)
+      continue
+    }
+    if (!f.goal) { patronPlan(f); continue }
+    const dx = f.goal.x - a.position.x
+    const dz = f.goal.z - a.position.z
+    const d = Math.hypot(dx, dz)
+    // (never through you: wait a moment)
+    const close = Math.hypot(player.position.x - a.position.x, player.position.z - a.position.z) < 0.9
+    // (going out with you standing by the door: out past you, the door is right there)
+    const out = f.state === 'leave' && close && d < 2.5
+    if (d < 0.15 || close) {
+      if (close && !out) { f.wait = 0.4; continue }
+      if (f.goal.face !== undefined) a.rotation.y = f.goal.face
+      f.goal = null
+      if (f.state === 'leave') { f.state = 'out'; f.wait = 5 + (f.i % 3) * 3; a.visible = false; f.left = (f.left || 0) + 1; continue }
+      f.wait = f.state === 'queue' ? 4 + (f.i % 3) : 3 + ((f.i * 5) % 6)
+      if (f.state === 'queue') gesture(a, 'talk')
+      continue
+    }
+    const step = Math.min(d, PATRON_SPEED * dt)
+    a.position.x += (dx / d) * step
+    a.position.z += (dz / d) * step
+    const want = Math.atan2(dx, dz)
+    a.rotation.y += Math.atan2(Math.sin(want - a.rotation.y), Math.cos(want - a.rotation.y)) * Math.min(1, dt * 8)
+    poseAvatar(a, true, clock + f.i)
+  }
+}
+
 // Near an open-ground place its people stand on the lot; walk away and they are put away again.
 function folkNear() {
   if (inside) return
@@ -724,13 +797,20 @@ async function ride(fromId, dest) {
   const stopTo = near && (near.dist >= 9 || dest.walkOn) ? near.stop : null
   const veil = uiRoot.querySelector('.city-ride')
   veil.innerHTML = `<div><span class="cr-van">🚐</span><b>${esc(fill(CITY.travel.lines.ride, { from: from.name, to: stopTo ? stopTo.name : dest.name }))}</b><small>R${res.fare} · ${res.minutes} min</small></div>`
-  veil.hidden = false
   host.dataset.riding = '1'
   soundLoop('bus_engine', true) // (the taxi pulls up)
-  await new Promise((r) => setTimeout(r, Math.max(250, 1500 / FAST)))
+  const to = stopTo || dest
+  // Movement (owner, 11 Nov): a kombi pulls up at the stop, you get in, it pulls off with the camera following it
+  // for a few seconds, then a cut to it pulling in at your stop and you stepping out. Without the traffic (it has not
+  // loaded, or you are inside a place) the old short card is the ride.
+  if (traffic?.ready && !inside && await kombiRide(from, to, veil)) { /* done */ } else {
+    veil.hidden = false
+    await new Promise((r) => setTimeout(r, Math.max(250, 1500 / FAST)))
+    if (!running) return false
+    place(to.x, to.z)
+    await new Promise((r) => setTimeout(r, Math.max(150, 500 / FAST)))
+  }
   if (!running) return false
-  place(stopTo ? stopTo.x : dest.x, stopTo ? stopTo.z : dest.z)
-  await new Promise((r) => setTimeout(r, Math.max(150, 500 / FAST)))
   veil.hidden = true
   host.dataset.riding = '0'
   soundLoop('bus_engine', false)
@@ -743,6 +823,43 @@ async function ride(fromId, dest) {
   else if (stopTo) { const spot = arrivalSpot(dest.x, dest.z); walkTo(spot.x, spot.z, { lot: dest.lot }) }
   else if (dest.lot) openLot(dest.lot)
   save()
+  return true
+}
+// The kombi ride itself. Wall-clock waits are scaled by the game's speed (tests run it fast). Returns false if the
+// kombi never came (the old card takes over).
+const waitFor = async (test, ms) => { const end = performance.now() + ms / FAST; while (running && !test() && performance.now() < end) await new Promise((r) => setTimeout(r, 50)); return running && test() }
+async function kombiRide(from, to, veil) {
+  rideLog.length = 0
+  new MutationObserver((list, obs) => { const v = host.dataset.ride; if (v && rideLog.at(-1) !== v) rideLog.push(v); if (!v) obs.disconnect() }).observe(host, { attributes: true, attributeFilter: ['data-ride'] })
+  host.dataset.ride = 'coming'
+  const k = traffic.pullUp(from.x, from.z)
+  if (!(await waitFor(() => k.arrived, 9000))) { traffic.release(); host.dataset.ride = ''; return false }
+  // you get in: off the pavement and into the kombi
+  mover.stop()
+  pending = null
+  host.dataset.ride = 'in'
+  sfx('door', 0.4)
+  player.visible = false
+  await new Promise((r) => setTimeout(r, Math.max(120, 450 / FAST)))
+  // it pulls off, the camera following it
+  host.dataset.ride = 'off'
+  rideCam = true
+  traffic.pullOff()
+  await new Promise((r) => setTimeout(r, Math.max(400, 3800 / FAST)))
+  if (!running) return true
+  // cut: it pulls in at your stop
+  veil.hidden = false
+  await new Promise((r) => setTimeout(r, Math.max(120, 600 / FAST)))
+  const arrive = traffic.pullUp(to.x, to.z, 0)
+  rideAt.set(arrive.x, 0, arrive.z)
+  place(to.x, to.z)
+  rideCam = null
+  veil.hidden = true
+  host.dataset.ride = 'out'
+  player.visible = true
+  await new Promise((r) => setTimeout(r, Math.max(120, 500 / FAST)))
+  traffic.release(player.position.x, player.position.z)
+  host.dataset.ride = ''
   return true
 }
 function parkSpot(lot) {
@@ -959,8 +1076,11 @@ function seatNpcs() {
   const pz = player.position.z
   const mid = (l) => Math.hypot((l.a.x + l.b.x) / 2 - px, (l.a.z + l.b.z) / 2 - pz)
   const nearest = [...lines].sort((a, b) => mid(a) - mid(b)).slice(0, NPCS)
+  // (Movement: two of them cross the road at the zebra crossings nearest you, in this district)
+  const zebras = crossLines.filter((c) => partAt(c.a.x, c.a.z).id === part.id && !blockedAt(c.a.x, c.a.z) && !blockedAt(c.b.x, c.b.z))
+    .sort((a, b) => Math.hypot(a.a.x - px, a.a.z - pz) - Math.hypot(b.a.x - px, b.a.z - pz))
   npcs.forEach((n, i) => {
-    const l = nearest[i % nearest.length]
+    const l = i >= NPCS - CROSSERS && zebras.length ? zebras[(i - (NPCS - CROSSERS)) % zebras.length] : nearest[i % nearest.length]
     const t = 0.15 + ((i * 0.37) % 0.7)
     n.line = l
     n.dir = i % 2 ? 1 : -1
@@ -970,9 +1090,24 @@ function seatNpcs() {
     n.wait = 0
   })
 }
+// Everybody on foot the cars must stop for: you (when you are out of the kombi), the street people, the players here.
+function onFoot() {
+  const list = []
+  if (player.visible) list.push({ x: player.position.x, z: player.position.z })
+  for (const n of npcs) if (n.avatar.visible) list.push({ x: n.avatar.position.x, z: n.avatar.position.z })
+  if (others) list.push(...others.nearbyPositions(player.position.x, player.position.z, 60))
+  return list
+}
 function npcTick(dt) {
   for (const n of npcs) {
     if (!n.line || !n.avatar.visible) continue
+    // (a crosser at the kerb waits while anything is driving at the crossing; the cars stop for them once they are on it)
+    if (n.line.cross && n.wait <= 0 && traffic) {
+      const p0 = n.avatar.position
+      const atKerb = Math.min(Math.hypot(p0.x - n.line.a.x, p0.z - n.line.a.z), Math.hypot(p0.x - n.line.b.x, p0.z - n.line.b.z)) < 0.5
+      if (atKerb && traffic.movingNear((n.line.a.x + n.line.b.x) / 2, (n.line.a.z + n.line.b.z) / 2, 9)) { n.waitingCar = true; poseAvatar(n.avatar, false, clock + n.i); continue }
+      n.waitingCar = false
+    }
     const goal = n.dir > 0 ? n.line.b : n.line.a
     const p = n.avatar.position
     const dx = goal.x - p.x
@@ -1251,9 +1386,16 @@ function tick(now) {
   soundLoop('footsteps', stepping)
   poseAvatar(player, stepping, clock)
   if (!inside) npcTick(dt)
-  if (folk) for (const f of folk.list) poseAvatar(f.avatar, false, clock + f.i * 1.7)
+  if (traffic && trafficOn) {
+    traffic.setVisible(!inside)
+    if (!inside) { traffic.update(dt, player.position.x, player.position.z, onFoot()); traffic.tidyRide(player.position.x, player.position.z) }
+  }
+  if (inside && folk) patronTick(dt)
+  if (folk && !inside) for (const f of folk.list) poseAvatar(f.avatar, false, clock + f.i * 1.7)
+  else if (folk) poseAvatar(folk.list[0].avatar, false, clock) // (the one serving; the patrons move in patronTick)
   others?.update(dt, camera, player.position, true, rig.mode === 'eye')
-  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, inside ? roomView() : player.position, dt, inside ? null : built?.group)
+  if (rideCam) { const k = traffic?.cars.find((c) => c.ride); if (k) rideAt.set(k.x, 0, k.z) }
+  if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, rideCam ? rideAt : inside ? roomView() : player.position, dt, inside ? null : built?.group)
   for (const p of player.userData.headParts || []) p.visible = rig.mode !== 'eye'
   notePart(false)
   setSound({ part: part.id, inside: Boolean(inside) }) // (the ambience and the music fade to the new district's as you cross the border)
@@ -1335,6 +1477,7 @@ export async function startCity(options) {
       return { i, avatar, speed: 1.15 + (i % 4) * 0.12, line: null, dir: 1, wait: 0 }
     })
     others = createOthers(scene)
+    traffic = createTraffic({ scene, bake: (url) => bakeModel(url), flip: CAR_FLIP })
     const sp = options.spawn || { kind: 'gate' }
     const lot = sp.kind === 'lot' ? lotOf(sp.id) : null
     if (lot) place(lot.door.x, lot.door.z)
@@ -1385,6 +1528,9 @@ export function stopCity() {
   if (uiRoot) { uiRoot.hidden = true; uiRoot.querySelector('.city-ride').hidden = true }
   others?.dispose?.()
   others = null
+  traffic?.dispose()
+  traffic = null
+  rideCam = null
   if (carMesh) carMesh.removeFromParent()
   built?.dispose()
   built = null
@@ -1452,5 +1598,12 @@ if (typeof window !== 'undefined') {
     places: () => PLACES.map((p) => ({ id: p.id, name: p.name, template: p.template, rows: p.rows.length, door: p.lot.door, part: p.lot.part })),
     openLot: (id) => openLot(id),
     others: () => others?.report(camera) || [],
+    // Movement (read only): the traffic, the street people who cross, the patrons in the place you are in
+    traffic: () => (traffic ? { ...traffic.info(), ride: host.dataset.ride || '', following: Boolean(rideCam), rideLog: [...rideLog] } : null),
+    crossers: () => npcs.filter((n) => n.line?.cross && n.avatar.visible).map((n) => ({ x: +n.avatar.position.x.toFixed(2), z: +n.avatar.position.z.toFixed(2), waiting: Boolean(n.waitingCar), a: n.line.a, b: n.line.b })),
+    patrons: () => (folk ? folk.list.filter((f) => !f.staff).map((f) => ({ state: f.state, x: +f.avatar.position.x.toFixed(2), z: +f.avatar.position.z.toFixed(2), visible: f.avatar.visible, left: f.left || 0 })) : []),
+    // (tests: stand somewhere without walking there)
+    trafficOn: (on) => { trafficOn = Boolean(on); traffic?.setVisible(trafficOn && !inside); return trafficOn },
+    putPlayer: (x, z) => { if (!player) return false; mover.stop(); player.position.set(x, 0, z); player.userData.lastPos?.set(x, 0, z); return true },
   }
 }
