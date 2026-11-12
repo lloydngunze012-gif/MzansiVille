@@ -1,9 +1,16 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 12 Nov, Claude Code (Social C).
+Last updated: 12 Nov, Claude Code (Opening page V2.2).
 
-**Next jobs: docs/queue.md**, in the owner's order: Opening page V2.2 (started: see the branch `opening-v22-wip` and the note in the queue), E (notifications), D (character in 3D), then Movement. A fresh session takes them.
+**Next jobs: docs/queue.md**, in the owner's order: E (notifications), D (character in 3D), then Movement. A fresh session takes them.
+
+## Opening page V2.2 (owner, 12 Nov): built; pushed and deployed. No SQL to run.
+- **What is new.** Your background (the sunny courtyard, `public/opening/bg-source.png`, now committed) behind every student, cropped for 360-414 px screens, 828 px wide (never scaled up), blurred a little and a touch less saturated. Each student is cut out on a transparent background, lit from the upper left like the picture, with a soft shadow on the lawn and a relaxed stance (weight on one leg, a slight turn, one arm bent). Smaller: the body is about 45% of the screen, standing in the middle of the lawn, the fade below the feet; the panel covers the flowers. Sharper: rendered at 2x, 27 to 31 KB each. The picked student loads first, the other seven after. The portrait row opens with Emma fully in view; "Pick your character" sits on the left.
+- **Credits.** docs/credits.md says the background is yours, made in ChatGPT.
+- **Decisions made, yours to change.** (1) The blur is 2.4 px and saturation 88% (both one number in scripts/opening-stills.mjs). (2) bg-source.png (2.8 MB) lives in public/opening/ as the job said, so it is also on the website's server, though the page never loads it. Say if you want it moved out of public/.
+- **Tests.** launch.spec O1, O2, O5 rewritten for V2.2 (one background; each student's size, feet above the fade, head under the logo, centred, at 360, 390 and 414; the new picture budget: under 55 KB a student, under 500 KB all together). Screenshots of all eight at the three widths (not committed): docs/sprints/opening-v22/.
+- **Test health.** O5's first run found the feet 2-3 px into the top of the fade at 360 px (the WIP had the picture 14 px up): the GAME was moved (24 px up), not the test.
 
 ## Social C: find me and suggested groups (owner, 11 Nov): built; RUN supabase/chat.sql ONCE MORE
 - **Lloyd: run the whole of `supabase/chat.sql` again.** All of Social C needs it. Until then nothing new shows (no card, no menu switch, no "Go to", no Open or Private, no suggestions) and everything else works as before. `#/health` then shows "Social SQL: Yes" (it now also checks Social C).

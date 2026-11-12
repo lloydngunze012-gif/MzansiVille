@@ -2,6 +2,12 @@
 
 Rule (owner, 8 Nov): everything in the game is CC0, or CC BY 4.0 with credit. Everything shipped today is CC0 (public domain dedication): free for any use, no attribution required. We credit the makers anyway. A CC BY 4.0 asset needs its credit line here and on the in-game Credits screen (`#/credits`, `src/ui/render.js`), and a note when we changed it. Older packs are listed in `public/models/CREDITS.md` and `public/audio/CREDITS.md`; this file adds the day-1 home scene (leaving home) and is the place to record any new pack.
 
+## The opening page's background (`public/opening/`)
+
+- `bg-source.png` (941 x 1672): the campus courtyard, lawn in front and the sea behind. Made by the owner in ChatGPT and given to the game; ours to use. Not a third-party pack, so no licence line.
+- `bg.webp` is made from it by `scripts/opening-stills.mjs`: cropped to the top 1500 rows, scaled to 828 px wide, blurred 2.4 px and 12% less saturated.
+- The students standing on it (`q-<id>.webp`, `q-<id>-face.webp`) are renders of the game's own characters (Quaternius, CC0: `public/models/CREDITS.md`).
+
 ## Day 1: leaving home (`public/models/home/`)
 
 Built by `scripts/home-assets.mjs` from the original downloads: each pack becomes one glTF binary kit file (every model a named node), welded, quantised and Draco-compressed. Loaded only on day 1 by `src/world/home.js`.

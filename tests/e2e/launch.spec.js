@@ -4,10 +4,11 @@
 //   L3  the card prompt: after the first meal, never during a walk, R200 once, at most once a day, old saves never
 //   L4  the leaderboard: a returning player gets the Daily (top 3 of each board) and from it the boards, a new one does not; three tabs, top 10, "You: #N"
 //   L5  launch safety: errors capped at 20 an hour, funnel steps in order, #/health, feedback (menu and third session)
-//   O1  the opening page: the scene is the picked student photographed in the campus (the real logo over it), and tapping
-//       another portrait swaps it for that student's own render
+//   O1  the opening page (V2.2): one background (the owner's courtyard) for everyone, the picked student cut out and
+//       standing on its lawn (the real logo over it); tapping another portrait swaps in that student's own render
 //   O2  blocked pictures still look good (the dusk behind the scene alone), and Play never waits for them
-//   O5  every student at 360, 390 and 414 px: layout, the light palette (V2.1), contrast (WCAG AA), picture budget, "Pick your character"; screenshots
+//   O5  every student at 360, 390 and 414 px: layout (V2.2: the student about 45% of the screen, feet above the fade),
+//       the light palette (V2.1), contrast (WCAG AA), picture budget (about 50 KB a student), "Pick your character"; screenshots
 //   O6  the country list starts with seven countries; each of them has its own second dropdown under its own word
 //   O3  an empty name shakes the field and says so; Play's gold button never greys out
 //   O4  the name and the handle both pass handle_blocklist.json before Play works
@@ -136,17 +137,24 @@ test('L1b a name that is too short or not allowed stays on the screen; a returni
 })
 
 // ---------- O1/O2/O3/O4 the opening page ----------
-test('O1 the scene is the picked student, photographed in the campus, and swaps when another portrait is tapped', async ({ page }) => {
+test('O1 one background for everyone, the picked student standing on its lawn, swapped when another portrait is tapped', async ({ page }) => {
   const errors = []
   page.on('pageerror', (e) => errors.push(String(e)))
   await brandNew(page)
   const scene = page.locator('.qs-scene')
+  const fig = page.locator('.qs-fig')
+  // the row opens with the picked student (Emma, first) fully in view, never cut off at the left edge
+  const inView = await page.evaluate(() => { const row = document.querySelector('.qs-row').getBoundingClientRect(), c = document.querySelector('.qs-card[aria-pressed="true"]').getBoundingClientRect(); return c.left >= row.left && c.right <= row.right })
+  expect(inView, 'the picked portrait is fully in view as the page opens').toBe(true)
+  // the background is the owner's courtyard, the same for every student
+  expect(await scene.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('/opening/bg.webp')
   const loaded = (id) => page.evaluate((src) => new Promise((done) => { const im = new Image(); im.onload = () => done(im.naturalWidth); im.onerror = () => done(0); im.src = src }), `/opening/${id}.webp`)
   // a known baseline pick, whatever the random preselect landed on
   await page.locator('[data-preset="q-naledi"]').tap()
   await expect(scene).toHaveAttribute('data-still', '/opening/q-naledi.webp')
-  expect(await scene.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('/opening/q-naledi.webp')
-  expect(await loaded('q-naledi'), 'her picture is a real file').toBe(720)
+  expect(await fig.evaluate((el) => getComputedStyle(el).backgroundImage)).toContain('/opening/q-naledi.webp')
+  expect(await loaded('q-naledi'), 'her picture is a real file, 2x of the 220 px it is shown at').toBe(440)
+  expect(await loaded('bg'), 'the background is 828 px wide: a 414 px screen at 2x').toBe(828)
   // the real logo, never plain text, with the university under it
   const logo = page.locator('.qs-logo')
   await expect(logo).toBeVisible()
@@ -154,8 +162,9 @@ test('O1 the scene is the picked student, photographed in the campus, and swaps 
   await expect(page.locator('.qs-uni')).toHaveText('University of Mzansi')
   // a different student: the scene eases in once, and it is THEIR picture
   await page.locator('[data-preset="q-dev"]').tap()
-  await expect(scene).toHaveClass(/qs-swap/)
+  await expect(fig).toHaveClass(/qs-swap/)
   await expect(scene).toHaveAttribute('data-still', '/opening/q-dev.webp')
+  expect(await scene.evaluate((el) => getComputedStyle(el).backgroundImage), 'the background stays the same').toContain('/opening/bg.webp')
   // tapping the same, already-selected portrait again changes nothing
   await page.locator('[data-preset="q-dev"]').tap()
   await expect(page.locator('.qs-card[aria-pressed="true"]')).toHaveAttribute('data-preset', 'q-dev')
@@ -192,7 +201,7 @@ test('O2 blocked pictures still look good (the dusk behind the scene alone), and
 // cream fields, every text passes WCAG AA (4.5:1) and nothing is pink or light blue.
 test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, picture budget', async ({ page, request }) => {
   test.setTimeout(180000)
-  const out = 'docs/sprints/opening-v2'
+  const out = 'docs/sprints/opening-v22'
   fs.mkdirSync(out, { recursive: true })
   await brandNew(page)
   const ids = await page.locator('.qs-card').evaluateAll((els) => els.map((e) => e.dataset.preset))
@@ -204,13 +213,16 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
   const lay = await page.evaluate(() => { const p = document.querySelector('.qs-pick').getBoundingClientRect(), r = document.querySelector('.qs-row').getBoundingClientRect(); return { gap: r.top - p.bottom, anim: getComputedStyle(document.querySelector('.qs-pick')).animationName } })
   expect(lay.gap).toBeGreaterThanOrEqual(0); expect(lay.gap).toBeLessThan(12)
   expect(lay.anim, 'no bob under reduced motion').toBe('none')
-  let total = (await (await request.get('/opening/logo.webp')).body()).length
+  // V2.2 (owner, 12 Nov): sharper stills, up to about 50 KB a student, and one shared background
+  const bg = (await (await request.get('/opening/bg.webp')).body()).length
+  expect(bg, 'bg.webp is under 100 KB').toBeLessThan(100 * 1024)
+  let total = (await (await request.get('/opening/logo.webp')).body()).length + bg
   for (const id of ids) {
     const still = (await (await request.get(`/opening/${id}.webp`)).body()).length
-    expect(still, `${id}.webp is under 60 KB`).toBeLessThan(60 * 1024)
+    expect(still, `${id}.webp is about 50 KB at most`).toBeLessThan(55 * 1024)
     total += still + (await (await request.get(`/opening/${id}-face.webp`)).body()).length
   }
-  expect(total, 'all the page\'s pictures together are under 300 KB').toBeLessThan(300 * 1024)
+  expect(total, 'all the page\'s pictures together are under 500 KB (the first screen needs only the background and one student)').toBeLessThan(500 * 1024)
   for (const [w, h] of [[360, 740], [390, 844], [414, 896]]) {
     await page.setViewportSize({ width: w, height: h })
     for (const id of ids) {
@@ -220,6 +232,13 @@ test('O5 every student at 360, 390 and 414 px: layout, palette, contrast, pictur
       if (id === ids[0] && w === 360) await expect(pick).toHaveCount(0) // (gone after the first tap on a portrait, even the one already picked)
       await expect(page.locator('.qs-scene')).toHaveAttribute('data-still', `/opening/${id}.webp`)
       await page.evaluate((src) => new Promise((done) => { const im = new Image(); im.onload = im.onerror = done; im.src = src }), `/opening/${id}.webp`)
+      // V2.2: the student stands on the open lawn, the body about 45% of the screen's height (85% of the picture),
+      // the feet above the strip that fades into cream, the head below the logo, in the middle
+      const g = await page.evaluate(() => { const f = document.querySelector('.qs-fig').getBoundingClientRect(), s = document.querySelector('.qs-scene').getBoundingClientRect(), l = document.querySelector('.qs-uni').getBoundingClientRect(); return { body: (f.height * 0.85) / innerHeight, feet: f.bottom - f.height * 0.044, fade: s.bottom - 36, head: f.top + f.height * 0.1, logo: l.bottom, mid: (f.left + f.right) / 2 - innerWidth / 2 } })
+      expect(g.body, `the student is about 45% of the screen at ${w} px`).toBeGreaterThan(0.38); expect(g.body).toBeLessThan(0.5)
+      expect(g.feet, 'the feet stand above the fade').toBeLessThanOrEqual(g.fade + 1)
+      expect(g.head, 'the head is below the logo').toBeGreaterThan(g.logo)
+      expect(Math.abs(g.mid), 'in the middle').toBeLessThan(2)
       if (id === ids[0]) {
         const m = await page.evaluate(() => {
           const box = (s) => document.querySelector(s).getBoundingClientRect()
