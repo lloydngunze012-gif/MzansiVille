@@ -1,4 +1,4 @@
-import { avatarSvg } from '../avatar.js'
+import { faceHtml } from '../faces3d.js'
 import { flagOf, fromPlace } from '../from.js'
 import { canonicalHouse } from '../houses.js'
 
@@ -18,7 +18,7 @@ export function playerCardHtml(card, house, opts = {}) {
   const tagHtml = tags.map(([ic, t]) => (t ? `<li>${ic} ${esc(t)}</li>` : opts.own ? `<li class="empty">${ic} add a tag</li>` : '')).join('')
   const bio = card.bio ? `“${esc(card.bio)}”` : opts.own ? '<span class="empty">Add one line about you</span>' : '<span class="empty">No bio yet</span>'
   const badges = (card.badges || []).length ? card.badges.map((b) => `<span class="pc-badge">\u{1F3C5} ${esc(b)}</span>`).join('') : '<span class="pc-badge none">No badges yet</span>'
-  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 96)
+  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : faceHtml(card.look, 96) // (job D: from the 3D character)
   // (City job B: the latest three show-offs bought in SunnyBay)
   const flex = (card.flex || []).slice(0, 3)
   const theme = 'white' // the student card is always white (owner, 8 Nov)
@@ -49,7 +49,7 @@ export function playerCardHtml(card, house, opts = {}) {
 // Block, Report.
 export function miniCardHtml(card, house, opts = {}) {
   const vars = house ? `--h1:${house.main};--h2:${house.accent}` : ''
-  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : avatarSvg(card.look || {}, '031', 72)
+  const photo = opts.photo ? `<img src="${esc(opts.photo)}" alt="">` : faceHtml(card.look, 72)
   const friend = Boolean(opts.friend)
   const houseName = house?.name || canonicalHouse(card.house) || 'UMzansi'
   const grey = [houseName, card.tags?.course, card.year ? `${esc(ORD[card.year] || `${card.year}th`)} year` : ''].filter(Boolean).join(' · ')

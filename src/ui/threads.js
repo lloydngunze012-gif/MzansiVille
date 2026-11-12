@@ -9,7 +9,7 @@
 // The ping: a short ding (sfx.js, so the sound switch applies) and a banner at the top with the sender and the
 // first words; tapping it opens the thread. Never for the thread that is on screen.
 import './threads.css'
-import { avatarSvg } from '../avatar.js'
+import { faceHtml } from '../faces3d.js'
 import { MSG_MAX } from '../engine/filter.js'
 import { peerList } from '../presence.js'
 import { newFollowers } from '../board.js'
@@ -21,12 +21,8 @@ import { canType, typing, typingIn, reportGroup, setGroupOpen, socialCReady, add
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
-const faces = new Map()
-function face(look, size = 40) {
-  const key = `${size}|${JSON.stringify(look || {})}`
-  if (!faces.has(key)) faces.set(key, avatarSvg(look || {}, '031', size))
-  return faces.get(key)
-}
+// (job D: a head shot from the 3D character, src/faces3d.js; the cartoon only while it is drawn)
+function face(look, size = 40) { return faceHtml(look, size) }
 const GROUP_FACE = '<span class="cht-group" aria-hidden="true">\u{1F465}</span>'
 function clock(at) {
   const d = new Date(at)

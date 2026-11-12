@@ -142,6 +142,12 @@
 .en-idphoto img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
 .en-idphoto img.whole { position: absolute; left: 50%; top: 6%; width: auto; height: 175%; max-width: none; transform: translateX(-50%); object-fit: contain; }
 .en-idphoto svg { width: 90%; height: auto; }
+/* (job D: the smaller live stage in the card's photo on the steps after the look; the still under it fades once the
+   3D student is in) */
+.en .en-idphoto-box .cc-mini .en-idphoto { inset: 0 24%; }
+.en .en-idphoto-box .cc-mini.cc-has3d .en-idphoto { opacity: 0; transition: opacity .15s linear; }
+.en .en-idphoto-box .cc-mini .cc-3d { position: absolute; inset: 0; width: 100%; height: 100%; }
+.en-rface .f3d img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
 
 /* ===== The white card (owner, 8 Nov: "I prefer a white card, but it needs to look premium"). Pearl
    white with a faint security pattern, a gold-foil hairline edge, a gold-foil crest, ink text, the house

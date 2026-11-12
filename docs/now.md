@@ -1,9 +1,16 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 12 Nov, Claude Code (Notifications).
+Last updated: 12 Nov, Claude Code (Character in 3D).
 
-**Next jobs: docs/queue.md**, in the owner's order: D (character in 3D), then Movement. A fresh session takes them.
+**Next jobs: docs/queue.md**, in the owner's order: Movement. A fresh session takes them.
+
+## Character in 3D (owner, 11 Nov, job D): built; pushed and deployed. No SQL to run.
+- **What was there already.** The look step of the character screen already showed your real 3D student (since 8 Nov), and the hair, body and outfit chips are pictures of the 3D model. **The cartoons you saw** were: the roommate cards, your card's photo on the steps after the look, and every round avatar in the chat, on the Board and on player cards.
+- **What is new.** (1) On every step of the character screen the card's photo is your own 3D student, turning slowly (one turn every 10 s) and dancing, the same as the look step only smaller; it updates as soon as you pick hair, skin or clothes. (2) The roommate cards, the chat (list, thread header, names in groups, the new-message banner, Friends), the Board and the player cards show head shots taken from each player's 3D character. One of the eight quick-start students who kept their look: their ready-made portrait. Anyone else: a head shot drawn once on the phone and kept (the cartoon shows only for the moment it takes to draw).
+- **Kept light.** At most 1.5 device pixels per CSS pixel (it was 2), the stage stops drawing altogether when it is scrolled off screen or the game is in the background. Measured on a low-end profile (360 x 740, the processor slowed 4 times): 56.5 fps (normally 56.3). Honest limit: slowing the processor does not slow this PC's graphics card, so a real cheap phone's GPU could be slower than this number says. Please look at it on a cheap Android.
+- **Decisions made, yours to change.** (1) The head shots are drawn on each phone (no server, no uploads); a phone keeps up to 90 pictures, shared with the creator's chips. (2) The student keeps dancing while turning on every step (as on the look step).
+- **Tests.** `tests/e2e/char3d-quick.spec.js` D1 (the turning student on the look step and in the card's photo after it, a pick updates it, at most 1.5x, no frames drawn while off screen and drawing again when back, the four roommates as 3D head shots), D2 (the chat's avatars are head shots from the 3D model), D3 (the low-end profile, numbers in docs/sprints/char3d/perf.json). Screenshots at 390 px (not committed): docs/sprints/char3d/ (look, roommate, chat).
 
 ## Notifications (owner, 11 Nov): built; pushed and deployed. **RUN supabase/chat.sql ONCE MORE, and add the push keys in Vercel.**
 - **Lloyd, two things (step by step in `docs/notifications.md`):** (1) run the whole of `supabase/chat.sql` again; (2) make the push keys (`npx web-push generate-vapid-keys`) and add five environment variables in Vercel, then redeploy. `#/health` shows "Social SQL" and "Push keys (Vercel)". Until (1) the menu has no Notifications item; until (2) nobody gets a ping. Everything else plays as before.

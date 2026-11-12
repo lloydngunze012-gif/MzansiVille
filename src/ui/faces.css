@@ -1,0 +1,5 @@
+/* Head shots from the 3D character (src/faces3d.js): the wrapper takes no room of its own, so each round avatar's own
+   rules (.cht-av, .pc-photo, .en-rface...) size what is inside it, the cartoon while it waits or the picture. The
+   picture is a square head shot (thumbs3d.js 'face'); a ready-made quick-start portrait is a square too. */
+.f3d { display: contents; }
+.f3d img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }

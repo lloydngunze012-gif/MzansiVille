@@ -8,6 +8,7 @@ import { tidyHandle } from '../handles.js'
 import REGIONS from '../../data/campusville/regions.json'
 import { COUNTRY_GROUPS, countryEmoji, countryFlag, countryOf, flagOf, fromPlace, PROVINCES } from '../from.js'
 import { roommateFor, roommatesFor, roommateLook } from '../roommates.js'
+import { faceHtml } from '../faces3d.js'
 
 // Enrolment (owner, 6 Nov): three quick screens, one question each, big tappable cards,
 // a progress dot, back and skip; then the finished player card, "This is what other
@@ -79,7 +80,9 @@ function idCard(state, { live = '', step }) {
   const tags = slots.map(([k, label]) => draft[k]
     ? `<li data-g="${k}">${icon(draft[k])}${esc(draft[k])}</li>`
     : `<li data-g="${k}" class="empty${next === k ? ' next' : ''}">${label}</li>`).join('')
-  const photo = live || `<div class="en-idphoto">${avatarSvg(draft.avatar, district.meta.dialCode, 90)}</div>`
+  // (job D, owner 11 Nov: on every step the photo is your own 3D student, turning slowly, the same live stage as the
+  // look step at a smaller size; the picture under it is what shows until the 3D is in, and all that shows without it)
+  const photo = live || `<div class="cc-stage en-idstage cc-mini"><div class="en-idphoto">${avatarSvg(draft.avatar, district.meta.dialCode, 90)}</div><i class="cc-loading" aria-hidden="true"></i></div>`
   return `<div class="en-id${live ? ' en-stage' : ''}${house ? ' housed' : ''}" data-id-step="${step}"${vars}>
       <div class="en-idbar"><span class="en-crest" aria-hidden="true">U</span><span>${esc(house ? house.name : 'University of Mzansi')}</span><span class="en-idkind">${house ? `Class of ${CLASS_OF}` : 'Student'}</span></div>
       <div class="en-idphoto-box">${photo}</div>
@@ -171,7 +174,7 @@ function roommateStep(state) {
   const cards = roommatesFor(gender).map((r) => {
     const look = roommateLook(r)
     return `<button class="en-roomie" type="button" data-act="enrol-pick" data-k="roommate" data-v="${esc(r.id)}" data-roommate="${esc(r.id)}" aria-pressed="${mine.id === r.id}">
-        <span class="en-rface" aria-hidden="true">${avatarSvg({ gender: look.gender, skin: look.skin, hair: gender === 'male' ? 'crop' : 'curls', outfit: look.outfit, hairColor: look.hairColor }, '031', 60)}</span>
+        <span class="en-rface" aria-hidden="true">${faceHtml(look, 60)}</span>
         <b>${esc(r.name)}</b><small>${esc(r.blurb)}</small>
       </button>`
   }).join('')

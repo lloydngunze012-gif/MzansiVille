@@ -8,7 +8,7 @@ import { appearNow, createAvatar, poseAvatar } from '../world/avatar3d.js'
 const W = 120
 const H = 200
 const STORE = 'mzansiville.thumbs.v5' // (v5: curvy is reshaped; v4: dreads instead of braids)
-const KEEP = 60 // pictures kept on the phone
+const KEEP = 90 // pictures kept on the phone (job D: the chat's head shots share it)
 let renderer = null
 let scene = null
 let camera = null
@@ -55,8 +55,24 @@ async function render(avatar, kind) {
   appearNow(av)
   scene.add(av)
   av.updateMatrixWorld(true)
-  // Frame it: the whole student (feet to the top of the hair) or head and shoulders.
   const half = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+  // 'face' (job D): a square head shot for the round avatars in the chat, on cards and the roommate cards. Framed on
+  // this student's own head (bodies differ in height): 0.42 m across, the middle square of the picture, 96 x 96.
+  if (kind === 'face') {
+    const head = av.getObjectByName('Head')
+    const y = (head ? head.getWorldPosition(new THREE.Vector3()).y : 1.62) + 0.07
+    const dist = 0.42 / 2 / (half * camera.aspect)
+    camera.position.set(0, y + 0.02, dist)
+    camera.lookAt(0, y, 0)
+    renderer.render(scene, camera)
+    const out = document.createElement('canvas')
+    out.width = out.height = 96
+    out.getContext('2d').drawImage(renderer.domElement, 0, (H - W) / 2, W, W, 0, 0, 96, 96)
+    scene.remove(av)
+    av.userData.disposed = true
+    return out.toDataURL('image/png')
+  }
+  // Frame it: the whole student (feet to the top of the hair) or head and shoulders.
   const [top, bottom] = kind === 'hair' ? [1.95, 1.3] : [1.95, -0.02]
   const tall = (top - bottom) * 1.12
   const dist = Math.max(tall / 2 / half, (kind === 'hair' ? 0.55 : 0.8) / 2 / (half * camera.aspect))

@@ -4,23 +4,7 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running.
 
-Order (owner, 12 Nov, the latest word): **D (Character in 3D), then Movement.** (Opening page V2.2 and E, Notifications: done 12 Nov.) A fresh session takes them. Done already: Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications).
-
----
-
-## D. Character in 3D (Sonnet, medium · Small)
-
-```
-CHARACTER IN 3D (owner, 11 Nov). The character screen shows cartoon
-faces; the owner wants the real 3D character, as on the opening page.
-1. The character screen shows the player's own 3D character, turning
-   slowly and updating as they change hair, skin and clothes. Keep it
-   light: a small canvas, low pixel ratio, paused when not on screen.
-   Measure it on a low-end phone profile.
-2. Chat and card avatars use head shots taken from the 3D character
-   (like the opening portraits) instead of cartoons.
-Screenshots at 390 px.
-```
+Order (owner, 12 Nov, the latest word): **Movement.** (Opening page V2.2, E Notifications and D Character in 3D: done 12 Nov.) A fresh session takes them. Done already: Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D).
 
 ---
 

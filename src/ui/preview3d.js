@@ -19,7 +19,8 @@ const turner = createTurner()
 
 function setup(stage) {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+  // (job D: kept light on a phone: at most 1.5 device pixels per CSS pixel; the stage is a small canvas)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.domElement.className = 'cc-3d'
   const css = stage ? getComputedStyle(stage) : null
@@ -73,8 +74,31 @@ window.mzansiStudioFrame = () => {
   return { ...box, headTop: top, soleLine: sole }
 }
 
+// Paused when nobody can see it (job D): the stage scrolled off screen, or the tab hidden. The frame loop stops
+// altogether and starts again when it is back.
+let inView = true
+let watched = null
+const seen = typeof IntersectionObserver === 'function' ? new IntersectionObserver((entries) => {
+  for (const e of entries) if (e.target === watched) inView = e.isIntersecting
+  wake()
+}) : null
+function watch(stage) {
+  if (!seen || watched === stage) return
+  if (watched) seen.unobserve(watched)
+  watched = stage
+  inView = true
+  seen.observe(stage)
+}
+const running = () => inView && !document.hidden && renderer?.domElement.isConnected
+function wake() { if (!frame && running()) { last = 0; frame = requestAnimationFrame(tick) } }
+document.addEventListener('visibilitychange', wake)
+let drawn = 0
+window.mzansiStudioRun = () => ({ running: Boolean(frame), inView, frames: drawn, ratio: renderer?.getPixelRatio() || 0, w: renderer?.domElement.width || 0, h: renderer?.domElement.height || 0 })
+
 function tick(now) {
+  if (!running()) { frame = 0; return }
   frame = requestAnimationFrame(tick)
+  drawn += 1
   const dt = Math.min(0.05, (now - (last || now)) / 1000)
   last = now
   clock += dt
@@ -133,7 +157,8 @@ export function showPreview(stage, look) {
   if (renderer.domElement.parentElement !== stage) stage.append(renderer.domElement)
   if (avatar.userData.rigged || scene.children.some((c) => c !== avatar && c.userData?.rigged && !c.userData.disposed)) stage.classList.add('cc-has3d')
   stage.dataset.look = next
-  if (!frame) frame = requestAnimationFrame(tick)
+  watch(stage)
+  wake()
 }
 
 // Resolves once the student on the stage is showing (or failed to load).

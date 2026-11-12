@@ -4,7 +4,7 @@
 //   of the campus (so it is never empty); your interests on top, with Edit.
 //   A Board: a player's posts, newest first, their follower count and Follow; on your own, the box to post
 //   (140 characters, 3 a day). On every post: a stamp (🔥, one each), Replies (a chat thread), Report.
-import { avatarSvg } from '../avatar.js'
+import { faceHtml } from '../faces3d.js'
 import INTERESTS from '../../data/campusville/interests.json'
 import { followerCounts, followersText, followPlayer, loadBoardOf, loadFeed, POST_MAX, postToBoard, reportPost, repliesOf, stampPost, districtNow } from '../board.js'
 import { myId, myInterests, socialBReady } from '../threads.js'
@@ -12,12 +12,9 @@ import { waButton } from '../sharewa.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const DISTRICT = { campus: 'Campus', town: 'Town centre', suburbs: 'the Suburbs', beachfront: 'the Beachfront', township: 'the Township', industrial: 'Industrial' }
-const faces = new Map()
 function face(p, size = 36) {
   if (p.npc) return `<span class="bd-npc" aria-hidden="true">${esc(String(p.name || '?').replace(/[^A-Za-z]/g, '').slice(0, 1).toUpperCase())}</span>`
-  const key = `${size}|${JSON.stringify(p.look || {})}`
-  if (!faces.has(key)) faces.set(key, avatarSvg(p.look || {}, '031', size))
-  return faces.get(key)
+  return faceHtml(p.look, size) // (job D: a head shot from the 3D character)
 }
 function ago(at) {
   const s = Math.max(0, (Date.now() - new Date(at).getTime()) / 1000)
