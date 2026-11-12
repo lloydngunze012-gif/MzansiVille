@@ -1,9 +1,9 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 12 Nov, Claude Code (#/health fixes).
+Last updated: 12 Nov, Claude Code (queue: jobs K, J, L added).
 
-**Next jobs: docs/queue.md** (empty: everything the owner sent on 11 and 12 Nov is built). Lloyd: the push keys are in Vercel (12 Nov); run supabase/chat.sql again if not done yet (docs/notifications.md).
+**Next jobs: docs/queue.md** (12 Nov: after the current job, I, K, J, L, H, G; playable by Fri 13 Nov, launch Fri 20 Nov). Lloyd: the push keys are in Vercel (12 Nov); run supabase/chat.sql again if not done yet (docs/notifications.md).
 
 ## #/health fixes (owner, 12 Nov): pushed and deployed. No SQL to run.
 - **"Push keys (Vercel): No" was my bug, not Vercel.** Production `/api/push` already answered `ready: true` (all five variables seen; nothing to change in Vercel), but #/health kept that answer under the wrong name, so the row could never say Yes. Fixed: it now says Yes.
