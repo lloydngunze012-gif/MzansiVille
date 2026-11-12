@@ -1,0 +1,20 @@
+/* Social C (src/findme.js): the small cards for "Let friends find you today?", "Emma is on campus" and a suggested
+   group. White with ink text and a yellow first button (docs/palette.md). Width and centring: the one
+   floating-card rule in cards.css. Never a dialog: you keep walking. */
+.fm-card {
+  position: fixed; z-index: 159; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 0; right: 0; box-sizing: border-box;
+  padding: 12px; background: #fff; color: #1c1915; border: 1px solid #e3d8c4; border-radius: 16px; box-shadow: 0 10px 26px #0005;
+  font: 500 15px/1.3 Figtree, system-ui, sans-serif; animation: gup .18s ease-out; pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) { .fm-card { animation: none; } }
+.fm-card p { margin: 0 0 10px; }
+.fm-card p b { font: 800 16px/1.25 Figtree, system-ui, sans-serif; color: #1c1915; }
+.fm-card p span { display: block; margin-top: 2px; font-size: 14px; color: #5f5a52; }
+.fm-card p span.fm-in { display: inline; margin: 0; font-size: 15px; color: #1c1915; }
+.fm-row { display: flex; gap: 8px; align-items: stretch; }
+.fm-row button { all: unset; box-sizing: border-box; min-height: 44px; padding: 0 14px; display: grid; place-items: center; border-radius: 12px; font: 800 15px/1 Figtree, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.fm-row button:active { transform: scale(.97); }
+.fm-yes { flex: 1; background: #f0c400; color: #1c1915; }
+.fm-no { flex: 1; background: #fff; color: #1c1915; border: 1.5px solid #e3d8c4; }
+.fm-row .fm-x, .fm-row .fm-flag { flex: none; padding: 0 12px; background: #fff; color: #1c1915; border: 1.5px solid #e3d8c4; }
+.fm-row .fm-flag { color: #9b1f1f; }

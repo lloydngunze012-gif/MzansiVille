@@ -656,4 +656,146 @@ await check('loops: invite a friend: a new player claims the code once; the invi
   await db.exec('reset role')
 })
 
+// ---- Social C (11 Nov): find me, open groups and their suggestions, reports of a group ----
+const [FA, FB, FC, FD, FE] = ['fa', 'fb', 'fc', 'fd', 'fe'].map(P)
+await check('social c: find me is off until you say yes, lasts the day, and only friends both ways who are not blocked see your spot', async () => {
+  for (const [who, name] of [[FA, 'Emma'], [FB, 'Thabo'], [FC, 'Priya'], [FD, 'Jason']]) await rpc('chat_sync', who, name, `${name.toLowerCase()}_f`, 'Peak', '{}')
+  const friends = async (a, b) => { await rpc('chat_friend', a, b.id); await rpc('chat_friend', b, a.id) }
+  await friends(FA, FB)
+  await rpc('chat_friend', FC, FA.id) // (Priya has Emma on her list; Emma has not added her back)
+  await friends(FA, FD)
+  const sees = async (who) => (await rpc('chat_sync', who)).friends.find((f) => f.id === FA.id)
+  // off by default: a spot sent without a yes is not kept, and nobody is told anything
+  assert.equal((await rpc('chat_sync', FA)).find, false)
+  assert.deepEqual(await rpc('chat_spot', FA, 'campus', 3.2, -8.1, ''), { ok: true, on: false })
+  assert.equal((await one('select spot from chat_players where id = $1', [FA.id])).spot, null)
+  assert.equal((await sees(FB)).spot, undefined)
+  // yes: friends both ways see where she is in the game; a one-way friend does not
+  assert.deepEqual(await rpc('chat_find', FA, true), { ok: true, on: true })
+  assert.equal((await rpc('chat_sync', FA)).find, true)
+  assert.deepEqual(await rpc('chat_spot', FA, 'town', 12.34, 210.06, 'lifecup'), { ok: true, on: true })
+  assert.deepEqual((await sees(FB)).spot, { part: 'town', x: 12.3, z: 210.1, in: 'lifecup' })
+  assert.equal((await sees(FC)).spot, undefined, 'a one-way friend never sees it')
+  assert.equal((await sees(FC)).online, undefined)
+  // a real place is never taken: only the game's districts and a spot on its map
+  assert.equal((await rpc('chat_spot', FA, 'Durban', 1, 1, '')).reason, 'bad')
+  assert.equal((await rpc('chat_spot', FA, 'town', 99999, 1, '')).reason, 'bad')
+  // never past a block, either way
+  await rpc('chat_block', FD, FA.id, true)
+  assert.equal(await sees(FD), undefined, 'the one who blocked')
+  await rpc('chat_block', FD, FA.id, false)
+  assert.deepEqual((await sees(FD)).spot?.part, 'town')
+  await rpc('chat_block', FA, FD.id, true)
+  assert.equal(await sees(FD), undefined, 'the one who was blocked')
+  await rpc('chat_block', FA, FD.id, false)
+  // gone offline: no spot (the reply has none, not a stale one)
+  await db.query("update chat_players set seen_at = now() - interval '5 minutes' where id = $1", [FA.id])
+  assert.equal((await sees(FB)).spot, undefined)
+  await rpc('chat_sync', FA)
+  assert.ok((await sees(FB)).spot)
+  // it lasts the day: tomorrow it is off again until she says yes
+  await db.query("update chat_players set find_day = find_day - 1 where id = $1", [FA.id])
+  assert.equal((await rpc('chat_sync', FA)).find, false)
+  assert.equal((await sees(FB)).spot, undefined)
+  assert.deepEqual(await rpc('chat_spot', FA, 'campus', 0, 0, ''), { ok: true, on: false })
+  // turned off in the menu: the spot goes at once
+  await rpc('chat_find', FA, true)
+  await rpc('chat_spot', FA, 'campus', 1, 2, '')
+  assert.ok((await sees(FB)).spot)
+  assert.deepEqual(await rpc('chat_find', FA, false), { ok: true, on: false })
+  assert.equal((await sees(FB)).spot, undefined)
+  assert.equal((await one('select spot from chat_players where id = $1', [FA.id])).spot, null)
+  await assert.rejects(rpc('chat_find', { id: FA.id, secret: 'not-her-secret-0123456789' }, true), /not you/)
+})
+
+let openGroup = ''
+await check('social c: only the creator opens a group, with a real interest as its tag; private groups are never suggested', async () => {
+  await rpc('chat_interests', FB, ['music', 'food'])
+  await rpc('chat_interests', FC, ['gym'])
+  openGroup = (await rpc('chat_group_create', FA, 'Sunday Sessions', 'What are we playing this week?')).thread
+  assert.match(openGroup, /^g:/)
+  const mine = async (who) => (await rpc('chat_sync', who)).threads.find((t) => t.id === openGroup)
+  assert.deepEqual([(await mine(FA)).listed, (await mine(FA)).tag], [false, null])
+  // private: nothing to suggest, and the day is not used up
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null)
+  assert.equal((await one('select suggest_day from chat_players where id = $1', [FB.id])).suggest_day, null)
+  // only its creator, and only a real interest
+  assert.equal((await rpc('chat_group_open', FB, openGroup, true, 'music')).reason, 'not_yours')
+  assert.equal((await rpc('chat_group_open', FA, openGroup, true, 'napping')).reason, 'tag')
+  assert.equal((await rpc('chat_group_open', FA, 'quad', true, 'music')).reason, 'not_yours')
+  assert.deepEqual(await rpc('chat_group_open', FA, openGroup, true, 'music'), { ok: true, listed: true, tag: 'music' })
+  assert.deepEqual([(await mine(FA)).listed, (await mine(FA)).tag], [true, 'music'])
+  // back to private and open again
+  assert.equal((await rpc('chat_group_open', FA, openGroup, false)).listed, false)
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null)
+  await rpc('chat_group_open', FA, openGroup, true, 'music')
+})
+
+await check('social c: one suggestion a day for a matching interest; Not now keeps it away 7 days; never a group with someone blocked; Join puts you in', async () => {
+  // Priya's interest is gym: not for her
+  assert.equal((await rpc('chat_group_suggest', FC)).group, null)
+  // Thabo's is music: suggested, once today
+  const s = (await rpc('chat_group_suggest', FB)).group
+  assert.deepEqual(s, { thread: openGroup, name: 'Sunday Sessions', tag: 'music', members: 1, interest: 'Music' })
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null, 'at most one a day')
+  // Not now: tomorrow it is still away, and for 7 days
+  assert.deepEqual(await rpc('chat_group_suggest_answer', FB, openGroup, false), { ok: true, snoozed: true })
+  await db.query('update chat_players set suggest_day = null')
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null)
+  await db.query("update chat_group_snoozes set until = now() + interval '6 days 23 hours'")
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null)
+  await db.query("update chat_group_snoozes set until = now() - interval '1 minute'")
+  assert.equal((await rpc('chat_group_suggest', FB)).group?.thread, openGroup, 'after the 7 days')
+  // a member Thabo blocked (or who blocked him): never suggested
+  await db.query('update chat_players set suggest_day = null')
+  await rpc('chat_block', FB, FA.id, true)
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null, 'he blocked a member')
+  assert.equal((await rpc('chat_group_suggest_answer', FB, openGroup, true)).reason, 'gone', 'and he cannot join it that way')
+  await rpc('chat_block', FB, FA.id, false)
+  await rpc('chat_block', FA, FB.id, true)
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null, 'a member blocked him')
+  await rpc('chat_block', FA, FB.id, false)
+  // a player the creator removed is not offered it again
+  await db.query('insert into chat_group_bans (thread, player) values ($1, $2)', [openGroup, FB.id])
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null)
+  await db.query('delete from chat_group_bans where thread = $1', [openGroup])
+  // Join: in, with nothing unread, and never suggested again
+  await rpc('chat_send', FA, openGroup, 'First track is up')
+  assert.equal((await rpc('chat_group_suggest', FB)).group.members, 1)
+  assert.deepEqual(await rpc('chat_group_suggest_answer', FB, openGroup, true), { ok: true, thread: openGroup })
+  const row = (await rpc('chat_sync', FB)).threads.find((t) => t.id === openGroup)
+  assert.deepEqual([row.members, row.unread], [2, 0])
+  await db.query('update chat_players set suggest_day = null')
+  assert.equal((await rpc('chat_group_suggest', FB)).group, null, 'already a member')
+})
+
+await check('social c: a group\'s name or topic can be reported once per player; three reports take it out of suggestions until an admin looks', async () => {
+  for (const [who, name] of [[FE, 'Naledi']]) await rpc('chat_sync', who, name, 'naledi_f', 'Peak', '{}')
+  await rpc('chat_interests', FE, ['music'])
+  assert.equal((await rpc('chat_group_report', FA, openGroup, 'name')).reason, 'unknown', 'not your own group')
+  assert.equal((await rpc('chat_group_report', FB, 'quad', 'name')).reason, 'unknown', 'not the Quad')
+  // a private group can only be reported by its members
+  const priv = (await rpc('chat_group_create', FA, 'Flat 4 only', '')).thread
+  assert.equal((await rpc('chat_group_report', FC, priv, 'name')).reason, 'unknown')
+  // one report each: the same player twice is one
+  assert.equal((await rpc('chat_group_report', FB, openGroup, 'topic')).ok, true)
+  assert.equal((await rpc('chat_group_report', FB, openGroup, 'topic')).ok, true)
+  assert.equal((await rpc('chat_group_report', FC, openGroup, 'name')).ok, true)
+  assert.equal((await one('select count(*)::int as n from chat_group_reports where thread = $1', [openGroup])).n, 2)
+  assert.equal((await rpc('chat_group_suggest', FE)).group?.thread, openGroup, 'two reports: still suggested')
+  await db.query('update chat_players set suggest_day = null')
+  assert.equal((await rpc('chat_group_report', FD, openGroup, 'name')).ok, true)
+  assert.equal((await one('select reports_hidden from chat_threads where id = $1', [openGroup])).reports_hidden, true)
+  assert.equal((await rpc('chat_group_suggest', FE)).group, null, 'three reports: out of suggestions')
+  // a copy of what was reported is kept; the group itself still works for its members
+  assert.deepEqual((await one('select name, topic from chat_group_reports where thread = $1 and reporter = $2', [openGroup, FD.id])), { name: 'Sunday Sessions', topic: 'What are we playing this week?' })
+  assert.equal((await rpc('chat_send', FB, openGroup, 'Still here')).ok, true)
+  // an admin looks, and it is offered again
+  await db.query('update chat_threads set reports_hidden = false where id = $1', [openGroup])
+  assert.equal((await rpc('chat_group_suggest', FE)).group?.thread, openGroup)
+  await db.exec('set role anon')
+  for (const table of ['chat_group_reports', 'chat_group_snoozes']) assert.equal((await db.query(`select * from ${table}`)).rows.length, 0, `${table} is hidden`)
+  await db.exec('reset role')
+})
+
 console.log(`${passed} sql checks passed`)

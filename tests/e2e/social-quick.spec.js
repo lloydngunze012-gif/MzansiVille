@@ -206,6 +206,7 @@ test('A5 #/health has a "Social SQL" row: Yes only when the newest block of chat
   await page.route('**/rest/v1/chat_friends*', answer(200))
   await page.route('**/rest/v1/chat_follows*', answer(200))
   await page.route('**/rest/v1/chat_group_asks*', answer(404))
+  await page.route('**/rest/v1/chat_group_snoozes*', answer(200)) // (Social C's table)
   await page.goto('/?fast=1#/health')
   const row = page.locator('[data-hl="sql-social"]')
   await expect(row.locator('[data-ok]')).toHaveAttribute('data-ok', 'no', { timeout: 30000 })

@@ -198,6 +198,8 @@ button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; fl
 .cht-sheet { background: #fff; color: #1c1915; }
 .cht-head { background: #fff; }
 .cht-row { background: #fff; }
+.cht-tags { margin: 0; padding: 0 12px 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.cht-openrow .cht-sub { padding-top: 6px; }
 .cht-av { background: #f4efe4; }
 .cht-row + .cht-row, .cht-list li + li .cht-row { border-top: 1px solid #f0e9da; }
 .cht-kind { font: 700 11px/1.1 Figtree, system-ui, sans-serif; color: #6b6359; }

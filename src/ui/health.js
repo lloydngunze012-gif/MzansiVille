@@ -2,11 +2,11 @@
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 const yes = (ok) => `<b class="hl-${ok ? 'yes' : 'no'}" data-ok="${ok ? 'yes' : 'no'}">${ok ? 'Yes' : 'No'}</b>`
 
-// Social SQL: the three later blocks of supabase/chat.sql (Social A, Social B, the follow-ups). "Yes" only when the
+// Social SQL: the later blocks of supabase/chat.sql (Social A, Social B, the follow-ups, Social C). "Yes" only when the
 // newest of them is in, so the owner can see that a re-run took; otherwise which part is missing.
 const social = (parts = []) => {
-  const names = ['Social A', 'Social B', 'follow-ups']
-  const all = parts.length === 3 && parts.every(Boolean)
+  const names = ['Social A', 'Social B', 'follow-ups', 'Social C']
+  const all = parts.length === names.length && parts.every(Boolean)
   return all ? yes(true) : `${yes(false)} <small data-missing>run supabase/chat.sql again (missing: ${names.filter((_, i) => !parts[i]).join(', ')})</small>`
 }
 

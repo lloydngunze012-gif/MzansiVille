@@ -719,8 +719,9 @@ async function ride(fromId, dest) {
   closeCard()
   opts.onPay?.({ minutes: res.minutes, fare: res.fare, kind: 'taxi' })
   // A lot with no stop of its own: the van stops at the nearest stop and you walk on to the door (the fare is paid once, above).
-  const near = dest.lot ? nearestStop(dest.x, dest.z) : null
-  const stopTo = near && near.dist >= 9 ? near.stop : null
+  // (Social C, "Go to" a friend: always to the stop nearest them, then on foot, stopping 2 m short)
+  const near = dest.lot || dest.walkOn ? nearestStop(dest.x, dest.z) : null
+  const stopTo = near && (near.dist >= 9 || dest.walkOn) ? near.stop : null
   const veil = uiRoot.querySelector('.city-ride')
   veil.innerHTML = `<div><span class="cr-van">🚐</span><b>${esc(fill(CITY.travel.lines.ride, { from: from.name, to: stopTo ? stopTo.name : dest.name }))}</b><small>R${res.fare} · ${res.minutes} min</small></div>`
   veil.hidden = false
@@ -738,7 +739,8 @@ async function ride(fromId, dest) {
   host.dataset.rides = String(rides)
   host.dataset.fare = String(res.fare)
   host.dataset.rideStop = stopTo ? stopTo.id : ''
-  if (stopTo) { const spot = arrivalSpot(dest.x, dest.z); walkTo(spot.x, spot.z, { lot: dest.lot }) }
+  if (stopTo && dest.walkOn) { const spot = shortOf(dest.x, dest.z); walkTo(spot.x, spot.z) }
+  else if (stopTo) { const spot = arrivalSpot(dest.x, dest.z); walkTo(spot.x, spot.z, { lot: dest.lot }) }
   else if (dest.lot) openLot(dest.lot)
   save()
   return true
@@ -795,7 +797,30 @@ function drive(lotId) {
   return res
 }
 // From the map: a way to a pin. way: 'walk' | 'taxi' | 'drive'; target: a lot id, or 'campus'.
+// Two metres short of a point, on the line from where you stand to it (Social C: you stop beside a friend, not on them).
+function shortOf(x, z) {
+  const dx = x - player.position.x
+  const dz = z - player.position.z
+  const d = Math.hypot(dx, dz)
+  const k = d > 2.2 ? (d - 2) / d : 0
+  return freeNear(player.position.x + dx * k, player.position.z + dz * k) || { x: player.position.x, z: player.position.z }
+}
+// "Go to" a friend (src/findme.js): d = { x, z, part, name }. The same district: walk. Another: a taxi to the stop
+// nearest them (the fare as usual; too little money gets the usual friendly line), then on foot.
+function goToPoint(d) {
+  if (!Number.isFinite(d?.x) || !Number.isFinite(d?.z) || host?.dataset.riding === '1') return { ok: false } // (never a second taxi while one is taking you)
+  if (inside) { const out = exitRoom(); nightNow = -1; applyTime(); place(out.door.x, out.door.z); syncBar() }
+  const to = d.part === 'gate' ? 'campus' : d.part
+  if (to === partAt(player.position.x, player.position.z).id) { const spot = shortOf(d.x, d.z); walkTo(spot.x, spot.z); return { ok: true } }
+  const dest = { id: 'friend', name: String(d.name || 'your friend').slice(0, 24), part: to, x: d.x, z: d.z, walkOn: true }
+  const near = nearestStop(player.position.x, player.position.z)
+  if (near.dist < 9) { ride(near.stop.id, dest); return { ok: true } }
+  const stopSpot = arrivalSpot(near.stop.x, near.stop.z)
+  walkTo(stopSpot.x, stopSpot.z, { ride: dest, from: near.stop.id })
+  return { ok: true }
+}
 function travel(way, target) {
+  if (target && typeof target === 'object') return goToPoint(target)
   if (inside) { const out = exitRoom(); nightNow = -1; applyTime(); place(out.door.x, out.door.z); syncBar() } // (from the map while you are in a place: out of its door first)
   const lot = target === 'campus' ? null : lotOf(target)
   const dest = lot ? destOfLot(lot) : { id: 'gate', name: 'Campus gate', part: 'campus', x: SPAWN.x, z: SPAWN.z }
@@ -820,6 +845,9 @@ function facePeer(id) {
 }
 // Walk together (src/walk.js): a walk or a taxi to a place, and walking at someone's side.
 window.addEventListener('mzansi-city-travel', (event) => { const d = event.detail || {}; if (running && player && d.target) travel(d.way === 'taxi' ? 'taxi' : 'walk', d.target) })
+// Social C: go to a friend's spot; and walk back in through the gate once you stand at it.
+window.addEventListener('mzansi-city-goto', (event) => { if (running && player && ready && !busy) goToPoint(event.detail || {}) })
+window.addEventListener('mzansi-city-leave', () => { if (running && player && ready && !inside && !busy) leave('gate') })
 window.addEventListener('mzansi-city-walk', (event) => { const d = event.detail || {}; if (running && player && !inside && Number.isFinite(d.x) && Number.isFinite(d.z)) walkTo(d.x, d.z) })
 window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
 window.addEventListener('mzansi-face-peer', (event) => facePeer(event.detail.id))
