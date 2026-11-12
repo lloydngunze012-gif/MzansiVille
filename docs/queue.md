@@ -4,42 +4,7 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running.
 
-Order (owner, 11 Nov): Sims view (done), A, B, C, D, then Sound, then Movement. Sound was already built and in its quick gate when this order arrived, so it was pushed then (see docs/now.md); A (tester fixes 2) is done too. What is left, in order: B, C, E, D, Movement (E, Notifications, was added later the same day: after C, before D).
-
----
-
-## B. Chat V2: familiar and clear (Sonnet, medium · Medium)
-
-```
-CHAT V2: FAMILIAR AND CLEAR (owner, 11 Nov). Chat is a core feature. It
-should feel like the chat apps players already use, without copying any
-one app.
-1. Palette rule for the whole game, written in docs/palette.md and
-   checked by a test: light surfaces (cream #F4EFE4, white) carry ink
-   #1C1915 text; yellow #F0C400 buttons carry ink text; dark surfaces
-   carry white text only; no purple or navy buttons. Every text-on-
-   background pair is at least 4.5:1 contrast. Replace the purple Chats
-   tabs and "+ Group" with this.
-2. Thread look: a light blue wallpaper with faint doodles of our own
-   (taxi, kota, books, sun, waves, football, headphones, protea) at low
-   opacity; other people's bubbles white, mine pale green, all text
-   ink; a small grey time inside each bubble; bubble tails. Header:
-   back arrow, avatar, name, and "online" for friends both ways (members
-   count for groups). Input: a rounded white bar with a round yellow
-   send button.
-3. Chat list: white rows, round avatar, bold name, last line in grey,
-   time on the right, unread count in a yellow badge with ink text.
-   Clear labels: The Quad row reads "🔥 Hot topic: [topic]"; interest
-   groups read "Interest group" under their name; groups players made
-   read "Group".
-4. "Typing..." in DMs and groups of up to 8, at most one signal every
-   3 s (mind the Realtime budget).
-5. New messages must stand out: a banner drops in below the top bar,
-   full width, white with a shadow, with avatar, bold name and the first
-   line, for 5 s (tap to open); the phone vibrates once where allowed;
-   the chat button's badge is bigger and pulses until it is opened.
-Screenshots at 390 px of the list, a DM, a group and the banner.
-```
+Order (owner, 11 Nov): Sims view (done), A, B, C, D, then Sound, then Movement. Sound was already built and in its quick gate when this order arrived, so it was pushed then (see docs/now.md); A (tester fixes 2) and B (Chat V2) are done too. What is left, in order: C, E, D, Movement (E, Notifications, was added later the same day: after C, before D).
 
 ---
 

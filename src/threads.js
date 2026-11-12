@@ -200,13 +200,16 @@ async function listen(topic) {
 }
 function nudged(p) {
   if (p.f && blocked.has(p.f)) return
+  // (Chat V2: somebody is typing in a thread of yours: no fetch, no sync, just the line under the messages)
+  if (p.ty) { noteTyping(p); return }
   // (someone blocked or unblocked you: what you can see has changed)
   if (p.x) { if (openId) fetchLines(openId, true); syncSoon(); return }
   if (p.t && p.t === openId) fetchLines(openId)
   else syncSoon()
 }
 async function nudge(threadId, to = [], extra = {}) {
-  const payload = { t: threadId, f: myId(), ...extra }
+  // (a typing signal carries `ty`, never `t`: an older phone's `t` would make the other side fetch for nothing)
+  const payload = extra.ty ? { f: myId(), ...extra } : { t: threadId, f: myId(), ...extra }
   const client = await getClient()
   if (!client) return
   const group = subs.get(threadId)
@@ -219,6 +222,48 @@ async function nudge(threadId, to = [], extra = {}) {
     const sent = typeof ch.httpSend === 'function' ? ch.httpSend('n', payload) : ch.send({ type: 'broadcast', event: 'n', payload })
     Promise.resolve(sent).catch(() => {})
   }
+}
+
+// ---------- "Typing…" (Chat V2, owner 11 Nov) ----------
+// In DMs and in groups of up to TYPING_MAX members (never the Quad): while you type, at most one small signal every
+// TYPING_GAP ms goes to the thread (a DM: to the other player's own channel, like a nudge). Nothing is sent when you
+// stop: the other side lets the line go after TYPING_SHOWN ms without a new signal, or when your message lands.
+// The Realtime cost is one message per typer per 3 s, to at most 7 phones.
+export const TYPING_GAP = 3000
+const TYPING_MAX = 8
+const TYPING_SHOWN = 4500
+const typingNow = new Map() // thread id -> { id, name, until } (cleared when that player's message lands: ui/threads.js)
+let typingSentAt = 0
+let typingSent = 0
+let typingTimer = 0
+export function canType(t) { return Boolean(t && !t.quad && (t.kind === 'dm' || (t.kind === 'group' && (t.members || 1) <= TYPING_MAX))) }
+// Call on every keystroke: it decides whether a signal goes.
+export function typing(threadId) {
+  const t = threadOf(threadId)
+  const now = Date.now()
+  if (!canType(t) || !live() || now - typingSentAt < TYPING_GAP) return false
+  typingSentAt = now
+  typingSent += 1
+  const extra = { ty: threadId, n: String(profile?.p_name || 'Student').split(' ')[0].slice(0, 16) }
+  nudge(t.kind === 'group' ? threadId : '', t.kind === 'dm' && t.peer?.id ? [t.peer.id] : [], extra)
+  return true
+}
+function noteTyping(p) {
+  const t = threadOf(p.ty)
+  if (!canType(t) || !p.f || p.f === myId()) return
+  typingNow.set(p.ty, { id: p.f, name: filterText(String(p.n || '')).text || 'Someone', until: Date.now() + TYPING_SHOWN })
+  emit('typing', p.ty)
+  clearTimeout(typingTimer)
+  typingTimer = setTimeout(() => { for (const [id, v] of typingNow) if (v.until <= Date.now()) { typingNow.delete(id); emit('typing', id) } }, TYPING_SHOWN + 50)
+}
+// Who is typing in this thread right now ('' if nobody).
+export function typingIn(threadId) {
+  const v = typingNow.get(threadId)
+  if (!v || v.until <= Date.now()) return ''
+  // (their message has landed: they are not typing it any more)
+  const last = cache.get(threadId)?.lines?.at(-1)
+  if (last && last.sender === v.id && Date.parse(last.at) > v.until - TYPING_SHOWN - 500) { typingNow.delete(threadId); return '' }
+  return v.name
 }
 
 // ---------- A thread ----------
@@ -460,9 +505,12 @@ export async function removeFriend(id) {
 // "{name} just joined": the server lets a player announce themselves once, ever.
 export async function mayAnnounce() { return (await act('chat_joined', {})).ok }
 
+// Tests: a nudge as if it had come over Realtime (the test server has no Realtime; a typing signal is one).
+window.mzansiNudge = (p) => nudged(p || {})
 // Tests (read only): what this phone's chat holds.
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
+  typingSent, typing: Object.fromEntries([...typingNow].filter(([, v]) => v.until > Date.now()).map(([k, v]) => [k, v.name])),
   social, socialB, interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
   threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '', flame: Number(t.flame) || 0 })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],

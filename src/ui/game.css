@@ -587,8 +587,8 @@ body:has(.g-full) .door-prompt{visibility:hidden}
 .g-clock{position:relative;display:inline-flex;align-items:center;gap:4px;padding:4px 10px 5px;border-radius:999px;background:#2f1a5c;border:1px solid #f5c400;font:700 15px/1 var(--display);letter-spacing:.3px;color:#ffe08a;text-shadow:none;overflow:hidden;font-variant-numeric:tabular-nums}
 .g-clock i{font-style:normal;font-size:13px;line-height:1}
 .g-clock::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:var(--day,0%);background:#f5c400;border-radius:0 2px 2px 0}
-.g-cta p.g-open{display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;padding:7px 12px;border-radius:999px;background:#2f1a5c;border:1px solid #f5c400;font-weight:600;color:#fff6e6}
-.g-cta p.g-open b{color:#f5c400}
+.g-cta p.g-open{display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;padding:7px 12px;border-radius:999px;background:#1c1915;border:1px solid #1c1915;font-weight:600;color:#fff}
+.g-cta p.g-open b{color:#fff}
 .g-spark{display:inline-block;animation:gspark 1.6s ease-in-out infinite}
 @keyframes gspark{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.25);opacity:1}}
 @media (prefers-reduced-motion:reduce){.g-spark{animation:none}}

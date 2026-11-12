@@ -122,7 +122,9 @@ test('Q1 the chat sheet: list, The Quad and its pinned topic, send, the polite r
   await expect(page.locator('.tb-chat [data-chat-unread]')).toHaveText('1')
   const pb = await ping.boundingBox()
   expect(pb.width).toBeLessThanOrEqual(420)
-  expect(pb.y, 'at the top, like a phone notification').toBeLessThan(40)
+  // (Chat V2, 12 Nov: the banner drops in just under the top bar, not over it)
+  const barBottom = await page.locator('#app .g-hud.tb').evaluate((el) => el.getBoundingClientRect().bottom)
+  expect(Math.abs(pb.y - barBottom), 'just under the top bar').toBeLessThanOrEqual(2)
   await page.screenshot({ path: `${OUT}/ping-banner.png` })
   // Tapping it opens the thread; theirs is on the left with the name; the badge clears.
   await ping.tap()

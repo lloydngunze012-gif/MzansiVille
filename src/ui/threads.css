@@ -51,8 +51,8 @@
 .cht-row.unread .cht-last { color: var(--cr-ink, #1c1915); font-weight: 700; }
 .cht-side { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 36px; }
 .cht-side small { font: 600 11px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
-.cht-row.unread .cht-side small:first-child { color: #5b23c9; font-weight: 800; }
-.cht-side .cht-badge, .cht-unread { min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: #5b23c9; color: #fff; font: 800 11px/1 Figtree, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.cht-row.unread .cht-side small:first-child { color: #1c1915; font-weight: 800; }
+.cht-side .cht-badge, .cht-unread { min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 6px; border-radius: 10px; display: inline-grid; place-items: center; background: #f0c400; color: #1c1915; font: 800 11px/1 Figtree, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 .cht-empty, .cht-none { margin: 0; padding: 22px 16px; text-align: center; color: var(--cr-muted, #6b6359); font-size: 14px; list-style: none; }
 
 /* A thread: the pinned topic, the lines, the input. */
@@ -65,17 +65,17 @@
 .cht-who { all: unset; flex: none; align-self: flex-start; margin-top: 15px; cursor: pointer; }
 .cht-gap { flex: none; width: 30px; }
 .cht-col { min-width: 0; max-width: 78%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.cht-name { font: 800 11px/1.1 Figtree, system-ui, sans-serif; color: #5b23c9; padding-left: 10px; }
+.cht-name { display: block; font: 800 12px/1.2 Figtree, system-ui, sans-serif; color: #1c1915; margin-bottom: 2px; }
 .cht-bub { box-sizing: border-box; max-width: 100%; padding: 6px 10px 5px; border-radius: 16px; background: var(--cr-bg-2, #f4ecdc); border: 1px solid var(--cr-line, #e3d8c4); overflow-wrap: anywhere; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .cht-lines li.them.lead .cht-bub { border-top-left-radius: 5px; }
-.cht-lines li.me .cht-bub { max-width: 78%; background: #5b23c9; border-color: #5b23c9; color: #fff; }
+.cht-lines li.me .cht-bub { max-width: 78%; }
 .cht-lines li.me.lead .cht-bub { border-top-right-radius: 5px; }
 .cht-text { font-size: 15px; line-height: 1.3; }
 .cht-time { float: right; margin: 5px 0 0 9px; font: 600 11px/1 Figtree, system-ui, sans-serif; opacity: .65; font-variant-numeric: tabular-nums; }
 
 .cht-form { flex: none; display: flex; align-items: center; gap: 7px; margin: 0; padding: 7px 10px 8px; border-top: 1px solid var(--cr-line, #e3d8c4); }
 .cht-form input { flex: 1; min-width: 0; height: 42px; box-sizing: border-box; padding: 0 14px; border-radius: 21px; border: 1.5px solid var(--cr-line, #e3d8c4); background: #fff; color: #1c1915; font: 500 16px Figtree, system-ui, sans-serif; outline: none; }
-.cht-form input:focus { border-color: #5b23c9; }
+
 .cht-form button { flex: none; height: 42px; padding: 0 16px; border-radius: 21px; border: 0; background: var(--cr-gold, #f0c400); color: #1c1915; font: 800 15px Figtree, system-ui, sans-serif; }
 .cht-count { flex: none; font: 600 11px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
 .cht-count:empty { display: none; }
@@ -112,8 +112,6 @@
 .tb-chat:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }
 .tb-chat .cht-unread { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; background: #e0352b; box-shadow: 0 0 0 2px var(--cr-bg, #fffaf0); }
 .cht-unread[hidden] { display: none; }
-/* (the banner covers the top bar: the count waits under it) */
-body:has(.cht-ping:not([hidden])) .tb-chat .cht-unread { visibility: hidden; }
 .cht-unread.inline { vertical-align: 1px; margin-left: 4px; background: #e0352b; }
 @media (max-width: 374px) { .tb-chat { width: 32px; } }
 /* The mini player card's Message button: the envelope alone, so the row still fits a 360 px phone (in SunnyBay,
@@ -133,7 +131,7 @@ body:has(.cht-ping:not([hidden])) .tb-chat .cht-unread { visibility: hidden; }
 .cht-btn.sm.ghost.bad { color: #9b1f1f; }
 .cht-btn.ghost { background: transparent; color: var(--cr-ink, #1c1915); border: 1.5px solid var(--cr-line, #e3d8c4); }
 .cht-btn.bad { color: #9b1f1f; }
-.cht-btn.wa { background: #128c4a; color: #fff; }
+.cht-btn.wa { background: #0f7a40; color: #fff; }
 .cht-btn:active { transform: scale(.97); }
 .cht-btn[disabled] { opacity: .5; }
 .cht-new, .cht-topicform { flex: none; display: flex; align-items: flex-end; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--cr-line, #e3d8c4); }
@@ -152,15 +150,15 @@ body:has(.cht-ping:not([hidden])) .tb-chat .cht-unread { visibility: hidden; }
 .cht-friend .cht-mid b { display: flex; align-items: center; gap: 6px; }
 .cht-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #c9bfae; }
 .cht-dot.on { background: #1f9d55; }
-.cht-you, .cht-add { font: 800 12px/1 Figtree, system-ui, sans-serif; color: #5b23c9; }
+.cht-you, .cht-add { font: 800 12px/1 Figtree, system-ui, sans-serif; color: #1c1915; }
 .cht-muted { font-size: 12px; }
 button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; cursor: pointer; min-height: 40px; justify-content: center; }
 .cht-wake { position: fixed; z-index: 160; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 0; right: 0; box-sizing: border-box; display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 12px;
-  background: #22143b; color: #fff; border: 1.5px solid #f0c40066; border-radius: 16px; box-shadow: 0 10px 26px #0007; font: 500 15px/1.25 Figtree, system-ui, sans-serif; animation: gup .18s ease-out; }
+  background: #fff; color: #1c1915; border: 1px solid #e3d8c4; border-radius: 16px; box-shadow: 0 10px 26px #0005; font: 500 15px/1.25 Figtree, system-ui, sans-serif; animation: gup .18s ease-out; }
 .cht-wake-go { all: unset; flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 48px; cursor: pointer; font-size: 22px; }
 .cht-wake-go span + span { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
 .cht-wake-go b { font: 800 15px/1.2 Figtree, system-ui, sans-serif; }
-.cht-wake-go small { font: 600 12px/1.1 Figtree, system-ui, sans-serif; color: #d9cdf5; }
+.cht-wake-go small { font: 600 12px/1.1 Figtree, system-ui, sans-serif; color: #6b6359; }
 .cht-wake-x { all: unset; flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font: 700 16px/1 system-ui, sans-serif; cursor: pointer; }
 
 /* Social B (owner, 11 Nov): the Feed and a Board (ui/board.js). */
@@ -173,7 +171,7 @@ button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; fl
 .bd-who b { font: 800 15px/1.2 Figtree, system-ui, sans-serif; }
 .bd-who small { font: 600 12px/1 Figtree, system-ui, sans-serif; color: var(--cr-muted, #6b6359); }
 .bd-who .bd-ago { margin-left: auto; }
-.bd-npc { display: grid; place-items: center; width: 100%; height: 100%; background: #22143b; color: #f0c400; font: 800 16px/1 Figtree, system-ui, sans-serif; }
+.bd-npc { display: grid; place-items: center; width: 100%; height: 100%; background: #1c1915; color: #fff; font: 800 16px/1 Figtree, system-ui, sans-serif; }
 .bd-body { margin: 2px 0 6px; font: 500 16px/1.35 Figtree, system-ui, sans-serif; overflow-wrap: anywhere; }
 .bd-acts { display: flex; align-items: center; gap: 8px; }
 .bd-acts button { all: unset; box-sizing: border-box; min-height: 40px; min-width: 44px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; border-radius: 20px; border: 1.5px solid var(--cr-line, #e3d8c4); font: 800 14px/1 Figtree, system-ui, sans-serif; cursor: pointer; }
@@ -188,9 +186,75 @@ button.cht-title.cht-open { all: unset; flex: 1; min-width: 0; display: flex; fl
 
 /* Follow-ups (owner, 11 Nov): the ask card ("[Name] wants to add you to [Group]"). */
 .cht-ask { position: fixed; z-index: 162; top: calc(env(safe-area-inset-top, 0px) + 92px); left: 0; right: 0; box-sizing: border-box; padding: 12px;
-  background: #22143b; color: #fff; border: 1.5px solid #f0c40066; border-radius: 16px; box-shadow: 0 10px 26px #0007; font: 500 15px/1.3 Figtree, system-ui, sans-serif; animation: gup .18s ease-out; }
+  background: #fff; color: #1c1915; border: 1px solid #e3d8c4; border-radius: 16px; box-shadow: 0 10px 26px #0005; font: 500 15px/1.3 Figtree, system-ui, sans-serif; animation: gup .18s ease-out; }
 .cht-ask p { margin: 0 0 10px; }
 .cht-ask-row { display: flex; gap: 8px; }
 .cht-ask-row .cht-btn { flex: 1; }
 .cht-ask-row .cht-btn:first-child { background: #f0c400; color: #1c1915; }
-.cht-ask-row .cht-btn.ghost { color: #fff; border-color: #ffffff55; }
+.cht-ask-row .cht-btn.ghost { color: #1c1915; }
+
+/* ---------- Chat V2: familiar and clear (owner, 11 Nov). The palette is docs/palette.md: light surfaces carry ink,
+   yellow carries ink, dark surfaces carry white, no purple or navy buttons, every pair 4.5:1 or better. ---------- */
+.cht-sheet { background: #fff; color: #1c1915; }
+.cht-head { background: #fff; }
+.cht-row { background: #fff; }
+.cht-av { background: #f4efe4; }
+.cht-row + .cht-row, .cht-list li + li .cht-row { border-top: 1px solid #f0e9da; }
+.cht-kind { font: 700 11px/1.1 Figtree, system-ui, sans-serif; color: #6b6359; }
+.cht-last { color: #6b6359; }
+.cht-side small { color: #6b6359; }
+.cht-side .cht-badge { min-width: 22px; height: 22px; border-radius: 11px; font-size: 12px; }
+.cht-title small.cht-on { color: #0f7a40; font-weight: 800; }
+.cht-title small.cht-on::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 50%; background: #1f9d55; vertical-align: 0; }
+
+/* The thread: a light blue wall with faint doodles of our own (a sun, a minibus taxi, headphones, books, a kota, a
+   football, waves, a protea), white bubbles for them, pale green for you, ink text, a small grey time in the bubble. */
+.cht-lines {
+  background-color: #dcebf5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240' fill='none' stroke='%231c5b8a' stroke-opacity='.17' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><g transform='translate(34 34)'><circle r='8'/><path d='M0-14v-5M0 14v5M-14 0h-5M14 0h5M-10-10l-3.5-3.5M10 10l3.5 3.5M-10 10l-3.5 3.5M10-10l3.5-3.5'/></g><g transform='translate(104 22)'><path d='M2 22V8a6 6 0 0 1 6-6h30l10 9v11z'/><path d='M8 8h10v7H8zM22 8h10v7H22zM36 8h4l5 5v2h-9z'/><circle cx='13' cy='23' r='4'/><circle cx='38' cy='23' r='4'/></g><g transform='translate(190 40)'><path d='M-13 6v-4a13 13 0 0 1 26 0v4'/><rect x='-17' y='4' width='7' height='12' rx='3'/><rect x='10' y='4' width='7' height='12' rx='3'/></g><g transform='translate(20 100)'><rect x='0' y='18' width='34' height='8' rx='2'/><rect x='3' y='9' width='30' height='8' rx='2'/><rect x='-2' y='0' width='32' height='8' rx='2'/><path d='M5 4h8M8 13h8M6 22h8'/></g><g transform='translate(100 104)'><path d='M2 12a8 8 0 0 1 8-8h22a8 8 0 0 1 8 8v2H2z'/><path d='M0 16h44M3 20h38M2 24h40'/><path d='M2 24v6a4 4 0 0 0 4 4h32a4 4 0 0 0 4-4v-6'/><path d='M12 9h.1M20 8h.1M28 9h.1'/></g><g transform='translate(196 118)'><circle r='15'/><path d='M0-6l6 4-2 7h-8l-2-7z'/><path d='M0-6v-9M6-2l8-4M4 5l6 8M-4 5l-6 8M-6-2l-8-4'/></g><g transform='translate(16 184)'><path d='M0 0c5-6 10-6 15 0s10 6 15 0 10-6 15 0'/><path d='M0 12c5-6 10-6 15 0s10 6 15 0 10-6 15 0'/><path d='M0 24c5-6 10-6 15 0s10 6 15 0 10-6 15 0'/></g><g transform='translate(118 186)'><path d='M0 30V8'/><path d='M-6 6a6 7 0 0 1 12 0z'/><path d='M-6 6l-9-14 9 6-4-14 8 10L0-22l2 16 8-10-4 14 9-6-9 14'/><path d='M0 24l-9-6M0 20l8-5'/></g><g transform='translate(196 196)'><path d='M-14 0c5-6 10-6 14 0s9 6 14 0'/><path d='M-14 10c5-6 10-6 14 0s9 6 14 0'/></g></svg>");
+  background-size: 240px 240px;
+  padding: 10px 12px 8px; gap: 3px;
+}
+.cht-bub { position: relative; padding: 6px 10px 5px; border-radius: 14px; background: #fff; border: 0; color: #1c1915; box-shadow: 0 1px 1px #1c191522; }
+.cht-lines li.me .cht-bub { background: #d9f2c7; color: #1c1915; }
+.cht-text { color: #1c1915; }
+.cht-time { opacity: 1; color: #5f5a52; font: 600 11px/1 Figtree, system-ui, sans-serif; }
+.cht-lines li.them.lead .cht-bub { border-top-left-radius: 4px; }
+.cht-lines li.me.lead .cht-bub { border-top-right-radius: 4px; }
+/* (tails: a small corner on the first bubble of a run, on the speaker's side) */
+.cht-lines li.them.lead .cht-bub::before { content: ""; position: absolute; top: 0; left: -6px; border: 0 solid transparent; border-top: 9px solid #fff; border-left: 7px solid transparent; }
+.cht-lines li.me.lead .cht-bub::before { content: ""; position: absolute; top: 0; right: -6px; border: 0 solid transparent; border-top: 9px solid #d9f2c7; border-right: 7px solid transparent; }
+.cht-who { margin-top: 0; }
+.cht-none { padding: 18px 12px; }
+.cht-none span { display: inline-block; padding: 7px 12px; border-radius: 12px; background: #fff; color: #1c1915; font-size: 14px; box-shadow: 0 1px 1px #1c191522; }
+.cht-typing { flex: none; margin: 0; padding: 4px 14px 5px; background: #dcebf5; color: #1c1915; font: 700 13px/1.2 Figtree, system-ui, sans-serif; font-style: italic; }
+.cht-typing[hidden] { display: none; }
+
+/* The input: a rounded white bar, and a round yellow button to send. */
+.cht-form { background: #f4efe4; border-top: 0; padding: 7px 8px 8px; gap: 7px; }
+.cht-bar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; height: 44px; box-sizing: border-box; padding: 0 12px 0 4px; border-radius: 22px; background: #fff; border: 1px solid #e3d8c4; }
+.cht-form .cht-bar input { flex: 1; min-width: 0; height: 40px; padding: 0 10px; border: 0; border-radius: 20px; background: transparent; color: #1c1915; font: 500 16px Figtree, system-ui, sans-serif; outline: none; }
+.cht-form input::placeholder { color: #6b6359; opacity: 1; }
+.cht-bar:focus-within { border-color: #1c1915; }
+.cht-form button.cht-send { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 0; background: #f0c400; color: #1c1915; display: grid; place-items: center; }
+.cht-form button.cht-send:active { transform: scale(.94); }
+
+/* A new message: a white banner that drops in just below the top bar, edge to edge on a phone, for 5 s. */
+.cht-ping {
+  top: calc(8px + env(safe-area-inset-top, 0px)); min-height: 60px; padding: 9px 12px; border-radius: 0 0 16px 16px;
+  background: #fff; color: #1c1915; border: 0; border-bottom: 1px solid #e3d8c4; box-shadow: 0 10px 24px #0000004d;
+  font: 500 15px/1.25 Figtree, system-ui, sans-serif;
+}
+.cht-ping[data-under="top"] { border-radius: 16px; }
+.cht-ping-t b { color: #1c1915; font: 800 15px/1.15 Figtree, system-ui, sans-serif; }
+.cht-ping-t span { color: #1c1915; font-size: 14px; }
+.cht-ping-go { flex: none; font: 800 22px/1 system-ui, sans-serif; font-style: normal; color: #1c1915; }
+@media (max-width: 480px) { :root .cht-ping[data-under="bar"] { left: 0; right: 0; width: 100%; max-width: none; margin: 0; transform: none; } }
+
+/* The chat button's count: bigger, and it pulses until the chat is opened. */
+.tb-chat .cht-unread { top: -7px; right: -7px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #c62828; color: #fff; font: 800 12px/1 Figtree, system-ui, sans-serif; }
+.cht-unread.inline { background: #c62828; color: #fff; }
+body:not([data-chat]) .tb-chat .cht-unread:not([hidden]) { animation: cht-pulse 1.4s ease-in-out infinite; }
+@keyframes cht-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px #fffaf0, 0 0 0 0 #c6282866; } 50% { transform: scale(1.18); box-shadow: 0 0 0 2px #fffaf0, 0 0 0 7px #c6282800; } }
+@media (prefers-reduced-motion: reduce) { body:not([data-chat]) .tb-chat .cht-unread:not([hidden]) { animation: none; } }
+.cht-wake-go small { color: #6b6359; }

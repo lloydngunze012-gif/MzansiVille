@@ -21,7 +21,7 @@ function build() {
 .mz-curtain{position:fixed;inset:0;z-index:10000;background:#2f1a5c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;opacity:0;pointer-events:none;transition:opacity ${SHOW_MS}ms ease}
 .mz-curtain[hidden]{display:none}
 .mz-curtain img{width:84px;height:84px;border-radius:20px;box-shadow:0 8px 28px #0006}
-.mz-curtain p{margin:0;color:#f0c400;font:800 17px system-ui,sans-serif;letter-spacing:.2px;text-align:center;padding:0 24px}
+.mz-curtain p{margin:0;color:#fff;font:800 17px system-ui,sans-serif;letter-spacing:.2px;text-align:center;padding:0 24px}
 @media (prefers-reduced-motion:reduce){.mz-curtain{transition-duration:1ms}}`
   document.head.append(style)
   node = document.createElement('div')

@@ -545,7 +545,7 @@ body[data-caf="1"] #app .g-hud,body[data-caf="1"] #app .g-menu,body[data-caf="1"
 .caf-ui{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:Figtree,system-ui,sans-serif}
 .caf-ui[hidden]{display:none}
 .caf-ui button{pointer-events:auto;font:800 14px Figtree,system-ui,sans-serif;border:0;cursor:pointer;min-height:44px}
-.caf-out{position:absolute;left:12px;top:calc(var(--caf-top,64px) + 8px);padding:0 16px;border-radius:22px;background:#2f1a5c;color:#f0c400;box-shadow:0 4px 14px #0006}
+.caf-out{position:absolute;left:12px;top:calc(var(--caf-top,64px) + 8px);padding:0 16px;border-radius:22px;background:#f0c400;color:#1c1915;box-shadow:0 4px 14px #0006}
 .caf-title{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 18px);max-width:calc(100% - 200px);margin:0;color:#fff;font:800 15px Graduate,Figtree,system-ui,sans-serif;text-shadow:0 1px 6px #000a;text-align:center;pointer-events:none}
 .caf-cams{position:absolute;right:12px;top:calc(var(--caf-top,64px) + 8px);display:flex;gap:4px}
 .caf-cams button{padding:0 11px;border-radius:22px;background:#0009;color:#fff}

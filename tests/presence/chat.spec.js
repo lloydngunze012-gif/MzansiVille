@@ -91,6 +91,12 @@ test('DMs with pings both ways; three in The Quad in order; a flood refused; a b
   await expect(a.page.locator('.cht-lines li .cht-text')).toHaveText(['Howzit Bonga, you on campus?', 'Sharp! By the gate', 'Coffee at Lifecup later?'])
   await a.page.waitForTimeout(400)
   await a.page.screenshot({ path: `${OUT}/dm.png` })
+  // (Chat V2) Bonga starts typing: Ayanda sees "typing…" over real Realtime, and it goes when he stops
+  await expect(a.page.locator('.cht-typing')).toBeHidden()
+  await b.page.locator('.cht-form input').pressSequentially('See you', { delay: 60 })
+  await expect(a.page.locator('.cht-typing')).toHaveText('typing…', { timeout: 10000 })
+  await b.page.locator('.cht-form input').fill('')
+  await expect(a.page.locator('.cht-typing')).toBeHidden({ timeout: 10000 })
 
   // ---- 3. A third player arrives and is in The Quad at once; all three talk under the pinned topic ----
   const c = await phone(browser, 'Carla', 'q-amy')

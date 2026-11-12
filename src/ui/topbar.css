@@ -33,10 +33,10 @@
   all: unset; box-sizing: border-box; flex: none; position: relative; overflow: hidden; cursor: pointer;
   display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 1px;
   height: 34px; min-width: 56px; padding: 0 9px 2px; border-radius: 999px;
-  background: #2f1a5c; border: 1px solid #f5c400; color: #ffe08a; white-space: nowrap;
+  background: #1c1915; border: 1px solid #1c1915; color: #fff; white-space: nowrap; /* (docs/palette.md: dark carries white; it was gold on purple) */
 }
 .tb-time i { display: none; } /* (the gold line along the bottom shows how far the day is) */
-.tb-time b { font: 800 10px/1 Figtree, system-ui, sans-serif; color: #fff; letter-spacing: .5px; text-transform: uppercase; opacity: .92; }
+.tb-time b { font: 800 10px/1 Figtree, system-ui, sans-serif; color: #fff; letter-spacing: .5px; text-transform: uppercase; }
 .tb-time span { font: 800 14px/1 Figtree, system-ui, sans-serif; letter-spacing: .2px; font-variant-numeric: tabular-nums; }
 .tb-time::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: var(--day, 0%); background: #f5c400; }
 .tb-time.on, .tb-time:focus-visible { box-shadow: 0 0 0 3px #f0c40066; }

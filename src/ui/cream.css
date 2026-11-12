@@ -63,7 +63,7 @@
 .g-fx.up { background: #e3f6ea; color: #12693c; }
 .g-fx.down { background: #ffe5e0; color: #a3261b; }
 .g-menu { background: var(--cr-bg); color: var(--cr-ink); border: 1.5px solid var(--cr-line); box-shadow: 0 20px 40px #0003; }
-.g-menu h3 { color: #a87400; }
+.g-menu h3 { color: #5f5a52; }
 .g-menu button { color: var(--cr-ink); }
 .g-menu button:hover, .g-menu button:active { background: var(--cr-bg-2); }
 .g-menu .danger { color: #b3261e; }

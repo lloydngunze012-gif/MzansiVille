@@ -16,7 +16,7 @@ import { newFollowers } from '../board.js'
 import { boardClick, boardHtml, boardInput, boardOpen, boardSubmit, closeBoard, feedHtml, openBoardOf, refreshFeed } from './board.js'
 import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
-import { addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
+import { canType, typing, typingIn, addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
@@ -69,6 +69,8 @@ export function mountThreads() {
   sheet.addEventListener('click', onClick)
   sheet.addEventListener('submit', onSubmit)
   sheet.addEventListener('input', boardInput)
+  // (Chat V2: "typing…": threads.js sends at most one signal every 3 s, and only in DMs and small groups)
+  sheet.addEventListener('input', (event) => { if (event.target.matches('.cht-form input') && event.target.value.trim() && view && view !== 'list' && view !== 'board') typing(view) })
   sheet.addEventListener('input', (event) => { if (event.target.matches('.cht-form input')) { const c = sheet.querySelector('.cht-count'); if (c) c.textContent = event.target.value.length > MSG_MAX - 60 ? `${event.target.value.length}/${MSG_MAX}` : '' } })
   // (taps in the sheet never reach the world under it)
   for (const type of ['pointerdown', 'touchstart', 'mousedown']) sheet.addEventListener(type, (event) => event.stopPropagation(), { passive: true })
@@ -99,6 +101,7 @@ export function mountThreads() {
 
   onThreads((kind, detail) => {
     if (kind === 'ping') { ping(detail); return }
+    if (kind === 'typing') { if (detail === view) paintTyping(); return }
     // (follow-ups) what became of an ask you sent: "added" or "can't right now", nothing more
     if (kind === 'answers') { for (const a of detail) window.dispatchEvent(new CustomEvent('mzansi-toast', { detail: { text: a.added ? `${first(a.name)} was added to ${a.group}.` : `${first(a.name)} can’t right now.` } })); return }
     if (kind === 'refs') { window.dispatchEvent(new CustomEvent('mzansi-invite-paid', { detail: { names: detail } })); return }
@@ -218,10 +221,13 @@ function paintList() {
   const row = (t) => {
     const last = t.last
     const who = !last ? '' : last.sender === myId() ? 'You: ' : t.kind === 'group' ? `${first(last.name)}: ` : ''
-    const text = last ? `${who}${last.body}` : t.kind === 'group' && t.topic ? `\u{1F4CC} ${t.topic}` : 'Say howzit'
-    return `<li><button type="button" class="cht-row${t.unread && !t.muted ? ' unread' : ''}" data-thread="${esc(t.id)}">
+    // (Chat V2: what each row is, in plain words. The Quad always reads its hot topic; an interest's standing group
+    // says "Interest group" under its name; a group a player made says "Group".)
+    const kind = t.quad ? '' : String(t.id).startsWith('i:') ? 'Interest group' : t.kind === 'group' ? 'Group' : ''
+    const text = t.quad && t.topic ? `\u{1F525} Hot topic: ${t.topic}` : last ? `${who}${last.body}` : t.kind === 'group' && t.topic ? `\u{1F4CC} ${t.topic}` : 'Say howzit'
+    return `<li><button type="button" class="cht-row${t.unread && !t.muted ? ' unread' : ''}" data-thread="${esc(t.id)}" data-kind="${t.quad ? 'quad' : kind ? (kind === 'Group' ? 'group' : 'interest') : 'dm'}">
       <span class="cht-av">${t.kind === 'group' ? GROUP_FACE : face(t.peer?.look)}</span>
-      <span class="cht-mid"><b>${esc(t.name)}${t.muted ? ' <span class="cht-muted" aria-label="muted">\u{1F515}</span>' : ''}</b><span class="cht-last">${esc(text)}</span></span>
+      <span class="cht-mid"><b>${esc(t.name)}${t.muted ? ' <span class="cht-muted" aria-label="muted">\u{1F515}</span>' : ''}</b>${kind ? `<small class="cht-kind">${kind}</small>` : ''}<span class="cht-last">${esc(text)}</span></span>
       <span class="cht-side"><small>${esc(last ? clock(last.at) : '')}</small>${t.unread && !t.muted ? `<small class="cht-badge" aria-label="${t.unread} unread">${t.unread > 99 ? '99+' : t.unread}</small>` : ''}</span>
     </button></li>`
   }
@@ -263,11 +269,14 @@ function paintList() {
 // Loops: a group's flame (days running with 3 or more members active), in its header.
 const flameHtml = (t) => (Number(t?.flame) > 0 ? `<span class="cht-flame" title="Days running with 3 or more of you active" aria-label="${t.flame} day group streak">\u{1F525} ${t.flame}</span>` : '')
 function headHtml(t) {
-  const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : t.peer?.handle ? `@${t.peer.handle}` : 'Direct message'
+  // (a DM: "online" for a friend both ways who is on right now, as the server says; a group: how many are in it)
+  const pal = t?.kind === 'dm' ? friendList().find((f) => f.id === t.peer?.id) : null
+  const on = Boolean(pal?.mutual && pal.online)
+  const sub = !t ? '' : t.kind === 'group' ? `${t.members || 1} member${t.members === 1 ? '' : 's'}` : on ? 'online' : t.peer?.handle ? `@${t.peer.handle}` : 'Direct message'
   return `<button type="button" class="cht-back" data-ct="back" aria-label="Back to chats">‹</button>
     <span class="cht-av cht-sm">${!t || t.kind === 'group' ? GROUP_FACE : face(t.peer?.look, 36)}</span>
-    ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>${flameHtml(t)}` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small>${esc(sub)}</small></span>`}
-    ${t?.kind === 'dm' && t.peer?.id ? `<button type="button" class="cht-btn sm" data-ct="walk" data-walk-id="${esc(t.peer.id)}" data-walk-name="${esc(t.peer.name || 'Student')}">\u{1F6B6} Walk with me</button>` : ''}
+    ${t?.kind === 'group' && !t.quad ? `<button type="button" class="cht-title cht-open" data-ct="info" aria-label="${esc(t.name)}: members and settings"><b>${esc(t.name)} ›</b><small>${esc(sub)}${t.muted ? ' · muted' : ''}</small></button>${flameHtml(t)}` : `<span class="cht-title"><b>${esc(t?.name || 'Chat')}</b><small${on ? ' class="cht-on"' : ''}>${esc(sub)}</small></span>`}
+    ${t?.kind === 'dm' && t.peer?.id ? `<button type="button" class="cht-btn sm" data-ct="walk" data-walk-id="${esc(t.peer.id)}" data-walk-name="${esc(t.peer.name || 'Student')}" aria-label="Walk with me">\u{1F6B6} Walk</button>` : ''}
     <button type="button" class="cht-x" data-ct="close" aria-label="Close chat">✕</button>`
 }
 function paintThread() {
@@ -275,14 +284,24 @@ function paintThread() {
   sheet.innerHTML = `<header class="cht-head">${headHtml(t)}</header>
     <p class="cht-pin"${t?.kind === 'group' && t.topic ? '' : ' hidden'}><span aria-hidden="true">\u{1F4CC}</span><span class="cht-topic">${esc(t?.topic || '')}</span></p>
     <ol class="cht-lines" aria-live="polite"></ol>
+    <p class="cht-typing" role="status" hidden></p>
     <div class="cht-acts" hidden></div>
     <form class="cht-form" autocomplete="off">
-      <input type="text" name="msg" maxlength="${MSG_MAX}" placeholder="Message" enterkeyhint="send" aria-label="Message">
-      <small class="cht-count"></small>
-      <button type="submit">Send</button>
+      <span class="cht-bar"><input type="text" name="msg" maxlength="${MSG_MAX}" placeholder="Message" enterkeyhint="send" aria-label="Message"><small class="cht-count"></small></span>
+      <button type="submit" class="cht-send" aria-label="Send"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3.4 20.4 21 12 3.4 3.6l-.1 6.5L15 12 3.3 13.9z" fill="currentColor"/></svg></button>
     </form>
     <p class="cht-note" role="status" hidden></p>`
   paintLines(true)
+  paintTyping()
+}
+// "Bonga is typing…" under the messages (DMs, and groups of up to eight).
+function paintTyping() {
+  const el = sheet?.querySelector('.cht-typing')
+  if (!el) return
+  const t = threadOf(view)
+  const who = t && canType(t) ? typingIn(view) : ''
+  el.hidden = !who
+  el.textContent = who ? (t.kind === 'dm' ? 'typing…' : `${who} is typing…`) : ''
 }
 
 // A group's page: who is in it, the pinned topic (its creator changes it), add people, invite by WhatsApp, mute, leave.
@@ -349,9 +368,10 @@ function paintLines(jump = false) {
     const p = people[l.sender] || (t?.peer?.id === l.sender ? t.peer : {})
     const name = p.name || 'Student'
     const who = t?.kind === 'group' ? ` data-dm="${esc(l.sender)}" aria-label="Message ${esc(name)}"` : ' tabindex="-1"'
-    return `<li class="them${lead ? ' lead' : ''}">${lead ? `<button type="button" class="cht-who"${who}><span class="cht-av cht-xs">${face(p.look, 30)}</span></button>` : '<span class="cht-gap"></span>'}
-      <div class="cht-col">${lead ? `<small class="cht-name">${esc(name)}</small>` : ''}<div class="cht-bub" data-line="${l.id}" data-sender="${esc(l.sender)}" data-name="${esc(name)}"><span class="cht-text">${esc(l.body)}</span><small class="cht-time">${esc(timeOf(l.at))}</small></div></div></li>`
-  }).join('') : `<li class="cht-none">${t?.kind === 'group' ? 'Nobody has said anything yet. Start it off!' : `Say howzit to ${esc(first(t?.name))}.`}</li>`
+    return `<li class="them${lead ? ' lead' : ''}">${lead && t?.kind === 'group' ? `<button type="button" class="cht-who"${who}><span class="cht-av cht-xs">${face(p.look, 30)}</span></button>` : t?.kind === 'group' ? '<span class="cht-gap"></span>' : ''}
+      <div class="cht-col"><div class="cht-bub" data-line="${l.id}" data-sender="${esc(l.sender)}" data-name="${esc(name)}">${lead && t?.kind === 'group' ? `<small class="cht-name">${esc(name)}</small>` : ''}<span class="cht-text">${esc(l.body)}</span><small class="cht-time">${esc(timeOf(l.at))}</small></div></div></li>`
+  }).join('') : `<li class="cht-none"><span>${t?.kind === 'group' ? 'Nobody has said anything yet. Start it off!' : `Say howzit to ${esc(first(t?.name))}.`}</span></li>`
+  paintTyping()
   if (nearEnd) box.scrollTop = box.scrollHeight
 }
 function paintActs() {
@@ -546,7 +566,14 @@ function ping({ thread, line }) {
   const group = thread.kind === 'group'
   const words = line.body.length > 64 ? `${line.body.slice(0, 64)}…` : line.body
   banner.innerHTML = `<span class="cht-av cht-sm">${group ? GROUP_FACE : face(thread.peer?.look, 36)}</span>
-    <span class="cht-ping-t"><b>${esc(group ? `${first(line.name)} · ${thread.name}` : thread.name)}</b><span>${esc(words)}</span></span>`
+    <span class="cht-ping-t"><b>${esc(group ? `${first(line.name)} · ${thread.name}` : thread.name)}</b><span>${esc(words)}</span></span><i class="cht-ping-go" aria-hidden="true">›</i>`
+  // (Chat V2: it drops in just below the top bar, so the bar and its count stay in view; with no bar, at the top)
+  const bar = document.querySelector('#app .g-hud.tb')
+  const under = bar && bar.getBoundingClientRect().height > 0 ? Math.round(bar.getBoundingClientRect().bottom) : 0
+  banner.style.top = under ? `${under}px` : ''
+  banner.dataset.under = under ? 'bar' : 'top'
+  // (one short buzz, where the phone allows it: never on a muted phone setting of ours)
+  try { if (localStorage.getItem('mzansiville.sound') !== 'off') navigator.vibrate?.(60) } catch { /* not allowed here */ }
   banner.setAttribute('aria-label', `New message from ${group ? first(line.name) : thread.name}: ${words}. Open the chat`)
   banner.hidden = false
   banner.classList.remove('in')
@@ -555,7 +582,7 @@ function ping({ thread, line }) {
   banner.dataset.n = String((Number(banner.dataset.n) || 0) + 1)
   play('ping', 400)
   clearTimeout(pingTimer)
-  pingTimer = setTimeout(hidePing, 4500)
+  pingTimer = setTimeout(hidePing, 5000)
 }
 function hidePing() {
   clearTimeout(pingTimer)
@@ -617,5 +644,7 @@ export function paintBadges() {
   for (const el of document.querySelectorAll('[data-chat-unread]')) {
     el.textContent = n ? (n > 99 ? '99+' : String(n)) : ''
     el.hidden = !n
+    // (Chat V2: it pulses while there is something unread and the chat is shut; opening the chat stills it)
+    el.classList.toggle('pulse', Boolean(n) && !view)
   }
 }

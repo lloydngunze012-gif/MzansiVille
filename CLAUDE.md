@@ -2,6 +2,15 @@
 
 ---
 
+# CHAT V2: FAMILIAR AND CLEAR (owner, 11 Nov). Push and deploy. Status: built. No SQL.
+- **Palette rule:** docs/palette.md (read it before any new screen or button). tests/palette.js `paletteFaults(page, root)` returns the faults on screen: a purple or navy button, text that is not ink on yellow, not white on dark, not dark on light, or under 4.5:1. Text straight over the 3D picture or a gradient is not measured: give it a surface. Checked today on the chat and on campus, the menu, the Caf and SunnyBay; the rest is listed "not swept yet" in palette.md.
+- **Chat look** (the "Chat V2" block at the end of src/ui/threads.css; no `#5b23c9` anywhere): `.cht-lines` wall `#dcebf5` + an inline SVG doodle tile; `.cht-bub` white / `li.me` `#d9f2c7`, ink text, `.cht-time` grey inside, tails by `::before` on `.lead`; in a group `.cht-name` is inside the bubble; `.cht-bar` (white rounded input) + `.cht-send` (round yellow, aria-label Send); list rows white with `.cht-kind` ("Interest group" for ids starting `i:`, "Group" for player-made) and the Quad's `.cht-last` = "Hot topic: <topic>"; `.cht-title small.cht-on` = "online" (friendList mutual + online).
+- **Typing:** src/threads.js `typing(threadId)` (call per keystroke; sends at most one `{ ty, f, n }` nudge per TYPING_GAP 3000 ms; `canType`: DMs and groups of up to 8, never the Quad), `typingIn(threadId)`, event 'typing'; ui `paintTyping` -> `.cht-typing`. A typing nudge has no `t` field. `window.mzansiNudge(payload)` feeds a nudge in tests; `mzansiThreads().typingSent`.
+- **Banner:** `.cht-ping` white, placed at the top bar's bottom edge (`data-under="bar"`, edge to edge up to 480 px), 5 s, `navigator.vibrate(60)` unless Sound is off. The count `.tb-chat .cht-unread` pulses (`cht-pulse`) while `body` has no `data-chat`.
+- **Tests:** tests/e2e/chat-v2.spec.js V1-V5 (quick project); tests/presence/chat.spec.js (typing over Realtime).
+
+---
+
 # THE CHARACTER BUTTON (owner, 12 Nov; a correction to Tester fixes 2). Push and deploy. Status: built. No SQL.
 - game.js `meButton(run)`: `.tb-me` (`data-act="edit-look"`), first in the top bar's row 1, so it is on campus, in the Caf and in SunnyBay: `.tb-me-face` (an `<img>` once `setMeFace(key, url)` has one for this look, else the initial) and `.tb-me-pen`. Styles: topbar.css.
 - main.js: `hydrateMeFace()` after every paint (a quick-start student's unchanged look uses /opening/<id>-face.webp; any other look thumbs3d.js `thumbFor(look, 'hair')`, cached); `openLookEditor()` = openCardEditor with `draft.toPlay` and no reward prompt; `enrol-save-look` saves avatar, from, country and region and goes back to play (go() steps out of the Caf or the city and #/play walks back in). enrol.js: on the look step with `draft.edit && draft.toPlay` the footer is "Save my look" + `.en-more` "Name, house and card" and Back goes to #/play.

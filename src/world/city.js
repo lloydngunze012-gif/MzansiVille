@@ -1033,8 +1033,8 @@ body[data-city="1"] #world{display:none}
 .city-ui{position:fixed;inset:0;z-index:30;pointer-events:none;font-family:Figtree,system-ui,sans-serif;--city-top:64px}
 .city-ui[hidden]{display:none}
 .city-ui button,.city-ui a{pointer-events:auto;font:800 14px Figtree,system-ui,sans-serif;border:0;cursor:pointer;min-height:44px}
-.city-chip{position:absolute;left:12px;top:calc(var(--city-top) + 8px);display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:22px;background:#22143b;color:#fff;box-shadow:0 4px 14px #0006;font-size:14px}
-.city-chip b{color:#f0c400;font-weight:800}
+.city-chip{position:absolute;left:12px;top:calc(var(--city-top) + 8px);display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:22px;background:#1c1915;color:#fff;box-shadow:0 4px 14px #0006;font-size:14px}
+.city-chip b{color:#fff;font-weight:800}
 .city-chip small{font-size:12px;opacity:.85}
 .city-cams{position:absolute;right:12px;top:calc(var(--city-top) + 8px);display:flex;gap:4px}
 .city-cams button{padding:0 11px;border-radius:22px;background:#0009;color:#fff}
