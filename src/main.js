@@ -82,6 +82,7 @@ import { noteClosed } from './ui/minicard-state.js'
 import { drainDrive, drainTaxi } from './engine/energy.js'
 import { sendInvite } from './world/together.js'
 import { initWalk } from './walk.js'
+import { initFindMe, toggleFindMe } from './findme.js'
 import { award, badgesFor, collectPreorder, dressMenu, noteActive, preorderNews, standingBadges } from './loops.js'
 import { openInvite, openPreorder, openReady } from './ui/loops.js'
 import { claimInvite, INVITE_REWARD } from './sharewa.js'
@@ -1384,6 +1385,7 @@ function gameAct(act, button) {
   if (act === 'talk-phone') { endTalk(); go('notices'); setTimeout(() => app.querySelector('.phone-card')?.scrollIntoView({ block: 'center' }), 50); return true }
   if (act === 'gear') { ui.gear = !ui.gear; ui.confirmReset = false; paint(); return true }
   if (act === 'edit-look') { openLookEditor(); return true }
+  if (act === 'find-toggle') { toggleFindMe().then(() => paint()); return true }
   if (act === 'install-go') { promptInstall(); return true }
   if (act === 'sound') {
     try { localStorage.setItem('mzansiville.sound', soundOn() ? 'off' : 'on') } catch { /* private mode */ }
@@ -2949,6 +2951,9 @@ window.addEventListener('mzansi-invite-paid', (event) => {
   toast(`\u{1F381} ${names.map((n) => String(n).split(' ')[0]).join(', ')} joined with your link: +R${INVITE_REWARD * names.length}`)
 })
 window.addEventListener('mzansi-posted', () => countDone('board_post', '', 'social'))
+// Social C: find me, go to a friend, suggested groups (src/findme.js).
+initFindMe({ toast: (text) => toast(text) })
+window.addEventListener('mzansi-exit-caf', () => exitCaf())
 initWalk({ places: () => (save.run ? districtNow().places.filter((p) => p.kind !== 'transit') : []), toast: (text) => toast(text) })
 function blockPlayer(id) {
   save.blocks = [...new Set([...(save.blocks || []), id])]

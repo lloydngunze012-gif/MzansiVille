@@ -49,6 +49,8 @@ let friends = [] // [{ id, name, handle, house, look, online }]
 let social = false
 let asks = [] // (follow-ups: groups someone wants to add you to, waiting for Join or No thanks)
 let socialB = false // (Social B: the Board, follow, the Feed, interests)
+let socialC = false // (Social C: find me, open groups; false until supabase/chat.sql has been run again)
+let findOn = false // (you said "let friends find me" today: the server's word)
 let interests = []
 let followers = 0
 let roomArg = true // (the older chat_sync takes no p_room)
@@ -149,6 +151,8 @@ export function sync() {
     status = 'ready'
     social = Array.isArray(data.friends)
     socialB = Array.isArray(data.interests)
+    socialC = data.find !== undefined
+    findOn = Boolean(data.find)
     asks = (data.asks || []).filter((a) => !blocked.has(a.from_id)).map((a) => ({ ...a, group: filterText(String(a.group || 'a group')).text || 'a group', from: filterText(String(a.from || 'Someone')).text || 'Someone' }))
     // (what became of the asks you sent: "added" or "can't right now", told once)
     // (Loops: friends who started playing through your invite link since you were last told)
@@ -409,6 +413,46 @@ async function act(fn, args) {
 }
 // (src/board.js: the Board, follow, the Feed and interests go through the same door)
 export const chatCall = act
+
+// ---------- Social C (owner, 11 Nov): find me, open groups ----------
+export const socialCReady = () => socialC
+// Are you letting friends find you today (the server's answer on the last sync)?
+export const findMeOn = () => findOn
+// Yes or no. Yes lasts until the end of today (SAST); no clears your spot on the server at once.
+export async function setFindMe(on) {
+  const res = await act('chat_find', { p_on: Boolean(on) })
+  if (res.ok) { findOn = Boolean(res.data.on); emit('list') }
+  return res
+}
+// Where you stand in the game (a district and a spot on its map; never a real place). Kept only while you share.
+export async function sendSpot(part, x, z, place = '') {
+  if (!findOn || !live()) return { ok: false }
+  const { data, error } = await rpc('chat_spot', { p_part: part, p_x: Math.round(x * 10) / 10, p_z: Math.round(z * 10) / 10, p_in: place || '' })
+  if (!error && data?.ok && data.on === false) findOn = false // (a new day began: it is off until you say yes again)
+  return { ok: !error && Boolean(data?.ok) }
+}
+// Friends who are sharing right now: [{ id, name, look, spot: { part, x, z, in } }] (friends both ways, online).
+export const sharingFriends = () => friends.filter((f) => f.mutual && f.online && f.spot && !blocked.has(f.id))
+// Today's suggested group, if there is one for you: { thread, name, members, tag, interest } or null.
+export async function groupSuggestion() {
+  if (!socialC) return null
+  const res = await act('chat_group_suggest', {})
+  const g = res.ok ? res.data.group : null
+  return g ? { ...g, name: filterText(String(g.name || 'A group')).text || 'A group', interest: filterText(String(g.interest || '')).text } : null
+}
+export async function answerSuggestion(threadId, yes) {
+  const res = await act('chat_group_suggest_answer', { p_thread: threadId, p_yes: Boolean(yes) })
+  if (res.ok && yes) await sync()
+  return res
+}
+// Open (with one of the 12 interests as its tag) or Private. Only the group's creator.
+export async function setGroupOpen(threadId, on, tag = '') {
+  const res = await act('chat_group_open', { p_thread: threadId, p_on: Boolean(on), p_tag: tag || null })
+  if (res.ok) { const t = threadOf(threadId); if (t) { t.listed = Boolean(res.data.listed); t.tag = res.data.tag || t.tag }; emit('list') }
+  return res
+}
+// Report a group's name or topic (once per player per group).
+export async function reportGroup(threadId, reason = '') { return act('chat_group_report', { p_thread: threadId, p_reason: String(reason).slice(0, 60) }) }
 // Make a group (the name passes engine/groupname.js first: the filter and handle_blocklist.json).
 export async function createGroup(name, topic = '') {
   if (!groupNameOk(name)) return { ok: false, note: GROUP_WHY.name }
@@ -511,7 +555,7 @@ window.mzansiNudge = (p) => nudged(p || {})
 window.mzansiThreads = () => ({
   status, open: openId, unread: unreadTotal(), live: started,
   typingSent, typing: Object.fromEntries([...typingNow].filter(([, v]) => v.until > Date.now()).map(([k, v]) => [k, v.name])),
-  social, socialB, interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
+  social, socialB, socialC, find: findOn, sharing: sharingFriends().map((f) => ({ id: f.id, name: f.name, spot: f.spot })), interests, followers, room: roomSent, asks: asks.map((a) => ({ id: a.id, thread: a.thread, group: a.group, from: a.from })), friends: friends.map((f) => ({ id: f.id, name: f.name, online: f.online, mutual: Boolean(f.mutual) })),
   threads: threads.map((t) => ({ id: t.id, kind: t.kind, name: t.name, topic: t.topic, unread: t.unread, last: t.last?.body || '', muted: Boolean(t.muted), quad: Boolean(t.quad), members: t.members, code: t.code || '', flame: Number(t.flame) || 0 })),
   lines: openId ? linesOf(openId).lines.map((l) => ({ id: l.id, me: l.sender === myId(), sender: l.sender, body: l.body })) : [],
 })

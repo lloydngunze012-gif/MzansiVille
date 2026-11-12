@@ -303,6 +303,18 @@ create unique index if not exists chat_threads_code_idx on public.chat_threads (
 alter table public.chat_members add column if not exists muted boolean not null default false;
 alter table public.chat_players add column if not exists room int not null default 1;
 alter table public.chat_players add column if not exists joined_said boolean not null default false;
+-- SOCIAL C (owner, 11 Nov; its functions are the last block of this file):
+--   find_day: the day (SAST) you said "let friends find me"; you share only while it is today. spot: where you
+--   stand in the game ({ part, x, z, in }), never a real place. suggest_day: the last day a group was suggested.
+alter table public.chat_players add column if not exists find_day date;
+alter table public.chat_players add column if not exists spot jsonb;
+alter table public.chat_players add column if not exists spot_at timestamptz;
+alter table public.chat_players add column if not exists suggest_day date;
+--   listed: an Open group (it can be suggested); tag: one of the 12 interests; reports_hidden: three reports of its
+--   name or topic took it out of suggestions until an admin sets this back to false.
+alter table public.chat_threads add column if not exists listed boolean not null default false;
+alter table public.chat_threads add column if not exists tag text;
+alter table public.chat_threads add column if not exists reports_hidden boolean not null default false;
 
 create table if not exists public.chat_friends (
   player text not null,
@@ -403,6 +415,8 @@ begin
     'last', last_line, 'unread', n_unread, 'muted', coalesce(is_muted, false), 'quad', chat_is_quad(t.id),
     -- (Loops: the group's flame; 0 once a day has been missed)
     'flame', case when t.flame_day >= (now() at time zone 'Africa/Johannesburg')::date - 1 then t.flame else 0 end,
+    -- (Social C: Open or Private, and the interest an Open group is about)
+    'listed', (t.kind = 'group' and t.listed), 'tag', t.tag,
     'code', case when t.kind = 'group' and not chat_is_quad(t.id) and mine is not null then t.code end);
 end $$;
 revoke all on function public.chat_thread_json(text, public.chat_threads) from public;
@@ -452,11 +466,13 @@ begin
   ) x;
   select coalesce(jsonb_agg(blocked), '[]'::jsonb) into mine from chat_blocks where blocker = p_id;
   -- (who is online is only told about friends both ways: a one-way friend has no "online" in the reply at all)
+  -- (Social C: where a friend is in the game, only if they said yes today, are online, and are a friend both ways)
   select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'name', x.name, 'handle', x.handle, 'house', x.house, 'look', x.look, 'mutual', x.mutual)
       || case when x.mutual then jsonb_build_object('online', x.online) else '{}'::jsonb end
+      || case when x.mutual and x.online and x.find_day = today and x.spot is not null then jsonb_build_object('spot', x.spot) else '{}'::jsonb end
       order by (x.mutual and x.online) desc, x.name), '[]'::jsonb)
     into pals from (
-      select p.id, p.name, p.handle, p.house, p.look, chat_mutual(p_id, p.id) as mutual, p.seen_at > now() - interval '70 seconds' as online
+      select p.id, p.name, p.handle, p.house, p.look, chat_mutual(p_id, p.id) as mutual, p.seen_at > now() - interval '70 seconds' as online, p.find_day, p.spot
       from chat_friends f join chat_players p on p.id = f.friend where f.player = p_id and not chat_blocked(p_id, p.id)) x;
   -- asks waiting for your answer (24 hours, never from someone blocked either way)
   select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'thread', a.thread, 'group', t.name, 'from', coalesce(p.name, 'Student'), 'from_id', a.asker) order by a.at), '[]'::jsonb)
@@ -474,7 +490,9 @@ begin
   return jsonb_build_object('ok', true, 'threads', list, 'blocked', mine, 'friends', pals, 'room', rm, 'asks', asks, 'answers', answers, 'refs', refs,
     -- (Social B: your follower count and your interests; null until its block below has been run)
     'followers', (select count(*) from chat_follows where followed = p_id),
-    'interests', (select to_jsonb(interests) from chat_players where id = p_id));
+    'interests', (select to_jsonb(interests) from chat_players where id = p_id),
+    -- (Social C: are you letting friends find you today)
+    'find', (select coalesce(find_day = today, false) from chat_players where id = p_id));
 end $$;
 grant execute on function public.chat_sync(text, text, text, text, text, jsonb, int) to anon, authenticated;
 
@@ -1033,3 +1051,159 @@ begin
   return jsonb_build_object('ok', true, 'inviter', inv.name);
 end $$;
 grant execute on function public.chat_ref_claim(text, text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- SOCIAL C (owner, 11 Nov): find me, and suggested groups. Run the whole file again (it is re-runnable).
+--   Find me: a player can let friends both ways see where they stand IN THE GAME (never a real place), for one
+--   day (SAST) at a time. Off unless they said yes today. Who sees it is decided here: chat_sync gives a friend's
+--   spot only to friends both ways, only while that friend is online, and never past a block.
+--   Open groups: a group's creator can make it Open, with one of the 12 interests as its tag. A player whose
+--   interests match gets at most one suggestion a day; "Not now" keeps that group away for 7 days; a group with
+--   anyone the player has blocked (or who blocked them) is never suggested. Three reports of a group's name or
+--   topic take it out of suggestions until an admin looks (reports_hidden back to false).
+-- (the columns are added near the top of this file's Social A block; chat_thread_json and chat_sync above use them)
+-- =====================================================================================================
+create table if not exists public.chat_group_snoozes (
+  thread text not null references public.chat_threads (id) on delete cascade,
+  player text not null,
+  until timestamptz not null,
+  primary key (thread, player)
+);
+alter table public.chat_group_snoozes enable row level security;
+create table if not exists public.chat_group_reports (
+  thread text not null references public.chat_threads (id) on delete cascade,
+  reporter text not null,
+  reason text not null default '',
+  name text not null default '',
+  topic text not null default '',
+  at timestamptz not null default now(),
+  primary key (thread, reporter)
+);
+alter table public.chat_group_reports enable row level security;
+
+-- "Let friends find you today?" Yes (p_on true) lasts until the end of today (SAST); No, or turning it off in the
+-- menu, clears your spot at once. { ok, on }.
+create or replace function public.chat_find(p_id text, p_secret text, p_on boolean default true)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  perform chat_me(p_id, p_secret);
+  update chat_players set find_day = case when coalesce(p_on, true) then (now() at time zone 'Africa/Johannesburg')::date end,
+    spot = case when coalesce(p_on, true) then spot end, spot_at = case when coalesce(p_on, true) then spot_at end where id = p_id;
+  return jsonb_build_object('ok', true, 'on', coalesce(p_on, true));
+end $$;
+grant execute on function public.chat_find(text, text, boolean) to anon, authenticated;
+
+-- Where you stand in the game: a district (campus, gate, town, suburbs, beachfront, township, industrial), metres east
+-- and south of the campus's middle, and the place you are inside if any. Kept only while you share today.
+-- { ok, on }: on false = you are not sharing (nothing was kept).
+create or replace function public.chat_spot(p_id text, p_secret text, p_part text, p_x numeric, p_z numeric, p_in text default '')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare sharing boolean;
+begin
+  perform chat_me(p_id, p_secret);
+  select find_day = (now() at time zone 'Africa/Johannesburg')::date into sharing from chat_players where id = p_id;
+  if not coalesce(sharing, false) then
+    update chat_players set spot = null, spot_at = null where id = p_id and spot is not null;
+    return jsonb_build_object('ok', true, 'on', false);
+  end if;
+  -- ('gate': SunnyBay's Campus district, outside the campus fence)
+  if p_part is null or p_part not in ('campus', 'gate', 'town', 'suburbs', 'beachfront', 'township', 'industrial')
+    or p_x is null or p_z is null or abs(p_x) > 2000 or abs(p_z) > 2000 then return jsonb_build_object('ok', false, 'reason', 'bad'); end if;
+  update chat_players set spot = jsonb_build_object('part', p_part, 'x', round(p_x, 1), 'z', round(p_z, 1), 'in', left(regexp_replace(coalesce(p_in, ''), '[^a-z0-9_]', '', 'g'), 40)),
+    spot_at = now(), seen_at = now() where id = p_id;
+  return jsonb_build_object('ok', true, 'on', true);
+end $$;
+grant execute on function public.chat_spot(text, text, text, numeric, numeric, text) to anon, authenticated;
+
+-- Open or Private. Only the group's creator; Open needs one of the 12 interests as its tag. { ok, listed, tag }.
+--   { ok: false, reason }: not_yours | tag (no such interest)
+create or replace function public.chat_group_open(p_id text, p_secret text, p_thread text, p_on boolean, p_tag text default null)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype; tg text := lower(left(coalesce(p_tag, ''), 20));
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_my_group(p_id, p_thread);
+  if t.id is null or t.creator is distinct from p_id then return jsonb_build_object('ok', false, 'reason', 'not_yours'); end if;
+  if coalesce(p_on, false) then
+    if not exists (select 1 from chat_threads i where i.id = 'i:' || tg) then return jsonb_build_object('ok', false, 'reason', 'tag'); end if;
+    update chat_threads set listed = true, tag = tg where id = t.id;
+    return jsonb_build_object('ok', true, 'listed', true, 'tag', tg);
+  end if;
+  update chat_threads set listed = false where id = t.id;
+  return jsonb_build_object('ok', true, 'listed', false, 'tag', t.tag);
+end $$;
+grant execute on function public.chat_group_open(text, text, text, boolean, text) to anon, authenticated;
+
+-- Can this open group be offered to (or joined by) this player right now?
+create or replace function public.chat_group_fits(p_id text, t public.chat_threads) returns boolean
+language sql stable security definer set search_path = public as $$
+  select t.kind = 'group' and t.listed and not t.reports_hidden and t.tag is not null and t.id like 'g:%'
+    and not exists (select 1 from chat_members m where m.thread = t.id and m.player = p_id)
+    and not exists (select 1 from chat_group_bans b where b.thread = t.id and b.player = p_id)
+    and (select count(*) from chat_members m where m.thread = t.id) between 1 and 39
+    -- (never a group with someone you blocked, or who blocked you)
+    and not exists (select 1 from chat_members m where m.thread = t.id and chat_blocked(p_id, m.player))
+$$;
+revoke all on function public.chat_group_fits(text, public.chat_threads) from public;
+
+-- One suggestion a day at most: an open group whose tag is one of your interests. { ok, group: null } when there
+-- is none for you (or you have had today's); else { ok, group: { thread, name, members, tag, interest } }.
+create or replace function public.chat_group_suggest(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare me chat_players%rowtype; t chat_threads%rowtype; today date := (now() at time zone 'Africa/Johannesburg')::date;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into me from chat_players where id = p_id;
+  if me.suggest_day = today then return jsonb_build_object('ok', true, 'group', null); end if;
+  select g.* into t from chat_threads g
+    where g.listed and g.tag = any (me.interests) and chat_group_fits(p_id, g)
+      and not exists (select 1 from chat_group_snoozes s where s.thread = g.id and s.player = p_id and s.until > now())
+    order by g.last_at desc nulls last, g.created_at desc limit 1;
+  if not found then return jsonb_build_object('ok', true, 'group', null); end if;
+  update chat_players set suggest_day = today where id = p_id;
+  return jsonb_build_object('ok', true, 'group', jsonb_build_object('thread', t.id, 'name', t.name, 'tag', t.tag,
+    'members', (select count(*) from chat_members m where m.thread = t.id),
+    'interest', coalesce((select regexp_replace(i.name, '^[^A-Za-z]+', '') from chat_threads i where i.id = 'i:' || t.tag), t.tag)));
+end $$;
+grant execute on function public.chat_group_suggest(text, text) to anon, authenticated;
+
+-- Join (you are in, with nothing unread) or Not now (that group is not suggested to you again for 7 days).
+--   { ok, thread } | { ok, snoozed: true } | { ok: false, reason: 'gone' } (no longer open, full, or not for you)
+create or replace function public.chat_group_suggest_answer(p_id text, p_secret text, p_thread text, p_yes boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_threads where id = p_thread;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'gone'); end if;
+  if not coalesce(p_yes, false) then
+    insert into chat_group_snoozes (thread, player, until) values (t.id, p_id, now() + interval '7 days')
+      on conflict (thread, player) do update set until = excluded.until;
+    return jsonb_build_object('ok', true, 'snoozed', true);
+  end if;
+  perform pg_advisory_xact_lock(hashtext('chatg:' || t.id));
+  if exists (select 1 from chat_members where thread = t.id and player = p_id) then return jsonb_build_object('ok', true, 'thread', t.id); end if;
+  if not chat_group_fits(p_id, t) then return jsonb_build_object('ok', false, 'reason', 'gone'); end if;
+  insert into chat_members (thread, player, last_read) values (t.id, p_id, t.last_id);
+  delete from chat_group_asks where thread = t.id and player = p_id;
+  return jsonb_build_object('ok', true, 'thread', t.id);
+end $$;
+grant execute on function public.chat_group_suggest_answer(text, text, text, boolean) to anon, authenticated;
+
+-- Report a group's name or topic (a member, or someone it was suggested to). Once per player per group, 20 an
+-- hour; the third report takes the group out of suggestions until an admin sets reports_hidden back to false.
+-- A copy of the name and topic as they were is kept with the report.
+create or replace function public.chat_group_report(p_id text, p_secret text, p_thread text, p_reason text default '')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare t chat_threads%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  select * into t from chat_threads where id = p_thread and kind = 'group' and id like 'g:%';
+  if not found or t.creator = p_id then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if not t.listed and not exists (select 1 from chat_members where thread = t.id and player = p_id) then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if (select count(*) from chat_group_reports where reporter = p_id and at > now() - interval '1 hour') >= 20 then return jsonb_build_object('ok', false, 'reason', 'too_many'); end if;
+  insert into chat_group_reports (thread, reporter, reason, name, topic) values (t.id, p_id, left(coalesce(p_reason, ''), 60), t.name, t.topic) on conflict do nothing;
+  if (select count(*) from chat_group_reports where thread = t.id) >= 3 then update chat_threads set reports_hidden = true where id = t.id; end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_group_report(text, text, text, text) to anon, authenticated;
