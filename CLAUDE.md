@@ -2,6 +2,16 @@
 
 ---
 
+# PLAYER PASS (owner, 12 Nov). Standing rule for every job.
+Every job ends with a player pass before pushing: play the changed areas
+as a brand-new player at 390 px for at least 10 game minutes, with keys,
+mouse and touch, and with two players for anything social. In the report,
+under "As a player", list everything that felt broken, boring, confusing,
+empty or ugly, however small. Fix the small ones before pushing; list the
+rest. A job is not done without this section.
+
+---
+
 # MOVEMENT (owner, 11 Nov). Push and deploy. Status: built. No SQL.
 - **Traffic:** src/world/traffic.js (the 11 Nov draft, now wired and run): the road graph from sunnybay.json, left lanes, junction curves (one vehicle through a junction at a time), 11 cars (sedan, suv, hatch, truck) and 4 kombis on the roads + 1 kombi for your ride, one InstancedMesh per kind (5 draw calls), cars put back a block or two away once 150 m out of sight; they ease down for junctions and crossings and stop for anybody on foot in the lane (you, the street people, other players: city.js onFoot()). Kombis drive stop to stop and wait 3.5 s at each. The kombi is the kit van with its blue body painted white at bake time (whiteBody). The models face +Z (CAR_FLIP 0).
 - **The kombi ride:** city.js ride() -> kombiRide(from, to, veil): pullUp at your stop (`data-ride` coming), you get in (in: you are hidden), it pulls off with the camera following it for 3.8 s (off: rideCam), a cut (the ride card), it pulls in at your stop and you step out (out), then it drives off. Fare, minutes and the walk on from the stop are unchanged; without traffic (not loaded, or inside a place) the old card is the ride. Wall-clock waits scale with ?fast.
