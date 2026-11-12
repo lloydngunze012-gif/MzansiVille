@@ -59,7 +59,7 @@ export function quickScreen(state) {
   const handle = tidyHandle(draft.handle)
   const pickHint = hint ? '<p class="qs-pick" data-qs-pick>Pick your character<i aria-hidden="true">↓</i></p>' : ''
   return `<main class="screen en qs qs2" data-screen="create" data-step="quick">
-    <div class="qs-scene${swap ? ' qs-swap' : ''}" data-scene data-i="${picked}" data-still="${esc(stillOf(hero))}" style="--still: url('${esc(stillOf(hero))}')" aria-hidden="true"></div>
+    <div class="qs-scene" data-scene data-i="${picked}" data-still="${esc(stillOf(hero))}" aria-hidden="true"><i class="qs-fig${swap ? ' qs-swap' : ''}" data-fig style="--still: url('${esc(stillOf(hero))}')"></i></div>
     <header class="qs-top"><img class="qs-logo" src="/opening/logo.webp" alt="Soft Life" width="242" height="220"><span class="qs-uni">University of Mzansi</span></header>
     <div class="qs-rowwrap">
       ${pickHint}

@@ -487,9 +487,26 @@ function hydrateQuickThumbs() {
   first.onerror = () => { quickWarmed = false } // (blocked or offline: try again on a later repaint)
   first.src = scene.dataset.still
 }
+// The portrait row keeps its place across repaints (every keystroke repaints the page), and the picked student's
+// portrait is always fully in view: never cut off at an edge (V2.2).
+let quickRowLeft = 0
+app.addEventListener('scroll', (event) => { if (event.target?.classList?.contains('qs-row')) quickRowLeft = event.target.scrollLeft }, true)
+function keepQuickPickInView() {
+  const row = app.querySelector('.qs .qs-row')
+  const card = row?.querySelector('.qs-card[aria-pressed="true"]')
+  if (!row || !card) return
+  let left = quickRowLeft
+  const pad = 16
+  if (card.offsetLeft - pad < left) left = card.offsetLeft - pad
+  if (card.offsetLeft + card.offsetWidth + pad > left + row.clientWidth) left = card.offsetLeft + card.offsetWidth + pad - row.clientWidth
+  left = Math.max(0, Math.min(left, row.scrollWidth - row.clientWidth))
+  if (Math.abs(row.scrollLeft - left) > 0.5) row.scrollLeft = left
+  quickRowLeft = left
+}
 
 function hydrateThumbs() {
   hydrateQuickThumbs()
+  keepQuickPickInView()
   const chips = [...app.querySelectorAll('.cc-chip.th[data-part]')].filter((chip) => ['outfit', 'hair', 'body'].includes(chip.dataset.part))
   // (the card at the end of enrolment: your portrait as dressed, made on the look screen)
   if (!chips.length) {
