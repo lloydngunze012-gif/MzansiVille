@@ -55,7 +55,9 @@ export async function checkHealth() {
     ping('/rest/v1/chat_push_subs?select=endpoint&limit=1'), // (Notifications)
     fetch('/api/push', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({})), // (the push server's keys in Vercel)
   ])
-  result.sql = { leaderboard: rules.status === 200, feedback: feedback.status === 200, cards: handles.status === 200, chat: chat.status === 200, social: [socialA.status === 200, socialB.status === 200, socialF.status === 200, socialC.status === 200, pushT.status === 200], push: Boolean(pushApi?.ready) }
+  result.sql = { leaderboard: rules.status === 200, feedback: feedback.status === 200, cards: handles.status === 200, chat: chat.status === 200, social: [socialA.status === 200, socialB.status === 200, socialF.status === 200, socialC.status === 200, pushT.status === 200] }
+  // (the push server's keys: /api/push says whether every one it needs is set; the values never leave the server)
+  result.push = Boolean(pushApi?.ready)
   if (result.supabase.ok) {
     try {
       const client = await getClient()

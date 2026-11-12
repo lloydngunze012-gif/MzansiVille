@@ -2,10 +2,15 @@ import { defineConfig } from 'vite'
 import { execSync } from 'node:child_process'
 
 // Which build this is (in every error report): the commit and when it was built.
+// Where the commit comes from, first that has one: BUILD_COMMIT (our deploy command passes it), Vercel's own
+// VERCEL_GIT_COMMIT_SHA (Vercel sets it from the git details the CLI sends with an upload, and keeps it for a
+// Redeploy from the dashboard, which passes no BUILD_COMMIT), then git itself (a build on this PC), else 'dev'.
 let commit = 'dev'
-try { commit = execSync('git rev-parse --short HEAD').toString().trim() } catch { /* not a git checkout (Vercel's own build has no git) */ }
-// A deploy from the PC names its commit: npx vercel deploy --prod --yes -b BUILD_COMMIT=$(git rev-parse --short HEAD)  (#/health and every error report show it)
-if (process.env.BUILD_COMMIT) commit = process.env.BUILD_COMMIT
+let from = 'none'
+try { commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); from = 'git' } catch { /* not a git checkout (Vercel's own build has no git) */ }
+if (process.env.VERCEL_GIT_COMMIT_SHA) { commit = process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7); from = 'VERCEL_GIT_COMMIT_SHA' }
+if (process.env.BUILD_COMMIT) { commit = process.env.BUILD_COMMIT; from = 'BUILD_COMMIT' }
+console.log(`build commit: ${commit} (from ${from})`)
 // BUILD_TAG (optional) tells two builds of one commit apart (tests/install: a deploy).
 const BUILD = `${commit} ${new Date().toISOString().slice(0, 16)}${process.env.BUILD_TAG ? ` ${process.env.BUILD_TAG}` : ''}`
 

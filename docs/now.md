@@ -1,9 +1,13 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 12 Nov, Claude Code (Movement).
+Last updated: 12 Nov, Claude Code (#/health fixes).
 
-**Next jobs: docs/queue.md** (empty: everything the owner sent on 11 and 12 Nov is built). Lloyd: run supabase/chat.sql again and add the push keys (docs/notifications.md).
+**Next jobs: docs/queue.md** (empty: everything the owner sent on 11 and 12 Nov is built). Lloyd: the push keys are in Vercel (12 Nov); run supabase/chat.sql again if not done yet (docs/notifications.md).
+
+## #/health fixes (owner, 12 Nov): pushed and deployed. No SQL to run.
+- **"Push keys (Vercel): No" was my bug, not Vercel.** Production `/api/push` already answered `ready: true` (all five variables seen; nothing to change in Vercel), but #/health kept that answer under the wrong name, so the row could never say Yes. Fixed: it now says Yes.
+- **The commit on the live site.** It came only from `--build-env BUILD_COMMIT=...` on Claude Code's deploy command; a Redeploy from the Vercel dashboard passes none, and Vercel's build has no git, so it said "dev". The build now also reads Vercel's own `VERCEL_GIT_COMMIT_SHA` (Vercel sets it from the git details the CLI sends with every upload, and keeps it for a Redeploy). Checked on a preview: "build commit: 534a1c8 (from VERCEL_GIT_COMMIT_SHA)" in its build log.
 
 ## Movement (owner, 11 Nov): built; pushed and deployed. No SQL to run.
 - **Kombis.** White minibus taxis drive between the stops and wait at each. Taking a taxi now: one comes down the road and pulls up at your stop, you get in, it pulls off with the camera following it for about 4 seconds, then a short cut to it pulling in at your stop and you stepping out, and it drives on. Fares, minutes and "walk on from the stop" are exactly as before.
