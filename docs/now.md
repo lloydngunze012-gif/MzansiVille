@@ -1,9 +1,21 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 13 Nov, Claude Code (job J: a living world).
+Last updated: 13 Nov, Claude Code (job L: consequences, music, a reason to come).
 
-**Next jobs: docs/queue.md** (13 Nov: J done; next L, F, H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it); before launch run supabase/reset-launch.sql once.
+**Next jobs: docs/queue.md** (13 Nov: J and L done; next F, H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it); before launch run supabase/reset-launch.sql once.
+
+## Job L: consequences, music, a reason to come (owner, 12 Nov): built; pushed and deployed 13 Nov. No SQL to run.
+- **Energy:** activity costs x1.4 (gains unchanged): a busy day (seven activities, a minute of walking) ends near 20. Under 20 you walk slower and costly activities say "Too tired" (bed never refuses). At 0 Fullness everything drains twice as fast.
+- **At 0 Energy:** a card with Go home and sleep (a nap: the next part of the day, +50; at Night your bed), Order delivery (SunnyBay Eats: a Caf meal + R15; a rider on a red scooter with a yellow box rides up after about 12 s and hands it over, +20 Energy), Ask a friend (friends in your room get "Sipho is starving. Bring food?"; yes: they pay R30, walk over, both +3 Social).
+- **Music:** the Caf light, the Quad a soft radio, the bowling and arcade hall upbeat but quieter, the beach and streets none (waves, kids, traffic), home your choice (menu: Home music). Crowd sound capped (sound.json caps).
+- **A reason to come:** each visit opens "Today on campus" (meet someone new, try an activity, join a conversation; the hot topic; a suggestion) with the top bar's "✓ 0/3" pill; a prompt at least every 5 minutes in the one small-card slot; "Today you..." after 20 minutes or on the menu's Home. It replaces the Daily's sign-in card (the Daily stays in the menu).
+- Gate: 121 of 123; the two were tests asserting the old numbers (K2's gym energy before x1.4) and a 1.8 s toast (P3, now read from mzansiToasts); fixed, repeated twice green. New: life-quick L1-L2, sound-quick (beach silent, the arcade's music).
+- **As a player** (390 px, new save, real-player mode: Today on):
+  - Fixed: "Let's go" on "The Quad is busy" did nothing (now walks you to the Quad, or opens the map off campus); the pill "Today 0/3" squeezed "1 on campus" to "on camp" when a status chip showed (now "✓ 0/3"); the delivery menu said R1500 (now R1 500).
+  - Confusing: the first minute is crowded: the bestie card, Today on campus, "Let friends find you today?" and the glowing-place hint come one after another. Time still doesn't pass while you walk, so Energy mostly falls through activities.
+  - Ugly: the delivery scooter drives straight through people and benches; in the Caf it comes through the wall. The 0 card's headings are the pop-ups' purple.
+  - Not tried as a player: Ask a friend (needs a second phone; no two-phone test yet).
 
 ## Job J: a living world (owner, 12 Nov): built; pushed and deployed 13 Nov. No SQL to run.
 - What it is: CLAUDE.md "A LIVING WORLD" (cheap instanced people, SunnyBay crowds and the beach, staff greeting you, the Caf busy at meals, campus walkers and a kick-about, windows and car glass, billboards on roads and walls, pose LOD). Screenshots docs/sprints/living/ (not committed); fps docs/sprints/living/fps.json.

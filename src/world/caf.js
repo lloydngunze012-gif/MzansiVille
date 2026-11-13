@@ -12,6 +12,7 @@
 // frame stats; window.mzansiCaf (read-mostly) is for tests: info(), zones, teleport(), light().
 import { boardLine } from '../loops.js'
 import * as THREE from 'three'
+import { rideUp } from './rider.js'
 import { guardRenderer } from './guard.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { loop as soundLoop } from '../audio.js'
@@ -787,3 +788,5 @@ if (typeof window !== 'undefined') {
 }
 // (job J, tests) who is in the Caf
 window.mzansiCafPeople = () => people?.info() || null
+// (job L) SunnyBay Eats: in the Caf the rider comes in through the door
+window.addEventListener('mzansi-rider', (event) => { const d = event.detail; if (!d || d.taken || !running || !player || !scene) return; d.taken = true; rideUp(scene, () => player.position, d.done) })

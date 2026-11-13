@@ -12,6 +12,7 @@ import { formatMoney, toMinutes } from '../engine/format.js'
 import { applyStats, lateNight } from '../engine/sim.js'
 import { checkGoals, goalText, trackToday } from '../engine/goals.js'
 import { LOTS } from './plan.js'
+import { activityEnergy, tooTired, TIRED_REASON } from '../engine/energy.js'
 
 export const TEMPLATES = DRESS.templates
 // Every place in city.md, open or not: { id, name, wave, feel, open, rows, template, dress, lot, isOpen }.
@@ -74,7 +75,7 @@ export function repeatFactor(meta, run, row) {
 }
 
 // Can this row be picked now? { disabled, reason, why, slots, social }. ctx.friends: other players in this place.
-// why: closed | owned | licence | car | lesson | gig | money | time | day (for the tests and the sheet's icon).
+// why: closed | owned | licence | car | lesson | gig | money | time | day | tired (for the tests and the sheet's icon).
 export function rowState(district, run, place, row, ctx = {}) {
   const meta = district.meta
   const c = cityOf(run)
@@ -97,6 +98,7 @@ export function rowState(district, run, place, row, ctx = {}) {
   if (row.need === 'lessons' && !(c.yard && c.road)) return off(c.yard ? 'Do the road lesson first' : 'Do the yard lesson and the road lesson first', 'lesson')
   if (row.gig && c.gigDay === run.day) return off('One city gig a day. Back tomorrow.', 'gig')
   if (repeatFactor(meta, run, row) === 0) return off(`${meta.cityRepeat?.line || 'Come back tomorrow'}`, 'repeat')
+  if (tooTired(run, row.energy)) return off(TIRED_REASON, 'tired')
   if (row.cost > money) return off(`Needs ${formatMoney(row.cost)}. You have ${formatMoney(money)}.`, 'money')
   if (slots > run.slotsLeft) return off(run.slotsLeft <= 0 ? 'No time left today. Home to bed.' : `Needs ${slots} slots. ${run.slotsLeft} left today.`, 'time')
   return { disabled: false, reason: '', why: '', slots, social }
@@ -111,7 +113,7 @@ export function runRow(district, run, place, row, ctx = {}) {
   const before = { ...run.stats }
   const k = repeatFactor(district.meta, run, row)
   const scale = (v) => (v > 0 ? Math.round(v * k) : v) // gains shrink; costs always apply in full
-  const deltas = { money: scale(row.money), energy: scale(row.energy), hunger: scale(row.fullness), grades: scale(row.grades), social: scale(state.social) }
+  const deltas = { money: scale(row.money), energy: activityEnergy(run, scale(row.energy)), hunger: scale(row.fullness), grades: scale(row.grades), social: scale(state.social) }
   ctx.adjust?.(deltas) // (job K: a mini-game's score sets some of what it gives: the Grades gain, the Energy cost)
   if (repeats(row)) c.reps[row.id] = (c.reps[row.id] || 0) + 1
   applyStats(run, deltas)

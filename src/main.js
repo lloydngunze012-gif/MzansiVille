@@ -45,7 +45,7 @@ import {
 import { drawShareCard, exportCard } from './share.js'
 import { shareUrl } from './config.js'
 import { musicOn, setGrooveLevel, setMuted, setMusicOn, unlock as unlockSound } from './audio.js'
-import { setSound } from './soundscape.js'
+import { nextHomeMusic, setSound } from './soundscape.js'
 import { outfitsFor } from './avatar.js'
 import { personInfo, replyTo } from './engine/people.js'
 import { checkGoals, goalText, goalsCard, startGoals } from './engine/goals.js'
@@ -89,6 +89,9 @@ import { openInvite, openPreorder, openReady } from './ui/loops.js'
 import { claimInvite, INVITE_REWARD } from './sharewa.js'
 import { myFollowers, onThreads } from './threads.js'
 import { calm } from './launch.js'
+import { initTired } from './tired.js'
+import { initToday, leaving, noteToday, openToday } from './today.js'
+import EATS from '../data/campusville/eats.json' with { type: 'json' }
 import { onNote } from './scores.js'
 import { initDaily } from './daily.js'
 import { followPlayer } from './board.js'
@@ -212,6 +215,7 @@ function countDone(id, place = '', cat) {
   const run = save.run
   if (!run) return null
   const hit = noteScore(districtNow(), run, id, place, cat)
+  noteToday(run, id) // (job L: today's three things)
   funnel('first_activity', { id })
   if (hit && hit.points) toast(`\u{1F3C6} +${hit.points} ${hit.board[0].toUpperCase()}${hit.board.slice(1)}`)
   return hit
@@ -1424,6 +1428,8 @@ function gameAct(act, button) {
     paint()
     return true
   }
+  // (job L) the music at home (your house's common room) is your choice
+  if (act === 'home-music') { toast(`Home music: ${nextHomeMusic()}`); paint(); return true }
   if (act === 'reset') { ui.confirmReset = true; paint(); return true }
   if (act === 'lecture-go') { delete save.run.lectureCard; persist(); go(lectureWanted(save.run) ? 'lecture' : `place/${venueFor(save.run).id}`); return true }
   if (act === 'hint-ok') { seenMapHint(); paint(); return true }
@@ -1942,9 +1948,12 @@ app.addEventListener('click', async (event) => {
     ui.gear = false
     stopIntro()
     persist()
+    // (job L) leaving: "Today you..." first, once a visit
+    if (route().name === 'play') { paint(); leaving(() => go('title')); return }
     go('title')
     return
   }
+  if (act === 'today') { openToday(); return }
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
@@ -3196,6 +3205,27 @@ window.addEventListener('mzansi-swap-roommate', (event) => {
   event.detail.done = (r) => { if (r && save.run) { save.run.pendingRoommate = r.id; persist() } done(r) }
 }, true)
 initLaunch({ save: () => save, persist, toast, route: () => route().name, openCardEditor, busy: () => Boolean(ui.talk || ui.gear) })
+// (job L) out of energy: three ways out (src/tired.js)
+// (job L) Today on campus, prompts, Today you... (src/today.js)
+initToday({ save: () => save, persist, paint, toast, openCard: (id) => openPlayerCard(id), openPlaces: () => window.dispatchEvent(new CustomEvent('mzansi-open-map')) })
+initTired({ save: () => save, persist, paint, toast, applyFx: (fx) => applyFx(save.run, fx), friends: () => save.run?.friends || [], sleepHome })
+// Go home and sleep: out of SunnyBay or the Caf to your house; in the day a nap (the rest of this part of the day is
+// gone, +napEnergy); at Night your house's list, where Sleep is.
+function sleepHome() {
+  const run = save.run
+  if (!run || run.mode !== 'play') return
+  const home = homePlaceId(districtNow(), run.character?.residence)
+  if (cityLive) exitCity('res')
+  stepOutOfCafForMenu()
+  if (run.phase === 'night') { run.at = home; persist(); toast(EATS.nightBed); go(`place/${home}`); return }
+  advancePhase(districtNow(), run)
+  applyFx(run, { energy: EATS.napEnergy })
+  run.at = home
+  persist()
+  go('play')
+  paint()
+  flash(`${EATS.napDone.replace('{energy}', EATS.napEnergy)} Now ${phaseNotice()}`)
+}
 // The lasting badges from weeks gone by ("Week 1 Top 3, Sport") join the ones on your card.
 if (save.run?.character) {
   loadBadges().then((list) => {

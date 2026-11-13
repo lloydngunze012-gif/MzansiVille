@@ -119,7 +119,7 @@ test('K2 the library focus sets the Grades; a gym set sets the Energy cost and t
   await expect(page.locator('.city-result')).toBeVisible({ timeout: 20000 })
   after = await run(page)
   const q = set.score
-  expect(Math.round(after.stats.energy - before.stats.energy)).toBe(Math.round(-8 * (1.3 - 0.5 * q)))
+  expect(Math.round(after.stats.energy - before.stats.energy)).toBe(Math.round(Math.round(-8 * 1.4) * (1.3 - 0.5 * q))) // (job L: costs x1.4 first)
   expect(Math.round(after.stats.grades - before.stats.grades)).toBe(Math.max(1, Math.round(2 * (0.6 + 0.6 * q))))
   expect(errors).toEqual([])
 })

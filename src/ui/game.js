@@ -1,4 +1,6 @@
 import { getCam, getView } from '../cammode.js'
+import { homeMusicName } from '../soundscape.js'
+import { todayPill } from '../today.js'
 import { preorderOffer } from '../loops.js'
 import { chipLabel, countLabel, peersOnCampus } from '../presence.js'
 import { actionState, actionsAt, weekdayName } from '../engine/sim.js'
@@ -343,6 +345,7 @@ function gearMenu(run) {
     <button type="button" data-act="chat-open">\u{1F4AC} Chat <small class="cht-unread inline" data-chat-unread${unreadTotal() ? '' : ' hidden'}>${unreadTotal() > 99 ? '99+' : unreadTotal() || ''}</small></button>
     <button type="button" data-act="sound" aria-pressed="${soundOn() ? 'false' : 'true'}">${soundOn() ? '\u{1F50A} Sound: <b>On</b>' : '\u{1F507} Sound: <b>Muted</b>'}</button>
     <button type="button" data-act="music" aria-pressed="${musicOn() ? 'false' : 'true'}">\u{1F3B5} Music: <b>${musicOn() ? 'On' : 'Off'}</b></button>
+    <button type="button" data-act="home-music">\u{1F3E0} Home music: <b>${homeMusicName()}</b></button>
     <button type="button" data-act="nav" data-go="settings">⚙️ Settings</button>
     <button type="button" data-act="nav" data-go="notices" class="${news ? 'news' : ''}">\u{1F4E2} Notices${news ? ' <i class="tb-dot" aria-label="new"></i>' : ''}</button>
     ${installMode() === 'done' ? '' : '<button type="button" class="g-install" data-act="install-tap" data-go="install">\u{1F4F2} Install Soft Life</button>'}
@@ -613,7 +616,8 @@ function goalBits(run) {
   const now = rightNow(run)
   const list = run.goals?.day === run.day ? run.goals.list : []
   const chips = statusChips(run)
-  if (!now && !list.length && !chips.length) return { badge: '', chips: '', peek: '' }
+  const pill = todayPill(run) // (job L: today's three things, 0/3)
+  if (!now && !list.length && !chips.length) return { badge: '', chips: pill, peek: '' }
   const done = list.filter((g) => g.done).length
   const open = Boolean(ui.goalPeek)
   const badge = now || list.length
@@ -621,7 +625,7 @@ function goalBits(run) {
     : ''
   const peek = `<div class="tb-goal"${open ? '' : ' hidden'}>${now ? `<p class="g-now ${now.tone}" role="status" data-now>${now.icon} ${esc(now.text)}</p>` : ''}${list.length ? `<button type="button" class="tb-goal-list" data-act="goals"><ol>${list.map((g) => `<li class="${g.done ? 'done' : ''}"><b>${g.done ? '✓' : '•'}</b> ${esc(goalText(run, g))}</li>`).join('')}</ol><small>All goals ›</small></button>` : ''}</div>`
   const chipRow = chips.map(([k, ic, c]) => `<button type="button" class="g-chip tb-chip ${k}" data-act="stat" data-k="chip-${k}" aria-label="${esc(c)}">${ic}</button>`).join('')
-  return { badge, chips: chipRow, peek }
+  return { badge, chips: pill + chipRow, peek }
 }
 
 function summaryCard(state) {

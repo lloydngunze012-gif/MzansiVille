@@ -663,7 +663,7 @@ check('a campus day changes the same stats as the action list', () => {
   assert.equal(run.mode, 'summary')
   assert.equal(run.summary.slept, true)
   assert.equal(run.stats.money, 1460)
-  assert.equal(run.stats.energy, 80)
+  assert.equal(run.stats.energy, 70) // (job L, 13 Nov: activity costs x1.4; it was 80)
   assert.equal(run.stats.hunger, 75)
   assert.equal(run.stats.grades, 58)
   assert.equal(run.stats.social, 53)
@@ -1367,7 +1367,7 @@ check('SunnyBay gigs and show-offs: one paid city gig a game day, in any place; 
   const r = cityRun()
   const gig = rowNamed(mall, 'Hand out samples')
   const paid = runRow(district, r, mall, gig)
-  assert.deepEqual([paid.ok, paid.delta.money, r.stats.money, r.stats.energy], [true, 140, 740, 74])
+  assert.deepEqual([paid.ok, paid.delta.money, r.stats.money, r.stats.energy], [true, 140, 740, 68]) // (job L: the gig's -6 Energy is -8 at x1.4; it was 74)
   assert.deepEqual([rowState(district, r, mall, rowNamed(mall, 'Work the mall floor')).why, rowState(district, r, mall, gig).reason], ['gig', 'One city gig a day. Back tomorrow.'])
   assert.equal(cafe.rows.filter((x) => rowState(district, r, cafe, x).why === 'gig').length, 2)
   assert.equal(runRow(district, r, cafe, rowNamed(cafe, 'Close Lifecup')).ok, false)
@@ -1473,12 +1473,48 @@ check('sound: a zone for the campus, the Caf, inside and every district; tracks 
     for (const [layer, v] of Object.entries(z.layers || {})) assert.ok(['waves', 'street', 'wind', 'murmur', 'crowd'].includes(layer) && v >= 0 && v <= 1.5, `${id}.${layer}`)
     for (const [when, track] of Object.entries(z.music || {})) {
       assert.ok(when === 'default' || phases.includes(when), `${id}: ${when} is not a part of the day`)
+      if (track === 'choice') continue // (job L: home plays the player's choice)
       for (const ext of ['ogg', 'm4a']) assert.ok(existsSync(new URL(`../public/audio/${track}.${ext}`, import.meta.url)), `${track}.${ext}`)
     }
     // (campus and SunnyBay are never silent: something plays in every zone you can stand in)
     if (id !== 'morning') assert.ok(Object.values(z.layers || {}).some((v) => v > 0), `${id} is silent`)
   }
+  // (job L) the beach and the streets have no music; the arcade's is upbeat and quieter; crowds are capped; home's choices exist
+  for (const id of parts) assert.ok(!sound.zones[id].music, `${id} should have no music`)
+  assert.ok(sound.places.arcade.music.default && sound.places.arcade.musicLevel < 1 && sound.caps.crowd <= 1)
+  for (const t of sound.homeChoices) if (t !== 'off') assert.ok(existsSync(new URL(`../public/audio/${t}.ogg`, import.meta.url)), t)
   assert.ok(sound.zones['city.beachfront'].layers.waves > 0 && sound.zones['city.town'].layers.street > 0 && sound.zones['city.suburbs'].layers.wind > 0 && sound.zones.inside.layers.murmur > 0 && sound.zones.caf.layers.crowd > 0)
 })
+
+
+{
+  const E = await import('../src/engine/energy.js')
+  check('job L: a busy day ends at about 20 Energy; tired refuses costly ones; at 0 Fullness drains double', () => {
+    // a busy day: breakfast, the walk in, the lecture, lunch, the library, friends on the Quad, the night library,
+    // and about one real minute of walking about (40 game minutes)
+    const ids = ['caf_porridge', 'go_walk', 'lecture_attend', 'cafeteria_meal', 'library_study', 'quad_friends', 'lib_night']
+    const run = { stats: { energy: 100, hunger: 60 }, energyCap: 100 }
+    for (const id of ids) {
+      const a = district.activities.find((x) => x.id === id)
+      assert.ok(a, id)
+      run.stats.energy = Math.max(0, Math.min(100, run.stats.energy + E.activityEnergy(run, a.deltas.energy)))
+    }
+    E.drainWalking(run, 40 * E.REAL_SECONDS_PER_GAME_MINUTE)
+    assert.ok(run.stats.energy >= 10 && run.stats.energy <= 30, `busy day ends at ${run.stats.energy}`)
+    // under 20: a costly one refuses, a cheap or restful one does not; walking is slower
+    const tired = createRun(district, character)
+    tired.stats.energy = 15
+    const lib = district.activities.find((x) => x.id === 'library_study')
+    const tv = district.activities.find((x) => x.id === 'house_tv')
+    assert.equal(E.tooTired(tired, lib.deltas.energy), true)
+    assert.equal(E.tooTired(tired, tv.deltas.energy), false)
+    assert.ok(E.speedFactor(tired) < 1)
+    // at 0 Fullness every drain is double
+    assert.equal(E.activityEnergy({ stats: { hunger: 0 } }, -10), 2 * E.activityEnergy({ stats: { hunger: 50 } }, -10))
+    const a = { stats: { energy: 50, hunger: 50 } }; const b = { stats: { energy: 50, hunger: 0 } }
+    E.drainWalking(a, 30); E.drainWalking(b, 30)
+    assert.ok(Math.abs((50 - b.stats.energy) - 2 * (50 - a.stats.energy)) < 1e-6)
+  })
+}
 
 console.log(`${passed} checks passed`)

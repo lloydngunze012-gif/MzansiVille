@@ -250,6 +250,8 @@ function tick() {
   if (!run?.character) return
   if (!calm()) return
   // 1. the SunnyBay Daily, once a day, for a returning player (their second session on)
+  // (job L: when 'Today on campus' opens each visit, the Daily is one tap away there and in the menu, not a second card)
+  if (!boardShown && document.body.dataset.today === '1') boardShown = true
   if (!boardShown && returning() && store.get('mzansiville.boardday') !== today() && Date.now() - startedAt > 2500) {
     boardShown = true
     store.set('mzansiville.boardday', today())

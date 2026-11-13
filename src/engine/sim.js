@@ -8,6 +8,7 @@ import { endOfDay } from './dayend.js'
 import { buyItem, shortfall, stock, useFor } from './grocer.js'
 import { rollMoment } from './moments.js'
 import { beatCard, dueBeat } from './arcs.js'
+import { activityEnergy, tooTired, TIRED_REASON } from './energy.js'
 import { fridayCard, fridayTest } from './friday.js'
 import { VENUES, venueIdFor } from '../venues.js'
 
@@ -108,6 +109,8 @@ export function actionState(district, run, action) {
   if (run.stats.hunger < district.meta.day.hungerStudyBlock && action.tags.includes('study')) {
     return { disabled: true, hidden: false, reason: 'Too hungry to study' }
   }
+  // (job L) under tiredBelow a costly activity refuses; going to bed and cheap or restful ones never do
+  if (!action.tags.includes('sleep') && tooTired(run, action.deltas.energy)) return { disabled: true, hidden: false, reason: TIRED_REASON, tired: true }
   if (run.noodlesOnly && action.tags.includes('meal') && action.deltas.money < 0 && action.id !== 'wake_noodles') {
     return { disabled: true, hidden: false, reason: 'Noodles only until a shift' }
   }
@@ -151,6 +154,7 @@ function socialBoost(district, run, social) {
 function shapeDeltas(district, run, action, extra = {}) {
   let { money, energy, grades, social, hunger } = action.deltas
   if (extra.moneyFactor) money = Math.round(money * extra.moneyFactor)
+  energy = activityEnergy(run, energy) // (job L: costs x activityFactor, x2 at 0 Fullness)
   if (run.examWeek && action.tags.includes('study')) grades *= 2
   if (run.examWeek && action.tags.includes('party') && social > 0) social = Math.round(social * 0.5)
   social = socialBoost(district, run, social)

@@ -4,36 +4,9 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 and 12 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running, and the PLAYER PASS (CLAUDE.md, top): play the changed areas as a new player at 390 px for 10 game minutes before pushing, with an "As a player" section in the report.
 
-Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I, K and J are done (12 Nov), so next is **L**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
+Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I, K, J and L are done (13 Nov), so next is **F**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
 
-Done already: I (first-play fixes), K (activities you play), J (a living world; the campus frame rate on a slow phone still open), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
-
----
-
-=== JOB L · Opus, Medium · CONSEQUENCES, MUSIC, A REASON TO COME ===
-1. Energy drains faster: a busy game day takes you from 100 to about 20.
-   Numbers in data/.
-2. Below 20 Energy: you walk slower and some activities refuse ("Too
-   tired"). At 0: a card with three ways out: Go home and sleep; Order
-   delivery (SunnyBay Eats: pick from the Caf menu, food price plus a
-   delivery fee, a rider on a scooter arrives in a few game minutes);
-   Ask a friend (a request to a friend online: "Lloyd is starving. Bring
-   food?"; if they accept and bring it, both gain Social). At 0
-   Fullness, Energy drains twice as fast.
-3. Music zones, one track at a time with cross-fades, never two at once:
-   the Caf light background music; the Quad soft radio; bowling and the
-   arcade upbeat but quieter; the beach no music (waves and kids);
-   streets none (traffic); home the player's choice. Crowds murmur, never
-   scream; volume caps in data/sound.json.
-4. A reason to come and leave fulfilled:
-   - Each visit opens with "Today on campus": three things to do (meet
-     someone new, try an activity, join a conversation: the 0/3 pill),
-     the hot topic of the day, and one suggested group or person.
-   - During play: at least one prompt every 5 minutes (reply to the hot
-     topic, a group to join, someone new nearby, an activity starting),
-     never more than one on screen, never spammy.
-   - On leaving, or after 20 minutes: "Today you..." (people met,
-     activities, money and grades, streak) and what's on tomorrow.
+Done already: L (consequences, music, a reason to come), I (first-play fixes), K (activities you play), J (a living world; the campus frame rate on a slow phone still open), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
 
 ---
 

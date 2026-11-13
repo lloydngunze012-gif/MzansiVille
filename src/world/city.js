@@ -13,6 +13,7 @@
 import { followerCounts, followersText } from '../board.js'
 import { waButton } from '../sharewa.js'
 import * as THREE from 'three'
+import { rideUp } from './rider.js'
 import { guardRenderer } from './guard.js'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { hootNow, setSound } from '../soundscape.js'
@@ -896,7 +897,7 @@ async function goInside(place) {
       if (place.dress?.greet) { ccrowd?.say(s.avatar.position.x, s.avatar.position.z, `${place.dress.staffName ? `${place.dress.staffName}: ` : ''}“${place.dress.greet}”`); greetings.push(place.id) }
     }, Math.max(200, 900 / FAST))
     sfx('door')
-    setSound({ inside: true })
+    setSound({ inside: true, place: place.id }) // (job L: the bowling and arcade hall has its own music)
     grid = roomGrid(room)
     indoorLight()
     rig.setDistance('sims', room.cam)
@@ -1220,6 +1221,8 @@ window.addEventListener('mzansi-city-travel', (event) => { const d = event.detai
 window.addEventListener('mzansi-city-goto', (event) => { if (running && player && ready && !busy) goToPoint(event.detail || {}) })
 window.addEventListener('mzansi-city-leave', () => { if (running && player && ready && !inside && !busy) leave('gate') })
 window.addEventListener('mzansi-city-walk', (event) => { const d = event.detail || {}; if (running && player && !inside && Number.isFinite(d.x) && Number.isFinite(d.z)) walkTo(d.x, d.z) })
+// (job L) SunnyBay Eats: the rider rides up to you on the street (inside a place the food just arrives)
+window.addEventListener('mzansi-rider', (event) => { const d = event.detail; if (!d || d.taken || !running || !player || !scene || inside) return; d.taken = true; rideUp(scene, () => player.position, d.done) })
 window.addEventListener('mzansi-remote-gesture', (event) => others?.gestureOf(event.detail.id, event.detail.gesture || 'emote-yes'))
 window.addEventListener('mzansi-face-peer', (event) => facePeer(event.detail.id))
 
@@ -1674,7 +1677,7 @@ function tick(now) {
   if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else rig.apply(camera, rideCam ? rideAt : inside ? roomView() : player.position, dt, inside ? null : built?.group)
   for (const p of player.userData.headParts || []) p.visible = rig.mode !== 'eye'
   notePart(false)
-  setSound({ part: part.id, inside: Boolean(inside) }) // (the ambience and the music fade to the new district's as you cross the border)
+  setSound({ part: part.id, inside: Boolean(inside), place: inside?.place?.id || null }) // (the ambience and the music fade to the new district's as you cross the border)
   reportLocal({ a: 'campus', x: player.position.x, z: player.position.z, y: 0, h: player.rotation.y, p: player.userData.pose || 'stand' })
   uiRoot.querySelector('.city-stop').hidden = !stepping
   if (card && card.kind !== 'short' && stepping && frameCount % 20 === 0) {

@@ -2,43 +2,119 @@
   "note": "Sound by zone (Sound job, 11 Nov; made by Claude Code, Cursor's to tune). layers: how loud each ambience layer is in the zone (0 to 1.5): waves (sea and gulls), street (hum, a hooter, a passing engine), wind, murmur (voices through a wall), crowd (the crowd recording). music: the track by part of the day (meta.json phase ids), else default. Tracks: music_campus, alt_slow_tar, alt_sunday_braai, alt_kasi_morning, alt_golden_hour (public/audio). 'inside' is any place you walk into in SunnyBay or a house on campus: its layers replace the zone's, the music carries on.",
   "zones": {
     "campus": {
-      "layers": { "crowd": 1, "wind": 0.3 },
-      "music": { "default": "music_campus", "wake": "alt_kasi_morning", "transit": "alt_kasi_morning", "night": "alt_golden_hour" }
+      "layers": {
+        "crowd": 1,
+        "wind": 0.3
+      },
+      "music": {
+        "default": "music_campus",
+        "wake": "alt_kasi_morning",
+        "transit": "alt_kasi_morning",
+        "night": "alt_golden_hour"
+      },
+      "musicLevel": 0.55
     },
     "morning": {
       "layers": {},
-      "music": { "default": "music_campus" }
+      "music": {
+        "default": "music_campus"
+      }
     },
     "caf": {
-      "layers": { "crowd": 1.3 },
-      "music": { "default": "alt_sunday_braai", "night": "alt_golden_hour" }
+      "layers": {
+        "crowd": 1.3
+      },
+      "music": {
+        "default": "alt_sunday_braai",
+        "night": "alt_golden_hour"
+      },
+      "musicLevel": 0.6
     },
     "inside": {
-      "layers": { "murmur": 1 }
+      "layers": {
+        "murmur": 1
+      }
     },
     "city.campus": {
-      "layers": { "street": 0.5, "wind": 0.35 },
-      "music": { "default": "music_campus", "wake": "alt_kasi_morning", "transit": "alt_kasi_morning", "night": "alt_golden_hour" }
+      "layers": {
+        "street": 0.5,
+        "wind": 0.35
+      }
     },
     "city.town": {
-      "layers": { "street": 1, "murmur": 0.3 },
-      "music": { "default": "alt_slow_tar", "night": "alt_golden_hour" }
+      "layers": {
+        "street": 1,
+        "murmur": 0.3
+      }
     },
     "city.suburbs": {
-      "layers": { "wind": 1 },
-      "music": { "default": "alt_kasi_morning", "leisure": "alt_golden_hour", "night": "alt_golden_hour" }
+      "layers": {
+        "wind": 1
+      }
     },
     "city.beachfront": {
-      "layers": { "waves": 1, "wind": 0.25 },
-      "music": { "default": "alt_sunday_braai", "night": "alt_golden_hour" }
+      "layers": {
+        "waves": 1,
+        "wind": 0.25
+      }
     },
     "city.township": {
-      "layers": { "street": 0.45, "murmur": 0.7 },
-      "music": { "default": "alt_kasi_morning", "social": "alt_sunday_braai", "leisure": "alt_sunday_braai", "night": "alt_slow_tar" }
+      "layers": {
+        "street": 0.45,
+        "murmur": 0.7
+      }
     },
     "city.industrial": {
-      "layers": { "street": 0.9, "wind": 0.4 },
-      "music": { "default": "alt_slow_tar", "night": "alt_golden_hour" }
+      "layers": {
+        "street": 0.9,
+        "wind": 0.4
+      }
+    },
+    "home": {
+      "layers": {
+        "murmur": 0.5
+      },
+      "music": {
+        "default": "choice"
+      },
+      "musicLevel": 0.7
     }
+  },
+  "note2": "Job L (13 Nov): music by zone, one track at a time with cross-fades. musicLevel scales the track (1 = its own volume). The Caf light background, the Quad (campus) a soft radio, the bowling and arcade hall upbeat but quieter (places.arcade), the beach and the streets no music (city.* have none), home (a house's common room) the player's own choice (menu: Home music). caps: the most any layer may be, so crowds murmur and never scream.",
+  "caps": {
+    "crowd": 0.9,
+    "murmur": 1.0,
+    "street": 1.0,
+    "waves": 1.2,
+    "wind": 1.0,
+    "music": 1.0
+  },
+  "places": {
+    "arcade": {
+      "layers": {
+        "murmur": 0.8,
+        "crowd": 0.5
+      },
+      "music": {
+        "default": "alt_sunday_braai"
+      },
+      "musicLevel": 0.6
+    }
+  },
+  "homeChoices": [
+    "off",
+    "music_campus",
+    "alt_golden_hour",
+    "alt_slow_tar",
+    "alt_kasi_morning",
+    "alt_sunday_braai"
+  ],
+  "homeNames": {
+    "off": "Off",
+    "music_campus": "Campus",
+    "alt_golden_hour": "Golden hour",
+    "alt_slow_tar": "Slow tar",
+    "alt_kasi_morning": "Kasi morning",
+    "alt_sunday_braai": "Sunday braai"
   }
 }

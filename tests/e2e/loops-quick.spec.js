@@ -174,7 +174,7 @@ test('P3 invite a friend (R100 each, once), a top-10 placing and a Board post on
   expect((await friend.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.money))).toBe(1500 + 100)
   expect(await friend.evaluate(() => localStorage.getItem('mzansiville.ref'))).toBe(null)
   // ... and for the inviter, once (their next sync says so)
-  await expect(page.locator('.g-toast', { hasText: 'Lindi joined with your link: +R100' })).toBeVisible({ timeout: 60000 })
+  await expect.poll(async () => (await page.evaluate(() => window.mzansiToasts || [])).some((t) => t.includes('Lindi joined with your link: +R100')), { timeout: 60000 }).toBe(true) // (13 Nov: what was said, not a 1.8 s toast on screen)
   expect((await save(page)).run.stats.money).toBe(money + 100)
   expect((await server.rows('select count(*)::int as n from chat_refs where inviter = $1', [mine.p_id]))[0].n).toBe(1)
   await ctx.close()

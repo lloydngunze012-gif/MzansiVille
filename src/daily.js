@@ -74,6 +74,24 @@ export function openInterests() {
 
 // ---------- The Daily ----------
 let daily = null // what the open card has loaded: { boards, joined }
+// Into today's topic's group: yours already if it matched; else it becomes a pick (while you have room for one);
+// with three other picks, the conversation is in The Quad. (Also from 'Today on campus', job L: src/today.js.)
+export async function joinTopic(topic = topicToday(picksOf())) {
+  const run = api?.save()?.run
+  const mine = picksOf()
+  let thread = `i:${topic.tag}`
+  if (!mine.includes(topic.tag)) {
+    if (run && mine.length < PICK && socialBReady()) {
+      const next = mine.concat(topic.tag)
+      run.character.interests = next
+      api.persist()
+      await setInterests(next)
+    } else thread = 'quad'
+  }
+  if (!threadOf(thread)) thread = threadOf('quad') ? 'quad' : ''
+  window.dispatchEvent(new CustomEvent('mzansi-open-threads', { detail: { thread } }))
+}
+export const myPicks = () => picksOf()
 export function openDaily() {
   const run = api?.save()?.run
   if (!run) return
@@ -103,20 +121,7 @@ export function openDaily() {
     if (k === 'boards') { openBoard(); return }
     if (k !== 'join') return
     popClose()
-    // into the topic's group: yours already if it matched; else it becomes a pick (while you have room for one);
-    // with three other picks, the conversation is in The Quad.
-    const mine = picksOf()
-    let thread = `i:${topic.tag}`
-    if (!mine.includes(topic.tag)) {
-      if (mine.length < PICK && socialBReady()) {
-        const next = mine.concat(topic.tag)
-        run.character.interests = next
-        api.persist()
-        await setInterests(next)
-      } else thread = 'quad'
-    }
-    if (!threadOf(thread)) thread = threadOf('quad') ? 'quad' : ''
-    window.dispatchEvent(new CustomEvent('mzansi-open-threads', { detail: { thread } }))
+    joinTopic(topic)
   })
   const paint = () => {
     if (!pop.isConnected) return

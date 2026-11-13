@@ -185,3 +185,23 @@ body:has(.qs2) { background: #f4efe4; }
 /* (WhatsApp buttons anywhere: a result, the leaderboard, a Board post, Invite a friend) */
 .wa-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px; padding: 0 16px; border-radius: 22px; background: #128c4a; color: #fff !important; font: 800 14px Figtree, system-ui, sans-serif; text-decoration: none; }
 .wa-btn.block { display: flex; width: 100%; border-radius: 14px; min-height: 48px; font-size: 16px; }
+
+/* Job L (13 Nov): out of energy, SunnyBay Eats, ask a friend (src/tired.js) */
+.sl-pop .ti-ways { display: grid; gap: 10px; margin: 10px 0 12px; }
+.sl-pop .ti-way { line-height: 1.2; padding: 10px 14px; text-align: left; min-height: 56px; display: flex; flex-direction: column; justify-content: center; }
+.sl-pop .ti-way b { font: 800 16px system-ui; }
+.sl-pop .ti-way small { font: 600 13px system-ui; color: #2a1206; opacity: .85; }
+.sl-pop .ti-menu { display: grid; gap: 8px; margin: 10px 0 12px; }
+.sl-pop .ti-dish { all: unset; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 12px; background: #fff; border: 1px solid #d9d0c0; color: #1c1915; font: 700 15px system-ui; }
+.sl-pop .ti-dish b { color: #1c1915; }
+.sl-pop .ti-dish[aria-disabled="true"] { opacity: .5; }
+/* Job L: Today on campus (src/today.js) */
+.sl-pop .td-things { list-style: none; margin: 8px 0 12px; padding: 0; display: grid; gap: 6px; }
+.sl-pop .td-thing { display: grid; grid-template-columns: 26px 1fr; column-gap: 6px; align-items: center; padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #d9d0c0; color: #1c1915; }
+.sl-pop .td-thing b { font: 800 15px system-ui; }
+.sl-pop .td-thing small { grid-column: 2; font: 600 13px system-ui; color: #5c554b; }
+.sl-pop .td-thing.done { background: #e8f5dc; }
+.sl-pop .td-topic { margin: 2px 0 8px; font: 700 15px system-ui; color: #1c1915; }
+.sl-pop .td-sum { margin: 8px 0 12px; padding-left: 20px; font: 700 16px system-ui; color: #1c1915; line-height: 1.6; }
+.td-pill { all: unset; box-sizing: border-box; cursor: pointer; height: 30px; padding: 0 10px; border-radius: 15px; background: #fff; color: #1c1915; font: 800 13px system-ui; border: 1px solid #d9d0c0; white-space: nowrap; display: inline-flex; align-items: center; }
+.td-pill.done { background: #d9f2c7; }

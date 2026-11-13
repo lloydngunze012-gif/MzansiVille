@@ -1,0 +1,36 @@
+{
+  "note": "Job L (13 Nov): a reason to come and leave fulfilled. Made by Claude Code; Cursor's to tune. 'Today on campus' opens each visit (three things: the 0/3 pill; the hot topic; one suggested group or person); during play one prompt at a time at least every promptMinutes; 'Today you...' on leaving (the menu's Home) or after summaryMinutes.",
+  "title": "Today on campus",
+  "things": [
+    { "id": "meet", "label": "Meet someone new", "hint": "Tap a student and say something" },
+    { "id": "try", "label": "Try an activity", "hint": "Tap a glowing place" },
+    { "id": "talk", "label": "Join a conversation", "hint": "Reply to today's topic in Chat" }
+  ],
+  "topicKicker": "Hot topic",
+  "joinTopic": "Join the conversation",
+  "suggestKicker": "You might like",
+  "suggestPerson": "{name} is around. Say hi.",
+  "suggestNone": "The Quad is busy today. Go say hi.",
+  "go": "Let's go",
+  "allDone": "All three done today. Nice.",
+  "promptMinutes": 5,
+  "summaryMinutes": 20,
+  "prompts": {
+    "topic": "Today's topic: {question}",
+    "group": "{group} is talking {interest}. Join?",
+    "person": "{name} is nearby. Say hi?",
+    "activity": "{phase} starts at {time}. {what}",
+    "activityNow": "Open now: {places}."
+  },
+  "whatNext": { "wake": "Breakfast is on.", "transit": "Time to head in.", "lecture": "Lectures are on.", "social": "Lunch at the Caf.", "leisure": "The Quad gets busy.", "night": "The night library opens." },
+  "summaryTitle": "Today you...",
+  "met": "met {n} {people}",
+  "did": "did {n} {acts}",
+  "money": "{sign}R{n}",
+  "grades": "Grades {sign}{n}",
+  "streak": "{n}-day streak",
+  "tomorrow": "Tomorrow",
+  "tomorrowSpecial": "At the Caf: {dish}",
+  "keepGoing": "Keep playing",
+  "leave": "See you tomorrow"
+}

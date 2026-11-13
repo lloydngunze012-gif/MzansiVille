@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { rideUp } from './rider.js'
 import { signMesh } from './text.js'
 import { actionState, actionsAt } from '../engine/sim.js'
 import { homePlaceId, houseOf } from '../engine/model.js'
@@ -693,6 +694,8 @@ window.mzansiGoTo = (id) => goTo(id)
 window.addEventListener('mzansi-go-place', (event) => { if (visible) goTo(event.detail?.id) })
 // Walk together (src/walk.js): walk at someone's side, to where they are.
 window.addEventListener('mzansi-walk-xz', (event) => { const d = event.detail || {}; if (visible && player && !paused() && Number.isFinite(d.x) && Number.isFinite(d.z)) { if (inHouse) leaveHouse(); walkTo(d.x, d.z) } })
+// (job L) SunnyBay Eats: the rider rides up to you on campus
+window.addEventListener('mzansi-rider', (event) => { const d = event.detail; if (!d || d.taken || !visible || !player || !scene || inHouse) return; d.taken = true; rideUp(scene, () => player.position, d.done) })
 
 function approach(id, onArrive) {
   const building = campus?.layout.buildings.find((item) => item.id === id)

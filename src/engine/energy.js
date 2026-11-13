@@ -14,6 +14,23 @@ export const LOW_SPEED_FACTOR = RATES.lowSpeedFactor ?? 0.65
 export const REAL_SECONDS_PER_GAME_MINUTE = RATES.realSecondsPerGameMinute ?? 1.5
 export const RACE_DRAIN_FACTOR = RATES.raceDrainFactor ?? 0.5
 export const LOW_HINT = RATES.lowHint || 'Getting tired. Eat something soon.'
+// Job L (13 Nov): consequences.
+export const ACTIVITY_FACTOR = RATES.activityFactor ?? 1
+export const HUNGRY_FACTOR = RATES.hungryFactor ?? 2
+export const TIRED_BELOW = RATES.tiredBelow ?? LOW_THRESHOLD
+export const TIRED_BLOCKS_AT = RATES.tiredBlocksAt ?? -6
+export const TIRED_REASON = RATES.tiredReason || 'Too tired'
+const starving = (run) => (run?.stats?.hunger ?? 100) <= 0
+// What an activity's energy change really is: a cost x activityFactor (x hungryFactor at 0 Fullness); gains as they are.
+export function activityEnergy(run, energy) {
+  if (!(energy < 0)) return energy || 0
+  return Math.round(energy * ACTIVITY_FACTOR * (starving(run) ? HUNGRY_FACTOR : 1))
+}
+// Too tired for this one? (under tiredBelow, a costly activity refuses; resting, eating and cheap ones still work)
+export function tooTired(run, energy) {
+  return (run?.stats?.energy ?? 100) < TIRED_BELOW && energy <= TIRED_BLOCKS_AT
+}
+export const isEmpty = (run) => Boolean(run?.stats) && (run.stats.energy ?? 100) <= 0
 
 // Halved while a race is on (item 6: "fun, not a chore").
 let racing = false
@@ -25,7 +42,7 @@ function cap(run) { return run?.energyCap || 100 }
 // this frame (already scaled by ?fast=1, same as every other timer in the 3D scenes).
 export function drainWalking(run, dt) {
   if (!run?.stats || !(dt > 0)) return
-  const factor = racing ? RACE_DRAIN_FACTOR : 1
+  const factor = (racing ? RACE_DRAIN_FACTOR : 1) * (starving(run) ? HUNGRY_FACTOR : 1)
   const gameMinutes = (dt * factor) / REAL_SECONDS_PER_GAME_MINUTE
   const next = (run.stats.energy ?? cap(run)) - gameMinutes * WALK_PER_MINUTE
   run.stats.energy = Math.max(0, Math.min(cap(run), next))
@@ -38,7 +55,7 @@ export function drainDrive(run) {
   if (!run?.stats || !DRIVE_COST) return
   run.stats.energy = Math.max(0, Math.min(cap(run), (run.stats.energy ?? cap(run)) - DRIVE_COST))
 }
-export function isLow(run) { return (run?.stats?.energy ?? cap(run)) < LOW_THRESHOLD }
+export function isLow(run) { return (run?.stats?.energy ?? cap(run)) < TIRED_BELOW }
 // How much of full walking speed is left: 1 normally, slower under the threshold. The
 // player can always still reach a door, just not at a brisk pace.
 export function speedFactor(run) { return isLow(run) ? LOW_SPEED_FACTOR : 1 }

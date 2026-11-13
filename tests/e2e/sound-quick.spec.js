@@ -32,7 +32,7 @@ test('Sound: zones fade at a border, a murmur inside, tracks load when needed, t
   expect(s.layers).toContain('street')
   expect(s.loaded, 'the beach track is not downloaded before the beach').not.toContain('alt_sunday_braai')
 
-  // walk east over the border into the Beachfront: waves in, street out, the beach's own track
+  // walk east over the border into the Beachfront: waves in, street out, no music (job L: the beach has the waves and the kids)
   await page.evaluate(() => window.mzansiCity.teleport(145, 14, Math.PI / 2))
   await page.waitForTimeout(400)
   expect((await sound(page)).zone).toBe('city.campus')
@@ -43,7 +43,7 @@ test('Sound: zones fade at a border, a murmur inside, tracks load when needed, t
   expect(s.level.waves).toBe(1)
   expect(s.level.street).toBe(0)
   expect(s.layers).toContain('waves')
-  await expect.poll(async () => (await sound(page)).trackPlaying, { timeout: 30000 }).toBe('alt_sunday_braai')
+  await expect.poll(async () => (await sound(page)).track, { timeout: 30000 }).toBe(null)
   // (a layer that has faded out is taken down)
   await expect.poll(async () => (await sound(page)).layers, { timeout: 15000 }).not.toContain('street')
 
@@ -57,6 +57,13 @@ test('Sound: zones fade at a border, a murmur inside, tracks load when needed, t
   await leavePlace(page)
   await expect.poll(async () => (await sound(page)).zone).toBe('city.town')
   expect((await sound(page)).level.street).toBe(1)
+  // (job L) the bowling and arcade hall: upbeat but quieter
+  await toDoor(page, 'arcade')
+  await expect(city(page)).toHaveAttribute('data-place', 'arcade')
+  await expect.poll(async () => (await sound(page)).track, { timeout: 10000 }).toBe('alt_sunday_braai')
+  expect((await sound(page)).trackLevel).toBeLessThan(1)
+  await leavePlace(page)
+  await expect.poll(async () => (await sound(page)).track, { timeout: 10000 }).toBe(null)
 
   // the Music switch: the music alone goes quiet
   await page.locator('.tb-menu').tap()

@@ -13,7 +13,7 @@ const LAYERS = ['waves', 'street', 'wind', 'murmur', 'crowd']
 const BASE = { waves: 0.5, street: 0.42, wind: 0.34, murmur: 0.2, crowd: 0.18 }
 const GLIDE = 0.5 // s, the time constant of a fade: about 1.5 s to settle across a border
 
-const where = { scene: null, part: null, inside: false, phase: null, busy: 1 } // (busy: job J, the Caf's chatter by how full it is)
+const where = { scene: null, part: null, inside: false, phase: null, busy: 1, place: null } // (place: job L, the SunnyBay place you are in) // (busy: job J, the Caf's chatter by how full it is)
 let zone = null
 const level = {} // wanted, 0..1.5 per layer
 const live = {} // layer -> { out, stop(), timer }
@@ -22,13 +22,32 @@ let noise = null
 function zoneOf() {
   if (!where.scene) return null
   if (where.scene === 'city') return `city.${where.part || 'campus'}`
+  if (where.scene === 'campus' && where.inside) return 'home' // (job L: a house's common room is home)
   return where.scene
 }
-function trackFor(id) {
-  const z = SOUND.zones[id]
-  if (!z?.music) return null
-  return z.music[where.phase] || z.music.default || null
+// (job L) home's music is the player's own choice: localStorage mzansiville.homeMusic (off or a track id)
+export function homeMusic() {
+  try { const v = localStorage.getItem('mzansiville.homeMusic'); return (SOUND.homeChoices || []).includes(v) ? v : 'music_campus' } catch { return 'music_campus' }
 }
+export function setHomeMusic(id) {
+  try { localStorage.setItem('mzansiville.homeMusic', id) } catch { /* private window */ }
+  sync()
+}
+export const homeMusicName = () => SOUND.homeNames?.[homeMusic()] || homeMusic()
+export function nextHomeMusic() {
+  const list = SOUND.homeChoices || []
+  setHomeMusic(list[(list.indexOf(homeMusic()) + 1) % list.length])
+  return homeMusicName()
+}
+const placeZone = () => (where.scene === 'city' && where.inside && where.place ? SOUND.places?.[where.place] : null)
+function trackFor(id) {
+  const z = placeZone() || SOUND.zones[id]
+  if (!z?.music) return null
+  const t = z.music[where.phase] || z.music.default || null
+  if (t === 'choice') { const h = homeMusic(); return h === 'off' ? null : h }
+  return t
+}
+const levelFor = (id) => Math.min(SOUND.caps?.music ?? 1, (placeZone() || SOUND.zones[id])?.musicLevel ?? 1)
 
 // main.js says which scene is up and the time of day; the city says its district and whether you
 // are inside a place. Safe to call every frame: nothing happens unless something changed.
@@ -41,10 +60,11 @@ function sync() {
   zone = zoneOf()
   const z = zone ? SOUND.zones[zone] : null
   // (inside a place: the room's murmur, and the district's music carries on)
-  const mix = z ? (where.inside ? SOUND.zones.inside.layers : z.layers) : {}
-  for (const name of LAYERS) level[name] = Number(mix[name]) || 0
+  const pz = placeZone()
+  const mix = pz ? pz.layers : z ? (where.inside && zone !== 'home' ? SOUND.zones.inside.layers : z.layers) : {}
+  for (const name of LAYERS) level[name] = Math.min(Number(mix[name]) || 0, SOUND.caps?.[name] ?? 1.5)
   if (zone === 'caf') { level.crowd *= where.busy ?? 1; level.murmur *= where.busy ?? 1 }
-  music(zone ? trackFor(zone) : null)
+  music(zone ? trackFor(zone) : null, zone ? levelFor(zone) : 1)
   document.body.dataset.zone = zone ? (where.inside ? 'inside' : zone) : ''
   apply()
 }

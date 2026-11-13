@@ -127,9 +127,16 @@ function apply(name) {
 
 // Music: one track at a time through its own bus (the Music switch), crossfaded. A track that is
 // still downloading starts when it lands; until then the old one plays on.
-export function music(name) {
+// level: how loud this zone wants it, times the track's own volume (job L: sound.json caps; 1 = as before).
+let trackLevel = 1
+export const MUSIC_TRACKS = MUSIC
+export function music(name, level = 1) {
   if (name && !MUSIC.includes(name)) name = null
-  if (track === name) return
+  if (track === name) {
+    if (level !== trackLevel) { trackLevel = level; if (trackLive && ctx) trackLive.gain.gain.setTargetAtTime((VOLUME[track] ?? 0.13) * level, ctx.currentTime, 0.6) }
+    return
+  }
+  trackLevel = level
   track = name || null
   if (track && ctx && !buffers[track]) ensure(track)
   applyMusic()
@@ -153,7 +160,7 @@ function applyMusic() {
     source.buffer = buffers[track]
     source.loop = true
     gain.gain.setValueAtTime(0, now)
-    gain.gain.linearRampToValueAtTime(VOLUME[track] ?? 0.13, now + MUSIC_FADE)
+    gain.gain.linearRampToValueAtTime((VOLUME[track] ?? 0.13) * trackLevel, now + MUSIC_FADE)
     source.connect(gain).connect(musicBus)
     source.start()
     trackLive = { name: track, source, gain }
@@ -168,7 +175,7 @@ export function soundState() {
   return {
     unlocked: Boolean(ctx), running: ctx?.state === 'running',
     master: master ? master.gain.value : 0, musicBus: musicBus ? musicBus.gain.value : 0,
-    track, trackPlaying: trackLive?.name || null, loops: Object.keys(playing), loaded: [...loaded],
+    track, trackLevel, trackPlaying: trackLive?.name || null, loops: Object.keys(playing), loaded: [...loaded],
   }
 }
 
