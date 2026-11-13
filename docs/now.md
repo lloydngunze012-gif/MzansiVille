@@ -1,9 +1,21 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 12 Nov, Claude Code (job K: activities you play).
+Last updated: 13 Nov, Claude Code (job J: a living world).
 
-**Next jobs: docs/queue.md** (12 Nov: J, L, F, H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it); before launch run supabase/reset-launch.sql once.
+**Next jobs: docs/queue.md** (13 Nov: J done; next L, F, H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it); before launch run supabase/reset-launch.sql once.
+
+## Job J: a living world (owner, 12 Nov): built; pushed and deployed 13 Nov. No SQL to run.
+- What it is: CLAUDE.md "A LIVING WORLD" (cheap instanced people, SunnyBay crowds and the beach, staff greeting you, the Caf busy at meals, campus walkers and a kick-about, windows and car glass, billboards on roads and walls, pose LOD). Screenshots docs/sprints/living/ (not committed); fps docs/sprints/living/fps.json.
+- Fixed at the gate (13 Nov): the Caf at lunch had ten full students (196 draw calls, 13.6 fps at 4x CPU in the gate): its patrons are now the instanced extras (one crowd, 8 draw calls), the staff stay full students and are posed every 4th frame; 58 fps alone, 40 with two workers. caf.spec's draw-call cap is now 120 (the shell still under 60, plus staff and crowd). Patrons pick any free seat (the long tables used to stay empty). SunnyBay: a tap within 1 m of a walker's feet greets them (a walker stepped off the tap point; firstplay I1 flaked). play-quick K4 closes the library result card when it lands late (a test fault).
+- Gate: 119 of 121, then the two fixed and repeated 3-4 times green.
+- **As a player** (390 px, new save, quick start, campus, Caf at breakfast, beach, town; mouse, taps and keys):
+  - Fixed: the Caf's long tables stayed empty while diners took the window stools.
+  - Broken / confusing: a new player gets the rules tick box and then "By tapping Play you agree" again (two agreements). The first minute stacks four things at once: the bestie card, "Let friends find you today?", the glowing-place hint and the "Tap to enter The Quad" bubble.
+  - Boring: the clock stays at 07:00 while you walk about; only activities move time, so ten minutes of exploring is still breakfast.
+  - Ugly: the Caf's instanced diners are plain figures beside full-student staff (fine from Sims height, crude in Eye view); diners walk straight across the queue rail to their seat. On the beach the big SUNNYBAY arch sign fills the bottom of the screen near the gate.
+  - Empty: arriving in town by teleport (or a taxi) shows a bare pavement for a few seconds before walkers reach you.
+  - Still open: the campus Quad at 12-17 fps on the slow profile (550 separate meshes; merging them is its own job).
 
 ## Job K: activities you play (owner, 12 Nov): built; pushed and deployed. No SQL to run.
 - **Bowling** (Arcade and bowling: Learn the bowling approach, Take a lane, Hit the strike light, the private night). You walk to your lane, then the lane seen from behind the ball: drag up the lane to aim (the drag's direction) and let go (its length is the power). The ball rolls with a rumble, the pins clatter and fall, two balls, then the score: strike, spare or pins (a strike +2 Social, a spare +1). In the hall, patrons step up and bowl on the other two lanes (a ball rolls, the pins clatter quietly) and a yellow SHOES sign hangs over Jay's desk.

@@ -4,31 +4,9 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 and 12 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running, and the PLAYER PASS (CLAUDE.md, top): play the changed areas as a new player at 390 px for 10 game minutes before pushing, with an "As a player" section in the report.
 
-Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I and K are done (12 Nov), so next is **J**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
+Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I, K and J are done (12 Nov), so next is **L**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
 
-Done already: I (first-play fixes), K (activities you play), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
-
----
-
-=== JOB J · Opus, High · A LIVING WORLD ===
-1. Staff in every place, behind a counter doing their job and greeting
-   you; patrons doing the place's thing (eating at tables, bowling,
-   browsing), never bunched up.
-2. The Caf busy at meal times: a queue, full tables, low chatter.
-3. Campus outside: students walking between buildings, sitting on the
-   lawns, groups chatting, a football kick-about, benches and paths.
-4. SunnyBay full: many more people on pavements and going in and out of
-   shops. Set a target per district within the frame-rate budget.
-5. The beach: families on towels, kids running, building sandcastles and
-   playing ball, swimmers, a lifeguard; kids' laughter in the mix; waves
-   that roll gently onto the sand, foam moving in and out slowly.
-6. Windows on every building (lit at night) and glass on every vehicle.
-7. Billboards: building sides and roadside boards as ad slots, content
-   from data/billboards.json (image + words) so the owner can swap them
-   without code. Start with the game's own features, plus empty brand
-   slots.
-8. At least 30 fps on a low-end phone profile in every district: use
-   instancing and level of detail. Report fps per district.
+Done already: I (first-play fixes), K (activities you play), J (a living world; the campus frame rate on a slow phone still open), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
 
 ---
 

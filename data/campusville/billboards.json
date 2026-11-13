@@ -1,10 +1,103 @@
 {
-  "note": "(Loops and People, 11 Nov: lines, where an ad has it, are the lines from docs/world-designer/words.md: each of the brand's boards takes the next one, going round; house.lines the same for the house boards. line is kept for an ad with no lines.) Billboards along SunnyBay's main roads (City job A). slots: how many boards stand in the city (8 to 12). Each ad: brand (the big word), line (the small one), image (optional: a picture drawn over the whole board, 2:1, e.g. /img/ads/woza.webp; empty draws the brand and line in bg/fg colours), link (optional: opens when a player taps the board and then Visit), start and end (dates, YYYY-MM-DD, both inclusive; outside them the ad is not shown), boards (how many boards it takes, default 1). A board with no ad shows a University of Mzansi house ad (house: the line for those, {house} is the house's name). Brands allowed: Woza, Lifecup, Greenway.",
+  "note": "(Loops and People, 11 Nov: lines, where an ad has it, are the lines from docs/world-designer/words.md: each of the brand's boards takes the next one, going round; house.lines the same for the house boards. line is kept for an ad with no lines.) Billboards along SunnyBay's main roads (City job A). slots: how many boards stand in the city (8 to 12). Each ad: brand (the big word), line (the small one), image (optional: a picture drawn over the whole board, 2:1, e.g. /img/ads/woza.webp; empty draws the brand and line in bg/fg colours), link (optional: opens when a player taps the board and then Visit), start and end (dates, YYYY-MM-DD, both inclusive; outside them the ad is not shown), boards (how many boards it takes, default 1). A board with no ad shows a University of Mzansi house ad (house: the line for those, {house} is the house's name). Brands allowed: Woza, Lifecup, Greenway. (Job J, 12 Nov: the game's own features come first now, then the brand ads, then two empty brand slots, then the house ads: features.lines are Cursor's billboard lines from docs/world-designer/alive.md. walls: how many side-wall slots on the lots' buildings take ads after the twelve roadside boards. To put a brand on a board: add it to ads (brand, line or lines, image: a same-site path such as /img/ads/brand.webp at 2:1, link, start, end, boards). slots_for_brands are the placeholders shown until then.)",
   "slots": 12,
-  "house": { "line": "University of Mzansi", "lines": ["University of Mzansi. Start here.", "Seven houses. One campus. Yours.", "Walk in. Soft Life starts."] },
+  "house": {
+    "line": "University of Mzansi",
+    "lines": [
+      "University of Mzansi. Start here.",
+      "Seven houses. One campus. Yours.",
+      "Walk in. Soft Life starts."
+    ]
+  },
   "ads": [
-    { "id": "woza", "brand": "Woza", "line": "Tap. Paid. Sorted.", "lines": ["Pay. Split. Woza. Done.", "One tap. Taxi sorted.", "Money home before supper."], "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 3, "bg": "#22143b", "fg": "#f0c400" },
-    { "id": "lifecup", "brand": "Lifecup", "line": "Coffee in Town centre", "lines": ["Stay. The WiFi is honest.", "Flat white. Quiet corner. Repeat.", "Lifecup already knows yours."], "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 2, "bg": "#f6efe2", "fg": "#c2562a" },
-    { "id": "greenway", "brand": "Greenway", "line": "Fresh every day", "lines": ["Hot bread. Cold juice. Sorted.", "Stock the house in one.", "Greenway fills the fridge."], "image": "", "link": "", "start": "2026-11-10", "end": "2027-02-28", "boards": 3, "bg": "#2f8f5b", "fg": "#ffffff" }
+    {
+      "id": "woza",
+      "brand": "Woza",
+      "line": "Tap. Paid. Sorted.",
+      "lines": [
+        "Pay. Split. Woza. Done.",
+        "One tap. Taxi sorted.",
+        "Money home before supper."
+      ],
+      "image": "",
+      "link": "",
+      "start": "2026-11-10",
+      "end": "2027-02-28",
+      "boards": 3,
+      "bg": "#22143b",
+      "fg": "#f0c400"
+    },
+    {
+      "id": "lifecup",
+      "brand": "Lifecup",
+      "line": "Coffee in Town centre",
+      "lines": [
+        "Stay. The WiFi is honest.",
+        "Flat white. Quiet corner. Repeat.",
+        "Lifecup already knows yours."
+      ],
+      "image": "",
+      "link": "",
+      "start": "2026-11-10",
+      "end": "2027-02-28",
+      "boards": 2,
+      "bg": "#f6efe2",
+      "fg": "#c2562a"
+    },
+    {
+      "id": "greenway",
+      "brand": "Greenway",
+      "line": "Fresh every day",
+      "lines": [
+        "Hot bread. Cold juice. Sorted.",
+        "Stock the house in one.",
+        "Greenway fills the fridge."
+      ],
+      "image": "",
+      "link": "",
+      "start": "2026-11-10",
+      "end": "2027-02-28",
+      "boards": 3,
+      "bg": "#2f8f5b",
+      "fg": "#ffffff"
+    }
+  ],
+  "walls": 8,
+  "features": {
+    "brand": "Soft Life",
+    "bg": "#f0c400",
+    "fg": "#1c1915",
+    "lines": [
+      "Wave at someone. Campus gets smaller.",
+      "Things to do behind every door.",
+      "Race the pier. Gulls will judge you.",
+      "First gig. Energy bill later.",
+      "Seven houses. One kitchen argument.",
+      "Start on R2,100. See if you last.",
+      "Taxi. Hand sign. Story in the back.",
+      "Caf queue. Then you belong.",
+      "Make the card. Your face, official-ish.",
+      "Ask a friend for food. Become a legend.",
+      "SunnyBay Eats. Hot tray, your door.",
+      "The Daily is arguing. You should too."
+    ]
+  },
+  "slots_for_brands": [
+    {
+      "id": "brand-slot-1",
+      "brand": "Your brand here",
+      "line": "This board is free. SunnyBay sees it every day.",
+      "bg": "#ffffff",
+      "fg": "#1c1915",
+      "empty": true
+    },
+    {
+      "id": "brand-slot-2",
+      "brand": "Your brand here",
+      "line": "Advertise on the walls of SunnyBay.",
+      "bg": "#1c1915",
+      "fg": "#f0c400",
+      "empty": true
+    }
   ]
 }

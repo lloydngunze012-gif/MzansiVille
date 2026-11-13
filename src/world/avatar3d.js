@@ -851,6 +851,7 @@ function play(group, name, fade = 0.25) {
 
 // One-off clip (a wave, reaching for something), then back to the pose.
 export function gesture(group, name) {
+  if (group?.userData) group.userData.gestureUntil = performance.now() + 1600 // (job J: full detail while it plays)
   const { actions, mixer } = group.userData
   const clip = GESTURE[name] || CLIP[name] || name
   const action = actions?.[clip]
@@ -1319,8 +1320,37 @@ const SHARP = 1 // turns sharper than this (about 57 degrees) turn on the spot f
 // (the caller tilts the group to lie down).
 // Callers set position and rotation.y; the body turns smoothly towards rotation.y,
 // and the walk or run clip plays at the speed the person is really moving.
+// (job J) Level of detail for people: a scene says each frame where you are and what the camera sees
+// (setPoseLod(scene, camera, focus)); somebody far off is posed every few frames, somebody off screen rarely. You,
+// and anybody sitting down, standing up or mid-gesture, every frame. It was every person, every frame: on a slow
+// phone the campus (some forty students) ran at a dozen frames a second.
+const lodM = new THREE.Matrix4()
+export function setPoseLod(scene, camera, focus) {
+  if (!scene) return
+  const lod = (scene.userData.lod ||= { frustum: new THREE.Frustum(), focus: new THREE.Vector3() })
+  lod.focus.set(focus.x, 0, focus.z)
+  camera.updateMatrixWorld()
+  lodM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+  lod.frustum.setFromProjectionMatrix(lodM)
+  lod.on = true
+}
+const lodP = new THREE.Vector3()
+function lodSkip(group, data) {
+  // (the scene's setting, wherever in it this person was added: a group of the dressing, the campus...)
+  if (!data.lodScene) { for (let n = group.parent; n; n = n.parent) if (n.isScene) { data.lodScene = n; break } }
+  const lod = data.lodScene?.userData?.lod
+  if (data.lodScene && group.parent === null) data.lodScene = null
+  if (!lod?.on || data.isPlayer || data.leads || data.sitMove || data.gestureUntil > performance.now() || !data.rigged) return false
+  const d = Math.hypot(group.position.x - lod.focus.x, group.position.z - lod.focus.z)
+  let n = d > 45 ? 6 : d > 25 ? 3 : d > 14 ? 2 : 1
+  lodP.set(group.position.x, group.position.y + 1, group.position.z)
+  if (!lod.frustum.containsPoint(lodP)) n = Math.max(n, 8)
+  data.lodTick = ((data.lodTick || 0) + 1) % 960
+  return data.lodTick % n !== 0
+}
 export function poseAvatar(group, walking, time) {
   const data = group.userData
+  if (lodSkip(group, data)) return
   const dt = Math.min(0.1 * SPEED, Math.max(0, time - (data.lastTime ?? time)))
   data.lastTime = time
   // Real ground speed, smoothed (teleports and seat placements don't count).

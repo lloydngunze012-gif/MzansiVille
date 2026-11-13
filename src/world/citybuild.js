@@ -61,7 +61,11 @@ const tmpC = new THREE.Color()
 const tmpV = new THREE.Vector3()
 // One model (a file, or a named child of a kit file) as a single indexed geometry with position, normal
 // and colour, centred on x/z with its base on y = 0. recolour(materialName) -> a colour, or nothing.
-function bakeObject(root, recolour) {
+// (job J) a car's windows: in the kit's colour map they are a pale sky blue, which baked to the same light paint as the
+// body, and the white kombi recolour whitened them too. Any pale bluish texel on a car becomes dark tinted glass.
+const GLASS = new THREE.Color('#2a3442')
+const glassy = (c) => c.b >= c.g && c.g >= c.r - 0.02 && c.b > 0.55 && c.b - c.r > 0.05 && (c.r + c.g + c.b) / 3 > 0.48
+function bakeObject(root, recolour, car = false) {
   root.updateMatrixWorld(true)
   const parts = []
   root.traverse((o) => {
@@ -89,6 +93,7 @@ function bakeObject(root, recolour) {
         const py = Math.min(tex.h - 1, Math.max(0, Math.floor((((uv.getY(i) % 1) + 1) % 1) * tex.h)))
         const k = (py * tex.w + px) * 4
         tmpC.setRGB(tex.data[k] / 255, tex.data[k + 1] / 255, tex.data[k + 2] / 255, THREE.SRGBColorSpace).multiply(m.color)
+        if (car && glassy(tmpC)) tmpC.copy(GLASS)
       } else tmpC.copy(flat)
       C[i * 3] = tmpC.r; C[i * 3 + 1] = tmpC.g; C[i * 3 + 2] = tmpC.b
     }
@@ -121,7 +126,7 @@ async function model(ref, recolour, key = '') {
     const nodes = gltf.parser.json.nodes || []
     root = gltf.scene.children.find((c) => { const r = gltf.parser.associations.get(c); return ((r?.nodes !== undefined && nodes[r.nodes]?.name) || c.name) === child }) || null
   }
-  baked[id] = root ? bakeObject(root, recolour) : null
+  baked[id] = root ? bakeObject(root, recolour, url.includes('/models/cars/')) : null
   return baked[id]
 }
 
@@ -187,6 +192,8 @@ export async function buildCity(opts = {}) {
   const boards = [] // billboards: { i, x, z, ad }
   const lamps = [] // [x, y, z] lamp heads (they glow at night)
   const glass = [] // lit windows: geometries kept apart so they can glow at night
+  const parasols = [] // (job J: the beach towels, for the families)
+  const walls = [] // (job J: ad slots on buildings' side walls)
   const stat = new Map() // cell -> [geometries]
   const ground = []
   const signs = []
@@ -475,6 +482,26 @@ export async function buildCity(opts = {}) {
       box(sz ? (len / n) * 0.6 : 0.12, 1.3, sz ? 0.12 : (len / n) * 0.6, cx + (sz ? t * len : 0) + sx * 0.04, y, cz + (sx ? t * len : 0) + sz * 0.04, hex, 0, glass)
     }
   }
+  // (job J) windows on every side of a filler building or house, in floors, into the glass that glows at night:
+  // the town and beachfront blocks, the suburb houses and the tin rooms had windows only as painted colour (dark).
+  const litWindows = (x, z, w, d, h, { floor = 3.1, from = 1.4, width = 0.9 } = {}) => {
+    if (far || h < 2.2) return
+    const floors = Math.max(1, Math.min(6, Math.floor((h - from) / floor) + 1))
+    for (const [nx, nz, len] of [[0, 1, w], [0, -1, w], [1, 0, d], [-1, 0, d]]) {
+      const cols = Math.max(1, Math.floor(len / 2.6))
+      const out = (nz ? d : w) / 2 + 0.07
+      for (let f = 0; f < floors; f++) {
+        const y = from + f * floor
+        if (y > h - 0.6) break
+        for (let c = 0; c < cols; c++) {
+          const t = ((c + 0.5) / cols - 0.5) * len * 0.82
+          if (f === 0 && nz === 1 && Math.abs(t) < 1.3) continue // (the front door)
+          if ((c * 7 + f * 3 + Math.round(x + z)) % 5 === 0) continue // (not every room has its light on)
+          box(nz ? width : 0.1, 1.0, nz ? 0.1 : width, x + (nx ? nx * out : t), y, z + (nz ? nz * out : t), '#6f8fa6', 0, glass)
+        }
+      }
+    }
+  }
   const building = (lot) => {
     const { x, z, w, d, h } = lot
     const [sx, sz, rot] = SIDE[lot.side]
@@ -490,6 +517,9 @@ export async function buildCity(opts = {}) {
     // an awning over the door, and the sign on the wall above it
     box(sz ? 4.4 : 1.6, 0.18, sz ? 1.6 : 4.4, fx + sx * 0.8, 3.0, fz + sz * 0.8, lot.roof)
     lotSign(lot, fx + sx * 0.12, Math.max(3.9, h - 1.3), fz + sz * 0.12, rot, Math.min(faceLen * 0.8, 11))
+    // (job J) an ad slot on a side wall, high up, where the building is tall and wide enough
+    const sideLen = sz ? d : w
+    if (h >= 5 && sideLen >= 7) walls.push(sz ? { x: x + w / 2 + 0.08, z, y: h * 0.62, rot: Math.PI / 2, w: Math.min(sideLen * 0.62, 6.4), h: Math.min(h * 0.38, 3.2) } : { x, z: z + d / 2 + 0.08, y: h * 0.62, rot: 0, w: Math.min(sideLen * 0.62, 6.4), h: Math.min(h * 0.38, 3.2) })
     return { fx, fz, sx, sz, rot, faceLen }
   }
   const looks = {
@@ -591,6 +621,7 @@ export async function buildCity(opts = {}) {
         top.translate(px, 2.35, pz)
         push(colour(top, hue))
         flat(px + 0.4, pz + 0.6, px + 1.3, pz + 2.5, 0.02, i % 2 ? '#ffffff' : hue)
+        parasols.push({ x: px + 0.85, z: pz + 1.55, shade: { x: px, z: pz } }) // (job J: a family sits on each towel)
       }
     },
     park(lot) {
@@ -758,6 +789,20 @@ export async function buildCity(opts = {}) {
       }
       boards.push({ i, x, z, ad })
     })
+    // (job J) the wall slots take the ads after the roadside boards' twelve (billboards.js adsFor)
+    walls.slice(0, Math.max(0, (opts.ads || []).length - BILLBOARDS.length)).forEach((wl, j) => {
+      const ad = opts.ads[BILLBOARDS.length + j]
+      if (!ad) return
+      box(wl.rot ? 0.12 : wl.w + 0.3, wl.h + 0.3, wl.rot ? wl.w + 0.3 : 0.12, wl.x, wl.y, wl.z, '#1c1915')
+      const cell = atlas.cell(384, 192, board(ad.bg || '#22143b', ad.fg || '#ffffff', ad.brand, ad.line || '', { edge: ad.fg || '#ffffff' }))
+      sign(cell, wl.w, wl.h, wl.x + (wl.rot ? 0.08 : 0), wl.y, wl.z + (wl.rot ? 0 : 0.08), wl.rot, false, 0.06)
+      if (ad.image) {
+        const img = new Image()
+        img.onload = () => cell.redraw?.((g, cx, cy, w, h) => g.drawImage(img, cx, cy, w, h))
+        img.src = ad.image
+      }
+      boards.push({ i: BILLBOARDS.length + j, x: wl.x, z: wl.z, y: wl.y, wall: true, ad })
+    })
   }
 
   // ---------- the districts' own streets ----------
@@ -776,7 +821,7 @@ export async function buildCity(opts = {}) {
     [16, 232, lowB, 14, -Math.PI / 2], [16, 266, lowA, 14, -Math.PI / 2], [16, 306, bG, 15, -Math.PI / 2], [76, 232, sky, 15, 0], [76, 290, wideB, 22, 0], [116, 232, lowA, 16, 0], [124, 294, lowC, 15, 0],
     [-18, 266, lowC, 13, Math.PI / 2], [-18, 312, lowD, 13, Math.PI / 2], [-60, 232, lowA, 16, 0], [-76, 290, lowA, 16, 0], [-124, 232, wideA, 22, 0], [-120, 296, sky, 14, 0], [140, 196, lowC, 12, 0],
   ]
-  for (const [x, z, m, fit, rot] of townSpots) if (m && free(x, z, fit / 2 - 2)) put(m, x, z, { fit, rot })
+  for (const [x, z, m, fit, rot] of townSpots) if (m && free(x, z, fit / 2 - 2)) { const b = put(m, x, z, { fit, rot }); if (b) litWindows(x, z, b.w * 0.86, b.d * 0.86, b.h * 0.92) }
   for (let i = 0; i < 16; i++) { const z = 142 + i * 12; if (z > 205 && z < 225) continue; for (const x of [-7.5, 7.5]) if (free(x, z, -2.2)) tree(subTree || tDef, x, z, 5) }
 
   // Suburbs: houses with gardens along Oak Avenue and Crescent Road, hedges, big trees
@@ -785,7 +830,7 @@ export async function buildCity(opts = {}) {
     const house = (x, z, rot) => {
       if (!free(x, z, 6)) return
       if (far) blockHouse(x, z, 10, 9, 5, SUB_PAINT[k % 4], k % 2 ? '#4f7a5a' : '#8a4b32')
-      else put(houses[k % houses.length], x, z, { fit: 11, rot })
+      else { const b = put(houses[k % houses.length], x, z, { fit: 11, rot }); if (b) litWindows(x, z, b.w * 0.7, b.d * 0.7, Math.min(b.h * 0.7, 5.6), { floor: 2.7, from: 1.3, width: 0.8 }) }
       k++
       flat(x - 8, z - 8, x + 8, z + 8, 0.012, k % 2 ? '#5d9a55' : '#57944f')
     }
@@ -819,6 +864,7 @@ export async function buildCity(opts = {}) {
     box(w, 2.5, d, x, 1.25, z, TOWN_PAINT[i % TOWN_PAINT.length])
     box(w + 0.5, 0.14, d + 0.5, x, 2.62, z, TOWN_ROOF[i % TOWN_ROOF.length])
     box(0.9, 1.9, 0.1, x, 0.95, z + d / 2 + 0.03, '#5a3a26')
+    if (!far) { box(0.7, 0.6, 0.1, x + w / 4, 1.5, z + d / 2 + 0.05, '#6f8fa6', 0, glass); box(0.1, 0.6, 0.7, x + w / 2 + 0.05, 1.5, z, '#6f8fa6', 0, glass) }
     solid(x, z, w, d)
   }
   cyl(3.2, 3.2, 3.4, -300, 13, -100, '#cfd8dc', 12); for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) box(0.3, 11.4, 0.3, -300 + dx, 5.7, -100 + dz, '#8d969c'); solid(-300, -100, 5, 5)
@@ -852,7 +898,8 @@ export async function buildCity(opts = {}) {
     const x = 196
     if (!free(x, z, 9)) continue
     const m = [lowA, lowC, wideA, lowB][Math.abs(Math.round(z / 24)) % 4]
-    put(m, x, z, { fit: 17, rot: Math.PI / 2, tint: BEACH_PAINT[Math.abs(Math.round(z / 24)) % BEACH_PAINT.length] })
+    const b = put(m, x, z, { fit: 17, rot: Math.PI / 2, tint: BEACH_PAINT[Math.abs(Math.round(z / 24)) % BEACH_PAINT.length] })
+    if (b) litWindows(x, z, b.w * 0.86, b.d * 0.86, b.h * 0.92)
   }
   for (let z = -288; z <= 320; z += 13) {
     if (Math.abs(z) > 8 && Math.abs(z - 114) > 8) tree(Math.round(z / 13) % 2 ? palmT : palmB, PROM[0] + 2.2, z, 9)
@@ -988,7 +1035,7 @@ export async function buildCity(opts = {}) {
   }
 
   return {
-    group, solids, doors, boards, tris, cells, stopBoards,
+    group, solids, doors, boards, tris, cells, stopBoards, parasols, tower: { x: 276, z: (LOTS.find((l) => l.id === 'beach')?.at?.[1] || 0) + 16 },
     // n: 0 day, 1 night
     applyNight(n) {
       glassMat.emissiveIntensity = n * 0.9

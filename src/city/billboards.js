@@ -5,9 +5,27 @@ import DATA from '../../data/campusville/billboards.json' with { type: 'json' }
 
 const day = (d) => (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10)
 
+// (job J) slots: the twelve roadside boards, then DATA.walls side-wall slots. What fills them, in turn: the game's own
+// features (DATA.features.lines) and the brand ads running today, mixed along the roads; then the empty brand slots
+// (DATA.slots_for_brands); then house ads.
 export function adsFor(houses = [], today = new Date()) {
+  const road = Math.max(8, Math.min(12, Number(DATA.slots) || 10))
+  const walls = Math.max(0, Math.min(16, Number(DATA.walls) || 0))
+  const f = DATA.features || {}
+  const features = (f.lines || []).map((line, i) => ({ id: `feature-${i + 1}`, brand: f.brand || 'Soft Life', line, bg: f.bg || '#f0c400', fg: f.fg || '#1c1915', feature: true }))
+  const empty = (DATA.slots_for_brands || []).map((a) => ({ id: a.id, brand: a.brand || 'Your brand here', line: a.line || '', bg: a.bg || '#ffffff', fg: a.fg || '#1c1915', image: a.image || '', link: a.link || '', empty: true }))
+  const paid = brandAds(houses, today, road)
+  const out = []
+  // the roads: the brand ads where adsOf put them, features on the other boards
+  let fi = 0
+  for (const a of paid) out.push(a.house ? features[fi++ % Math.max(1, features.length)] || a : a)
+  // the walls: the empty brand slots first (they are for sale), then the rest of the features, then houses
+  const rest = [...empty, ...features.slice(fi)]
+  for (let i = 0; i < walls; i++) out.push(rest[i] || paid.filter((a) => a.house)[i % Math.max(1, paid.filter((a) => a.house).length)] || features[i % Math.max(1, features.length)])
+  return out.filter(Boolean)
+}
+function brandAds(houses, today, slots) {
   const now = day(today)
-  const slots = Math.max(8, Math.min(12, Number(DATA.slots) || 10))
   const live = (DATA.ads || []).filter((a) => a.brand && (!a.start || a.start <= now) && (!a.end || now <= a.end))
   const brand = []
   // (turn by turn, so one brand's boards are not all in a row)

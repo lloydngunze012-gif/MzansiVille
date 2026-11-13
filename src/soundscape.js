@@ -13,7 +13,7 @@ const LAYERS = ['waves', 'street', 'wind', 'murmur', 'crowd']
 const BASE = { waves: 0.5, street: 0.42, wind: 0.34, murmur: 0.2, crowd: 0.18 }
 const GLIDE = 0.5 // s, the time constant of a fade: about 1.5 s to settle across a border
 
-const where = { scene: null, part: null, inside: false, phase: null }
+const where = { scene: null, part: null, inside: false, phase: null, busy: 1 } // (busy: job J, the Caf's chatter by how full it is)
 let zone = null
 const level = {} // wanted, 0..1.5 per layer
 const live = {} // layer -> { out, stop(), timer }
@@ -43,6 +43,7 @@ function sync() {
   // (inside a place: the room's murmur, and the district's music carries on)
   const mix = z ? (where.inside ? SOUND.zones.inside.layers : z.layers) : {}
   for (const name of LAYERS) level[name] = Number(mix[name]) || 0
+  if (zone === 'caf') { level.crowd *= where.busy ?? 1; level.murmur *= where.busy ?? 1 }
   music(zone ? trackFor(zone) : null)
   document.body.dataset.zone = zone ? (where.inside ? 'inside' : zone) : ''
   apply()

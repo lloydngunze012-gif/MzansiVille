@@ -18,7 +18,9 @@ import { loop as soundLoop } from '../audio.js'
 import { SPEED as FAST } from '../speed.js'
 import { smooth } from '../smooth.js'
 import * as curtain from '../curtain.js'
-import { appearNow, createAvatar, poseAvatar } from './avatar3d.js'
+import { appearNow, createAvatar, poseAvatar, setPoseLod } from './avatar3d.js'
+import { createCafPeople } from './cafpeople.js'
+import { setSound } from '../soundscape.js'
 import { createCameraRig } from './camera.js'
 import { getCam } from '../cammode.js'
 import { bindInput } from './input.js'
@@ -37,6 +39,7 @@ const C = {
 const X0 = -8, X1 = 8, Z0 = -5.5, Z1 = 5.5 // the hall
 const WALL_H = 3.8
 const LOW_H = 1.0
+let people = null // (job J: src/world/cafpeople.js)
 const DOOR = { x: 0, w: 1.8 } // main door, front centre
 const SIDE = { z: 0.5, w: 1.8 } // side door on the right wall, to the patio
 const PATIO = { x0: 8, x1: 12.4, z0: -2.2, z1: 3.4 }
@@ -622,6 +625,8 @@ function tick(now) {
   const stepping = mover.moving
   soundLoop('footsteps', stepping && player.visible)
   poseAvatar(player, stepping, clock)
+  people?.update(dt, clock)
+  setPoseLod(scene, camera, player.position)
   if (shot) { camera.position.set(...shot.pos); camera.lookAt(...shot.look) } else frameCamera(dt)
   if (frameCount % 30 === 0) { const b = barsBottom; measureBars(); if (b !== barsBottom) fitCamera() }
   for (const part of player.userData.headParts || []) part.visible = rig.mode !== 'eye'
@@ -683,6 +688,10 @@ export async function startCaf(options) {
     player.rotation.y = Math.PI // facing the counters
     scene.add(player)
     mover.stop()
+    // (job J) the staff behind their counters, the queue, people eating: busy at meal times
+    people = createCafPeople({ scene, counters: COUNTERS, back: Z0, tableSets: TABLE_SETS.map(([x, z], i) => [x, z, i % 2 ? 0.4 : -0.3]), longTables: LONG_TABLES, stools: STOOLS, door: { x: DOOR.x, z: Z1 - 0.3 }, minutes: opts.run?.minutes, player: () => player })
+    setSound({ busy: people.busy ? 1 : 0.45 }) // (the chatter follows how full it is)
+    host.dataset.busy = people.busy ? '1' : '0'
     setLight(lightFromGame())
     host.dataset.look = JSON.stringify(player.userData.look)
     if (!frame) frame = requestAnimationFrame(tick)
@@ -702,6 +711,9 @@ export async function startCaf(options) {
 
 export function stopCaf() {
   stopMark++
+  people?.dispose()
+  people = null
+  setSound({ busy: 1 })
   running = false
   ready = false
   soundLoop('footsteps', false)
@@ -773,3 +785,5 @@ if (typeof window !== 'undefined') {
     leave: () => leave(),
   }
 }
+// (job J, tests) who is in the Caf
+window.mzansiCafPeople = () => people?.info() || null

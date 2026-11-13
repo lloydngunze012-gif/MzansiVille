@@ -221,3 +221,8 @@ Five Claude Code jobs, one per fresh context, each ending with a push and a prod
 **Outside the Caf (10 Nov, City job A).** The room no longer floats in plum: the campus lawn runs to the horizon all round it, with a paved apron and the path from the main door, under a sky that follows the light state (day blue, evening orange, load-shedding night). Three merged boxes, no extra draw calls beyond their materials.
 
 **Job 1 fixes (8 Nov, after Lloyd's phone check).** Camera: sims frames the floor (never past the walls, picture pushed below the top bar), top fits the whole hall squared to the screen. The game's top bar stays visible in the Caf; Leave the Caf and Top/Sims/Eye sit under it, and no sign is under them in the default view. Queue lane: lighter cream floor with gold edge lines and gold rope posts on both sides (front side roped, counter side open). Each counter and sign photographed at 390 px. The outdoor queue's Leave button and speech line now stack (cards.css). The outdoor queue goes in job 2.
+
+## People (owner, 12 Nov, job J): built
+- The staff: Mama Liz (hot meals), Aunty Premi (Indian kitchen), Uncle Jaco (grill) and Kyle (coffee), each behind their own counter, working and turning to greet you at their counter (src/world/cafpeople.js).
+- At meal times (06:30-09:00, 12:00-14:00, 17:30-19:30) ten students, otherwise four: a queue up the lane to Mama Liz's mat, served with a tray, off to a free seat (the window bar's stools, two at each small table, four at each long table), eating, out of the door and back at the end of the queue. The crowd sound follows how full it is.
+- On a slow phone (4x slower processor) the full Caf at lunch draws at 31.6 fps.

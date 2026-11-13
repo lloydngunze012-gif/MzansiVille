@@ -1149,14 +1149,21 @@ check('SunnyBay travel: a taxi is R15 next door and R25 across the city, never w
   assert.equal(CITY.travel.car.petrol, 8)
 })
 
-check('SunnyBay billboards: 8 to 12 boards, only Woza, Lifecup and Greenway as brands, a house ad on every board with no ad', () => {
+check('SunnyBay billboards: 12 roadside boards and the wall slots; the game\u2019s own features, the three brands while their dates run, two empty brand slots on the walls', () => {
+  // (job J, owner 12 Nov: "start with the game's own features, plus empty brand slots"; the house ads are the fallback)
   const ads = adsFor(district.houses, new Date('2026-11-13T10:00:00Z'))
-  assert.ok(ads.length >= 8 && ads.length <= 12)
-  const brands = new Set(ads.filter((a) => !a.house).map((a) => a.brand))
+  const road = ads.slice(0, 12)
+  const walls = ads.slice(12)
+  assert.equal(road.length, 12)
+  assert.ok(walls.length >= 4 && walls.length <= 16, `wall slots: ${walls.length}`)
+  const brands = new Set(ads.filter((a) => !a.house && !a.feature && !a.empty).map((a) => a.brand))
   assert.deepEqual([...brands].sort(), ['Greenway', 'Lifecup', 'Woza'])
-  assert.ok(ads.some((a) => a.house) && ads.filter((a) => a.house).every((a) => district.houses.some((h) => h.name === a.brand)), 'house ads are the seven houses')
-  assert.ok(adsFor(district.houses, new Date('2031-01-01T10:00:00Z')).every((a) => a.house), 'after the end date every board is a house ad')
-  assert.ok(adsFor(district.houses, new Date('2026-11-01T10:00:00Z')).every((a) => a.house), 'before the start date too')
+  assert.ok(road.some((a) => a.feature), 'the roads carry the game\u2019s own features between the brands')
+  assert.equal(walls.filter((a) => a.empty).length, 2, 'two empty brand slots on the walls')
+  for (const when of ['2031-01-01T10:00:00Z', '2026-11-01T10:00:00Z']) {
+    const off = adsFor(district.houses, new Date(when))
+    assert.ok(off.every((a) => a.feature || a.empty || a.house), `no brand outside its dates (${when})`)
+  }
 })
 
 // CONTENT RULE (owner, 9 Nov; CLAUDE.md): no nightclubs, bars, taverns or alcohol anywhere; the only place of worship is

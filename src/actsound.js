@@ -87,6 +87,8 @@ const ONE = {
   clap: (g) => { for (let i = 0; i < 6; i++) burst(g, { t0: i * 0.11 + R(0, 0.03), dur: 0.05, f: R(1200, 2200), q: 1.2, vol: 0.12 }) },
   chatter: (g) => { for (let i = 0; i < 5; i++) burst(g, { t0: i * 0.13 + R(0, 0.05), dur: 0.16, f: R(400, 900), q: 3, vol: 0.06, attack: 0.03 }) },
   snip: (g) => { for (let i = 0; i < 2; i++) { burst(g, { t0: i * 0.14, dur: 0.03, f: 6000, q: 6, vol: 0.12 }); tone(g, { t0: i * 0.14, f: 3200, dur: 0.04, type: 'triangle', vol: 0.05 }) } },
+  // kids laughing on the beach: a run of bright little 'ha's falling in pitch, with a wobble (job J)
+  giggle: (g) => { const f0 = R(700, 950); const n = 4 + Math.floor(R(0, 3)); for (let i = 0; i < n; i++) { const at = i * R(0.11, 0.15); tone(g, { t0: at, f: f0 * (1 - i * 0.05) * 1.12, f1: f0 * (1 - i * 0.05), dur: 0.09, type: 'triangle', vol: 0.05 }); burst(g, { t0: at, dur: 0.07, f: f0 * 2.2, q: 4, vol: 0.025 }) } },
   hum: (g) => { for (const [f, d] of [[262, 0], [330, 0.25], [392, 0.5]]) tone(g, { t0: d, f, dur: 0.45, type: 'sine', vol: 0.05 }) },
 }
 // play('crunch'), play('pins', 9): a one-shot. Returns true when it sounded (Sound on, audio unlocked).

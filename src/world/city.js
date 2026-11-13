@@ -22,7 +22,7 @@ import { formatMoney } from '../engine/format.js'
 import { smooth } from '../smooth.js'
 import * as curtain from '../curtain.js'
 import { onPoke, reportLocal, sendPoke, setArea } from '../presence.js'
-import { appearNow, createAvatar, gesture, poseAvatar } from './avatar3d.js'
+import { appearNow, createAvatar, gesture, poseAvatar, setPoseLod } from './avatar3d.js'
 import { createCameraRig } from './camera.js'
 import { getCam } from '../cammode.js'
 import { bindInput } from './input.js'
@@ -42,6 +42,7 @@ import { BOUNDS, CITY, LOTS, PARTS, PIER, RIDE_EXTRA, RIDE_WAIT, SPAWN, STOPS, W
 import { PLACES, SLOT_NAME, cityOf, folkSeed, openLine, openNow, opensAt, placeOf, rowState, runRow, slotOf } from '../city/places.js'
 import { buildInterior } from './cityplace.js'
 import { createCityPlay } from './cityplay.js'
+import { createCityCrowd } from './citycrowd.js'
 import { resultBody } from '../ui/result-card.js'
 
 const Q = typeof location === 'undefined' ? new URLSearchParams() : new URLSearchParams(location.search)
@@ -72,6 +73,8 @@ let card = null // the open card: { kind, id }
 let carMesh = null
 let npcs = []
 let cplay = null // (job K: the games and the doing-it moments, src/world/cityplay.js)
+let ccrowd = null // (job J: the pavements and the beach full of people, src/world/citycrowd.js)
+const greetings = [] // (job J, tests: the places whose staff greeted you)
 const taxiLog = [] // (job I: rides, with the minutes waited and whether you asked for it, for tests)
 const hoots = [] // (job I: the cars that hooted at you, for tests)
 // Movement (owner, 11 Nov): the cars and kombis on the roads (src/world/traffic.js), and during a taxi ride the
@@ -360,7 +363,7 @@ function onTap(ndc) {
     if (d < bestD) { bestD = d; best = { lot } }
   }
   for (const b of built.boards) {
-    const d = boxHit(b.x - 4.2, b.x + 4.2, 3.4, 7.8, b.z - 4.2, b.z + 4.2)
+    const d = b.wall ? boxHit(b.x - 3.4, b.x + 3.4, b.y - 1.7, b.y + 1.7, b.z - 3.4, b.z + 3.4) : boxHit(b.x - 4.2, b.x + 4.2, 3.4, 7.8, b.z - 4.2, b.z + 4.2)
     if (d < bestD) { bestD = d; best = { board: b } }
   }
   if (best && (!ground || bestD < ground.distanceTo(ray.ray.origin))) {
@@ -384,8 +387,13 @@ function personHit(ground) {
     const d = boxHit(q.x - 0.45, q.x + 0.45, 0, 1.85, q.z - 0.45, q.z + 0.45)
     if (d < bestD) { bestD = d; best = p }
   }
-  if (!best) return null
-  if (ground && bestD > ground.distanceTo(ray.ray.origin) + 0.6) return null
+  // (13 Nov) a walker steps on between the finger going down and the tap landing: a tap within 1 m of anybody's feet is them
+  if (ground && (!best || bestD > ground.distanceTo(ray.ray.origin) + 0.6)) {
+    best = null
+    let near = 1.0
+    for (const p of people) { const d = Math.hypot(p.a.position.x - ground.x, p.a.position.z - ground.z); if (d < near) { near = d; best = p } }
+    return best
+  }
   return best
 }
 function greet(p) {
@@ -668,6 +676,22 @@ function seatFolk(place) {
 // standing still: browse (walk to a spot and look at what is there), queue (in line in front of the staff),
 // and now and then leave through the door and come back in a little later. The staff stays at the counter.
 const PATRON_SPEED = 1.05
+// (job J) the chairs of a room, worked out from its tables exactly as cityprops.js lays them out: round tables have
+// theirs on a 1.05 m ring, long tables theirs either side. Each faces its table.
+function roomChairs(place, room) {
+  const out = []
+  const c = room.centre
+  for (const o of place.dress?.props || []) {
+    for (let i = 0; i < (o.n || 1); i++) {
+      const x = c.x + o.x + (o.dx || 0) * i
+      const z = c.z + o.z + (o.dz || 0) * i
+      if (o.k === 'round' && o.chairs) for (let k = 0; k < o.chairs; k++) { const a = ((k / o.chairs) * 360 + 45) * Math.PI / 180; out.push({ x: x + Math.sin(a) * 1.05, z: z + Math.cos(a) * 1.05, rot: a + Math.PI, y: 0.46 }) }
+      if (o.k === 'longtable' && o.chairs) { const each = Math.ceil(o.chairs / 2); const w = o.w || 3; for (let k = 0; k < each; k++) { const t = -w / 2 + (k + 0.5) * (w / each); out.push({ x: x + t, z: z - 0.95, rot: 0, y: 0.46 }, { x: x + t, z: z + 0.95, rot: Math.PI, y: 0.46 }) } }
+    }
+  }
+  return out
+}
+const EATS = new Set(['lifecup', 'lounge', 'mall', 'greenway_city'])
 function patronPlan(f) {
   const room = inside?.room
   if (!room) return
@@ -676,8 +700,14 @@ function patronPlan(f) {
   if (f.state === 'out') { f.state = 'in'; f.goal = spots[(f.i + (f.round || 0)) % spots.length]; return }
   // (each patron goes round browse, queue, browse, leave, starting at a different place in the round)
   f.round = (f.round ?? f.i) + 1
-  const next = ['browse', 'queue', 'browse', 'leave'][f.round % 4]
+  room.chairs ||= roomChairs(inside.place, room)
+  const next = ['browse', 'queue', 'sit', 'browse', 'leave'][f.round % 5]
   if (next === 'leave') { f.state = 'leave'; f.goal = { x: room.exit.x, z: room.exit.z - 0.6 }; return }
+  if (next === 'sit') {
+    // (job J) a free chair: walk up to it, sit (eating, in a cafe), stand up later
+    const chair = room.chairs.find((ch) => !folk.list.some((o) => o.chair === ch))
+    if (chair) { f.state = 'toChair'; f.chair = chair; f.goal = { x: chair.x - Math.sin(chair.rot) * 0.6, z: chair.z - Math.cos(chair.rot) * 0.6, face: chair.rot }; return }
+  }
   if (next === 'queue') {
     // (in line: one behind the other in front of the counter)
     const inLine = folk.list.filter((o) => o !== f && o.state === 'queue').length
@@ -687,7 +717,9 @@ function patronPlan(f) {
     f.goal = { x: room.focus.x + sx * inLine * 0.9, z: room.focus.z + sz * inLine * 0.9, face: Math.atan2(-sx, -sz) }
     return
   }
-  const s = spots[(f.i * 3 + f.round) % spots.length]
+  let s = spots[(f.i * 3 + f.round) % spots.length]
+  // (job J: never bunched up: a spot nobody else is at or heading for, if there is one)
+  for (let k = 0; k < spots.length; k++) { const c = spots[(f.i * 3 + f.round + k) % spots.length]; if (!folk.list.some((o) => o !== f && Math.hypot((o.goal?.x ?? o.avatar.position.x) - c.x, (o.goal?.z ?? o.avatar.position.z) - c.z) < 1.3)) { s = c; break } }
   f.state = 'browse'
   f.goal = { x: s.x + (((f.i * 37) % 7) - 3) * 0.15, z: s.z + (((f.i * 53) % 7) - 3) * 0.15, face: s.rot }
 }
@@ -695,6 +727,12 @@ function patronTick(dt) {
   for (const f of folk.list) {
     if (f.staff) continue
     const a = f.avatar
+    if (f.state === 'sit') {
+      f.wait -= dt
+      if (f.wait <= 0) { a.userData.pose = 'stand'; a.userData.eating = false; a.position.set(f.chair.x - Math.sin(f.chair.rot) * 0.6, 0, f.chair.z - Math.cos(f.chair.rot) * 0.6); a.userData.lastPos?.copy(a.position); f.chair = null; f.state = 'browse'; f.goal = null }
+      poseAvatar(a, false, clock + f.i * 1.7)
+      continue
+    }
     if (f.wait > 0) {
       f.wait -= dt
       if (f.state === 'out') { a.visible = false; if (f.wait <= 0) { a.visible = true; a.position.set(inside.room.exit.x, 0, inside.room.exit.z - 0.4); a.userData.lastPos?.copy(a.position); patronPlan(f) } continue }
@@ -715,6 +753,18 @@ function patronTick(dt) {
       if (f.goal.face !== undefined) a.rotation.y = f.goal.face
       f.goal = null
       if (f.state === 'leave') { f.state = 'out'; f.wait = 5 + (f.i % 3) * 3; a.visible = false; f.left = (f.left || 0) + 1; continue }
+      if (f.state === 'toChair') {
+        const ch = f.chair
+        a.userData.standAt = { x: a.position.x, z: a.position.z, yaw: a.rotation.y }
+        a.position.set(ch.x, ch.y, ch.z)
+        a.rotation.y = ch.rot
+        a.userData.seat = ch
+        a.userData.pose = 'sit'
+        a.userData.eating = EATS.has(inside.place.id)
+        f.state = 'sit'
+        f.wait = 10 + (f.i % 4) * 3
+        continue
+      }
       f.wait = f.state === 'queue' ? 4 + (f.i % 3) : 3 + ((f.i * 5) % 6)
       if (f.state === 'queue') gesture(a, 'talk')
       continue
@@ -837,6 +887,14 @@ async function goInside(place) {
     scene.add(room.group)
     inside = { place, room, lot: place.lot }
     cplay?.enterRoom(place, room)
+    // (job J) the one serving looks up, waves and greets you
+    setTimeout(() => {
+      const s = folk?.id === place.id ? folk.list[0] : null
+      if (!s || !inside || inside.place !== place) return
+      s.avatar.rotation.y = Math.atan2(player.position.x - s.avatar.position.x, player.position.z - s.avatar.position.z)
+      gesture(s.avatar, 'emote-yes')
+      if (place.dress?.greet) { ccrowd?.say(s.avatar.position.x, s.avatar.position.z, `${place.dress.staffName ? `${place.dress.staffName}: ` : ''}“${place.dress.greet}”`); greetings.push(place.id) }
+    }, Math.max(200, 900 / FAST))
     sfx('door')
     setSound({ inside: true })
     grid = roomGrid(room)
@@ -1411,6 +1469,8 @@ body[data-city="1"] #world{display:none}
 .city-card .cc-kind{margin:0;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#7b5a1e}
 .city-card .cc-tag{display:inline-block;margin:0 0 8px;padding:4px 10px;border-radius:999px;background:#f0c400;color:#1c1915;font-size:14px;font-weight:800}
 .city-card .cc-line{margin:0 0 12px;font-size:15px;line-height:1.4}
+.cb-bubble{position:fixed;left:0;top:0;z-index:30;max-width:220px;padding:7px 11px;border-radius:14px;background:#fffaf0;color:#1c1915;font:700 14px/1.3 Figtree,system-ui,sans-serif;box-shadow:0 4px 14px #0004;pointer-events:none;transition:opacity .2s}
+.cb-bubble::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#fffaf0;border-bottom:0}
 .city-card .cc-next{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:#1c1915;color:#f0c400;display:flex;flex-direction:column;gap:2px}.city-card .cc-next b{font-size:16px}.city-card .cc-next small{color:#fff;font-size:14px;font-weight:600}
 .city-card .cc-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .city-card .cc-row button,.city-card .cc-link{padding:0 18px;border-radius:22px;background:#22143b;color:#fff;display:inline-flex;align-items:center;text-decoration:none}
@@ -1605,6 +1665,8 @@ function tick(now) {
   }
   if (inside && folk) patronTick(dt)
   cplay?.update(dt / FAST) // (real time: a kick has to be tappable)
+  ccrowd?.update(dt, clock, player.position.x, player.position.z, part.id, Boolean(inside))
+  setPoseLod(scene, camera, player.position)
   if (folk && !inside) openTick(dt)
   else if (folk) poseAvatar(folk.list[0].avatar, false, clock) // (the one serving; the patrons move in patronTick)
   others?.update(dt, camera, player.position, true, rig.mode === 'eye')
@@ -1693,6 +1755,12 @@ export async function startCity(options) {
     others = createOthers(scene)
     cplay = createCityPlay({ scene, player: () => player, inside: () => inside, folk: () => folk, walkNear, toast, run: () => opts.run, save: () => save(), clock: () => clock })
     traffic = createTraffic({ scene, bake: (url) => bakeModel(url), flip: CAR_FLIP })
+    ccrowd = createCityCrowd({
+      scene, parasols: built.parasols || [], tower: built.tower, uiRoot, free: (x, z) => !blockedAt(x, z) && !offLimits(x, z, 0.8) && !CITY.roads.some((r) => x > r.rect[0] - 0.6 && x < r.rect[2] + 0.6 && z > r.rect[1] - 0.6 && z < r.rect[3] + 0.6),
+      linesFor: (id) => (pavementsOf[id] ||= pavements(partOf(id))),
+      doorsFor: (id) => LOTS.filter((l) => l.part === id).map((l) => l.door),
+      project: (x, y, z) => { const q = new THREE.Vector3(x, y, z).project(camera); return { x: (q.x * 0.5 + 0.5) * window.innerWidth, y: (-q.y * 0.5 + 0.5) * window.innerHeight, behind: q.z > 1 } },
+    })
     const sp = options.spawn || { kind: 'gate' }
     const lot = sp.kind === 'lot' ? lotOf(sp.id) : null
     if (lot) place(lot.door.x, lot.door.z)
@@ -1743,6 +1811,8 @@ export function stopCity() {
   if (uiRoot) { uiRoot.hidden = true; uiRoot.querySelector('.city-ride').hidden = true }
   others?.dispose?.()
   others = null
+  ccrowd?.dispose()
+  ccrowd = null
   traffic?.dispose()
   traffic = null
   rideCam = null
@@ -1820,6 +1890,10 @@ if (typeof window !== 'undefined') {
     folk: () => (folk ? { id: folk.id, list: folk.list.map((f) => ({ staff: f.staff, x: +f.avatar.position.x.toFixed(2), z: +f.avatar.position.z.toFixed(2), visible: f.avatar.visible, moving: Boolean(f.goal) && !(f.wait > 0) })) } : null),
     hoots: () => [...hoots],
     play: () => cplay?.info() || null,
+    crowd: () => ccrowd?.info() || null,
+    greetings: () => [...greetings],
+    boards: () => (built?.boards || []).map((b) => ({ i: b.i, wall: Boolean(b.wall), brand: b.ad?.brand, feature: Boolean(b.ad?.feature), empty: Boolean(b.ad?.empty) })),
+    sitters: () => (folk ? folk.list.filter((f) => f.state === 'sit').length : 0),
     taxis: () => [...taxiLog],
     nextTaxi: (id) => nextTaxi(id, opts.run?.minutes),
     greeted: () => [...greeted],

@@ -5,7 +5,7 @@ import { homePlaceId, houseOf } from '../engine/model.js'
 import { FENCE_R, canDrive, carAt } from '../city/plan.js'
 import { loop as soundLoop, sfx } from '../audio.js'
 import { setSound } from '../soundscape.js'
-import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor, holdIn } from './avatar3d.js'
+import { appearNow, createAvatar, gesture, inTransition, layDown, lookOf, measureBody, poseAvatar, standSpotFor, holdIn, setPoseLod } from './avatar3d.js'
 import { createActivities, sceneName } from './activities.js'
 import { genderOf } from '../avatar.js'
 import { roommateFor, roommateLook } from '../roommates.js'
@@ -34,6 +34,7 @@ import { collidersOf } from './colliders.js'
 import { doorPoint, frontOf, frontPoint, WORLD_MAX, WORLD_MIN } from './layout.js'
 import { reportError } from '../errors.js'
 import { createCampusMap, createCityMap, takeCampusGoal } from './map.js'
+import { createCampusLife } from './campuslife.js'
 import { boxBlocked, boxPath, cellCenter, cellOf, findPath, nearestOpen, pointBlocked } from './nav.js'
 import { venueFor } from '../venues.js'
 import { startDropOff } from './dropoff.js'
@@ -714,6 +715,8 @@ function approach(id, onArrive) {
   else walkTo(door.x, door.z, there, { always: true, arrive: true })
 }
 // Arrived: turn on the spot to face the place (the body turns, the feet stay put).
+let life = null // (job J: src/world/campuslife.js)
+let lodFrame = 0
 let keyWalk = false // (job I: this frame the keys are steering)
 let faceTo = null
 
@@ -1585,6 +1588,7 @@ window.mzansiObstacles = () => ({
   room: room ? room.blocks : [],
 })
 // (job K, tests) what you hold, and whether you are eating at a table
+window.mzansiCampusLife = (show) => { if (show !== undefined) life?.setVisible(Boolean(show)); return life?.info() || null }
 window.mzansiHeld = () => ({ held: player?.userData.held?.name || '', eating: Boolean(player?.userData.eating), pose: player?.userData.pose || '' })
 window.mzansiTalkTo = (id) => { const a = everyone().find((x) => x.userData.personId === id); if (a) startTalk(a); return Boolean(a) }
 window.mzansiDebug = () => JSON.stringify({ cam: camera?.position.toArray().map((v) => +v.toFixed(2)), look: closeLook.toArray().map((v) => +v.toFixed(2)), shot: closeShot && { pos: closeShot.pos?.toArray?.(), look: closeShot.look?.toArray?.() }, focus: activityFocus && (activityFocus.position || activityFocus) })
@@ -2448,11 +2452,13 @@ function rebuild(district, homeId) {
   if (campus) scene.remove(campus.group)
   crowd?.dispose()
   others?.dispose()
+  life?.dispose()
   campus = createCampus(district, homeId)
   scene.add(campus.group)
   scene.userData.floorAt = campus.floor.at // soles rest on paths, plazas and decks (avatar3d)
   crowd = createCrowd(scene, campus, { roommate: roommateFor(currentRun?.character).id, solid: (x, z) => blockedAt(x, z) })
   others = createOthers(scene)
+  life = createCampusLife(scene, campus.layout, { solid: (x, z) => blockedAt(x, z) }) // (job J: paths, lawns, a kick-about)
   builtId = buildKey(district, homeId, currentRun)
 }
 
@@ -2711,7 +2717,7 @@ const faded = new Map() // mesh -> frames left see-through
 function seeThrough() {
   const hits = new Set()
   if (rig.mode !== 'eye' || closeShot) {
-    for (const y of [1.65, 1.1, 0.5]) {
+    for (const y of [1.6, 0.7]) { // (job J: two rays, head and knees: three cost a sixth of a slow phone's frame)
       const to = new THREE.Vector3(player.position.x, player.position.y + y, player.position.z)
       const dir = to.clone().sub(camera.position)
       const far = dir.length() - 0.4
@@ -2971,6 +2977,8 @@ function frameBody(now) {
     spotTimer -= dt
     if (spotTimer <= 0) { spotTimer = 1; countSpots() }
     crowd?.update(dt, player.position, [player.position, ...(others?.nearbyPositions(player.position.x, player.position.z, 400) || [])])
+    life?.update(dt, clock, player.position)
+    setPoseLod(scene, camera, player.position) // (job J: far and off-screen people are posed less often)
     for (const a of inHouse?.folk || []) poseAvatar(a, false, clock)
     // Presence: tell everyone where you are; draw where they are. (Not in a room built
     // off the map: there you're "away" and see nobody from campus.)
@@ -3017,7 +3025,7 @@ function frameBody(now) {
       if (frames % 30 === 0) hudTop = Math.max(0, ...[...document.querySelectorAll('.g-hud, .g-nowrow, .g-goal')].filter((el) => el.getClientRects().length).map((el) => el.getBoundingClientRect().bottom - host.getBoundingClientRect().top))
       bubbles.frame(camera, speakerHead, player.position, hudTop)
     }
-    if (frames % 3 === 0) seeThrough()
+    if (frames % 6 === 0) seeThrough() // (job J: every sixth frame (it was every third): what is faded stays faded 12 frames)
     fitLabels(campus.buildings, camera, dt, { x: player.position.x, z: player.position.z, dest: destination() })
     swingDoors(dt)
     sun.position.set(player.position.x + 22, 34, player.position.z + 12)
@@ -3028,7 +3036,7 @@ function frameBody(now) {
     }
     updateGuide()
     updateTags()
-    promptDoor()
+    if (frames % 3 === 0) promptDoor() // (job J: every third frame: it reads the page's layout)
     const floater = host.querySelector('.floater')
     if (floater && !floater.hidden) pin(floater, player.position.x, 2.4, player.position.z)
     mapUi.frame({ x: player.position.x, z: player.position.z, facing: player.rotation.y })
@@ -3040,6 +3048,7 @@ function frameBody(now) {
     host.dataset.view = (rig.mode === 'eye' ? rig.facing : rig.yaw).toFixed(3)
   }
   renderer.render(scene, camera)
+  if ((lodFrame = (lodFrame + 1) % 30) === 0) { host.dataset.calls = String(renderer.info.render.calls); host.dataset.tris = String(renderer.info.render.triangles) } // (job J: what a frame costs, for the frame-rate test)
   smooth.frame(now, 'campus', smoothPlace)
   frames += 1
   if (now - fpsStamp > 500) {

@@ -79,7 +79,8 @@ for (const size of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) 
       await page.screenshot({ path: `${OUT}/${px}-light-${light}.png` })
       const info = await page.evaluate(() => window.mzansiCaf.info())
       console.log(`LIGHT ${light}: ${info.calls} draw calls, ${info.triangles} triangles`)
-      expect(info.calls, 'draw calls').toBeLessThan(60)
+      // (job J, 13 Nov) the shell stays under 60; on top: the four staff (full students, up to ~13 calls each in view) and the patrons (one instanced crowd, 8)
+      expect(info.calls, 'draw calls').toBeLessThan(120)
     }
     await page.evaluate(() => window.mzansiCaf.light('day'))
     if (px === 390) {
