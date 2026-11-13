@@ -1,9 +1,17 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 13 Nov, Claude Code (job F: capacity for launch).
+Last updated: 13 Nov, Claude Code (job H: launch safety).
 
-**Next jobs: docs/queue.md** (13 Nov: J, L and F done; next H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it) and **supabase/launch.sql again** (job F's CAPACITY block; then set max_players); before launch run supabase/reset-launch.sql once.
+**Next jobs: docs/queue.md** (13 Nov: J, L, F and H done; next G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (jobs I and H need it) and **supabase/launch.sql again** (job F's CAPACITY block; then set max_players); before launch run supabase/reset-launch.sql once.
+
+## Job H: launch safety (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/chat.sql AGAIN** (LAUNCH SAFETY).
+- **Delete:** your own Board posts (Delete, two taps) and your own replies (long-press: Delete my reply). A deleted post still counts for the day's three.
+- **Invite a friend:** pays you both only when the friend comes back on a second day ("Come back tomorrow and you both get R100").
+- **No blank page:** if the game cannot start (an error, a file that won't load, nothing drawn in 20 s): "Something went wrong. Tap to reload", logged as kind boot (G shows it). Tested with a forced error, a missing and a hung file, and an old save.
+- **The quick gate:** 125 -> 83 tests, about 28 -> 15 minutes on 2 workers (3 workers was slower). Not 10: going further would leave an area untested at push. What moved: docs/sprints/launch-safety/gate.md.
+- Gate (3 workers, 17 min): 82 of 83; sound-quick's Music switch check waited 5 s on a starved machine (now 15; passes alone twice). social-b B1 now deletes a post.
+- **As a player:** the Delete button sits with Share on your posts, same style as Report; the reload card is cream and white with the yellow button, readable at 390. Not seen live: the second-day invite (needs chat.sql and a real next day).
 
 ## Job F: capacity for launch (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/launch.sql AGAIN** (CAPACITY).
 - **Measured with bots on the TEST project** (`.env.test.txt`; never the live one). A room of 40 broke by itself; rooms of 20 carried 100 bots with every message delivered and 0.2 s lag. Past the project's limit Supabase closes almost everybody's channel at once. So the room cap is now 20 and the busy line holds the game under the limit (max_players, default 200). Full numbers, the Pro ceiling (about 200 at once), the monthly-cost warning and the launch checklist: docs/sprints/capacity/report.md.

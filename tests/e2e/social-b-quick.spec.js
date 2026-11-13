@@ -99,6 +99,16 @@ test('B1 the Feed, a stamp, a Board with Follow, replies, your own posts and the
   await expect(page.locator('.cht-note')).toContainText('3 posts for today')
   expect((await server.rows('select count(*)::int as n from chat_posts where author = $1', [mine.p_id]))[0].n).toBe(3)
   await shot(page, 'board-390')
+  // (job H) your own post: Delete, two taps; it is gone (and still counts for the day: a new one is refused)
+  const del = page.locator('.bd-post [data-delete-post]').first()
+  await del.tap()
+  await expect(del).toHaveText('Tap again to delete')
+  await del.tap()
+  await expect(page.locator('.cht-note')).toHaveText('Deleted.')
+  await expect(page.locator('.bd-post')).toHaveCount(2)
+  expect((await server.rows('select count(*)::int as n from chat_posts where author = $1', [mine.p_id]))[0].n).toBe(2)
+  await post('Trying again')
+  await expect(page.locator('.cht-note')).toContainText('3 posts for today')
 
   // Report: two taps; with two more from other players the post is hidden until reviewed.
   await page.locator('.cht-back').first().tap()

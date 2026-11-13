@@ -1557,3 +1557,104 @@ begin
     || case when mu then jsonb_build_object('online', p.seen_at > now() - interval '70 seconds', 'seen', p.seen_at) else '{}'::jsonb end;
 end $$;
 grant execute on function public.chat_card(text, text, text) to anon, authenticated;
+
+-- =====================================================================================================
+-- LAUNCH SAFETY (job H, 13 Nov)
+--   1. A player deletes their own Board post (its stamps, reports and replies go with it) or their own reply. A
+--      deleted post still counts towards the day's three (chat_events 'post_del'), so delete-and-post is no way round it.
+--   2. Invite a friend pays only when the friend comes back on a second SAST day: a claim is noted (first_day, and
+--      paid = true so the inviter's sync says nothing yet); chat_ref_back on a later day marks it back, sets paid =
+--      false (the inviter's next chat_sync tells them, as before) and tells the friend once (friend_paid).
+-- =====================================================================================================
+create or replace function public.chat_post_delete(p_id text, p_secret text, p_post bigint)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare a text;
+begin
+  perform chat_me(p_id, p_secret);
+  select author into a from chat_posts where id = p_post;
+  if a is null or a <> p_id then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  insert into chat_events (player, kind, at) select p_id, 'post_del', p.at from chat_posts p where p.id = p_post;
+  delete from chat_threads where id = 'p:' || p_post;
+  delete from chat_posts where id = p_post;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.chat_post_delete(text, text, bigint) to anon, authenticated;
+
+create or replace function public.chat_line_delete(p_id text, p_secret text, p_line bigint)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  perform chat_me(p_id, p_secret);
+  delete from chat_lines where id = p_line and sender = p_id and thread like 'p:%';
+  get diagnostics n = row_count;
+  return jsonb_build_object('ok', n > 0);
+end $$;
+grant execute on function public.chat_line_delete(text, text, bigint) to anon, authenticated;
+
+-- (chat_post again: the day's three count deleted posts too)
+create or replace function public.chat_post(p_id text, p_secret text, p_body text, p_district text default 'campus')
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare body text := trim(regexp_replace(coalesce(p_body, ''), '\s+', ' ', 'g')); p chat_posts%rowtype;
+  today date := (now() at time zone 'Africa/Johannesburg')::date;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chat:' || p_id));
+  if body = '' then return jsonb_build_object('ok', false, 'reason', 'empty'); end if;
+  if char_length(body) > 140 then return jsonb_build_object('ok', false, 'reason', 'long'); end if;
+  if regexp_replace(body, 'https://softlifeza\.vercel\.app[^\s]*', '', 'gi') ~* '(https?://|www\.|\.com\M|\.co\.za\M|wa\.me)' then
+    return jsonb_build_object('ok', false, 'reason', 'link');
+  end if;
+  begin body := public.clean_chat_body(body); exception when others then return jsonb_build_object('ok', false, 'reason', 'word'); end;
+  if body is null or body = '' then return jsonb_build_object('ok', false, 'reason', 'empty'); end if;
+  if (select count(*) from chat_posts where author = p_id and (at at time zone 'Africa/Johannesburg')::date = today)
+     + (select count(*) from chat_events where player = p_id and kind = 'post_del' and (at at time zone 'Africa/Johannesburg')::date = today) >= 3 then
+    return jsonb_build_object('ok', false, 'reason', 'today');
+  end if;
+  insert into chat_posts (author, body, district) values (p_id, left(body, 140), left(coalesce(nullif(p_district, ''), 'campus'), 30)) returning * into p;
+  return jsonb_build_object('ok', true, 'post', chat_post_json(p_id, p));
+end $$;
+grant execute on function public.chat_post(text, text, text, text) to anon, authenticated;
+
+alter table public.chat_refs add column if not exists first_day date;
+alter table public.chat_refs add column if not exists back boolean not null default false;
+alter table public.chat_refs add column if not exists friend_paid boolean not null default false;
+
+create or replace function public.chat_ref_claim(p_id text, p_secret text, p_code text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare inv chat_players%rowtype;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chatref:' || p_id));
+  select * into inv from chat_players where ref_code = lower(left(coalesce(p_code, ''), 16));
+  if not found then return jsonb_build_object('ok', false, 'reason', 'unknown'); end if;
+  if inv.id = p_id then return jsonb_build_object('ok', false, 'reason', 'self'); end if;
+  if exists (select 1 from chat_refs where friend = p_id) then return jsonb_build_object('ok', false, 'reason', 'done'); end if;
+  if (select created_at from chat_players where id = p_id) < now() - interval '1 day' then return jsonb_build_object('ok', false, 'reason', 'old'); end if;
+  if (select count(*) from chat_refs where inviter = inv.id and at > now() - interval '1 day') >= 10 then return jsonb_build_object('ok', false, 'reason', 'limit'); end if;
+  -- (paid = true: nothing for the inviter until the friend comes back on another day)
+  insert into chat_refs (friend, inviter, first_day, paid) values (p_id, inv.id, (now() at time zone 'Africa/Johannesburg')::date, true);
+  return jsonb_build_object('ok', true, 'inviter', inv.name, 'pending', true);
+end $$;
+grant execute on function public.chat_ref_claim(text, text, text) to anon, authenticated;
+
+-- The friend's phone asks once a session while it has a claim waiting. { ok, state: none | wait | reward, inviter }.
+create or replace function public.chat_ref_back(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare r chat_refs%rowtype; today date := (now() at time zone 'Africa/Johannesburg')::date; nm text;
+begin
+  perform chat_me(p_id, p_secret);
+  perform pg_advisory_xact_lock(hashtext('chatref:' || p_id));
+  select * into r from chat_refs where friend = p_id;
+  if not found or r.first_day is null then return jsonb_build_object('ok', true, 'state', 'none'); end if;
+  if not r.back and today > r.first_day then
+    update chat_refs set back = true, paid = false where friend = p_id;
+    r.back := true;
+  end if;
+  if not r.back then return jsonb_build_object('ok', true, 'state', 'wait'); end if;
+  if r.friend_paid then return jsonb_build_object('ok', true, 'state', 'none'); end if;
+  update chat_refs set friend_paid = true where friend = p_id;
+  select name into nm from chat_players where id = r.inviter;
+  return jsonb_build_object('ok', true, 'state', 'reward', 'inviter', coalesce(nm, 'A friend'));
+end $$;
+grant execute on function public.chat_ref_back(text, text) to anon, authenticated;
+-- LAUNCH SAFETY END

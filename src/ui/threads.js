@@ -18,7 +18,7 @@ import { boardClick, boardHtml, boardInput, boardOpen, boardSubmit, closeBoard, 
 import { isUp as curtainUp } from '../curtain.js'
 import { play } from '../sfx.js'
 import INTERESTS from '../../data/campusville/interests.json'
-import { answerChat, chatAsks, canType, typing, typingIn, reportGroup, setGroupOpen, socialCReady, addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
+import { answerChat, chatAsks, canType, typing, typingIn, reportGroup, setGroupOpen, socialCReady, addFriend, addToGroup, answerAsk, groupAsks, removeMember, renameGroup, clearInvite, joinByCode, waitingInvite, blockInChat, chatStatus, closeThread, createGroup, dmWith, friendList, groupMembers, groupUnread, inviteLink, isBlocked, isFriend, leaveGroup, linesOf, muteThread, myId, onThreads, openThread, openThreadId, removeFriend, reportLine, deleteLine, sendLine, setTopic, socialReady, sync, threadList, threadOf, unreadTotal } from '../threads.js'
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
 const first = (name) => String(name || 'Student').split(' ')[0]
@@ -393,6 +393,12 @@ function paintActs() {
   if (!el) return
   el.hidden = !acts
   if (!acts) { el.innerHTML = ''; return }
+  if (acts.mine) {
+    el.innerHTML = `<p>“${esc(acts.body.length > 70 ? `${acts.body.slice(0, 70)}…` : acts.body)}”</p>
+    <button type="button" class="bad" data-ct="delete-line">Delete my reply</button>
+    <button type="button" data-ct="acts-x">Cancel</button>`
+    return
+  }
   el.innerHTML = `<p>“${esc(acts.body.length > 70 ? `${acts.body.slice(0, 70)}…` : acts.body)}” <small>${esc(first(acts.name))}</small></p>
     <button type="button" class="bad" data-ct="report">⚑ Report</button>
     <button type="button" class="bad" data-ct="block">\u{1F6AB} Block ${esc(first(acts.name))}</button>
@@ -400,6 +406,8 @@ function paintActs() {
 }
 
 // Long-press one of their messages (or right-click it on a computer): Report or Block.
+// (job H) Your own reply to a Board post: Delete.
+const pressable = (target) => target.closest?.('.them .cht-bub[data-line]') || (String(openThreadId() || '').startsWith('p:') ? target.closest?.('.me .cht-bub[data-line]') : null)
 function wirePress() {
   let timer = 0
   let at = null
@@ -407,12 +415,12 @@ function wirePress() {
   // tap until that finger is up and a moment has passed, so lifting it can never report or block by accident)
   const cancel = () => { clearTimeout(timer); timer = 0; at = null; if (guardUntil === Infinity) guardUntil = performance.now() + 350 }
   const menu = (bub, held) => {
-    acts = { line: Number(bub.dataset.line), sender: bub.dataset.sender, name: bub.dataset.name, body: bub.querySelector('.cht-text')?.textContent || '' }
+    acts = { line: Number(bub.dataset.line), sender: bub.dataset.sender, name: bub.dataset.name, body: bub.querySelector('.cht-text')?.textContent || '', mine: Boolean(bub.closest('.me')) }
     guardUntil = held ? Infinity : performance.now() + 350
     paintActs()
   }
   sheet.addEventListener('pointerdown', (event) => {
-    const bub = event.target.closest?.('.them .cht-bub[data-line]')
+    const bub = pressable(event.target)
     cancel()
     if (!bub) return
     at = { x: event.clientX, y: event.clientY }
@@ -422,7 +430,7 @@ function wirePress() {
   for (const type of ['pointerup', 'pointercancel', 'pointerleave']) sheet.addEventListener(type, cancel)
   sheet.addEventListener('scroll', cancel, true)
   sheet.addEventListener('contextmenu', (event) => {
-    const bub = event.target.closest?.('.them .cht-bub[data-line]')
+    const bub = pressable(event.target)
     if (!bub) return
     event.preventDefault()
     if (acts && guardUntil === Infinity) return // (a held finger already opened it)
@@ -515,6 +523,13 @@ function onClick(event) {
   }
   if (event.target.closest('.cht-acts') && performance.now() < guardUntil) return
   if (ct === 'acts-x') { acts = null; paintActs(); return }
+  if (ct === 'delete-line' && acts) {
+    const a = acts
+    acts = null
+    paintActs()
+    deleteLine(openThreadId(), a.line).then((ok) => tell(ok ? 'Deleted.' : 'Couldn’t delete that right now.', !ok))
+    return
+  }
   if (ct === 'report' && acts) {
     const a = acts
     acts = null

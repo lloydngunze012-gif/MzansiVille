@@ -4,20 +4,9 @@ Jobs the owner has sent that are not started yet, word for word. When a job is d
 
 Read CLAUDE.md, docs/team.md and docs/now.md first, as for any job. Same rules for every job (owner, 11 and 12 Nov): quick gate green, push and deploy, update now.md, say on the first line if chat.sql needs running, and the PLAYER PASS (CLAUDE.md, top): play the changed areas as a new player at 390 px for 10 game minutes before pushing, with an "As a player" section in the report.
 
-Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I, K, J, L and F are done (13 Nov), so next is **H**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
+Order (owner, 12 Nov, the latest word): **I, K, J, L, F, H, G**; I, K, J, L, F and H are done (13 Nov), so next is **G**. Everything playable by Fri 13 Nov; launch stays Fri 20 Nov. Cursor is writing the words for J, K and L in docs/world-designer/alive.md on its own branch: wire them in when it lands, with placeholders until then.
 
-Done already: F (capacity), L (consequences, music, a reason to come), I (first-play fixes), K (activities you play), J (a living world; the campus frame rate on a slow phone still open), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
-
----
-
-=== JOB H · Opus, Medium · LAUNCH SAFETY ===
-1. Players can delete their own Board posts and replies.
-2. Invite a friend pays only when the friend comes back on a second day.
-3. A blank page can never happen: any load error shows "Something went
-   wrong. Tap to reload" and is logged (G shows it). Test with a forced
-   error and with an older version's save.
-4. Trim the quick gate back towards 10 minutes without losing what it
-   proves; list what moved to the full suite.
+Done already: H (launch safety), F (capacity), L (consequences, music, a reason to come), I (first-play fixes), K (activities you play), J (a living world; the campus frame rate on a slow phone still open), Sims view, Sound, A (tester fixes 2, with the character button), B (Chat V2), C (Social C), Opening page V2.2, E (Notifications), D (Character in 3D), Movement.
 
 ---
 

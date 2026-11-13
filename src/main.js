@@ -86,7 +86,7 @@ import { initFindMe, toggleFindMe } from './findme.js'
 import { initNotify, openNotifySettings } from './notify.js'
 import { award, badgesFor, collectPreorder, dressMenu, noteActive, preorderNews, standingBadges } from './loops.js'
 import { openInvite, openPreorder, openReady } from './ui/loops.js'
-import { claimInvite, INVITE_REWARD } from './sharewa.js'
+import { checkInviteBack, claimInvite, INVITE_REWARD } from './sharewa.js'
 import { myFollowers, onThreads } from './threads.js'
 import { calm } from './launch.js'
 import { initTired } from './tired.js'
@@ -871,6 +871,7 @@ function paint() {
   armToasts()
   armAuto()
   hydrateMeFace()
+  document.documentElement.dataset.booted = '1' // (job H: index.html's guard stands down once a screen is drawn)
 }
 
 // Meeting people (owner, 10 Nov), item 7: the menu's own links (Settings, Student
@@ -3070,10 +3071,25 @@ onThreads((kind) => {
   claimInvite().then((r) => {
     if (!r.ok || !save.run || save.run.refClaimed) return
     save.run.refClaimed = true
+    persist()
+    // (job H) paid when you come back on another day: the server says when (checkInviteBack)
+    if (r.pending) { toast(`\u{1F381} ${String(r.inviter).split(' ')[0]} invited you. Come back tomorrow and you both get R${INVITE_REWARD}.`); return }
+    save.run.stats.money += INVITE_REWARD
+    paint()
+    toast(`\u{1F381} ${String(r.inviter).split(' ')[0]} invited you: +R${INVITE_REWARD} each`)
+  })
+})
+// (job H) a friend's invite pays on their second day: asked once a session, when the chat is up
+let inviteBackAsked = false
+onThreads((kind) => {
+  if (kind !== 'first' || inviteBackAsked || !save.run) return
+  inviteBackAsked = true
+  checkInviteBack().then((r) => {
+    if (!r.reward || !save.run) return
     save.run.stats.money += INVITE_REWARD
     persist()
     paint()
-    toast(`\u{1F381} ${String(r.inviter).split(' ')[0]} invited you: +R${INVITE_REWARD} each`)
+    toast(`\u{1F381} You came back! ${String(r.inviter).split(' ')[0]} invited you: +R${INVITE_REWARD} each`)
   })
 })
 window.addEventListener('mzansi-invite-paid', (event) => {

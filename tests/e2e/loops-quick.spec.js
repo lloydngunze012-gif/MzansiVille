@@ -142,7 +142,7 @@ test('P2 the streak (a day, a freeze, the seventh day), the badges, follower mil
   await shot(page, 'profile-streak-badges-390')
 })
 
-test('P3 invite a friend (R100 each, once), a top-10 placing and a Board post on WhatsApp, a group’s flame', async ({ page, browser }) => {
+test('P3 invite a friend (R100 each, once, when the friend comes back on a second day), a top-10 placing and a Board post on WhatsApp, a group’s flame', async ({ page, browser }) => {
   await server.routeChat(page)
   await page.route('**/rest/v1/rpc/score_board', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ week: '2026-11-09', top: [{ rank: 1, name: 'Zoe', handle: 'zoe_1', house: 'Peak', points: 90 }], you: { rank: 4, points: 60 } }) }))
   await atGate(page, { query: `&chat=1&scores=1&room=${ROOM}-i`, name: 'Ayanda' })
@@ -170,10 +170,18 @@ test('P3 invite a friend (R100 each, once), a top-10 placing and a Board post on
   await friend.locator('#name').fill('Lindi')
   await friend.locator('[data-act="qs-play"]').tap()
   await expect.poll(async () => (await friend.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1') || '{}').run?.refClaimed)), { timeout: 60000 }).toBe(true)
-  // (a new student has R1,500 until the R600 pocket money at the drop-off: R100 on top of that)
-  expect((await friend.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.money))).toBe(1500 + 100)
+  // (job H) nothing on the first day: the reward waits for the friend to come back on another day
+  const fMoney = () => friend.evaluate(() => JSON.parse(localStorage.getItem('mzansiville.v1')).run.stats.money)
+  const first = await fMoney()
+  expect(await friend.evaluate(() => (window.mzansiToasts || []).some((t) => t.includes('Come back tomorrow')))).toBe(true)
   expect(await friend.evaluate(() => localStorage.getItem('mzansiville.ref'))).toBe(null)
-  // ... and for the inviter, once (their next sync says so)
+  await page.waitForTimeout(3000)
+  expect((await save(page)).run.stats.money, 'the inviter is not paid on day one').toBe(money)
+  // the next day (on the server's clock): the friend opens the game again and is paid, once
+  await server.rows('update chat_refs set first_day = first_day - 1 where inviter = $1', [mine.p_id])
+  await friend.reload()
+  await expect.poll(fMoney, { timeout: 60000 }).toBe(first + 100)
+  // ... and the inviter, once (their next sync says so)
   await expect.poll(async () => (await page.evaluate(() => window.mzansiToasts || [])).some((t) => t.includes('Lindi joined with your link: +R100')), { timeout: 60000 }).toBe(true) // (13 Nov: what was said, not a 1.8 s toast on screen)
   expect((await save(page)).run.stats.money).toBe(money + 100)
   expect((await server.rows('select count(*)::int as n from chat_refs where inviter = $1', [mine.p_id]))[0].n).toBe(1)

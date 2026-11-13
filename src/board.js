@@ -44,6 +44,11 @@ export async function stampPost(postId, on) {
   const res = await chatCall('chat_stamp', { p_post: postId, p_on: Boolean(on) })
   return res.ok ? { ok: true, stamps: Number(res.data.stamps) || 0 } : { ok: false, note: note(res) }
 }
+// (job H) Your own post: gone, with its stamps and replies (it still counts for the day's three).
+export async function deletePost(postId) {
+  const res = await chatCall('chat_post_delete', { p_post: postId })
+  return { ok: Boolean(res.ok && res.data?.ok !== false), note: res.ok ? 'Deleted.' : note(res) }
+}
 export async function reportPost(postId, reason = 'Reported from the Board') {
   const res = await chatCall('chat_post_report', { p_post: postId, p_reason: reason })
   return { ok: res.ok, note: res.ok ? 'Thanks. A moderator will look at it.' : note(res) }

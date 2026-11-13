@@ -40,5 +40,18 @@ export async function claimInvite() {
   const res = await chatCall('chat_ref_claim', { p_code: code })
   // (answered either way: the code is used up; only "could not reach the server" keeps it for the next try)
   if (res.ok || ['unknown', 'self', 'old', 'done', 'limit'].includes(res.reason)) { try { localStorage.removeItem(REF_KEY) } catch { /* fine */ } }
-  return res.ok ? { ok: true, inviter: String(res.data.inviter || 'A friend') } : { ok: false }
+  if (res.ok && res.data?.pending) { try { localStorage.setItem(BACK_KEY, '1') } catch { /* fine */ } }
+  return res.ok ? { ok: true, inviter: String(res.data.inviter || 'A friend'), pending: Boolean(res.data?.pending) } : { ok: false }
+}
+// (job H) The reward waits for the friend's second day: once a session while a claim is waiting, ask the server.
+// { reward: true, inviter } on the day it pays (once); otherwise { reward: false }.
+const BACK_KEY = 'mzansiville.refBack'
+export async function checkInviteBack() {
+  let waiting = false
+  try { waiting = localStorage.getItem(BACK_KEY) === '1' } catch { /* fine */ }
+  if (!waiting) return { reward: false }
+  const res = await chatCall('chat_ref_back', {})
+  if (!res.ok) return { reward: false }
+  if (res.data?.state !== 'wait') { try { localStorage.removeItem(BACK_KEY) } catch { /* fine */ } }
+  return res.data?.state === 'reward' ? { reward: true, inviter: String(res.data.inviter || 'A friend') } : { reward: false }
 }

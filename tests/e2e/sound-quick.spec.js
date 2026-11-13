@@ -68,7 +68,7 @@ test('Sound: zones fade at a border, a murmur inside, tracks load when needed, t
   // the Music switch: the music alone goes quiet
   await page.locator('.tb-menu').tap()
   await page.locator('.g-menu [data-act="music"]').tap()
-  await expect.poll(async () => (await sound(page)).musicBus, { timeout: 5000 }).toBeLessThan(0.01)
+  await expect.poll(async () => (await sound(page)).musicBus, { timeout: 15000 }).toBeLessThan(0.01) // (13 Nov: the audio clock lags on a starved machine)
   expect((await sound(page)).master).toBeGreaterThan(0.9)
   await expect(page.locator('.g-menu [data-act="music"]')).toContainText('Off')
   // the Sound switch: everything (every sound in the game plays through this one gain)

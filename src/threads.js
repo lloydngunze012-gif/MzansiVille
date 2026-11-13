@@ -451,6 +451,16 @@ export async function reportLine(lineId, reason = 'Reported from chat') {
   return !error && Boolean(data?.ok)
 }
 
+// (job H) Your own reply to a Board post (thread 'p:<post>'): gone for everybody.
+export async function deleteLine(threadId, lineId) {
+  const { data, error } = await rpc('chat_line_delete', { p_line: lineId })
+  if (error || !data?.ok) return false
+  const had = cache.get(threadId)
+  if (had) { had.lines = had.lines.filter((l) => l.id !== lineId); cache.set(threadId, had) }
+  emit('lines', threadId)
+  return true
+}
+
 // ---------- Groups (Social A) ----------
 const GROUP_WHY = {
   word: 'That name isn’t allowed. Pick another.', name: 'Pick another name for the group.', today: 'You’ve made 3 groups today. Try again tomorrow.',

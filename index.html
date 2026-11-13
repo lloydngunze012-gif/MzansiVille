@@ -34,6 +34,45 @@
   <body>
     <div id="world" data-on="0"></div>
     <div id="app" data-screen="boot"></div>
+    <!-- Job H (13 Nov): a blank page can never happen. If the game fails to start (a file that will not load, an error
+         before the first screen) or no screen is drawn within 20 s, this card shows, logs the error to client_errors
+         (kind boot) and reloads on a tap. Plain script and inline styles: the game's own files may be what failed.
+         src/main.js marks <html data-booted="1"> after its first paint; errors after that are errors.js's. -->
+    <script>
+      (function () {
+        var shown = false, url = '%VITE_SUPABASE_URL%', key = '%VITE_SUPABASE_ANON_KEY%'
+        function log(msg, stack) {
+          try {
+            if (url.indexOf('http') !== 0 || navigator.webdriver && location.search.indexOf('errlog=1') < 0) return
+            fetch(url.replace(/\/+$/, '') + '/rest/v1/client_errors', { method: 'POST', keepalive: true, headers: { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+              body: JSON.stringify({ kind: 'boot', message: String(msg).slice(0, 500), stack: String(stack || '').slice(0, 2000), screen: location.hash.slice(0, 60), step: 'boot', device: navigator.userAgent.slice(0, 200), build: 'boot' }) }).catch(function () {})
+          } catch (e) { /* never in the way */ }
+        }
+        function card(msg, stack) {
+          if (shown || document.documentElement.dataset.booted === '1') return
+          shown = true
+          window.__bootError = String(msg)
+          log(msg, stack)
+          var d = document.createElement('div')
+          d.className = 'boot-fail'
+          d.setAttribute('role', 'alert')
+          d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:16px;background:#f4efe4;font-family:system-ui,sans-serif'
+          d.innerHTML = '<button type="button" style="all:unset;box-sizing:border-box;cursor:pointer;width:min(100%,420px);padding:24px 20px;border-radius:18px;background:#fff;border:1px solid #d9d0c0;text-align:center;color:#1c1915;box-shadow:0 6px 24px #0002"><b style="display:block;font:800 22px system-ui;margin-bottom:8px">Something went wrong.</b><span style="display:inline-block;margin-top:6px;padding:12px 22px;border-radius:14px;background:#f0c400;color:#1c1915;font:800 17px system-ui">Tap to reload</span><small style="display:block;margin-top:12px;color:#5c554b;font:500 14px system-ui">Your save is kept on this phone.</small></button>'
+          d.addEventListener('click', function () { location.reload() })
+          document.body.appendChild(d)
+          // (the game started after all: the card goes)
+          new MutationObserver(function () { if (document.documentElement.dataset.booted === '1') { d.remove(); shown = false } }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-booted'] })
+        }
+        window.addEventListener('error', function (e) {
+          // (a script or stylesheet that failed to load arrives as an error on the element, not the window)
+          var t = e.target
+          if (t && t !== window) { if (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && t.rel === 'stylesheet')) card('A game file did not load: ' + (t.src || t.href)); return }
+          card(e.message || 'error', e.error && e.error.stack)
+        }, true)
+        window.addEventListener('unhandledrejection', function (e) { var r = e.reason; card((r && r.message) || String(r), r && r.stack) })
+        setTimeout(function () { if (document.documentElement.dataset.booted !== '1') card('No screen after 20 s') }, Number((location.search.match(/[?&]bootwait=(\d+)/) || [])[1]) * 1000 || 20000)
+      })()
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

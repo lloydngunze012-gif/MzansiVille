@@ -668,6 +668,13 @@ await check('loops: invite a friend: a new player claims the code once; the invi
   // an account that is not new cannot claim (the quick start was long ago)
   await db.query("update chat_players set created_at = now() - interval '3 days' where id = $1", [CC.id])
   assert.equal((await rpc('chat_ref_claim', CC, code)).reason, 'old')
+  // (job H) nothing yet: the reward waits for the friend's second day
+  assert.deepEqual((await rpc('chat_sync', CA)).refs, [])
+  assert.equal((await rpc('chat_ref_back', NEW)).state, 'wait', 'same day: waiting')
+  await db.query("update chat_refs set first_day = first_day - 1 where friend = $1", [NEW.id])
+  const back = await rpc('chat_ref_back', NEW)
+  assert.deepEqual([back.state, back.inviter], ['reward', 'Thandeka'], 'a second day: the friend is paid')
+  assert.equal((await rpc('chat_ref_back', NEW)).state, 'none', 'once')
   // the inviter hears of it on their next sync, once
   assert.deepEqual((await rpc('chat_sync', CA)).refs, ['Lindi'])
   assert.deepEqual((await rpc('chat_sync', CA)).refs, [])
@@ -1005,6 +1012,26 @@ await check('job I: the card counts followers and friends both ways; online and 
   await chat('chat_send', { ...C, p_thread: 'quad', p_body: 'from today' })
   const lines = (await chat('chat_fetch', { ...B, p_thread: 'quad' })).lines.map((l) => l.body)
   assert.ok(lines.includes('from today')); assert.ok(!lines.includes('from yesterday'))
+})
+
+await check('job H: a player deletes their own post (it still counts for the day) and their own reply; nobody else can', async () => {
+  const D = P('deleter'); const O = P('other')
+  await rpc('chat_sync', D, 'Dee', 'dee_1', 'Peak', '{}'); await rpc('chat_sync', O, 'Oz', 'oz_1', 'Peak', '{}')
+  const a = await rpc('chat_post', D, 'Delete me later', 'campus')
+  const t = await rpc('chat_post_thread', O, a.post.id)
+  const line = await rpc('chat_send', O, t.thread, 'A reply')
+  assert.equal(line.ok, true)
+  assert.equal((await rpc('chat_line_delete', D, line.line.id)).ok, false, 'not your reply')
+  assert.equal((await rpc('chat_post_delete', O, a.post.id)).ok, false, 'not your post')
+  assert.equal((await rpc('chat_line_delete', O, line.line.id)).ok, true, 'your own reply')
+  assert.equal((await one('select count(*)::int as n from chat_lines where id = $1', [line.line.id])).n, 0)
+  assert.equal((await rpc('chat_post_delete', D, a.post.id)).ok, true)
+  assert.equal((await one('select count(*)::int as n from chat_posts where id = $1', [a.post.id])).n, 0)
+  assert.equal((await one("select count(*)::int as n from chat_threads where id = $1", [t.thread])).n, 0, 'the replies go with it')
+  // three a day still: one deleted + two more, then no
+  assert.equal((await rpc('chat_post', D, 'Two', 'campus')).ok, true)
+  assert.equal((await rpc('chat_post', D, 'Three', 'campus')).ok, true)
+  assert.equal((await rpc('chat_post', D, 'Four', 'campus')).reason, 'today')
 })
 
 await check('job I: the launch reset empties players, messages, groups and posts; keeps the Quad, the interest groups and the named people’s posts', async () => {

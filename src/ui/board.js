@@ -6,7 +6,7 @@
 //   (140 characters, 3 a day). On every post: a stamp (🔥, one each), Replies (a chat thread), Report.
 import { faceHtml } from '../faces3d.js'
 import INTERESTS from '../../data/campusville/interests.json'
-import { followerCounts, followersText, followPlayer, loadBoardOf, loadFeed, POST_MAX, postToBoard, reportPost, repliesOf, stampPost, districtNow } from '../board.js'
+import { followerCounts, followersText, followPlayer, loadBoardOf, loadFeed, POST_MAX, postToBoard, reportPost, deletePost, repliesOf, stampPost, districtNow } from '../board.js'
 import { myId, myInterests, socialBReady } from '../threads.js'
 import { waButton } from '../sharewa.js'
 
@@ -28,6 +28,7 @@ function ago(at) {
 let feed = null // { ok, following, hot, npc, note } | null while loading
 let board = null // { id, who, data } : the Board on screen
 let reportFor = 0 // a post waiting for "Report?" to be confirmed
+let deleteFor = 0 // (job H) your post waiting for "Delete?" to be confirmed
 
 function postHtml(p) {
   const mine = p.author === myId()
@@ -38,6 +39,7 @@ function postHtml(p) {
       <button type="button" class="bd-stamp" data-stamp="${p.id}" aria-pressed="${p.mine}" aria-label="Stamp this post">\u{1F525} <span>${p.stamps}</span></button>
       <button type="button" class="bd-reply" data-replies="${p.id}">\u{1F4AC} ${p.replies ? `${p.replies} repl${p.replies === 1 ? 'y' : 'ies'}` : 'Reply'}</button>
       ${mine ? waButton('post', { post: p.body }, 'Share') : ''}
+      ${mine ? (deleteFor === p.id ? `<button type="button" class="bd-report on" data-delete-post="${p.id}">Tap again to delete</button>` : `<button type="button" class="bd-report" data-delete-post="${p.id}" aria-label="Delete this post">Delete</button>`) : ''}
       ${mine ? '' : reportFor === p.id ? `<button type="button" class="bd-report on" data-report-post="${p.id}">Tap again to report</button>` : `<button type="button" class="bd-report" data-report-post="${p.id}" aria-label="Report this post">⚑</button>`}
     </div></li>`
 }
@@ -86,6 +88,10 @@ export function closeBoard() { board = null }
 
 const everyPost = () => [...(feed?.following || []), ...(feed?.hot || []), ...(feed?.npc || []), ...(board?.data?.posts || [])]
 function patch(id, change) { for (const p of everyPost()) if (p.id === id) Object.assign(p, change) }
+// (job H) a deleted post leaves every list it was in
+function dropPost(id) {
+  for (const list of [feed?.following, feed?.hot, feed?.npc, board?.data?.posts]) if (list) { const i = list.findIndex((p) => p.id === id); if (i >= 0) list.splice(i, 1) }
+}
 
 // A tap inside the Feed or a Board. ctx: { repaint, tell, openThread(id), showBoard(id, who) }. True if it was ours.
 export function boardClick(event, ctx) {
@@ -102,6 +108,14 @@ export function boardClick(event, ctx) {
   const replies = event.target.closest('[data-replies]')
   if (replies) {
     repliesOf(Number(replies.dataset.replies)).then((r) => { if (r.ok) ctx.openThread(r.thread); else ctx.tell(r.note, true) })
+    return true
+  }
+  const del = event.target.closest('[data-delete-post]')
+  if (del) {
+    const id = Number(del.dataset.deletePost)
+    if (deleteFor !== id) { deleteFor = id; ctx.repaint(); return true }
+    deleteFor = 0
+    deletePost(id).then((r) => { if (r.ok) dropPost(id); ctx.tell(r.note, !r.ok); ctx.repaint() })
     return true
   }
   const report = event.target.closest('[data-report-post]')
