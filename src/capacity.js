@@ -13,6 +13,9 @@ const WAIT_MS = (Number(params.get('capwait')) || 10) * 1000
 const KEEP_MS = 60000
 const state = { admitted: false, asking: false, position: 0, online: 0, max: 0, missing: false, tries: 0, last: null }
 const queue = []
+let info = () => ({})
+// (job G) main.js hands over what the call carries for the owner's reports (country, area, money, filter hits)
+export function setCapacityInfo(fn) { info = fn }
 let overlay = null
 let keepTimer = null
 
@@ -21,7 +24,9 @@ async function ask() {
   const me = myIdentity()
   if (!client || !me?.id || !me?.secret) return { admitted: true, why: 'offline' }
   try {
-    const { data, error } = await client.rpc('cap_enter', { p_id: me.id, p_secret: me.secret })
+    let extra = {}
+    try { extra = state.admitted ? info() || {} : {} } catch { extra = {} }
+    const { data, error } = await client.rpc('cap_enter', { p_id: me.id, p_secret: me.secret, ...extra })
     if (error) {
       if (/does not exist|not find the function|schema cache/i.test(error.message || '')) state.missing = true
       return { admitted: true, why: 'error' }

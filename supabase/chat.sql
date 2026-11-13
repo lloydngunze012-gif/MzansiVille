@@ -1658,3 +1658,98 @@ begin
 end $$;
 grant execute on function public.chat_ref_back(text, text) to anon, authenticated;
 -- LAUNCH SAFETY END
+
+-- =====================================================================================================
+-- OWNER REPORTS (job G, 13 Nov): #/owner. Only the owner's account (public.is_admin(): profiles.role = 'admin' for
+-- the signed-in Supabase user) may call these; everybody else gets 'owner only'. Counts and lists only; what is
+-- recorded and why: docs/owner-reports.md and the privacy page. p_days: the time range (1, 7, 30).
+-- =====================================================================================================
+create or replace function public.owner_report(p_kind text, p_days int default 7)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  since timestamptz := now() - make_interval(days => greatest(1, least(coalesce(p_days, 7), 90)));
+  d0 date := ((now() - make_interval(days => greatest(1, least(coalesce(p_days, 7), 90)))) at time zone 'Africa/Johannesburg')::date;
+  today date := (now() at time zone 'Africa/Johannesburg')::date;
+  r jsonb;
+begin
+  if not coalesce(public.is_admin(), false) then raise exception 'owner only'; end if;
+  if p_kind = 'growth' then
+    with firsts as (select player, min(day) as first from play_days group by player)
+    select jsonb_build_object(
+      'today', (select count(*) from firsts where first = today),
+      'week', (select count(*) from firsts where first > today - 7),
+      'range', (select count(*) from firsts where first >= d0),
+      -- of the players who started in the range (and long enough ago): back the next day, back after 7 days
+      'd1', (select jsonb_build_object('of', count(*), 'back', count(*) filter (where exists (select 1 from play_days p where p.player = f.player and p.day = f.first + 1))) from firsts f where f.first >= d0 and f.first < today),
+      'd7', (select jsonb_build_object('of', count(*), 'back', count(*) filter (where exists (select 1 from play_days p where p.player = f.player and p.day >= f.first + 7))) from firsts f where f.first >= d0 - 7 and f.first <= today - 7),
+      'countries', coalesce((select jsonb_agg(x order by x.n desc) from (select coalesce(country, 'Not given') as country, count(distinct player) as n from play_days where day >= d0 group by 1 order by 2 desc limit 15) x), '[]'::jsonb),
+      'byDay', coalesce((select jsonb_agg(x order by x.day) from (select first as day, count(*) as n from firsts where first >= d0 group by 1) x), '[]'::jsonb)) into r;
+  elsif p_kind = 'time' then
+    with s as (select player, day, extract(epoch from (last - started)) / 60 as mins from play_sessions where day >= d0)
+    select jsonb_build_object(
+      'sessions', (select count(*) from s),
+      'avgSession', (select round(coalesce(avg(mins), 0)::numeric, 1) from s),
+      'minutesPerPlayerDay', (select round(coalesce(avg(t), 0)::numeric, 1) from (select player, day, sum(mins) as t from s group by 1, 2) x),
+      'sessionsPerPlayerDay', (select round(coalesce(avg(c), 0)::numeric, 2) from (select player, day, count(*) as c from s group by 1, 2) x),
+      'byDay', coalesce((select jsonb_agg(x order by x.day) from (select day, count(*) as sessions, count(distinct player) as players, round(sum(mins)::numeric) as minutes from s group by 1) x), '[]'::jsonb)) into r;
+  elsif p_kind = 'hot' then
+    select jsonb_build_object(
+      'areas', coalesce((select jsonb_agg(x order by x.minutes desc) from (select area, sum(minutes) as minutes from area_minutes where day >= d0 group by 1 order by 2 desc limit 30) x), '[]'::jsonb),
+      'hours', coalesce((select jsonb_agg(x order by x.hour) from (select hour, sum(minutes) as minutes from area_minutes where day >= d0 group by 1) x), '[]'::jsonb),
+      'places', coalesce((select jsonb_agg(x order by x.visits desc) from (select coalesce(nullif(place, ''), '(none)') as place, count(*) as visits from activity_log where at >= since group by 1 order by 2 desc limit 30) x), '[]'::jsonb)) into r;
+  elsif p_kind = 'feedback' then
+    select jsonb_build_object('rows', coalesce((select jsonb_agg(x order by x.at desc) from (select created_at as at, stars, message, kind, build, device from feedback where created_at >= since order by created_at desc limit 100) x), '[]'::jsonb)) into r;
+  elsif p_kind = 'support' then
+    select jsonb_build_object(
+      'posts', coalesce((select jsonb_agg(x order by x.reports desc) from (
+        select p.id, p.name, p.body, p.hidden, p.at, count(rp.*) as reports from chat_posts p join chat_post_reports rp on rp.post = p.id
+        group by p.id order by count(rp.*) desc, p.id desc limit 50) x), '[]'::jsonb),
+      'groups', coalesce((select jsonb_agg(x order by x.reports desc) from (
+        select t.id, t.name, t.topic, t.reports_hidden as hidden, count(g.*) as reports from chat_threads t join chat_group_reports g on g.thread = t.id
+        group by t.id order by count(g.*) desc limit 50) x), '[]'::jsonb),
+      'blocks', coalesce((select jsonb_agg(x order by x.day) from (select (at at time zone 'Africa/Johannesburg')::date as day, count(*) as n from chat_blocks where at >= since group by 1) x), '[]'::jsonb),
+      'filter', coalesce((select jsonb_agg(x order by x.day) from (select day, n from daily_counts where kind = 'filter' and day >= d0) x), '[]'::jsonb),
+      'lineReports', (select count(*) from chat_line_reports where at >= since)) into r;
+  elsif p_kind = 'chat' then
+    select jsonb_build_object(
+      'perHour', coalesce((select jsonb_agg(x order by x.hour) from (select extract(hour from at at time zone 'Africa/Johannesburg')::int as hour, count(*) as n from chat_lines where at >= since group by 1) x), '[]'::jsonb),
+      'lines', (select count(*) from chat_lines where at >= since),
+      'quad', (select count(*) from chat_lines where at >= since and (thread = 'quad' or thread like 'quad:%')),
+      'activeGroups', (select count(distinct thread) from chat_lines where at >= since and (thread like 'g:%' or thread like 'i:%')),
+      'pings', (select count(*) from chat_members where pushed_at >= since),
+      'pingsOn', (select count(distinct player) from chat_push_subs)) into r;
+  elsif p_kind = 'errors' then
+    select jsonb_build_object('rows', coalesce((select jsonb_agg(x order by x.at desc) from (select created_at as at, kind, message, screen, step, device, build from client_errors where created_at >= since and coalesce(kind, 'error') not in ('funnel', 'feedback', 'player_report') order by created_at desc limit 100) x), '[]'::jsonb),
+      'byKind', coalesce((select jsonb_agg(x) from (select coalesce(kind, 'error') as kind, count(*) as n from client_errors where created_at >= since and coalesce(kind, 'error') not in ('funnel', 'feedback', 'player_report') group by 1) x), '[]'::jsonb)) into r;
+  elsif p_kind = 'economy' then
+    select jsonb_build_object(
+      'players', (select count(*) from player_money where at >= since),
+      'spread', (select jsonb_build_object('p10', percentile_disc(0.1) within group (order by money), 'p50', percentile_disc(0.5) within group (order by money), 'p90', percentile_disc(0.9) within group (order by money), 'max', max(money)) from player_money where at >= since),
+      'bands', coalesce((select jsonb_agg(x order by x.band) from (select width_bucket(money, 0, 10000, 10) as band, count(*) as n from player_money where at >= since group by 1) x), '[]'::jsonb),
+      'invites', coalesce((select jsonb_agg(x order by x.claimed desc) from (select r2.inviter, coalesce(pl.name, 'Student') as name, count(*) as claimed, count(*) filter (where r2.back) as back from chat_refs r2 left join chat_players pl on pl.id = r2.inviter where r2.at >= since group by 1, 2 order by 3 desc limit 30) x), '[]'::jsonb)) into r;
+  else
+    raise exception 'unknown report';
+  end if;
+  return coalesce(r, '{}'::jsonb) || jsonb_build_object('kind', p_kind, 'days', p_days, 'at', now());
+end $$;
+grant execute on function public.owner_report(text, int) to authenticated;
+
+-- The review screen's buttons: Keep (shown again, the reports cleared) or Hide (a post deleted; a group stays out of
+-- suggestions and closed to the link). p_kind: post | group.
+create or replace function public.owner_moderate(p_kind text, p_id text, p_keep boolean)
+returns jsonb language plpgsql security definer set search_path = public as $$
+begin
+  if not coalesce(public.is_admin(), false) then raise exception 'owner only'; end if;
+  if p_kind = 'post' then
+    if p_keep then update chat_posts set hidden = false where id = p_id::bigint; delete from chat_post_reports where post = p_id::bigint;
+    else delete from chat_posts where id = p_id::bigint; end if;
+  elsif p_kind = 'group' then
+    if p_keep then update chat_threads set reports_hidden = false where id = p_id; delete from chat_group_reports where thread = p_id;
+    else update chat_threads set reports_hidden = true, listed = false, code = null where id = p_id; end if;
+  else
+    raise exception 'unknown kind';
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.owner_moderate(text, text, boolean) to authenticated;
+-- OWNER REPORTS END

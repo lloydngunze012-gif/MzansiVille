@@ -16,6 +16,7 @@ import { themePicker } from '../theme.js'
 import { enrolScreen } from './enrol.js'
 import { quickScreen } from './quick.js'
 import { healthScreen } from './health.js'
+import { ownerScreen } from './owner.js'
 import { BUILD, COMMIT } from '../health.js'
 import { installScreen } from './install.js'
 import { smoothScreen } from './smooth.js'
@@ -775,12 +776,14 @@ export function view(state) {
   if (screen === 'credits') return credits()
   if (screen === 'install') return installScreen(state)
   if (screen === 'health') return healthScreen(state.health, { build: BUILD, commit: COMMIT })
+  if (screen === 'owner') return ownerScreen(state.owner, true) // (job G: the server decides who may read it)
   if (screen === 'smooth') return smoothScreen(state)
   if (screen === 'privacy') {
     return legalText('privacy', 'Privacy', [
       'Guest progress stays in localStorage on this phone. Clearing the browser clears the guest.',
       'If you save, your name, house, course, avatar, handle, stats, and the game state are stored in Supabase. Lobby messages are public to the campus room.',
       'There are no photos. The avatar is drawn in the game.',
+      'While you play, once a minute, we count: the day you played and your country, how long you played, which part of the game you were in (counts by hour, never your path or position), your in-game money, and how many times the word filter stopped a message. The owner sees totals and lists for running the game: sign-ups and returns, play time, busy areas, feedback, reports, errors and the in-game money spread.',
       ...(state.district?.meta?.smoothness?.privacyLine ? [esc(state.district.meta.smoothness.privacyLine)] : []),
       'Full privacy text to follow.',
     ])

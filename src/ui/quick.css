@@ -213,3 +213,37 @@ body:has(.qs2) { background: #f4efe4; }
 .cap-pos { margin: 0 0 10px; font: 700 18px system-ui; }
 .cap-pos b { font-size: 28px; }
 .cap-note { margin: 0; font: 500 15px system-ui; color: #5c554b; }
+
+/* Job G: #/owner (src/ui/owner.js) */
+.ow .lg-card { max-width: 560px; }
+.ow-days { display: flex; gap: 8px; margin: 6px 0 14px; }
+.ow-day { all: unset; cursor: pointer; flex: 1; text-align: center; min-height: 44px; line-height: 44px; border-radius: 12px; border: 1px solid #d9d0c0; background: #fff; color: #1c1915; font: 700 15px system-ui; }
+.ow-day[aria-pressed="true"] { background: #f0c400; border-color: #f0c400; }
+.ow-sec { border-top: 1px solid #e6dccb; padding: 12px 0 6px; }
+.ow-sec h2 { margin: 0 0 6px; font: 800 18px system-ui; color: #1c1915; }
+.ow-sec h3 { margin: 10px 0 4px; font: 700 14px system-ui; color: #5c554b; }
+.ow-note { margin: 0 0 6px; font: 500 13px system-ui; color: #5c554b; }
+.ow-none { margin: 4px 0; font: 500 14px system-ui; color: #5c554b; }
+.ow-err { color: #9b1f1f; }
+.ow-row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed #e6dccb; font: 500 15px system-ui; color: #1c1915; }
+.ow-row dd { margin: 0; text-align: right; }
+.ow-bars { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; }
+.ow-bars li { display: grid; grid-template-columns: minmax(80px, 38%) 1fr auto; gap: 8px; align-items: center; font: 500 14px system-ui; color: #1c1915; }
+.ow-bars li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ow-bars li i { display: block; height: 10px; width: var(--w); min-width: 2px; border-radius: 5px; background: #f0c400; }
+.ow-list { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 8px; }
+.ow-list li { padding: 8px 10px; border-radius: 12px; background: #fff; border: 1px solid #e6dccb; font: 500 14px system-ui; color: #1c1915; overflow-wrap: anywhere; }
+.ow-list small { display: block; margin-top: 3px; color: #5c554b; font: 500 12px system-ui; }
+.ow-two { display: flex; gap: 8px; margin-top: 8px; }
+.ow-keep, .ow-hide { all: unset; cursor: pointer; flex: 1; text-align: center; min-height: 44px; line-height: 44px; border-radius: 12px; font: 800 15px system-ui; }
+.ow-keep { background: #f0c400; color: #1c1915; }
+.ow-hide { background: #fff; color: #9b1f1f; border: 1px solid #d9d0c0; }
+/* (the leaderboard's numbered circles: not on the owner's page) */
+:root .ow .lg-card li b, :root .ow .lg-card dd b { all: unset; display: inline; font-weight: 800; color: #1c1915; }
+:root .ow .lg-card .ow-bars li b { justify-self: end; min-width: 2.5em; text-align: right; }
+:root .ow .lg-card .ow-two button { white-space: nowrap; }
+:root .ow .lg-card li { counter-increment: none; }
+:root .ow .lg-card li::before { content: none; }
+:root .ow .lg-card .ow-list li { display: block; }
+:root .ow .lg-card .ow-two { display: flex; }
+:root .ow .lg-card .ow-bars li { display: grid; }

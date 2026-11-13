@@ -1,9 +1,15 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 13 Nov, Claude Code (job H: launch safety).
+Last updated: 13 Nov, Claude Code (job G: owner reports).
 
-**Next jobs: docs/queue.md** (13 Nov: J, L, F and H done; next G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (jobs I and H need it) and **supabase/launch.sql again** (job F's CAPACITY block; then set max_players); before launch run supabase/reset-launch.sql once.
+**Next jobs: docs/queue.md** (13 Nov: J, L, F, H and G done; the queue is empty; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (jobs I and H need it) and **supabase/launch.sql again** (jobs F and G; then set max_players); before launch run supabase/reset-launch.sql once.
+
+## Job G: owner reports (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/launch.sql AND supabase/chat.sql AGAIN.**
+- **#/owner** on your phone, signed in with the owner's account: Live (players by district, Realtime against Pro's limits, the busy line), Growth (new today and this week, back next day and after 7 days, countries), Time played, Hot areas (counts only), Feedback, Support (reported posts and groups with Keep / Hide, blocks and word-filter stops a day), Chat and pings, Errors (load errors and crashes), Economy (money spread, invites per inviter). Today / 7 days / 30 days. Anybody else: "Owner only" (the server checks).
+- **Recorded:** once a minute with the busy line's call, counts only (the day and country, session length, the area by hour, money, filter stops). On the privacy page. docs/owner-reports.md: what each number means and what to do.
+- Tests: sql-check 44, owner-quick O1-O2.
+- **As a player** (390 px, #/owner with stand-in data): fixed the leaderboard's yellow number circles leaking into every bold word, and the review buttons squeezed beside the text. The floating home button sits over the left edge of the page (as on other long pages). Not seen live: real numbers (need the SQL and a day of play).
 
 ## Job H: launch safety (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/chat.sql AGAIN** (LAUNCH SAFETY).
 - **Delete:** your own Board posts (Delete, two taps) and your own replies (long-press: Delete my reply). A deleted post still counts for the day's three.

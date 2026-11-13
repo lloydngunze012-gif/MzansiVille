@@ -12,7 +12,7 @@ const use = { ...base.use, channel: 'msedge' }
 // feedback, health; and (10 Nov) one short SunnyBay test (city-quick), plus Meeting people's one-phone checks
 // (city-meet: the map's back arrow, energy), and one short test of the places (city-places-quick: City job B). `npm run test:quick` (with npm run check). It repeats tests the other
 // two run: pick it with --project=quick, never together with them.
-const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions|launch|city-quick|city-meet|city-places-quick|topbar|tester-fixes1|chat-quick|social-quick|social-b-quick|loops-quick|sims-first|sound-quick|npc-crowd|tester-fixes2|chat-v2|social-c-quick|notify-quick|char3d-quick|movement-quick|firstplay-quick|play-quick|living-quick|life-quick|capacity-quick|boot-quick)\.spec\.js$/]
+const QUICK = [/e2e[\/](cards|caf|lecture|home|result-card|actions|launch|city-quick|city-meet|city-places-quick|topbar|tester-fixes1|chat-quick|social-quick|social-b-quick|loops-quick|sims-first|sound-quick|npc-crowd|tester-fixes2|chat-v2|social-c-quick|notify-quick|char3d-quick|movement-quick|firstplay-quick|play-quick|living-quick|life-quick|capacity-quick|boot-quick|owner-quick)\.spec\.js$/]
 
 // Job H, item 4 (13 Nov): the quick gate had grown to 28 minutes. These moved to the full suite (`npm run test:e2e`,
 // the 'rest' project, once a day): every area keeps at least one test at push time; what moved repeats a check at

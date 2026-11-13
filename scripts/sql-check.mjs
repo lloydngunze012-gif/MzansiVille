@@ -1014,6 +1014,43 @@ await check('job I: the card counts followers and friends both ways; online and 
   assert.ok(lines.includes('from today')); assert.ok(!lines.includes('from yesterday'))
 })
 
+await check('job G: the owner reports answer only the owner; a minute of play notes the day, the session, the area, money and filter hits', async () => {
+  const enter = (n, extra = []) => one(`select public.cap_enter($1,$2${extra.map((_, k) => `,$${k + 3}`).join('')}) as r`, [`own-player-${n}`, `own-secret-0123456789-${n}`, ...extra])
+  await enter(1, ['South Africa', 'campus', 1500, 2])
+  await enter(2, ['Nigeria', 'city.town', 800, 0])
+  await db.exec("update cap_sessions set seen_at = now() - interval '2 minutes'")
+  await enter(1, ['South Africa', 'cafeteria', 1450, 1])
+  assert.equal((await one("select count(*)::int as n from play_days where player like 'own-player-%'")).n, 2)
+  assert.equal((await one("select count(*)::int as n from play_sessions where player = 'own-player-1'")).n, 1, 'one session, still going')
+  assert.equal((await one("select sum(minutes)::int as n from area_minutes")).n, 3)
+  assert.equal((await one("select n from daily_counts where kind = 'filter'")).n, 3)
+  assert.equal((await one("select money from player_money where player = 'own-player-1'")).money, 1450)
+  // nobody but the owner
+  await assert.rejects(one("select public.owner_report('growth', 7) as r"), /owner only/)
+  await assert.rejects(one("select public.owner_moderate('post', '1', true) as r"), /owner only/)
+  await db.exec('create or replace function public.is_admin() returns boolean language sql as $$ select true $$')
+  const kinds = ['growth', 'time', 'hot', 'feedback', 'support', 'chat', 'errors', 'economy']
+  const got = {}
+  for (const k of kinds) got[k] = (await one('select public.owner_report($1, 7) as r', [k])).r
+  assert.ok(got.growth.today >= 2 && got.growth.countries.some((c) => c.country === 'Nigeria'))
+  assert.ok(got.time.sessions >= 2)
+  assert.ok(got.hot.areas.some((a) => a.area === 'cafeteria'))
+  assert.equal(got.economy.players, 2)
+  assert.ok(Array.isArray(got.support.posts) && Array.isArray(got.errors.rows) && typeof got.chat.lines === 'number')
+  // Keep / Hide on a reported post
+  const A = P('modA'); const B = P('modB')
+  await rpc('chat_sync', A, 'Ama', 'ama_1', 'Peak', '{}'); await rpc('chat_sync', B, 'Ben', 'ben_1', 'Peak', '{}')
+  const post = (await rpc('chat_post', A, 'Report me', 'campus')).post.id
+  await rpc('chat_post_report', B, post, 'test')
+  assert.ok((await one("select public.owner_report('support', 7) as r")).r.posts.some((x) => x.id === post))
+  await one("select public.owner_moderate('post', $1, true) as r", [String(post)])
+  assert.equal((await one('select count(*)::int as n from chat_post_reports where post = $1', [post])).n, 0, 'Keep clears the reports')
+  await rpc('chat_post_report', B, post, 'again')
+  await one("select public.owner_moderate('post', $1, false) as r", [String(post)])
+  assert.equal((await one('select count(*)::int as n from chat_posts where id = $1', [post])).n, 0, 'Hide deletes it')
+  await db.exec('create or replace function public.is_admin() returns boolean language sql as $$ select false $$')
+})
+
 await check('job H: a player deletes their own post (it still counts for the day) and their own reply; nobody else can', async () => {
   const D = P('deleter'); const O = P('other')
   await rpc('chat_sync', D, 'Dee', 'dee_1', 'Peak', '{}'); await rpc('chat_sync', O, 'Oz', 'oz_1', 'Peak', '{}')

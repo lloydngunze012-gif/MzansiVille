@@ -408,32 +408,72 @@ create index if not exists cap_sessions_seen on public.cap_sessions (seen_at);
 create index if not exists cap_sessions_wait on public.cap_sessions (admitted, joined_at);
 alter table public.cap_sessions enable row level security;
 
-create or replace function public.cap_enter(p_id text, p_secret text)
+-- OWNER REPORTS (job G, 13 Nov): the same call, once a minute while a phone plays, also notes what the owner's reports
+-- need, in one go and never more often: the SAST day this player was here (with their country), how long this
+-- session has lasted, which area they were in this minute (by hour), their money now, and how many times the word
+-- filter stopped them since the last call. Counts only: nobody's path, no positions, no message text.
+create table if not exists public.play_days (player text not null, day date not null, country text, primary key (player, day));
+create index if not exists play_days_day on public.play_days (day);
+alter table public.play_days enable row level security;
+create table if not exists public.play_sessions (id bigint generated always as identity primary key, player text not null, day date not null, started timestamptz not null default now(), last timestamptz not null default now());
+create index if not exists play_sessions_player on public.play_sessions (player, last desc);
+create index if not exists play_sessions_day on public.play_sessions (day);
+alter table public.play_sessions enable row level security;
+create table if not exists public.area_minutes (day date not null, hour int not null, area text not null, minutes int not null default 0, primary key (day, hour, area));
+alter table public.area_minutes enable row level security;
+create table if not exists public.daily_counts (day date not null, kind text not null, n int not null default 0, primary key (day, kind));
+alter table public.daily_counts enable row level security;
+create table if not exists public.player_money (player text primary key, money int not null, at timestamptz not null default now());
+alter table public.player_money enable row level security;
+
+drop function if exists public.cap_enter(text, text);
+create or replace function public.cap_enter(p_id text, p_secret text, p_country text default null, p_area text default null, p_money int default null, p_filter int default 0)
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   mx int := coalesce((select value from cap_config where key = 'max_players'), 200);
   stale int := coalesce((select value from cap_config where key = 'stale_seconds'), 150);
   inside int;
   me cap_sessions%rowtype;
+  before timestamptz;
   pos int;
+  d date := (now() at time zone 'Africa/Johannesburg')::date;
+  sid bigint;
 begin
   if p_id is null or length(p_id) not between 8 and 64 or p_secret is null or length(p_secret) < 16 then raise exception 'bad id'; end if;
   insert into score_players (id, secret_hash) values (p_id, md5(p_secret)) on conflict (id) do nothing;
   if (select secret_hash from score_players where id = p_id) <> md5(p_secret) then raise exception 'not you'; end if;
   perform pg_advisory_xact_lock(hashtext('cap_enter'));
   delete from cap_sessions where seen_at < now() - make_interval(secs => stale);
+  select seen_at into before from cap_sessions where player = p_id;
   insert into cap_sessions (player) values (p_id) on conflict (player) do update set seen_at = now();
   select * into me from cap_sessions where player = p_id;
   select count(*) into inside from cap_sessions where admitted;
-  if me.admitted then return jsonb_build_object('ok', true, 'admitted', true, 'online', inside, 'max', mx); end if;
-  select count(*) + 1 into pos from cap_sessions where not admitted and (joined_at, player) < (me.joined_at, me.player);
-  if inside < mx and pos = 1 then
-    update cap_sessions set admitted = true where player = p_id;
-    return jsonb_build_object('ok', true, 'admitted', true, 'online', inside + 1, 'max', mx);
+  if not me.admitted then
+    select count(*) + 1 into pos from cap_sessions where not admitted and (joined_at, player) < (me.joined_at, me.player);
+    if inside < mx and pos = 1 then
+      update cap_sessions set admitted = true where player = p_id;
+      me.admitted := true;
+      inside := inside + 1;
+    else
+      return jsonb_build_object('ok', true, 'admitted', false, 'position', pos, 'online', inside, 'max', mx);
+    end if;
   end if;
-  return jsonb_build_object('ok', true, 'admitted', false, 'position', pos, 'online', inside, 'max', mx);
+  -- (in and playing: the owner's counts)
+  insert into play_days (player, day, country) values (p_id, d, left(nullif(p_country, ''), 60))
+    on conflict (player, day) do update set country = coalesce(excluded.country, play_days.country);
+  select id into sid from play_sessions where player = p_id and last > now() - interval '3 minutes' order by last desc limit 1;
+  if sid is null then insert into play_sessions (player, day) values (p_id, d); else update play_sessions set last = now() where id = sid; end if;
+  if p_area is not null and (before is null or before <= now() - interval '50 seconds') then
+    insert into area_minutes (day, hour, area, minutes) values (d, extract(hour from now() at time zone 'Africa/Johannesburg')::int, left(p_area, 40), 1)
+      on conflict (day, hour, area) do update set minutes = area_minutes.minutes + 1;
+  end if;
+  if p_money is not null then insert into player_money (player, money, at) values (p_id, p_money, now()) on conflict (player) do update set money = excluded.money, at = now(); end if;
+  if coalesce(p_filter, 0) > 0 then
+    insert into daily_counts (day, kind, n) values (d, 'filter', least(p_filter, 50)) on conflict (day, kind) do update set n = daily_counts.n + excluded.n;
+  end if;
+  return jsonb_build_object('ok', true, 'admitted', true, 'online', inside, 'max', mx);
 end $$;
-grant execute on function public.cap_enter(text, text) to anon, authenticated;
+grant execute on function public.cap_enter(text, text, text, text, int, int) to anon, authenticated;
 -- Leaving (the tab closes): the place frees at once.
 create or replace function public.cap_leave(p_id text, p_secret text)
 returns void language plpgsql security definer set search_path = public as $$

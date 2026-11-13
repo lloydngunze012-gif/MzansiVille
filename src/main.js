@@ -90,7 +90,8 @@ import { checkInviteBack, claimInvite, INVITE_REWARD } from './sharewa.js'
 import { myFollowers, onThreads } from './threads.js'
 import { calm } from './launch.js'
 import { initTired } from './tired.js'
-import { whenAdmitted } from './capacity.js'
+import { setCapacityInfo, whenAdmitted } from './capacity.js'
+import { takeFilterHits } from './engine/filter.js'
 import { initToday, leaving, noteToday, openToday } from './today.js'
 import EATS from '../data/campusville/eats.json' with { type: 'json' }
 import { onNote } from './scores.js'
@@ -106,6 +107,7 @@ import { addActivities as addScoreActivities, flush as flushScores, loadBadges, 
 import { funnel, returning, startSession } from './events.js'
 import { setCam, setView } from './cammode.js'
 import { BUILD, COMMIT, checkHealth } from './health.js'
+import { owner, loadOwner, moderate } from './owner.js'
 
 installErrorReporting()
 // Sessions and the funnel (src/events.js): this visit, and "link opened" as the first step.
@@ -255,6 +257,7 @@ function state() {
     sound: soundOn(),
     music: musicOn(),
     health: healthState,
+    owner,
   }
 }
 
@@ -1957,6 +1960,8 @@ app.addEventListener('click', async (event) => {
     return
   }
   if (act === 'today') { openToday(); return }
+  if (act === 'owner-days') { loadOwner(Number(button.dataset.days) || 7, paint); return }
+  if (act === 'owner-mod') { moderate(button.dataset.kind, button.dataset.id, button.dataset.keep === '1', paint).then((ok) => toast(ok ? 'Done.' : 'Could not change that.')); return }
   if (act === 'edit-char' && save.run) {
     const c = save.run.character
     const locked = nextChange(c)
@@ -3216,6 +3221,9 @@ async function loadHealthPage() {
 }
 window.addEventListener('hashchange', () => { if (route().name === 'health' && !healthLoading) loadHealthPage() })
 if (route().name === 'health') loadHealthPage()
+// (job G) #/owner: the owner's reports
+window.addEventListener('hashchange', () => { if (route().name === 'owner' && !owner.loading) loadOwner(owner.days, paint) })
+if (route().name === 'owner') loadOwner(owner.days, paint)
 
 // The roommate swapped at the drop-off door is kept for when the drop-off is done (world/dropoff.js asks, launch.js shows the four cards).
 window.addEventListener('mzansi-swap-roommate', (event) => {
@@ -3224,6 +3232,13 @@ window.addEventListener('mzansi-swap-roommate', (event) => {
 }, true)
 initLaunch({ save: () => save, persist, toast, route: () => route().name, openCardEditor, busy: () => Boolean(ui.talk || ui.gear) })
 // (job L) out of energy: three ways out (src/tired.js)
+// (job G) what the once-a-minute busy-line call carries for the owner's reports: counts only
+setCapacityInfo(() => {
+  const run = save.run
+  const b = document.body.dataset
+  const area = b.city ? (b.cityPlace || `city.${document.getElementById('city3d')?.dataset.part || 'campus'}`) : b.caf ? 'cafeteria' : run?.at || 'campus'
+  return { p_country: run?.character?.country || null, p_area: String(area).slice(0, 40), p_money: run?.stats ? Math.round(run.stats.money || 0) : null, p_filter: takeFilterHits() }
+})
 // (job L) Today on campus, prompts, Today you... (src/today.js)
 initToday({ save: () => save, persist, paint, toast, openCard: (id) => openPlayerCard(id), openPlaces: () => window.dispatchEvent(new CustomEvent('mzansi-open-map')) })
 initTired({ save: () => save, persist, paint, toast, applyFx: (fx) => applyFx(save.run, fx), friends: () => save.run?.friends || [], sleepHome })

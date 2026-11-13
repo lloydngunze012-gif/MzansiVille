@@ -237,10 +237,11 @@ test('I4 people: a chat is a request; the card is light blue with Chat and Follo
   await expect(page.locator('#world')).toHaveAttribute('data-ready', '1', { timeout: 90000 })
   await page.evaluate(() => window.mzansiLaunch.want('meal'))
   // (asked for; the game may show it at its own next calm moment before this line looks, which empties "pending")
-  const shownAlready = await page.locator('.sl-pop').filter({ hasText: 'Finish your student card' }).isVisible().catch(() => false)
-  if (!shownAlready) {
-    expect(await page.evaluate(() => window.mzansiLaunch.pending())).toBe('meal')
-    await page.evaluate(() => window.mzansiLaunch.promptCard())
+  // (13 Nov: read both in one go: the prompt can open between two separate looks, which made this flaky)
+  const st = await page.evaluate(() => ({ shown: [...document.querySelectorAll('.sl-pop')].some((e) => e.textContent.includes('Finish your student card')), pending: window.mzansiLaunch.pending() }))
+  if (!st.shown) {
+    expect(['meal', '']).toContain(st.pending)
+    if (st.pending === 'meal') await page.evaluate(() => window.mzansiLaunch.promptCard())
   }
   await expect(page.locator('.sl-pop')).toContainText('Finish your student card')
   await shot(page, 'i4-card-prompt')

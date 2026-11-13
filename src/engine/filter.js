@@ -41,6 +41,9 @@ function hits(token, list) {
   return list.some((e) => !e.multi && (e.prefix ? n.startsWith(e.w) : n === e.w || n === e.w + 's'))
 }
 
+// (job G) how many times the filter stopped a message since the owner's counts were last sent (src/capacity.js)
+let stops = 0
+export function takeFilterHits() { const n = stops; stops = 0; return n }
 export function filterText(raw) {
   const input = String(raw ?? '').replace(/\s+/g, ' ').trim()
   const tokens = input.split(/(\s+)/)
@@ -57,6 +60,7 @@ export function filterText(raw) {
     const re = new RegExp(`\\b${e.w.replace(/ /g, '\\s+')}\\b`, 'gi')
     text = text.replace(re, (m) => { masked = true; return m[0] + '\u2022'.repeat(m.length - 1) })
   }
+  if (blocked) stops++
   return { text, masked, blocked }
 }
 

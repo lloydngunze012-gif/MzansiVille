@@ -17,7 +17,7 @@ async function ping(path) {
 }
 
 // Rooms in use: campus, campus-2, ... until one is empty. Watching only (never tracked, so never counted).
-async function rooms(client, base) {
+export async function rooms(client, base) {
   const out = []
   for (let n = 1; n <= 8; n++) {
     const name = n === 1 ? base : `${base}-${n}`
