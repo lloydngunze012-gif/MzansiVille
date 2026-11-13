@@ -5,6 +5,9 @@ Last updated: 13 Nov, Claude Code (job G: owner reports).
 
 **Next jobs: docs/queue.md** (13 Nov: J, L, F, H and G done; the queue is empty; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (jobs I and H need it) and **supabase/launch.sql again** (jobs F and G; then set max_players); before launch run supabase/reset-launch.sql once.
 
+## Migration estimate: Supabase to AWS (owner, 13 Nov): written, no code changed.
+- docs/sprints/capacity/aws-move.md: everything moving is about 170 hours (does not fit before Wed 18 Nov); only live movement, Talk bubbles, pokes and chat nudges is about 55 hours (fits only just). Recommendation: launch on Supabase Pro with the busy line at about 200 and rooms of 20, then move live movement to AWS behind a switch the week after launch. All AWS costs are estimates.
+
 ## Job G: owner reports (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/launch.sql AND supabase/chat.sql AGAIN.**
 - **#/owner** on your phone, signed in with the owner's account: Live (players by district, Realtime against Pro's limits, the busy line), Growth (new today and this week, back next day and after 7 days, countries), Time played, Hot areas (counts only), Feedback, Support (reported posts and groups with Keep / Hide, blocks and word-filter stops a day), Chat and pings, Errors (load errors and crashes), Economy (money spread, invites per inviter). Today / 7 days / 30 days. Anybody else: "Owner only" (the server checks).
 - **Recorded:** once a minute with the busy line's call, counts only (the day and country, session length, the area by hour, money, filter stops). On the privacy page. docs/owner-reports.md: what each number means and what to do.
