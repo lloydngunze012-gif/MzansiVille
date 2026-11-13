@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { gltfLoader } from './gltf.js'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { genderOf, skins } from '../avatar.js'
 import { SPEED } from '../speed.js'
@@ -69,8 +70,7 @@ const GESTURE = { 'interact-right': 'Interact', 'interact-left': 'Interact', 'pi
 const cache = {}
 function load(name) {
   if (!cache[name]) {
-    cache[name] = import('three/addons/loaders/GLTFLoader.js')
-      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(`${BASE}${name}.glb`))
+    cache[name] = gltfLoader().then((loader) => loader.loadAsync(`${BASE}${name}.glb`))
     cache[name].catch(() => { delete cache[name] })
   }
   return cache[name]
@@ -1719,7 +1719,7 @@ const UAL_MAP = {
 }
 let ual = null
 function loadUal() {
-  ual ||= import('three/addons/loaders/GLTFLoader.js').then(({ GLTFLoader }) => new GLTFLoader().loadAsync('/models/ual/UAL1_Standard.glb')).then((gltf) => {
+  ual ||= gltfLoader().then((loader) => loader.loadAsync('/models/ual/UAL1_Standard.glb')).then((gltf) => {
     const root = gltf.scene
     root.updateMatrixWorld(true)
     const bones = {}

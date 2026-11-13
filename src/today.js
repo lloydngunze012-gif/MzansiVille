@@ -53,7 +53,7 @@ export function noteToday(run, id) {
 export function todayPill(run) {
   if (!run || run.mode !== 'play' || !todayOn()) return ''
   const n = doneCount(run)
-  return `<button type="button" class="td-pill${n === 3 ? ' done' : ''}" data-act="today" aria-label="Today: ${n} of 3 done"><span aria-hidden="true">✓</span> ${n}/3</button>`
+  return `<button type="button" class="td-pill${n === 3 ? ' done' : ''}" data-act="today" aria-label="Today: ${n} of 3 done"><span aria-hidden="true">✅</span> ${n}/3</button>`
 }
 
 // ---------- state ----------

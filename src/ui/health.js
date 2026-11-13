@@ -28,6 +28,8 @@ export function healthScreen(health, info) {
       ${row('Push keys (Vercel)', h ? (h.push ? yes(true) : `${yes(false)} <small data-missing>add the keys in docs/notifications.md</small>`) : '…', 'push')}
       ${row('Rooms and players online', h ? `<b data-hl-players>${h.players}</b> in ${h.rooms.length || 0} room${h.rooms.length === 1 ? '' : 's'}` : '…', 'online')}
       ${row('Rooms', rooms, 'rooms')}
+      ${row('Realtime (Supabase Pro)', h?.realtime ? `<b data-hl-conn>${h.realtime.connections}</b> of ${h.realtime.plan.connections} connections <small>(${h.realtime.plan.capOff.connections} with the spend cap off)</small><br><b data-hl-msgs>${h.realtime.messages}</b> of ${h.realtime.plan.messages} messages a second <small>(estimate)</small>` : '…', 'realtime')}
+      ${row('Capacity line', h ? (h.capacity ? `<b data-hl-cap>${h.capacity.online}</b> in of ${h.capacity.max}, ${h.capacity.waiting} waiting` : '<small>run supabase/launch.sql again (CAPACITY)</small>') : '…', 'capacity')}
       ${row('Checked', h ? esc(new Date(h.at).toLocaleTimeString('en-ZA')) : 'checking…', 'at')}
     </dl>
     <button class="lg-go" type="button" data-act="health-refresh">Check again</button>

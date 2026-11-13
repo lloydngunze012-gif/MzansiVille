@@ -390,3 +390,63 @@ drop policy if exists "anyone can send feedback" on public.feedback;
 create policy "anyone can send feedback" on public.feedback for insert to anon, authenticated with check (true);
 drop policy if exists "admins read feedback" on public.feedback;
 create policy "admins read feedback" on public.feedback for select using (public.is_admin());
+
+-- CAPACITY (job F, 13 Nov): never break when full. A phone asks to come in (cap_enter) when the game opens and every
+-- minute while it plays. Up to max_players are in at once; past that, new arrivals wait in line (oldest first) and
+-- come in as space frees; players already in keep playing. A player not seen for stale_seconds frees their place.
+-- The owner changes max_players with: update public.cap_config set value = 5000 where key = 'max_players';
+create table if not exists public.cap_config (key text primary key, value int not null);
+insert into public.cap_config (key, value) values ('max_players', 200), ('stale_seconds', 150) on conflict (key) do nothing; -- (200: a safe start for Supabase Pro with rooms of 20; docs/sprints/capacity/report.md)
+alter table public.cap_config enable row level security;
+create table if not exists public.cap_sessions (
+  player text primary key,
+  joined_at timestamptz not null default now(),
+  seen_at timestamptz not null default now(),
+  admitted boolean not null default false
+);
+create index if not exists cap_sessions_seen on public.cap_sessions (seen_at);
+create index if not exists cap_sessions_wait on public.cap_sessions (admitted, joined_at);
+alter table public.cap_sessions enable row level security;
+
+create or replace function public.cap_enter(p_id text, p_secret text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  mx int := coalesce((select value from cap_config where key = 'max_players'), 200);
+  stale int := coalesce((select value from cap_config where key = 'stale_seconds'), 150);
+  inside int;
+  me cap_sessions%rowtype;
+  pos int;
+begin
+  if p_id is null or length(p_id) not between 8 and 64 or p_secret is null or length(p_secret) < 16 then raise exception 'bad id'; end if;
+  insert into score_players (id, secret_hash) values (p_id, md5(p_secret)) on conflict (id) do nothing;
+  if (select secret_hash from score_players where id = p_id) <> md5(p_secret) then raise exception 'not you'; end if;
+  perform pg_advisory_xact_lock(hashtext('cap_enter'));
+  delete from cap_sessions where seen_at < now() - make_interval(secs => stale);
+  insert into cap_sessions (player) values (p_id) on conflict (player) do update set seen_at = now();
+  select * into me from cap_sessions where player = p_id;
+  select count(*) into inside from cap_sessions where admitted;
+  if me.admitted then return jsonb_build_object('ok', true, 'admitted', true, 'online', inside, 'max', mx); end if;
+  select count(*) + 1 into pos from cap_sessions where not admitted and (joined_at, player) < (me.joined_at, me.player);
+  if inside < mx and pos = 1 then
+    update cap_sessions set admitted = true where player = p_id;
+    return jsonb_build_object('ok', true, 'admitted', true, 'online', inside + 1, 'max', mx);
+  end if;
+  return jsonb_build_object('ok', true, 'admitted', false, 'position', pos, 'online', inside, 'max', mx);
+end $$;
+grant execute on function public.cap_enter(text, text) to anon, authenticated;
+-- Leaving (the tab closes): the place frees at once.
+create or replace function public.cap_leave(p_id text, p_secret text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if (select secret_hash from score_players where id = p_id) = md5(p_secret) then delete from cap_sessions where player = p_id; end if;
+end $$;
+grant execute on function public.cap_leave(text, text) to anon, authenticated;
+-- #/health: how full the game is (counts only).
+create or replace function public.cap_status()
+returns jsonb language sql security definer set search_path = public as $$
+  select jsonb_build_object('online', (select count(*) from cap_sessions where admitted and seen_at > now() - make_interval(secs => coalesce((select value from cap_config where key = 'stale_seconds'), 150))),
+    'waiting', (select count(*) from cap_sessions where not admitted and seen_at > now() - interval '60 seconds'),
+    'max', coalesce((select value from cap_config where key = 'max_players'), 200))
+$$;
+grant execute on function public.cap_status() to anon, authenticated;
+-- CAPACITY END

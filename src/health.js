@@ -1,6 +1,7 @@
 // The health check (#/health, owner 9 Nov): what build is running, can it reach Supabase, are the launch SQL
 // blocks in, and how many rooms and players are on campus right now. Read only: it watches the campus
 // channels without joining them. No secrets on the page.
+import { roomCost } from './presence.js'
 import { authEnabled, getClient, supabaseConfig } from './net.js'
 
 // eslint-disable-next-line no-undef
@@ -35,6 +36,8 @@ async function rooms(client, base) {
   return out
 }
 
+// Supabase Pro (job F, 13 Nov; docs/sprints/capacity/report.md): connections and messages a second it carries.
+export const PLAN = { name: 'Pro', connections: 500, messages: 2500, capOff: { connections: 10000, messages: 2500 } }
 export async function checkHealth() {
   const result = { at: new Date().toISOString(), build: BUILD, commit: COMMIT, connected: authEnabled, supabase: null, sql: {}, rooms: [], players: 0 }
   if (!authEnabled) return result
@@ -64,7 +67,12 @@ export async function checkHealth() {
       const base = new URLSearchParams(location.search).get('room') || 'campus'
       result.rooms = await rooms(client, base)
       result.players = result.rooms.reduce((n, r) => n + r.players, 0)
+      // (job F) Realtime use against the plan: connections are players online; messages a second estimated from
+      // each room's size (presence.js roomCost); capacity from supabase/launch.sql CAPACITY (cap_status), if run.
+      const { data, error } = await client.rpc('cap_status')
+      result.capacity = error ? null : data
     } catch { /* leave empty */ }
+    result.realtime = { connections: result.players, messages: result.rooms.reduce((n, r) => n + roomCost(r.players), 0), plan: PLAN }
   }
   return result
 }

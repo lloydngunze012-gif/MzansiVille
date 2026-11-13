@@ -1,3 +1,4 @@
+import { loadGltf } from './gltf.js'
 // Swap a primitive for a GLB when public/models/manifest.json names one.
 // The loader stays out of the first world chunk until a file is listed.
 
@@ -19,8 +20,7 @@ export function modelUrl(manifest, place) {
 
 export async function loadGlb(url) {
   if (!url) return null
-  const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
-  const gltf = await new GLTFLoader().loadAsync(url)
+  const gltf = await loadGltf(url)
   gltf.scene.traverse((node) => {
     if (node.isMesh) {
       node.castShadow = true
@@ -35,8 +35,7 @@ export async function loadGlb(url) {
 const kitCache = {}
 export function loadModel(url) {
   if (!kitCache[url]) {
-    kitCache[url] = import('three/addons/loaders/GLTFLoader.js')
-      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(url))
+    kitCache[url] = loadGltf(url)
       .then(async (gltf) => {
         const THREE = await import('three')
         const root = new THREE.Group()

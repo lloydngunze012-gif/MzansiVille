@@ -3,6 +3,7 @@
 // GLBs (CC0, public/models/props); stage, stall, signs and lights are built here.
 // Returns night lights for the day/night cycle, people to animate, blockers for
 // the walk grid, and the walkable spots the place sheet lists.
+import { loadGltf } from './gltf.js'
 import * as THREE from 'three'
 import { signMesh } from './text.js'
 import STORY from '../../data/campusville/place_story.json'
@@ -21,8 +22,7 @@ const TERRACE_CHAIR = 1.2 // the terrace chairs' distance from the table's middl
 // with its base on the ground, so positions here mean the middle of the thing.
 function loadProp(name) {
   if (!propCache[name]) {
-    propCache[name] = import('three/addons/loaders/GLTFLoader.js')
-      .then(({ GLTFLoader }) => new GLTFLoader().loadAsync(`${PROPS}${name}.glb`))
+    propCache[name] = loadGltf(`${PROPS}${name}.glb`)
       .then((gltf) => {
         const root = new THREE.Group()
         const box = new THREE.Box3().setFromObject(gltf.scene)

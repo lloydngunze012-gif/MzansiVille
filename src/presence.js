@@ -13,9 +13,11 @@ const params = new URLSearchParams(location.search)
 // ?room=<name> picks the channel (tests use their own). Automated tests without one
 // never join: they'd walk about on the live campus.
 const BASE = params.get('room') || (navigator.webdriver ? '' : 'campus')
-// A room holds at most 40 players (owner, 9 Nov: Supabase Realtime and a phone's drawing both have a limit). The 41st
+// A room holds at most 20 players (40 until job F, 13 Nov; owner, 9 Nov: Supabase Realtime and a phone's drawing both have a limit). The 41st
 // player lands in campus-2, the next in campus-3. ?roomcap=<n> lowers it for tests.
-const CAP = Math.max(1, Number(params.get('roomcap')) || 40)
+// Job F (13 Nov): 20. Measured with bots on the TEST project: a room of 40 broke on its own channel (the server
+// closed members' channels at about 600 messages a second in one room); rooms of 20 held cleanly (docs/sprints/capacity).
+const CAP = Math.max(1, Number(params.get('roomcap')) || 20)
 let roomNo = 1
 // City job A: one room per district of SunnyBay, each with the same cap. The campus keeps its room ("campus",
 // "campus-2"...); a district's room is "campus.town", "campus.town-2"... (src/city/plan.js lists the districts).
@@ -31,9 +33,16 @@ const RATE = 250 // ms between updates while moving: 4 a second (while few are o
 // as the campus fills, to stay inside this budget (4 a second up to 4 players, 2 a
 // second at 6, 1 a second at 9).
 const BUDGET = 70
-const KEEP = 2000 // a heartbeat while standing still
-const GONE = 7000 // heard nothing for this long: they've gone (well within 10 s)
-const META_EVERY = 5000 // the name and look ride along this often (and on a hello)
+// Job F (13 Nov): the cost per player. A heartbeat while standing still, every 2 s with a few online, stretching to
+// 3.5 s as the room fills (a frozen phone must still be gone within 10 s: GONE). The name, look and card are the
+// big part of a message: every 30 s and on a hello (they were every 5 s). Moving updates go at the full rate only
+// while somebody is near enough to see you (SEE m); alone in your corner, a moving update rides on the heartbeat.
+const KEEP_MIN = 2000
+const KEEP_MAX = 3500
+const HB_BUDGET = 300 // heartbeat deliveries a second a room may cost before the heartbeat stretches
+const GONE = 9500 // heard nothing for this long: they've gone (within 10 s)
+const META_EVERY = 30000
+const SEE = 50
 // ?bye=0: leave without saying goodbye (tests the silent drop, as a phone killing a tab)
 const SAY_BYE = params.get('bye') !== '0'
 
@@ -231,6 +240,7 @@ function leave() {
 
 function heard(m) {
   if (!m?.i || m.i === me?.id) return
+  bump(traffic.got)
   const now = Date.now()
   let peer = peers.get(m.i)
   if (!peer) {
@@ -273,9 +283,40 @@ function send(force) {
   if (now - lastMeta >= META_EVERY) { msg.m = meta; lastMeta = now }
   lastSent = now
   lastSig = sig()
+  bump(traffic.sent)
   channel.send({ type: 'broadcast', event: 'pos', payload: msg }).catch(() => {})
 }
 
+// How often to send a heartbeat while still, for the number online now.
+function keep() {
+  const n = Math.max(2, onlineCount())
+  return Math.min(KEEP_MAX, Math.max(KEEP_MIN, (1000 * n * (n - 1)) / HB_BUDGET))
+}
+// Is anybody near enough to see you move? (their last known spot)
+function watched() {
+  if (local.a !== 'campus') return false
+  for (const p of peers.values()) {
+    const s = p.snaps[p.snaps.length - 1]
+    if (p.area === 'campus' && s && Math.hypot(s.x - local.x, s.z - local.z) < SEE) return true
+  }
+  return false
+}
+// Messages this phone sends and receives (a rolling 10 s), for #/health and the capacity report.
+const traffic = { sent: [], got: [] }
+const bump = (list) => { const now = Date.now(); list.push(now); while (list.length && now - list[0] > 10000) list.shift() }
+export function trafficRate() {
+  const now = Date.now()
+  const per = (list) => Math.round((list.filter((t) => now - t <= 10000).length / 10) * 10) / 10
+  return { sent: per(traffic.sent), got: per(traffic.got), n: onlineCount(), keep: keep(), rate: rate(), watched: watched() }
+}
+// Realtime messages a second a room of n costs (every send is delivered to the n - 1 others): the heartbeats, plus the
+// moving updates of the share who are moving and watched. For #/health and docs/sprints/capacity/report.md.
+export function roomCost(n, moving = 0.5) {
+  if (n < 2) return 0
+  const k = Math.min(KEEP_MAX, Math.max(KEEP_MIN, (1000 * n * (n - 1)) / HB_BUDGET)) / 1000
+  const r = Math.min(1500, Math.max(RATE, (1000 * n * (n - 1)) / BUDGET)) / 1000
+  return Math.round(n * (n - 1) * ((1 - moving) / k + moving / r))
+}
 // How often to send while moving, for the number online now.
 function rate() {
   const n = Math.max(2, onlineCount())
@@ -290,7 +331,7 @@ function pump() {
   const now = Date.now()
   if (live) {
     const moved = sig() !== lastSig
-    if ((moved && now - lastSent >= rate()) || now - lastSent >= KEEP || (replyDue && now >= replyDue)) {
+    if ((moved && now - lastSent >= (watched() ? rate() : keep())) || now - lastSent >= keep() || (replyDue && now >= replyDue)) {
       replyDue = 0
       send()
     }
@@ -448,6 +489,7 @@ window.mzansiPresence = () => ({
   cap: CAP,
   live,
   rate: rate(),
+  traffic: trafficRate(),
   me: me && { id: me.id, num: me.num },
   count: onlineCount(),
   label: countLabel(),

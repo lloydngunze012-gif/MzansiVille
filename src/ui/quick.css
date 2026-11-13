@@ -205,3 +205,11 @@ body:has(.qs2) { background: #f4efe4; }
 .sl-pop .td-sum { margin: 8px 0 12px; padding-left: 20px; font: 700 16px system-ui; color: #1c1915; line-height: 1.6; }
 .td-pill { all: unset; box-sizing: border-box; cursor: pointer; height: 30px; padding: 0 10px; border-radius: 15px; background: #fff; color: #1c1915; font: 800 13px system-ui; border: 1px solid #d9d0c0; white-space: nowrap; display: inline-flex; align-items: center; }
 .td-pill.done { background: #d9f2c7; }
+/* Job F: Campus is busy (src/capacity.js) */
+.cap-line { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 16px; background: #f4efe4; }
+.cap-card { width: min(100%, 420px); background: #fff; border: 1px solid #d9d0c0; border-radius: 18px; padding: 24px 20px; text-align: center; color: #1c1915; box-shadow: 0 6px 24px #0002; }
+.cap-card h2 { margin: 4px 0 12px; font: 800 24px system-ui; color: #1c1915; }
+.cap-kicker { margin: 0; font: 700 13px system-ui; color: #6f675c; }
+.cap-pos { margin: 0 0 10px; font: 700 18px system-ui; }
+.cap-pos b { font-size: 28px; }
+.cap-note { margin: 0; font: 500 15px system-ui; color: #5c554b; }

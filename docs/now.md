@@ -1,9 +1,18 @@
 # Now
 
 Short and always current. Whoever finishes a step updates this (docs/team.md).
-Last updated: 13 Nov, Claude Code (job L: consequences, music, a reason to come).
+Last updated: 13 Nov, Claude Code (job F: capacity for launch).
 
-**Next jobs: docs/queue.md** (13 Nov: J and L done; next F, H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it); before launch run supabase/reset-launch.sql once.
+**Next jobs: docs/queue.md** (13 Nov: J, L and F done; next H, G; playable by Fri 13 Nov, launch Fri 20 Nov; every job ends with the PLAYER PASS, CLAUDE.md top). Lloyd: **run supabase/chat.sql again** (job I needs it) and **supabase/launch.sql again** (job F's CAPACITY block; then set max_players); before launch run supabase/reset-launch.sql once.
+
+## Job F: capacity for launch (owner, 12 Nov): built; pushed and deployed 13 Nov. **RUN supabase/launch.sql AGAIN** (CAPACITY).
+- **Measured with bots on the TEST project** (`.env.test.txt`; never the live one). A room of 40 broke by itself; rooms of 20 carried 100 bots with every message delivered and 0.2 s lag. Past the project's limit Supabase closes almost everybody's channel at once. So the room cap is now 20 and the busy line holds the game under the limit (max_players, default 200). Full numbers, the Pro ceiling (about 200 at once), the monthly-cost warning and the launch checklist: docs/sprints/capacity/report.md.
+- **Cheaper per player:** a slower heartbeat as rooms fill, name and look every 30 s, moving updates fast only when someone can see you (a full room 910 -> 624 messages a second).
+- **Never break when full:** "Campus is busy. You're in line: #N", in by yourself as space frees, players already in keep playing; chat retries and slows down instead of failing.
+- **Smaller download:** a first visit into campus about 20 MB -> 9.6 MB (the 3D models compressed); models and audio cached 7 days.
+- **#/health:** Realtime connections and messages a second against Pro's limits; the capacity line.
+- Gate: 124 of 125; city-quick's walk from the taxi stop took over 30 s once with two browsers starving each other (the walk is frame-capped): its wait is 60 s now; passes alone twice. capacity-quick C1-C2 new.
+- **As a player** (390 px): the students, the campus and SunnyBay look the same after compression (Eye view checked); #/health's Realtime row stayed "…" on its first check after a load (fixed: it always shows). Nothing else a player sees changed, except the busy line, which only shows when the game is full. Not seen live: the line on the real project (needs the SQL).
 
 ## Job L: consequences, music, a reason to come (owner, 12 Nov): built; pushed and deployed 13 Nov. No SQL to run.
 - **Energy:** activity costs x1.4 (gains unchanged): a busy day (seven activities, a minute of walking) ends near 20. Under 20 you walk slower and costly activities say "Too tired" (bed never refuses). At 0 Fullness everything drains twice as fast.

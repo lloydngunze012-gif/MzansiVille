@@ -26,7 +26,8 @@ test('SunnyBay: out of the gate, the map, a taxi to the Mall, back onto campus',
   await page.locator('.cm-detail [data-way="taxi"]').tap()
   await expect(city(page)).toHaveAttribute('data-rides', '1', { timeout: 60000 })
   // the taxi stops at the Mall's door and you walk in: its Things to do list opens
-  await expect(city(page)).toHaveAttribute('data-card', 'todo:mall', { timeout: 30000 })
+  // (13 Nov: the walk from the stop is frame-capped, 0.05 s a frame; with two browsers starving each other it took over 30 s once)
+  await expect(city(page)).toHaveAttribute('data-card', 'todo:mall', { timeout: 60000 })
   await expect(city(page)).toHaveAttribute('data-place', 'mall')
   await expect(page.locator('.city-todo .ct-row')).toHaveCount(10)
   expect(await money(page)).toBe(before - 15)

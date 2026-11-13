@@ -1,5 +1,5 @@
 // The opening page's pictures (OPENING PAGE V2.2, owner 12 Nov): ONE background for every student, from the owner's
-// own picture (public/opening/bg-source.png: the campus courtyard, lawn in front, the sea behind), and each
+// own picture (assets-src/opening/bg-source.png: the campus courtyard, lawn in front, the sea behind), and each
 // quick-start student photographed alone, on a transparent background, lit from the upper left like the picture,
 // with a soft contact shadow under the feet. The page puts the student on the lawn (src/ui/quick.css).
 // Run with the dev server up (npm run dev), then:  node scripts/opening-stills.mjs
@@ -31,7 +31,7 @@ if (RAW) fs.mkdirSync(RAW, { recursive: true })
 // ---------- the background ----------
 // The source is 941 x 1672. A phone shows it from the top of the sky down to the middle of the lawn, where the
 // student stands; the flowers at the very bottom go under the page's panel. Bottom row kept: BG_BOTTOM.
-const SRC = `${OUT}/bg-source.png`
+const SRC = 'assets-src/opening/bg-source.png' // (job F: the source is not deployed)
 const BG_W = 828
 const BG_BOTTOM = 1500
 const meta = await sharp(SRC).metadata()

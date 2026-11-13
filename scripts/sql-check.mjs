@@ -49,6 +49,27 @@ const record = async (activity, { id = ID, secret = SECRET, name = 'Thandi' } = 
   return { event, ...r.r }
 }
 
+await check('capacity (job F): up to max_players in; the rest wait in line, oldest first, and come in as space frees', async () => {
+  await db.exec("update cap_config set value = 2 where key = 'max_players'")
+  const enter = async (n) => (await one('select public.cap_enter($1,$2) as r', [`cap-player-${n}`, `cap-secret-0123456789-${n}`])).r
+  const a = await enter(1); const b = await enter(2); const c = await enter(3); const d = await enter(4)
+  assert.deepEqual([a.admitted, b.admitted, c.admitted, d.admitted], [true, true, false, false])
+  assert.deepEqual([c.position, d.position], [1, 2])
+  assert.equal((await enter(1)).admitted, true) // (already in: keeps playing)
+  // a wrong secret is refused
+  await assert.rejects(one('select public.cap_enter($1,$2) as r', ['cap-player-1', 'not-the-secret-0123456789']))
+  // one leaves: the first in line comes in, the second moves up
+  await db.query('select public.cap_leave($1,$2)', ['cap-player-2', 'cap-secret-0123456789-2'])
+  assert.equal((await enter(3)).admitted, true)
+  assert.deepEqual([(await enter(4)).admitted, (await enter(4)).position], [false, 1])
+  // a player not seen for stale_seconds frees their place
+  await db.exec("update cap_sessions set seen_at = now() - interval '10 minutes' where player = 'cap-player-1'")
+  assert.equal((await enter(4)).admitted, true)
+  const st = (await one('select public.cap_status() as r')).r
+  assert.deepEqual([st.online, st.max], [2, 2])
+  await db.exec("update cap_config set value = 200 where key = 'max_players'; delete from cap_sessions")
+})
+
 await check('a score is capped by its daily limit (lecture_attend: 12 points, 3 a day)', async () => {
   const rule = await one("select * from score_rules where activity_id = 'lecture_attend'")
   assert.equal(rule.daily_limit, 3)

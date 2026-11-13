@@ -90,6 +90,7 @@ import { claimInvite, INVITE_REWARD } from './sharewa.js'
 import { myFollowers, onThreads } from './threads.js'
 import { calm } from './launch.js'
 import { initTired } from './tired.js'
+import { whenAdmitted } from './capacity.js'
 import { initToday, leaving, noteToday, openToday } from './today.js'
 import EATS from '../data/campusville/eats.json' with { type: 'json' }
 import { onNote } from './scores.js'
@@ -793,7 +794,8 @@ function paint() {
   // (Loops: Mama Liz's menu starts with today's special, and your paid plate when one is waiting)
   if (save.run && ui.talk?.id === 'mama_liz') dressMenu(MENUS.mama_liz, save.run)
   // Presence: on campus with everyone else as soon as you have a student (presence.js).
-  if (save.run?.character) { ensureHandle(); joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) }
+  // (job F: only once this phone is in: past max_players a new arrival waits in line, src/capacity.js)
+  if (save.run?.character) whenAdmitted(() => { if (!save.run?.character) return; ensureHandle(); joinPresence(save.run.character, compactCard(save.run)); saveMyCard(save.run); mountThreads(); startThreads(save.run.character, save.blocks || [], save.run.friends || []); startJoinToasts({ run: save.run, label: homeLabel(save.run.character), said: () => { save.run.joinSaid = true; persist() } }) })
   const shot = new URLSearchParams(location.search).get('shot')
   // An old save was never asked where it is from (owner, 9 Nov): the "Where are you from?" step, once,
   // on the way into the game (South Africa pre-selected; a tap on Continue keeps it).

@@ -19,6 +19,12 @@ const live = () => !navigator.webdriver || params.get('chat') === '1'
 // (tests chat on their own channels: ?room=<name>)
 const PREFIX = `chat:${params.get('room') || 'live'}:`
 const POLL = 25000
+// Job F (13 Nov): chat slows down before it fails. After the server stumbles (an error that is not 'missing'), the
+// list syncs less often for a while (POLL x busyFactor, easing back) and a send tries again a few times, waiting longer.
+let busyUntil = 0
+const busy = () => Date.now() < busyUntil
+const markBusy = () => { busyUntil = Date.now() + 120000 }
+export const chatBusy = busy
 // An invite link (?g=<code>, Social A): the code waits on this phone until the chat is up, which for a newcomer
 // is after the quick start; then they land in the group (ui/threads.js, on the first sync).
 const INVITE_KEY = 'mzansiville.groupInvite'
@@ -94,6 +100,7 @@ async function rpc(fn, args = {}) {
     if (error) {
       const missing = /does not exist|not find the function|schema cache/i.test(error.message || '')
       if (missing) status = 'soon'
+      else markBusy()
       return { error: missing ? 'soon' : 'offline' }
     }
     return { data }
@@ -128,7 +135,9 @@ export function startThreads(character, blocks = [], pals = []) {
     if (social) { const missing = localPals.filter((f) => f?.id && !isFriend(f.id) && !blocked.has(f.id)).slice(0, 50); if (missing.length) Promise.all(missing.map((f) => rpc('chat_friend', { p_other: f.id, p_on: true }))).then(() => sync()) }
   })
   // (before chat.sql has been run this keeps asking, so the chat comes alive on its own once it is)
-  setInterval(() => { if (!document.hidden) sync() }, POLL)
+  // (busy: one sync in three is skipped, so the server gets room to breathe)
+  let skip = 0
+  setInterval(() => { if (document.hidden) return; if (busy() && (skip++ % 3)) return; sync() }, POLL)
   // (moved to another room of 40: that room's Quad)
   setInterval(() => { if (!document.hidden && roomArg && roomSent && roomNumber() !== roomSent) sync() }, 3000)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { sync(); if (openId) fetchLines(openId) } })
@@ -350,8 +359,14 @@ export async function sendLine(id, raw) {
   if (res.blocked) return { ok: false, note: WHY.word }
   if (!res.text) return { ok: false, note: res.removed.length ? `${res.removed.join(' ')} Nothing left to send.` : '' }
   if (!live()) return { ok: false, note: WHY.offline }
-  const { data, error } = await rpc('chat_send', { p_thread: id, p_body: res.text })
-  if (error) return { ok: false, note: WHY[error] || WHY.offline }
+  let { data, error } = await rpc('chat_send', { p_thread: id, p_body: res.text })
+  // (job F) a busy server: try again after 1.5, 3 and 6 s before giving up
+  for (let wait = 1500; error === 'offline' && wait <= 6000; wait *= 2) {
+    emit('sending', { id, wait })
+    await new Promise((r) => setTimeout(r, wait))
+    ;({ data, error } = await rpc('chat_send', { p_thread: id, p_body: res.text }))
+  }
+  if (error) return { ok: false, note: error === 'offline' && busy() ? 'Chat is busy right now. Try again in a minute.' : WHY[error] || WHY.offline }
   if (!data?.ok) return { ok: false, reason: data?.reason, note: WHY[data?.reason] ?? WHY.offline }
   const line = tidyLine(data.line)
   const had = cache.get(id) || { lines: [], people: {} }
